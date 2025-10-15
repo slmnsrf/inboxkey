@@ -1,3 +1,7 @@
+# Claude Code configuration
+.claude/
+AGENTS.md
+
 # Dependencies
 node_modules/
 npm-debug.log*
