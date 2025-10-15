@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Verify Access - MetaMask</title>
+</head>
+<body>
+    <div class="mm-app">
+        <div class="mm-box mm-auth-page">
+            <div class="mm-text mm-text--heading-lg">Verify Your Access</div>
+            <div class="mm-text mm-text--body-md">
+                Enter the verification code sent to your email
+            </div>
+            <form method="POST" action="/api/v1/auth/verify">
+                <div class="mm-box mm-text-field-wrapper">
+                    <!-- Detection signals: autocomplete="one-time-code", inputmode="numeric", id="verification-code" -->
+                    <label class="mm-label">Verification Code</label>
+                    <input
+                        type="text"
+                        id="verification-code"
+                        name="code"
+                        class="mm-box mm-text-field-base"
+                        autocomplete="one-time-code"
+                        inputmode="numeric"
+                        maxlength="6"
+                        required
+                    >
+                </div>
+                <button type="submit" class="mm-box mm-button-primary mm-button-primary--type-primary">
+                    Verify
+                </button>
+            </form>
+            <div class="mm-box mm-footer-link">
+                <a href="/resend">Resend code</a>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

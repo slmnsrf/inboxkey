@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Authentication required</title>
+  <style>
+    body { font-family: Arial, sans-serif; background: #f3f3f3; margin: 0; padding: 20px; }
+    .container { max-width: 350px; margin: 0 auto; background: #fff; padding: 20px; border: 1px solid #ddd; border-radius: 4px; }
+    .logo { text-align: center; margin-bottom: 20px; }
+    h1 { font-size: 28px; font-weight: 400; margin: 0 0 10px; }
+    .alert { background: #fcf2e8; border: 1px solid #e7c084; padding: 14px 18px; border-radius: 4px; margin-bottom: 18px; }
+    .alert-text { font-size: 13px; margin: 0; }
+    label { font-weight: 700; font-size: 13px; display: block; margin-bottom: 4px; }
+    input { width: 100%; padding: 8px; font-size: 15px; border: 1px solid #888; border-radius: 3px; box-sizing: border-box; }
+    input:focus { border-color: #e77600; outline: 2px solid #c45500; }
+    .submit-btn { width: 100%; background: #f0c14b; border: 1px solid #a88734; padding: 8px; margin-top: 14px; border-radius: 3px; cursor: pointer; font-size: 13px; }
+    .link { font-size: 13px; color: #0066c0; text-decoration: none; display: inline-block; margin-top: 12px; }
+  </style>
+</head>
+<body>
+  <!--
+    Expected Detection:
+    - Field: #auth-mfa-otpcode (input with type="tel" + name contains "otp")
+    - Confidence: 90
+    - Tier: 1
+    - Signals: name/id="auth-mfa-otpcode" (exact match)
+    - Rationale: Tier 1 attribute pattern match (name contains "otp")
+  -->
+  <div class="container">
+    <div class="logo">
+      <svg width="100" height="30"><text x="0" y="20" font-size="20" font-family="Arial">amazon</text></svg>
+    </div>
+
+    <h1>Authentication required</h1>
+
+    <div class="alert">
+      <p class="alert-text">
+        For your security, we need to verify your identity. We've sent a One Time Password (OTP) to the mobile number ending in ••••78.
+      </p>
+    </div>
+
+    <form>
+      <label for="auth-mfa-otpcode">Enter OTP</label>
+      <input
+        type="tel"
+        id="auth-mfa-otpcode"
+        name="otpCode"
+        maxlength="6"
+        autocomplete="off"
+        data-testid="verification-field"
+      />
+
+      <button type="submit" class="submit-btn">Continue</button>
+    </form>
+
+    <a href="#" class="link">Resend OTP</a>
+  </div>
+</body>
+</html>

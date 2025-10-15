@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gemini - Security Verification</title>
+    <style>
+        body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; background: #f8f9fa; margin: 0; padding: 20px; }
+        .gemini-container { max-width: 480px; margin: 40px auto; background: white; border-radius: 8px; box-shadow: 0 2px 16px rgba(0,0,0,0.08); }
+        .gemini-header { background: linear-gradient(135deg, #00dcfa 0%, #00a8ff 100%); padding: 30px; border-radius: 8px 8px 0 0; text-align: center; }
+        .gemini-logo { color: white; font-size: 28px; font-weight: 700; letter-spacing: 1px; }
+        .gemini-body { padding: 40px; }
+        .gemini-title { color: #1e2022; font-size: 24px; margin-bottom: 12px; font-weight: 600; }
+        .gemini-text { color: #6b7280; line-height: 1.6; margin-bottom: 25px; }
+        .gemini-input-container { margin-bottom: 20px; }
+        .gemini-label { display: block; color: #374151; font-weight: 500; margin-bottom: 8px; font-size: 14px; }
+        .gemini-input { width: 100%; padding: 13px; border: 2px solid #e5e7eb; border-radius: 6px; font-size: 16px; box-sizing: border-box; transition: border-color 0.2s; }
+        .gemini-input:focus { border-color: #00dcfa; outline: none; }
+        .gemini-button { width: 100%; padding: 14px; background: linear-gradient(135deg, #00dcfa 0%, #00a8ff 100%); color: white; border: none; border-radius: 6px; font-size: 16px; font-weight: 600; cursor: pointer; }
+        .gemini-button:hover { opacity: 0.9; }
+        .info-box { background: #f0f9ff; border-left: 4px solid #00a8ff; padding: 15px; margin-bottom: 20px; font-size: 14px; color: #1e40af; }
+    </style>
+</head>
+<body>
+    <!-- Detection Signals:
+         - Crypto domain: gemini, cryptocurrency exchange
+         - Security keywords: security, verification, authentication
+         - Input patterns: 6-digit code, clean modern design
+         - Form structure: gradient header, info boxes
+         - Brand colors: #00dcfa, #00a8ff (Gemini blue gradients)
+         - Common IDs: securityCode, verificationCode, authCode
+    -->
+    <div class="gemini-container">
+        <div class="gemini-header">
+            <div class="gemini-logo">GEMINI</div>
+        </div>
+
+        <div class="gemini-body">
+            <h1 class="gemini-title">Security Verification</h1>
+
+            <div class="info-box">
+                <strong>Security Notice:</strong> A verification code has been sent to your registered email and mobile device.
+            </div>
+
+            <p class="gemini-text">
+                Please enter the 6-digit code to verify your identity and proceed with your transaction.
+            </p>
+
+            <form id="verificationForm" action="/auth/verify-code" method="POST">
+                <div class="gemini-input-container">
+                    <label for="securityCode" class="gemini-label">Verification Code</label>
+                    <input
+                        type="tel"
+                        id="securityCode"
+                        name="security_code"
+                        class="gemini-input"
+                        placeholder="Enter 6-digit code"
+                        maxlength="6"
+                        pattern="[0-9]{6}"
+                        inputmode="numeric"
+                        autocomplete="one-time-code"
+                        required
+                    />
+                </div>
+
+                <button type="submit" class="gemini-button">Verify</button>
+            </form>
+
+            <p style="text-align: center; margin-top: 20px; font-size: 14px; color: #6b7280;">
+                Didn't receive a code? <a href="#" style="color: #00a8ff; text-decoration: none;">Resend code</a>
+            </p>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,14 @@
+{
+  "id": "edge-image-001",
+  "type": "otp",
+  "category": "edge-case",
+  "from": "noreply@example.com",
+  "subject": "Your Verification Code",
+  "body": "Your verification code:\n\n[IMAGE: verification-code.png showing 456123]\n\nAlternatively, enter: 456123",
+  "extracted": {
+    "code": "456123",
+    "pattern": "numeric-6",
+    "confidence": "medium",
+    "note": "Code primarily shown as image with text fallback"
+  }
+}

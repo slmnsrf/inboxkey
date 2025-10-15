@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HubSpot - Two-Factor Authentication</title>
+    <style>
+        body { font-family: 'Lexend Deca', Arial, sans-serif; background: #f5f8fa; margin: 0; padding: 20px; }
+        .hubspot-container { max-width: 480px; margin: 50px auto; background: white; border-radius: 8px; box-shadow: 0 2px 12px rgba(0,0,0,0.08); padding: 40px; }
+        .hubspot-logo { text-align: center; margin-bottom: 30px; font-size: 28px; font-weight: 700; color: #ff5c35; }
+        .hubspot-title { color: #2d3e50; font-size: 24px; margin-bottom: 12px; font-weight: 600; }
+        .hubspot-text { color: #516f90; line-height: 1.7; margin-bottom: 28px; }
+        .hubspot-input-group { margin-bottom: 20px; }
+        .hubspot-label { display: block; color: #33475b; margin-bottom: 8px; font-weight: 600; font-size: 14px; }
+        .hubspot-input { width: 100%; padding: 13px; border: 1px solid #cbd6e2; border-radius: 4px; font-size: 16px; box-sizing: border-box; }
+        .hubspot-input:focus { border-color: #ff5c35; outline: none; box-shadow: 0 0 0 3px rgba(255, 92, 53, 0.1); }
+        .hubspot-button { width: 100%; padding: 14px; background: #ff5c35; color: white; border: none; border-radius: 4px; font-size: 16px; font-weight: 600; cursor: pointer; }
+        .hubspot-button:hover { background: #ff7a59; }
+    </style>
+</head>
+<body>
+    <!-- Detection Signals:
+         - SaaS domain: hubspot
+         - Security keywords: two-factor, authentication, 2FA
+         - Input patterns: 6-digit code
+         - Brand colors: #ff5c35 (HubSpot orange)
+    -->
+    <div class="hubspot-container">
+        <div class="hubspot-logo">HubSpot</div>
+        <h1 class="hubspot-title">Two-Factor Authentication</h1>
+        <p class="hubspot-text">Enter the 6-digit code from your authenticator app.</p>
+        <form id="twoFactorForm" action="/login/verify-2fa" method="POST">
+            <div class="hubspot-input-group">
+                <label for="authCode" class="hubspot-label">Authentication Code</label>
+                <input type="tel" id="authCode" name="auth_code" class="hubspot-input" placeholder="000000" maxlength="6" pattern="[0-9]{6}" inputmode="numeric" autocomplete="one-time-code" required />
+            </div>
+            <button type="submit" class="hubspot-button">Verify</button>
+        </form>
+    </div>
+</body>
+</html>

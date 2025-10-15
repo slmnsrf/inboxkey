@@ -1,0 +1,13 @@
+{
+  "id": "mailchimp-alpha-001",
+  "type": "alphanumeric",
+  "category": "saas",
+  "from": "noreply@mailchimp.com",
+  "subject": "Verification Code",
+  "body": "Your verification code is: MC61HP45",
+  "extracted": {
+    "code": "MC61HP45",
+    "pattern": "alphanumeric-8",
+    "confidence": "high"
+  }
+}

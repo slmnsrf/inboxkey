@@ -1,0 +1,18 @@
+{
+  "id": "spotify-otp-001",
+  "type": "otp",
+  "category": "entertainment",
+  "from": "no-reply@spotify.com",
+  "subject": "Your Spotify code",
+  "body": "Your Spotify code is 478215. Use it to verify your account. This code expires in 10 minutes.",
+  "extracted": {
+    "code": "478215",
+    "pattern": "numeric-6",
+    "confidence": "high"
+  },
+  "metadata": {
+    "sent": "2025-10-15T11:05:22Z",
+    "expiresIn": "10 minutes",
+    "provider": "Spotify"
+  }
+}

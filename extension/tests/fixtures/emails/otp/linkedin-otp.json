@@ -1,0 +1,18 @@
+{
+  "id": "linkedin-otp-001",
+  "type": "otp",
+  "category": "social",
+  "from": "security-noreply@linkedin.com",
+  "subject": "LinkedIn Account Verification",
+  "body": "Here's your LinkedIn verification code: 826473\n\nThis code expires in 15 minutes. Please don't share this code with anyone.",
+  "extracted": {
+    "code": "826473",
+    "pattern": "numeric-6",
+    "confidence": "high"
+  },
+  "metadata": {
+    "sent": "2025-10-15T11:00:15Z",
+    "expiresIn": "15 minutes",
+    "provider": "LinkedIn"
+  }
+}

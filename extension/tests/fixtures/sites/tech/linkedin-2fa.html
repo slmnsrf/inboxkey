@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Verify your identity - LinkedIn</title>
+</head>
+<body>
+    <div class="authentication-outlet">
+        <div class="artdeco-card">
+            <h1 class="contextual-sign-in-modal__header">Verify it's you</h1>
+            <p class="contextual-sign-in-modal__description">
+                We sent a verification code to your phone. Enter the code to continue.
+            </p>
+            <form method="POST" action="/checkpoint/challenge/verify">
+                <div class="form__row">
+                    <!-- Detection signals: autocomplete="one-time-code", inputmode="numeric", id="verification-code" -->
+                    <label for="verification-code" class="form__label">Enter verification code</label>
+                    <input
+                        type="text"
+                        id="verification-code"
+                        name="pin"
+                        class="form__input"
+                        autocomplete="one-time-code"
+                        inputmode="numeric"
+                        maxlength="6"
+                        required
+                    >
+                </div>
+                <div class="form__row">
+                    <button type="submit" class="btn__primary--large">Submit</button>
+                </div>
+            </form>
+            <div class="sign-in-form__footer">
+                <a href="/checkpoint/challenge/resend">Resend code</a>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

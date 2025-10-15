@@ -1,0 +1,14 @@
+{
+  "id": "gitlab-reset-001",
+  "type": "password-reset",
+  "category": "security",
+  "from": "noreply@gitlab.com",
+  "subject": "GitLab Password Reset",
+  "body": "You requested a password reset for your GitLab.\n\nClick here to reset: https://gitlab.com/reset?token=034704ef24b92779112aa8d216fe49e1eb07b3bd\n\nIf you didn't request this, please ignore this email.",
+  "extracted": {
+    "link": "https://gitlab.com/reset?token=034704ef24b92779112aa8d216fe49e1eb07b3bd",
+    "token": "034704ef24b92779112aa8d216fe49e1eb07b3bd",
+    "type": "password-reset",
+    "confidence": "high"
+  }
+}

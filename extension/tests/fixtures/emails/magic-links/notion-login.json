@@ -1,0 +1,13 @@
+{
+  "id": "notion-magic-001",
+  "type": "magic-link",
+  "category": "productivity",
+  "from": "noreply@notion.so",
+  "subject": "Sign in to Notion",
+  "body": "Click the link below to sign in:\n\nhttps://notion.so/auth/login?token=e6342dc6ee6d7dc3f431707a03987dcf\n\nThis link expires in 15 minutes.",
+  "extracted": {
+    "link": "https://notion.so/auth/login?token=e6342dc6ee6d7dc3f431707a03987dcf",
+    "token": "e6342dc6ee6d7dc3f431707a03987dcf",
+    "confidence": "high"
+  }
+}

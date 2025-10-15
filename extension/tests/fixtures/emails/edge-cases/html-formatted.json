@@ -1,0 +1,14 @@
+{
+  "id": "edge-html-001",
+  "type": "otp",
+  "category": "edge-case",
+  "from": "noreply@example.com",
+  "subject": "Verification",
+  "body": "<html><body><p>Your code:</p><h1 style='font-size:32px; letter-spacing:10px;'>673849</h1><p>Expires in 10 minutes</p></body></html>",
+  "extracted": {
+    "code": "673849",
+    "pattern": "numeric-6",
+    "confidence": "high",
+    "note": "Code embedded in HTML markup"
+  }
+}

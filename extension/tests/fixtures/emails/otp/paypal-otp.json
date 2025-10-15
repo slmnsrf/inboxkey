@@ -1,0 +1,18 @@
+{
+  "id": "paypal-otp-001",
+  "type": "otp",
+  "category": "finance",
+  "from": "service@paypal.com",
+  "subject": "Your PayPal security code",
+  "body": "Your PayPal security code is 164829. Your code expires in 10 minutes. Please don't share your code with anyone.",
+  "extracted": {
+    "code": "164829",
+    "pattern": "numeric-6",
+    "confidence": "high"
+  },
+  "metadata": {
+    "sent": "2025-10-15T10:47:33Z",
+    "expiresIn": "10 minutes",
+    "provider": "PayPal"
+  }
+}

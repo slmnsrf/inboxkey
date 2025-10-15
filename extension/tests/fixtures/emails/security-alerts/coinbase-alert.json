@@ -1,0 +1,14 @@
+{
+  "id": "coinbase-alert-001",
+  "type": "security-alert",
+  "category": "security",
+  "from": "security@coinbase.com",
+  "subject": "Security alert",
+  "body": "We detected a security alert to your Coinbase account.\n\nLocation: Dallas, TX\nDevice: Chrome\nTime: 2025-10-15T14:31:44Z\n\nIf this was you, you can ignore this email. If not, secure your account immediately.",
+  "extracted": {
+    "alertType": "Security alert",
+    "location": "Dallas, TX",
+    "device": "Chrome",
+    "requiresAction": false
+  }
+}

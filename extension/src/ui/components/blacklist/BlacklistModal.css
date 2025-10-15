@@ -1,0 +1,90 @@
+/**
+ * BlacklistModal Component Styles
+ *
+ * Styles for the blacklist management modal.
+ * Includes tab navigation and content areas.
+ */
+
+.blacklist-modal-container {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4, 16px);
+}
+
+/* Subtitle */
+.blacklist-modal-subtitle {
+  margin: 0;
+  font-size: var(--font-size-sm, 14px);
+  color: var(--color-text-secondary, #636366);
+  line-height: 1.5;
+}
+
+/* Tab Navigation */
+.blacklist-tabs {
+  display: flex;
+  gap: var(--space-2, 8px);
+  border-bottom: 2px solid var(--color-border, #e5e7eb);
+  margin-bottom: var(--space-3, 12px);
+}
+
+.blacklist-tab {
+  padding: var(--space-3, 12px) var(--space-4, 16px);
+  border: none;
+  background: transparent;
+  color: var(--color-text-secondary, #636366);
+  font-size: var(--font-size-base, 16px);
+  font-weight: var(--font-weight-medium, 500);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+  transition: color var(--duration-fast, 150ms) ease-out,
+              border-color var(--duration-fast, 150ms) ease-out;
+  min-height: var(--size-touch-min, 44px);
+}
+
+.blacklist-tab:hover:not(.blacklist-tab--active) {
+  color: var(--color-text-primary, #1C1C1E);
+}
+
+.blacklist-tab--active {
+  color: var(--color-primary, #007AFF);
+  border-bottom-color: var(--color-primary, #007AFF);
+  font-weight: var(--font-weight-semibold, 600);
+}
+
+.blacklist-tab:focus-visible {
+  outline: 2px solid var(--color-primary, #007AFF);
+  outline-offset: 2px;
+  border-radius: var(--radius-md, 6px);
+}
+
+/* Tab Content */
+.blacklist-content {
+  min-height: 400px;
+  max-height: 500px;
+  overflow-y: auto;
+}
+
+.blacklist-panel {
+  animation: fadeIn 200ms ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .blacklist-tab {
+    transition: none;
+  }
+
+  .blacklist-panel {
+    animation: none;
+  }
+}

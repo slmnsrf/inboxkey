@@ -1,0 +1,14 @@
+{
+  "id": "instagram-reset-001",
+  "type": "password-reset",
+  "category": "security",
+  "from": "noreply@instagram.com",
+  "subject": "Instagram Password Reset",
+  "body": "You requested a password reset for your Instagram.\n\nClick here to reset: https://instagram.com/reset?token=27689d5fdc4af8259a4b474fd60a3607d29842f7\n\nIf you didn't request this, please ignore this email.",
+  "extracted": {
+    "link": "https://instagram.com/reset?token=27689d5fdc4af8259a4b474fd60a3607d29842f7",
+    "token": "27689d5fdc4af8259a4b474fd60a3607d29842f7",
+    "type": "password-reset",
+    "confidence": "high"
+  }
+}

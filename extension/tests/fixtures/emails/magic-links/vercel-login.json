@@ -1,0 +1,13 @@
+{
+  "id": "vercel-magic-001",
+  "type": "magic-link",
+  "category": "tech",
+  "from": "noreply@vercel.com",
+  "subject": "Sign in to Vercel",
+  "body": "Click the link below to sign in:\n\nhttps://vercel.com/auth/login?token=17336768d2037af9e9dcf80dcef0cbe8\n\nThis link expires in 15 minutes.",
+  "extracted": {
+    "link": "https://vercel.com/auth/login?token=17336768d2037af9e9dcf80dcef0cbe8",
+    "token": "17336768d2037af9e9dcf80dcef0cbe8",
+    "confidence": "high"
+  }
+}

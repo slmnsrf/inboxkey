@@ -1,0 +1,241 @@
+name: Release InboxBridge
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  validate-version:
+    name: Validate tag matches Cargo.toml
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Extract and validate version
+        id: version
+        run: |
+          CARGO_VERSION=$(grep '^version' inboxbridge/Cargo.toml | head -1 | sed 's/.*"\(.*\)"/\1/')
+          TAG_VERSION="${GITHUB_REF_NAME#v}"
+          echo "Cargo.toml version: $CARGO_VERSION"
+          echo "Tag version: $TAG_VERSION"
+          if [ "$CARGO_VERSION" != "$TAG_VERSION" ]; then
+            echo "ERROR: Tag v$TAG_VERSION doesn't match Cargo.toml version $CARGO_VERSION"
+            exit 1
+          fi
+          echo "version=$CARGO_VERSION" >> "$GITHUB_OUTPUT"
+
+  build-windows:
+    name: Build Windows
+    needs: validate-version
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Build
+        working-directory: inboxbridge
+        run: cargo build --release
+
+      - name: Install Inno Setup
+        run: choco install innosetup -y
+
+      - name: Build installer
+        working-directory: inboxbridge
+        run: iscc installer\windows\inboxbridge.iss /dBinaryDir=..\..\target\release /dAppVersion=${{ needs.validate-version.outputs.version }}
+        shell: cmd
+
+      - name: Create portable zip
+        working-directory: inboxbridge
+        run: |
+          mkdir portable
+          cp target/release/inboxbridge.exe portable/
+          cp installer/windows/install.ps1 portable/
+          Compress-Archive -Path portable/* -DestinationPath "InboxBridge-v${{ needs.validate-version.outputs.version }}-windows-x64.zip"
+        shell: pwsh
+
+      - name: Upload installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-installer
+          path: inboxbridge/installer/windows/Output/*.exe
+
+      - name: Upload portable zip
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-portable
+          path: inboxbridge/InboxBridge-*.zip
+
+  build-macos:
+    name: Build macOS
+    needs: validate-version
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-apple-darwin, aarch64-apple-darwin
+
+      - name: Build Intel
+        working-directory: inboxbridge
+        run: cargo build --release --target x86_64-apple-darwin
+
+      - name: Build ARM
+        working-directory: inboxbridge
+        run: cargo build --release --target aarch64-apple-darwin
+
+      - name: Create universal binary
+        working-directory: inboxbridge
+        run: |
+          mkdir -p target/universal
+          lipo -create \
+            target/x86_64-apple-darwin/release/inboxbridge \
+            target/aarch64-apple-darwin/release/inboxbridge \
+            -output target/universal/inboxbridge
+
+      - name: Build PKG installer
+        working-directory: inboxbridge
+        run: |
+          chmod +x installer/macos/build-pkg.sh
+          ./installer/macos/build-pkg.sh target/universal/inboxbridge ${{ needs.validate-version.outputs.version }}
+
+      - name: Create portable tar.gz
+        working-directory: inboxbridge
+        run: |
+          VERSION="${{ needs.validate-version.outputs.version }}"
+          mkdir -p portable
+          cp target/universal/inboxbridge portable/
+          cp installer/macos/install-macos.sh portable/
+          chmod +x portable/inboxbridge portable/install-macos.sh
+          tar -czf "InboxBridge-v${VERSION}-macos-universal.tar.gz" -C portable .
+
+      - name: Upload PKG
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-installer
+          path: inboxbridge/InboxBridge-*.pkg
+
+      - name: Upload portable tar.gz
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-portable
+          path: inboxbridge/InboxBridge-*-macos-*.tar.gz
+
+  build-linux:
+    name: Build Linux
+    needs: validate-version
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install dependencies
+        run: sudo apt-get update && sudo apt-get install -y pkg-config libssl-dev
+
+      - name: Build
+        working-directory: inboxbridge
+        run: cargo build --release
+
+      - name: Create portable tar.gz
+        working-directory: inboxbridge
+        run: |
+          VERSION="${{ needs.validate-version.outputs.version }}"
+          mkdir -p portable
+          cp target/release/inboxbridge portable/
+          cp installer/linux/install-linux.sh portable/
+          cp installer/linux/README.txt portable/
+          chmod +x portable/inboxbridge portable/install-linux.sh
+          tar -czf "InboxBridge-v${VERSION}-linux-x64.tar.gz" -C portable .
+
+      - name: Upload portable tar.gz
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-portable
+          path: inboxbridge/InboxBridge-*-linux-*.tar.gz
+
+  create-release:
+    name: Create GitHub Release
+    needs: [validate-version, build-windows, build-macos, build-linux]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Collect release files
+        run: |
+          mkdir release
+          find artifacts -type f \( -name '*.exe' -o -name '*.zip' -o -name '*.pkg' -o -name '*.tar.gz' \) -exec cp {} release/ \;
+          ls -la release/
+
+      - name: Generate checksums
+        working-directory: release
+        run: sha256sum * > checksums.sha256
+
+      - name: Create release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: InboxBridge v${{ needs.validate-version.outputs.version }}
+          body: |
+            ## InboxBridge v${{ needs.validate-version.outputs.version }}
+
+            Companion app for the [InboxKey](https://github.com/slmnsrf/inboxkey) Chrome extension. Enables IMAP email connections for verification code detection. Entirely optional. Most users only need Gmail.
+
+            ### Download
+
+            | Platform | Installer (recommended) | Portable |
+            |----------|------------------------|----------|
+            | **Windows** (x64) | `.exe` | `.zip` |
+            | **macOS** (Intel + Apple Silicon) | `.pkg` | `.tar.gz` |
+            | **Linux** (x64) | -- | `.tar.gz` |
+
+            ### Installation
+
+            **Windows**
+            1. Download the `.exe` file
+            2. Run it. You may see a "Windows protected your PC" warning (see below). Click "More info", then "Run anyway"
+            3. Follow the installer. It installs to your user folder, no admin needed
+            4. Close **all** Chrome windows and reopen Chrome
+            5. Open InboxKey settings and add an IMAP account
+
+            **macOS**
+            1. Download the `.pkg` file
+            2. Right-click it, click "Open", then "Open" again in the dialog (see below)
+            3. Follow the installer
+            4. Quit Chrome completely (Cmd+Q) and reopen it
+            5. Open InboxKey settings and add an IMAP account
+
+            **Linux**
+            1. Download the `.tar.gz` file
+            2. Extract: `tar xzf InboxBridge-*.tar.gz`
+            3. Run: `chmod +x install-linux.sh && ./install-linux.sh`
+            4. Close all browser windows and reopen
+            5. Open InboxKey settings and add an IMAP account
+
+            ### About the unsigned software warning
+
+            InboxBridge is not digitally signed because code signing certificates cost $200-500/year, which this open-source project cannot afford.
+
+            **Windows:** You may see "Windows protected your PC." Click "More info", then "Run anyway."
+
+            **macOS:** You may see "unidentified developer." Right-click the file, click "Open", then "Open" again.
+
+            The app is 100% open-source. You can review every line of code in [the repository](https://github.com/slmnsrf/inboxkey/tree/main/inboxbridge).
+          files: release/*
+          fail_on_unmatched_files: true

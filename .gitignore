@@ -1,0 +1,101 @@
+# Claude Code configuration
+.claude/
+AGENTS.md
+
+# Local
+*docker*
+
+# Internal documentation (kept local, not public)
+specifications.md
+implementation.md
+docs/*
+extension/docs/
+TEST_FAILURE_ANALYSIS.md
+intent-feature.md
+
+# Internal planning docs (kept local)
+inboxbridge/HARDENING-PLAN.md
+inboxbridge/RELEASE-PLAN.md
+roadmap.md
+
+# Fine-tuning data (may contain PII)
+fine-tune-json-data/
+
+# Prototypes (local UI experiments)
+prototypes/
+prototypes.zip
+
+# Dependencies
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Build outputs
+dist/
+build/
+.next/
+out/
+
+# Plasmo generated files
+**/.plasmo/
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# OAuth credentials
+client_secret*.json
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Test coverage and reports
+coverage/
+.nyc_output/
+playwright-report/
+test-results/
+
+# Temporary files
+*.log
+.cache/
+.temp/
+*.tsbuildinfo
+
+# Demo/prototype files
+*demo*.html
+
+# Worktrees
+.worktrees/
+
+# Rust build artifacts (binary files break PR diffs if committed)
+inboxbridge/target/
+
+# Local tooling
+.mcp.json
+.theteamlead/
+
+# Snapshots and local exports
+.pr7snapshot/
+
+# Downloaded web pages (local testing artifacts)
+*.html_files/
+Google Messages for web_*
+Two-Factor Authorization*
+example-cases-exports/
+
+# Windows null device artifact
+inboxbridge/nul
+
+# Google Messages DOM exports
+google-messages-exports/

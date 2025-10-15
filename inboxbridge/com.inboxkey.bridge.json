@@ -1,0 +1,9 @@
+{
+  "name": "com.inboxkey.bridge",
+  "description": "InboxBridge Native Messaging Host for IMAP Support",
+  "path": "REPLACE_WITH_INSTALL_PATH",
+  "type": "stdio",
+  "allowed_origins": [
+    "chrome-extension://mioicbneapdjamkppcidooggnmegpocn/"
+  ]
+}

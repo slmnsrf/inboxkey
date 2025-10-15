@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Verify it's you - PayPal</title>
+</head>
+<body>
+    <div id="main">
+        <section class="verification">
+            <h1 class="headerText">Verify it's you</h1>
+            <p class="securityInfo">
+                We sent a 6-digit security code to your phone number ending in 7777
+            </p>
+            <form action="/authflow/verify-code" method="POST" id="otpForm">
+                <div class="textInput">
+                    <!-- Detection signals: autocomplete="one-time-code", inputmode="numeric", id="otpCode" -->
+                    <label for="otpCode">Security code</label>
+                    <input
+                        type="tel"
+                        id="otpCode"
+                        name="otpCode"
+                        class="hasHelp"
+                        autocomplete="one-time-code"
+                        inputmode="numeric"
+                        maxlength="6"
+                        required
+                    >
+                    <span class="helperText">Enter 6-digit code</span>
+                </div>
+                <div class="actions">
+                    <button type="submit" class="btn full" id="btnNext">Next</button>
+                </div>
+            </form>
+            <div class="alternativeOptions">
+                <a href="/authflow/resend">Didn't receive the code?</a>
+            </div>
+        </section>
+    </div>
+</body>
+</html>

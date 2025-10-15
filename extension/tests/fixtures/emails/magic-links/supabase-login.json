@@ -1,0 +1,13 @@
+{
+  "id": "supabase-magic-001",
+  "type": "magic-link",
+  "category": "tech",
+  "from": "noreply@supabase.com",
+  "subject": "Sign in to Supabase",
+  "body": "Click the link below to sign in:\n\nhttps://supabase.com/auth/login?token=15ed30ce2fff5c5c4f7ad770017b0c58\n\nThis link expires in 15 minutes.",
+  "extracted": {
+    "link": "https://supabase.com/auth/login?token=15ed30ce2fff5c5c4f7ad770017b0c58",
+    "token": "15ed30ce2fff5c5c4f7ad770017b0c58",
+    "confidence": "high"
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "id": "paypal-alert-001",
+  "type": "security-alert",
+  "category": "security",
+  "from": "security@paypal.com",
+  "subject": "Account activity",
+  "body": "We detected a account activity to your Paypal account.\n\nLocation: Phoenix, AZ\nDevice: PayPal App\nTime: 2025-10-15T14:31:44Z\n\nIf this was you, you can ignore this email. If not, secure your account immediately.",
+  "extracted": {
+    "alertType": "Account activity",
+    "location": "Phoenix, AZ",
+    "device": "PayPal App",
+    "requiresAction": false
+  }
+}

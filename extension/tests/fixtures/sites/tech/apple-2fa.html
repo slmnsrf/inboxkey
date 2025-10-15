@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Two-factor authentication - Apple ID</title>
+</head>
+<body>
+    <div class="si-container">
+        <div class="si-body">
+            <h1 class="si-container-title">Two-factor authentication</h1>
+            <p>Enter the verification code sent to your device</p>
+            <form id="verify-code-form" method="post" action="/auth/verify/trusteddevice/securitycode">
+                <div class="form-row">
+                    <!-- Detection signals: autocomplete="one-time-code", inputmode="numeric", id="code-input" -->
+                    <label for="code-input" class="sr-only">Verification code</label>
+                    <input
+                        type="tel"
+                        id="code-input"
+                        name="code"
+                        class="form-textbox"
+                        autocomplete="one-time-code"
+                        inputmode="numeric"
+                        pattern="[0-9]{6}"
+                        maxlength="6"
+                        placeholder="000000"
+                        required
+                        autofocus
+                    >
+                    <span class="form-textbox-label">Verification code</span>
+                </div>
+                <div class="si-remember-password">
+                    <input type="checkbox" id="remember-device" name="trust" value="true">
+                    <label for="remember-device">Trust this browser</label>
+                </div>
+                <button type="submit" class="si-button btn">Continue</button>
+            </form>
+            <div class="si-link-container">
+                <a href="#" class="si-link">Didn't get a code?</a>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Two-Step Login</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background: #fafafa; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; }
+    .auth-container { background: #fff; padding: 40px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); max-width: 380px; width: 100%; }
+    h2 { margin: 0 0 20px; font-size: 26px; text-align: center; }
+    .step { display: none; }
+    .step.active { display: block; }
+    label { display: block; font-size: 14px; font-weight: 500; margin-bottom: 8px; }
+    input { width: 100%; padding: 12px; font-size: 16px; border: 1px solid #dbdbdb; border-radius: 6px; box-sizing: border-box; }
+    button { width: 100%; padding: 12px; background: #0095f6; color: #fff; border: none; border-radius: 6px; font-size: 15px; font-weight: 600; margin-top: 16px; cursor: pointer; }
+    .loading { text-align: center; padding: 20px; color: #8e8e8e; }
+  </style>
+</head>
+<body>
+  <!--
+    Expected Detection:
+    - Field: Dynamically injected input (created by JavaScript after page load)
+    - Confidence: 90-100 (depends on attributes added)
+    - Tier: 1
+    - Signals: autocomplete="one-time-code" or name="otp"
+    - Rationale: Tests detection of fields added after initial page load (SPA behavior)
+  -->
+  <div class="auth-container">
+    <h2>Two-Step Login</h2>
+
+    <div id="step-1" class="step active">
+      <form id="username-form">
+        <label for="username">Username</label>
+        <input type="text" id="username" name="username" placeholder="Enter your username" />
+        <button type="submit">Continue</button>
+      </form>
+    </div>
+
+    <div id="step-2" class="step">
+      <form id="password-form">
+        <label for="password">Password</label>
+        <input type="password" id="password" name="password" placeholder="Enter your password" />
+        <button type="submit">Log In</button>
+      </form>
+    </div>
+
+    <div id="loading" class="loading" style="display: none;">
+      Sending verification code...
+    </div>
+
+    <div id="step-3" class="step">
+      <!-- Verification input will be dynamically injected here -->
+    </div>
+  </div>
+
+  <script>
+    // Simulate multi-step form progression
+    document.getElementById('username-form').addEventListener('submit', (e) => {
+      e.preventDefault()
+      document.getElementById('step-1').classList.remove('active')
+      document.getElementById('step-2').classList.add('active')
+    })
+
+    document.getElementById('password-form').addEventListener('submit', (e) => {
+      e.preventDefault()
+      document.getElementById('step-2').classList.remove('active')
+      document.getElementById('loading').style.display = 'block'
+
+      // Simulate API call delay, then inject verification field
+      setTimeout(() => {
+        document.getElementById('loading').style.display = 'none'
+        injectVerificationField()
+        document.getElementById('step-3').classList.add('active')
+      }, 1000)
+    })
+
+    function injectVerificationField() {
+      const step3 = document.getElementById('step-3')
+      const form = document.createElement('form')
+      form.id = 'verification-form'
+      form.innerHTML = `
+        <p style="font-size: 14px; color: #8e8e8e; margin-bottom: 16px;">
+          We've sent a verification code to your registered email.
+        </p>
+        <label for="dynamic-otp">Enter verification code</label>
+        <input
+          type="text"
+          id="dynamic-otp"
+          name="otp"
+          autocomplete="one-time-code"
+          inputmode="numeric"
+          maxlength="6"
+          placeholder="6-digit code"
+          data-testid="verification-field"
+        />
+        <button type="submit">Verify</button>
+      `
+      step3.appendChild(form)
+    }
+  </script>
+</body>
+</html>

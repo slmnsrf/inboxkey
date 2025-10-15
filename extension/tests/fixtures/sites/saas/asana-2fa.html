@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Asana - Two-Factor Authentication</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background: #fafbfc; margin: 0; padding: 20px; }
+        .asana-container { max-width: 480px; margin: 50px auto; background: white; border-radius: 12px; box-shadow: 0 2px 12px rgba(0,0,0,0.08); padding: 45px; }
+        .asana-logo { text-align: center; margin-bottom: 30px; font-size: 32px; font-weight: 700; }
+        .asana-logo-text { color: #f06a6a; }
+        .asana-title { color: #151b26; font-size: 24px; margin-bottom: 12px; font-weight: 700; }
+        .asana-text { color: #6d6e85; line-height: 1.7; margin-bottom: 25px; }
+        .asana-input-group { margin-bottom: 20px; }
+        .asana-label { display: block; color: #151b26; margin-bottom: 8px; font-weight: 600; font-size: 14px; }
+        .asana-input { width: 100%; padding: 13px; border: 1px solid #e8e8e8; border-radius: 8px; font-size: 16px; box-sizing: border-box; }
+        .asana-input:focus { border-color: #f06a6a; outline: none; box-shadow: 0 0 0 3px rgba(240, 106, 106, 0.1); }
+        .asana-button { width: 100%; padding: 14px; background: #f06a6a; color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer; }
+        .asana-button:hover { background: #ed5555; }
+    </style>
+</head>
+<body>
+    <!-- Detection Signals: SaaS domain: asana, project management -->
+    <div class="asana-container">
+        <div class="asana-logo"><span class="asana-logo-text">asana</span></div>
+        <h1 class="asana-title">Two-Factor Authentication</h1>
+        <p class="asana-text">Enter the 6-digit code from your authenticator app.</p>
+        <form id="tfaForm" action="/auth/verify-2fa" method="POST">
+            <div class="asana-input-group">
+                <label for="tfaCode" class="asana-label">Authentication Code</label>
+                <input type="tel" id="tfaCode" name="tfa_code" class="asana-input" placeholder="000000" maxlength="6" pattern="[0-9]{6}" inputmode="numeric" autocomplete="one-time-code" required />
+            </div>
+            <button type="submit" class="asana-button">Verify</button>
+        </form>
+    </div>
+</body>
+</html>

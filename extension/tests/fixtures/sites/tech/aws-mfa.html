@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AWS - MFA Verification</title>
+    <style>
+        body { font-family: 'Amazon Ember', Arial, sans-serif; background: #eaeded; margin: 0; padding: 20px; }
+        .aws-container { max-width: 480px; margin: 50px auto; background: white; border: 1px solid #d5dbdb; border-radius: 4px; padding: 40px; }
+        .aws-logo { text-align: center; margin-bottom: 28px; }
+        .aws-logo-text { font-size: 28px; font-weight: 700; color: #232f3e; }
+        .aws-logo-orange { color: #ff9900; }
+        .aws-title { color: #16191f; font-size: 24px; margin-bottom: 12px; font-weight: 700; }
+        .aws-text { color: #545b64; line-height: 1.7; margin-bottom: 24px; }
+        .aws-form-group { margin-bottom: 18px; }
+        .aws-label { display: block; color: #16191f; margin-bottom: 6px; font-weight: 700; font-size: 14px; }
+        .aws-input { width: 100%; padding: 11px; border: 1px solid #aab7b8; border-radius: 2px; font-size: 15px; box-sizing: border-box; }
+        .aws-input:focus { border-color: #ff9900; outline: none; box-shadow: 0 0 0 3px rgba(255, 153, 0, 0.15); }
+        .aws-button { width: 100%; padding: 13px; background: #ff9900; color: #232f3e; border: none; border-radius: 2px; font-size: 15px; font-weight: 700; cursor: pointer; }
+        .aws-button:hover { background: #ec7211; }
+    </style>
+</head>
+<body>
+    <!-- Detection Signals: Tech domain: aws, amazon web services -->
+    <div class="aws-container">
+        <div class="aws-logo"><span class="aws-logo-text">aws</span></div>
+        <h1 class="aws-title">MFA Verification</h1>
+        <p class="aws-text">Enter the authentication code from your MFA device.</p>
+        <form id="mfaForm" action="/auth/mfa/verify" method="POST">
+            <div class="aws-form-group">
+                <label for="mfaCode" class="aws-label">MFA code</label>
+                <input type="tel" id="mfaCode" name="mfa_code" class="aws-input" placeholder="000000" maxlength="6" pattern="[0-9]{6}" inputmode="numeric" autocomplete="one-time-code" required />
+            </div>
+            <button type="submit" class="aws-button">Verify</button>
+        </form>
+    </div>
+</body>
+</html>

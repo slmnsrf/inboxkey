@@ -1,0 +1,18 @@
+{
+  "id": "instagram-otp-001",
+  "type": "otp",
+  "category": "social",
+  "from": "security@mail.instagram.com",
+  "subject": "402857 is your Instagram code",
+  "body": "402857 is your Instagram code. Don't share it.",
+  "extracted": {
+    "code": "402857",
+    "pattern": "numeric-6",
+    "confidence": "high"
+  },
+  "metadata": {
+    "sent": "2025-10-15T10:57:42Z",
+    "expiresIn": "10 minutes",
+    "provider": "Instagram"
+  }
+}

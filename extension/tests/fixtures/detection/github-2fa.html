@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GitHub Two-Factor Authentication</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; max-width: 440px; margin: 50px auto; padding: 20px; }
+    .auth-form { background: #fff; padding: 20px; border: 1px solid #d1d5da; border-radius: 6px; }
+    h1 { font-size: 24px; margin-bottom: 8px; }
+    label { display: block; font-weight: 600; margin-bottom: 8px; }
+    input { width: 100%; padding: 10px; font-size: 16px; border: 1px solid #d1d5da; border-radius: 6px; box-sizing: border-box; }
+    button { width: 100%; padding: 12px; background: #2ea44f; color: #fff; border: none; border-radius: 6px; font-size: 14px; font-weight: 600; margin-top: 16px; cursor: pointer; }
+    .note { font-size: 13px; color: #586069; margin-top: 12px; }
+  </style>
+</head>
+<body>
+  <!--
+    Expected Detection:
+    - Field: #otp (input with autocomplete="one-time-code")
+    - Confidence: 100
+    - Tier: 1
+    - Signals: autocomplete="one-time-code"
+    - Rationale: HTML standard attribute, highest confidence signal
+  -->
+  <div class="auth-form">
+    <h1>Two-factor authentication</h1>
+    <p>Open your two-factor authenticator (TOTP) app or browser extension to view your authentication code.</p>
+
+    <form>
+      <label for="otp">Authentication code</label>
+      <input
+        type="text"
+        id="otp"
+        name="otp"
+        autocomplete="one-time-code"
+        inputmode="numeric"
+        pattern="[0-9]{6}"
+        maxlength="6"
+        required
+        data-testid="verification-field"
+      />
+
+      <button type="submit">Verify</button>
+    </form>
+
+    <p class="note">Having problems? <a href="#">Use your recovery codes</a></p>
+  </div>
+</body>
+</html>

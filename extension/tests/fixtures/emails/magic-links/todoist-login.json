@@ -1,0 +1,13 @@
+{
+  "id": "todoist-magic-001",
+  "type": "magic-link",
+  "category": "productivity",
+  "from": "noreply@todoist.com",
+  "subject": "Sign in to Todoist",
+  "body": "Click the link below to sign in:\n\nhttps://todoist.com/auth/login?token=3fef774f22d4af3e19cc088790ba3215\n\nThis link expires in 15 minutes.",
+  "extracted": {
+    "link": "https://todoist.com/auth/login?token=3fef774f22d4af3e19cc088790ba3215",
+    "token": "3fef774f22d4af3e19cc088790ba3215",
+    "confidence": "high"
+  }
+}

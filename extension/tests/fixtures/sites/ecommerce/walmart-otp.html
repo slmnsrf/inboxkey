@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Walmart - Verify Your Account</title>
+    <style>
+        body { font-family: 'Bogle', Arial, sans-serif; background: #f2f8fd; margin: 0; padding: 20px; }
+        .walmart-container { max-width: 520px; margin: 40px auto; background: white; border-radius: 8px; box-shadow: 0 2px 12px rgba(0,0,0,0.08); overflow: hidden; }
+        .walmart-header { background: #0071ce; color: white; padding: 25px; }
+        .walmart-logo { font-size: 28px; font-weight: bold; }
+        .walmart-spark { color: #ffc220; }
+        .walmart-body { padding: 35px; }
+        .walmart-title { color: #2e2f32; font-size: 24px; margin-bottom: 15px; font-weight: 600; }
+        .walmart-text { color: #46474a; line-height: 1.7; margin-bottom: 25px; }
+        .walmart-form-group { margin-bottom: 20px; }
+        .walmart-label { display: block; color: #2e2f32; margin-bottom: 8px; font-weight: 600; font-size: 14px; }
+        .walmart-input { width: 100%; padding: 13px; border: 1px solid #cdcfd2; border-radius: 4px; font-size: 16px; box-sizing: border-box; }
+        .walmart-input:focus { border-color: #0071ce; outline: none; box-shadow: 0 0 0 2px rgba(0, 113, 206, 0.2); }
+        .walmart-button { width: 100%; padding: 14px; background: #0071ce; color: white; border: none; border-radius: 24px; font-size: 16px; font-weight: 600; cursor: pointer; }
+        .walmart-button:hover { background: #004f9a; }
+        .helper-note { background: #fff7e6; border-left: 4px solid #ffc220; padding: 15px; margin-bottom: 20px; font-size: 14px; color: #663c00; }
+    </style>
+</head>
+<body>
+    <!-- Detection Signals:
+         - Ecommerce domain: walmart
+         - Security keywords: verify, OTP, authentication
+         - Input patterns: 6-digit code, rounded button
+         - Form structure: header with brand color, helper notes
+         - Brand colors: #0071ce (Walmart blue), #ffc220 (spark yellow)
+         - Common IDs: otpCode, verificationCode, securityCode
+    -->
+    <div class="walmart-container">
+        <div class="walmart-header">
+            <div class="walmart-logo">Walmart <span class="walmart-spark">✦</span></div>
+        </div>
+
+        <div class="walmart-body">
+            <h1 class="walmart-title">Verify Your Account</h1>
+
+            <div class="helper-note">
+                <strong>Security Check:</strong> We've sent a verification code to protect your account.
+            </div>
+
+            <p class="walmart-text">
+                Please enter the 6-digit code we sent to your phone number ending in ***-4567.
+            </p>
+
+            <form id="otpVerificationForm" action="/account/verify-otp" method="POST">
+                <div class="walmart-form-group">
+                    <label for="otpCode" class="walmart-label">Verification Code</label>
+                    <input
+                        type="tel"
+                        id="otpCode"
+                        name="otp_code"
+                        class="walmart-input"
+                        placeholder="000000"
+                        maxlength="6"
+                        pattern="[0-9]{6}"
+                        inputmode="numeric"
+                        autocomplete="one-time-code"
+                        required
+                    />
+                </div>
+
+                <button type="submit" class="walmart-button">Verify</button>
+            </form>
+
+            <p style="text-align: center; margin-top: 25px; font-size: 14px; color: #46474a;">
+                Didn't get a code? <a href="#" style="color: #0071ce; text-decoration: none; font-weight: 600;">Resend</a>
+            </p>
+        </div>
+    </div>
+</body>
+</html>

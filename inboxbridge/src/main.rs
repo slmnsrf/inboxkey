@@ -1,0 +1,83 @@
+mod protocol;
+mod dispatcher;
+mod keychain;
+mod state;
+mod imap_client;
+
+use tokio::io::{AsyncReadExt, AsyncWriteExt};
+use protocol::Request;
+use std::sync::Arc;
+
+#[tokio::main]
+async fn main() {
+    // --cleanup: delete all keychain entries and exit (used by uninstall scripts)
+    if std::env::args().any(|a| a == "--cleanup") {
+        let state = state::AppState::new(None);
+        for account in state.list_accounts().unwrap_or_default() {
+            let service = format!("InboxBridge:{}", account.id);
+            let user = format!("{}:{}", account.host, account.port);
+            if let Ok(entry) = keyring::Entry::new(&service, &user) {
+                entry.delete_password().ok();
+            }
+        }
+        std::process::exit(0);
+    }
+
+    if let Err(e) = run_async().await {
+        eprintln!("InboxBridge error: {}", e);
+        std::process::exit(1);
+    }
+}
+
+async fn run_async() -> anyhow::Result<()> {
+    let state = Arc::new(state::AppState::new(None));
+    let keychain = Arc::new(keychain::KeychainManager::new());
+
+    let mut stdin = tokio::io::stdin();
+    let mut stdout = tokio::io::stdout();
+
+    loop {
+        // Read 4-byte length prefix
+        let mut len_bytes = [0u8; 4];
+        if stdin.read_exact(&mut len_bytes).await.is_err() {
+            // Extension disconnected (normal exit)
+            break;
+        }
+
+        let len = u32::from_le_bytes(len_bytes) as usize;
+        if len > 1_000_000 {
+            // Message too large (1MB limit)
+            return Err(anyhow::anyhow!("Message exceeds 1MB limit"));
+        }
+
+        // Read JSON payload
+        let mut buf = vec![0u8; len];
+        stdin.read_exact(&mut buf).await?;
+
+        // Parse and dispatch
+        let response = match serde_json::from_slice::<Request>(&buf) {
+            Ok(request) => dispatcher::dispatch(request, state.clone(), keychain.clone()).await,
+            Err(e) => {
+                protocol::Response {
+                    v: 1,
+                    id: "unknown".to_string(),
+                    result: None,
+                    error: Some(protocol::RpcError {
+                        code: "INVALID_JSON".to_string(),
+                        message: format!("Invalid JSON: {}", e),
+                        details: None,
+                    }),
+                }
+            }
+        };
+
+        // Write response
+        let response_json = serde_json::to_vec(&response)?;
+        let response_len = (response_json.len() as u32).to_le_bytes();
+        stdout.write_all(&response_len).await?;
+        stdout.write_all(&response_json).await?;
+        stdout.flush().await?;
+    }
+
+    Ok(())
+}

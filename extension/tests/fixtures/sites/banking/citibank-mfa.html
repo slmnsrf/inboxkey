@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Citibank - Account Verification</title>
+    <style>
+        body { font-family: 'Citibank Sans', Arial, sans-serif; background: #f5f5f5; margin: 0; padding: 0; }
+        .citi-header { background: #003d6a; color: white; padding: 20px; }
+        .citi-container { max-width: 500px; margin: 50px auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .citi-logo { font-size: 32px; font-weight: bold; }
+        .citi-title { color: #003d6a; margin-bottom: 20px; }
+        .citi-input { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ccc; border-radius: 4px; font-size: 16px; }
+        .citi-button { width: 100%; padding: 14px; background: #003d6a; color: white; border: none; border-radius: 4px; font-size: 16px; cursor: pointer; }
+        .citi-button:hover { background: #00508c; }
+        .security-notice { background: #e8f4f8; padding: 15px; border-left: 4px solid #0079c1; margin-bottom: 20px; }
+    </style>
+</head>
+<body>
+    <!-- Detection Signals:
+         - Banking domain: citibank, citi
+         - Security keywords: verification, security, token
+         - Input patterns: 6-digit code, numeric only
+         - Form structure: single-step verification
+         - Brand colors: #003d6a (Citi blue)
+         - Common IDs: otpCode, securityCode, token
+    -->
+    <div class="citi-header">
+        <div class="citi-logo">citi</div>
+    </div>
+
+    <div class="citi-container">
+        <h2 class="citi-title">Account Verification</h2>
+
+        <div class="security-notice">
+            <strong>Security Check:</strong> For your protection, please enter the 6-digit code we sent to your registered mobile number.
+        </div>
+
+        <form id="verificationForm" action="/verify" method="POST">
+            <label for="otpCode">Security Code</label>
+            <input
+                type="text"
+                id="otpCode"
+                name="otp_code"
+                class="citi-input"
+                placeholder="Enter 6-digit code"
+                maxlength="6"
+                pattern="[0-9]{6}"
+                inputmode="numeric"
+                autocomplete="one-time-code"
+                required
+            />
+
+            <button type="submit" class="citi-button">Verify</button>
+        </form>
+
+        <p style="text-align: center; margin-top: 20px; color: #666;">
+            Didn't receive a code? <a href="#" style="color: #0079c1;">Resend code</a>
+        </p>
+    </div>
+</body>
+</html>

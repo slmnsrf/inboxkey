@@ -1,0 +1,27 @@
+{
+  "name": "@inboxkey/extraction-core",
+  "version": "0.1.0",
+  "description": "Pure extraction logic for OTP codes and magic links",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:golden": "vitest run golden-dataset.test.ts",
+    "test:holdout": "vitest run holdout-dataset.test.ts",
+    "test:providers": "vitest run provider-compatibility.test.ts",
+    "test:perf": "vitest run performance.test.ts",
+    "test:full": "vitest run golden-dataset.test.ts holdout-dataset.test.ts performance.test.ts",
+    "snapshot": "bash scripts/snapshot.sh",
+    "rollback": "bash scripts/rollback.sh"
+  },
+  "keywords": ["otp", "extraction", "magic-link"],
+  "author": "InboxKey Team",
+  "license": "Apache-2.0",
+  "devDependencies": {
+    "typescript": "^5.5.3",
+    "vitest": "^1.6.0"
+  }
+}

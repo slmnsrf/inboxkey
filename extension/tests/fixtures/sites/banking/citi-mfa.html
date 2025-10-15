@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>OTP Verification - Citi</title>
+</head>
+<body>
+    <div class="citi-auth-wrapper">
+        <div class="citi-auth-container">
+            <h1 class="citi-header">One Time Password</h1>
+            <div class="citi-message">
+                A one-time password has been sent to your registered mobile number ending with 3456
+            </div>
+            <form name="otpForm" id="otpForm" method="post" action="/authenticate">
+                <div class="citi-field-group">
+                    <!-- Detection signals: autocomplete="one-time-code", inputmode="numeric", id="otp" -->
+                    <label for="otp" class="citi-label">Enter OTP</label>
+                    <input
+                        type="password"
+                        id="otp"
+                        name="otp"
+                        class="citi-textbox"
+                        autocomplete="one-time-code"
+                        inputmode="numeric"
+                        maxlength="6"
+                        required
+                    >
+                    <span class="citi-helper">Please enter 6 digit OTP</span>
+                </div>
+                <div class="citi-actions">
+                    <button type="submit" class="citi-btn-primary">Submit</button>
+                    <button type="button" class="citi-btn-secondary">Resend OTP</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</body>
+</html>

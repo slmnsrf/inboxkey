@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Verification - American Express</title>
+</head>
+<body>
+    <div class="axp-security-challenge">
+        <div class="axp-security-challenge__container">
+            <h1 class="axp-heading">We sent you a verification code</h1>
+            <p class="axp-body-text">
+                Enter the 6-digit code we texted to your mobile device ending in 5555
+            </p>
+            <form method="POST" action="/myca/logon/us/action/security-verify">
+                <div class="axp-field-group">
+                    <!-- Detection signals: autocomplete="one-time-code", inputmode="numeric", name="VerifyCode" -->
+                    <label for="VerifyCode" class="axp-label">Verification Code</label>
+                    <input
+                        type="tel"
+                        id="VerifyCode"
+                        name="VerifyCode"
+                        class="axp-input"
+                        autocomplete="one-time-code"
+                        inputmode="numeric"
+                        maxlength="6"
+                        aria-required="true"
+                        required
+                    >
+                </div>
+                <div class="axp-checkbox-group">
+                    <input type="checkbox" id="RememberDevice" name="RememberDevice">
+                    <label for="RememberDevice">Don't ask again on this device</label>
+                </div>
+                <button type="submit" class="axp-btn axp-btn-primary">Verify</button>
+            </form>
+            <div class="axp-alternate-options">
+                <a href="/security/resend">Resend Code</a> |
+                <a href="/security/call">Call Me Instead</a>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

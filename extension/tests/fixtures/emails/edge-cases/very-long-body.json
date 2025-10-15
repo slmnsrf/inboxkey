@@ -1,0 +1,14 @@
+{
+  "id": "edge-long-body-001",
+  "type": "otp",
+  "category": "edge-case",
+  "from": "legal@example.com",
+  "subject": "Verification Required",
+  "body": "Dear Valued Customer,\n\nWe hope this email finds you well. As part of our ongoing commitment to security and privacy, we need to verify your identity. This is a routine security measure that we implement to ensure the safety of your account and personal information.\n\nYour verification code is: 928374\n\nPlease note that this code will expire in 15 minutes. If you did not request this verification, please contact our support team immediately at support@example.com or call us at 1-800-123-4567.\n\nBy using this code, you agree to our Terms of Service and Privacy Policy, which can be found at example.com/terms and example.com/privacy respectively.\n\nThank you for your cooperation.\n\nBest regards,\nThe Example Team\n\nP.S. Never share your verification code with anyone, including our staff.",
+  "extracted": {
+    "code": "928374",
+    "pattern": "numeric-6",
+    "confidence": "high",
+    "note": "Code buried in lengthy formal email"
+  }
+}

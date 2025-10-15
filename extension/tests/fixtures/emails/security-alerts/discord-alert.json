@@ -1,0 +1,14 @@
+{
+  "id": "discord-alert-001",
+  "type": "security-alert",
+  "category": "security",
+  "from": "security@discord.com",
+  "subject": "New login",
+  "body": "We detected a new login to your Discord account.\n\nLocation: Toronto, Canada\nDevice: Discord Web\nTime: 2025-10-15T14:31:44Z\n\nIf this was you, you can ignore this email. If not, secure your account immediately.",
+  "extracted": {
+    "alertType": "New login",
+    "location": "Toronto, Canada",
+    "device": "Discord Web",
+    "requiresAction": false
+  }
+}

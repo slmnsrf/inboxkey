@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>InboxKey - Detection Engine Interactive Test</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; margin: 0; padding: 0; background: #f5f5f5; }
+    .header { background: #2d3748; color: #fff; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+    .header h1 { margin: 0; font-size: 24px; }
+    .header p { margin: 8px 0 0; font-size: 14px; color: #cbd5e0; }
+    .container { display: flex; height: calc(100vh - 100px); }
+    .sidebar { width: 300px; background: #fff; border-right: 1px solid #e2e8f0; overflow-y: auto; }
+    .content { flex: 1; display: flex; flex-direction: column; }
+    .fixture-list { list-style: none; padding: 0; margin: 0; }
+    .fixture-item { padding: 16px 20px; border-bottom: 1px solid #e2e8f0; cursor: pointer; transition: background 0.2s; }
+    .fixture-item:hover { background: #f7fafc; }
+    .fixture-item.active { background: #ebf4ff; border-left: 3px solid #3182ce; }
+    .fixture-name { font-weight: 600; font-size: 14px; color: #2d3748; margin-bottom: 4px; }
+    .fixture-desc { font-size: 12px; color: #718096; }
+    .controls { padding: 20px; background: #fff; border-bottom: 1px solid #e2e8f0; }
+    .btn { padding: 10px 20px; background: #3182ce; color: #fff; border: none; border-radius: 6px; font-size: 14px; font-weight: 600; cursor: pointer; margin-right: 10px; }
+    .btn:hover { background: #2c5aa0; }
+    .btn-secondary { background: #718096; }
+    .btn-secondary:hover { background: #4a5568; }
+    .results { padding: 20px; background: #fff; border-bottom: 1px solid #e2e8f0; overflow-y: auto; }
+    .result-card { background: #f7fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; margin-bottom: 16px; }
+    .result-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+    .result-status { font-weight: 600; font-size: 18px; }
+    .result-status.success { color: #38a169; }
+    .result-status.fail { color: #e53e3e; }
+    .result-status.warning { color: #d69e2e; }
+    .badge { display: inline-block; padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: 600; }
+    .badge-tier1 { background: #c6f6d5; color: #22543d; }
+    .badge-tier2 { background: #bee3f8; color: #2c5aa0; }
+    .confidence { font-size: 24px; font-weight: 700; color: #2d3748; }
+    .result-details { margin-top: 12px; }
+    .detail-row { display: flex; margin-bottom: 8px; font-size: 14px; }
+    .detail-label { font-weight: 600; width: 140px; color: #4a5568; }
+    .detail-value { color: #2d3748; flex: 1; }
+    .signals-list { list-style: none; padding: 0; margin: 8px 0 0; }
+    .signals-list li { background: #edf2f7; padding: 6px 10px; margin-bottom: 4px; border-radius: 4px; font-size: 13px; font-family: 'Courier New', monospace; }
+    .preview-frame { flex: 1; border: none; background: #fff; }
+    .no-result { text-align: center; padding: 40px; color: #718096; }
+    .highlight-overlay { position: absolute; border: 3px solid #48bb78; background: rgba(72, 187, 120, 0.1); pointer-events: none; z-index: 9999; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>InboxKey Detection Engine - Interactive Test</h1>
+    <p>Test verification code field detection across different website patterns</p>
+  </div>
+
+  <div class="container">
+    <div class="sidebar">
+      <ul class="fixture-list" id="fixture-list">
+        <li class="fixture-item" data-fixture="github-2fa.html">
+          <div class="fixture-name">1. GitHub 2FA</div>
+          <div class="fixture-desc">HTML standard autocomplete</div>
+        </li>
+        <li class="fixture-item" data-fixture="google-verify.html">
+          <div class="fixture-name">2. Google Verify</div>
+          <div class="fixture-desc">Inputmode + maxlength</div>
+        </li>
+        <li class="fixture-item" data-fixture="amazon-otp.html">
+          <div class="fixture-name">3. Amazon OTP</div>
+          <div class="fixture-desc">Tel input + name pattern</div>
+        </li>
+        <li class="fixture-item" data-fixture="bank-mfa.html">
+          <div class="fixture-name">4. Bank MFA</div>
+          <div class="fixture-desc">Verbose label text (Tier 2)</div>
+        </li>
+        <li class="fixture-item" data-fixture="startup-minimal.html">
+          <div class="fixture-name">5. Startup Minimal</div>
+          <div class="fixture-desc">Placeholder-based (Tier 2)</div>
+        </li>
+        <li class="fixture-item" data-fixture="legacy-form.html">
+          <div class="fixture-name">6. Legacy Form</div>
+          <div class="fixture-desc">Old HTML, table layout</div>
+        </li>
+        <li class="fixture-item" data-fixture="react-app.html">
+          <div class="fixture-name">7. React App</div>
+          <div class="fixture-desc">Modern, ARIA labels</div>
+        </li>
+        <li class="fixture-item" data-fixture="multiple-inputs.html">
+          <div class="fixture-name">8. Multiple Inputs</div>
+          <div class="fixture-desc">Disambiguation test</div>
+        </li>
+        <li class="fixture-item" data-fixture="dynamic-inject.html">
+          <div class="fixture-name">9. Dynamic Inject</div>
+          <div class="fixture-desc">SPA, JavaScript injection</div>
+        </li>
+        <li class="fixture-item" data-fixture="edge-case.html">
+          <div class="fixture-name">10. Edge Cases</div>
+          <div class="fixture-desc">False positives test</div>
+        </li>
+      </ul>
+    </div>
+
+    <div class="content">
+      <div class="controls">
+        <button class="btn" id="run-detection">Run Detection</button>
+        <button class="btn btn-secondary" id="reload-fixture">Reload Fixture</button>
+        <button class="btn btn-secondary" id="clear-results">Clear Results</button>
+      </div>
+
+      <div class="results" id="results-container">
+        <div class="no-result">
+          Select a fixture from the sidebar and click "Run Detection"
+        </div>
+      </div>
+
+      <iframe class="preview-frame" id="preview-frame" src="about:blank"></iframe>
+    </div>
+  </div>
+
+  <script type="module">
+    // Import detection engine (adjust path as needed)
+    // In real usage, this would import from: import { detectVerificationField, detectAllFields } from '../../../src/lib/detection/field-detector.js'
+
+    let currentFixture = null
+
+    // Fixture list click handler
+    document.getElementById('fixture-list').addEventListener('click', (e) => {
+      const item = e.target.closest('.fixture-item')
+      if (!item) return
+
+      // Update active state
+      document.querySelectorAll('.fixture-item').forEach(el => el.classList.remove('active'))
+      item.classList.add('active')
+
+      // Load fixture
+      const fixture = item.dataset.fixture
+      currentFixture = fixture
+      loadFixture(fixture)
+    })
+
+    function loadFixture(filename) {
+      const iframe = document.getElementById('preview-frame')
+      iframe.src = filename
+
+      // Clear previous results
+      document.getElementById('results-container').innerHTML = '<div class="no-result">Fixture loaded. Click "Run Detection" to test.</div>'
+    }
+
+    // Run detection button
+    document.getElementById('run-detection').addEventListener('click', () => {
+      if (!currentFixture) {
+        alert('Please select a fixture first')
+        return
+      }
+
+      runDetection()
+    })
+
+    // Reload fixture button
+    document.getElementById('reload-fixture').addEventListener('click', () => {
+      if (!currentFixture) return
+      loadFixture(currentFixture)
+    })
+
+    // Clear results button
+    document.getElementById('clear-results').addEventListener('click', () => {
+      document.getElementById('results-container').innerHTML = '<div class="no-result">Results cleared</div>'
+      removeAllHighlights()
+    })
+
+    function runDetection() {
+      const iframe = document.getElementById('preview-frame')
+      const iframeDoc = iframe.contentDocument || iframe.contentWindow.document
+
+      // Clear previous highlights
+      removeAllHighlights()
+
+      try {
+        // Run detection in iframe context
+        const result = runDetectionInFrame(iframeDoc)
+        displayResult(result, iframeDoc)
+      } catch (error) {
+        displayError(error)
+      }
+    }
+
+    function runDetectionInFrame(doc) {
+      // This is a simplified version - in real usage, you'd inject the full detection engine
+      // For testing, we'll check for the data-testid attribute as ground truth
+      const startTime = performance.now()
+
+      const expectedField = doc.querySelector('[data-testid="verification-field"]')
+
+      if (!expectedField) {
+        return {
+          found: false,
+          expectedField: null,
+          executionTime: performance.now() - startTime,
+        }
+      }
+
+      // Simulate detection logic for demo
+      const tier = detectTier(expectedField)
+      const confidence = calculateConfidence(expectedField, tier)
+      const signals = extractSignals(expectedField, tier)
+
+      return {
+        found: true,
+        expectedField,
+        field: expectedField,
+        confidence,
+        tier,
+        signals,
+        executionTime: performance.now() - startTime,
+      }
+    }
+
+    function detectTier(input) {
+      // Check Tier 1 signals
+      const autocomplete = input.getAttribute('autocomplete')
+      if (autocomplete && ['one-time-code', 'one-time-password', 'otp'].includes(autocomplete)) {
+        return 1
+      }
+
+      const inputmode = input.getAttribute('inputmode')
+      const maxLength = input.maxLength
+      if (inputmode === 'numeric' && maxLength >= 4 && maxLength <= 8) {
+        return 1
+      }
+
+      const name = input.name || input.id || ''
+      if (/(?:code|otp|verify|token|pin|mfa|2fa)/i.test(name)) {
+        return 1
+      }
+
+      // Otherwise Tier 2
+      return 2
+    }
+
+    function calculateConfidence(input, tier) {
+      if (tier === 1) {
+        const autocomplete = input.getAttribute('autocomplete')
+        if (autocomplete === 'one-time-code') return 100
+
+        const inputmode = input.getAttribute('inputmode')
+        if (inputmode === 'numeric') return 95
+
+        return 90
+      } else {
+        // Tier 2 scoring
+        let score = 0
+        const label = getLabel(input)
+        if (/verification.*code/i.test(label)) score += 35
+        if (/enter.*code/i.test(label)) score += 30
+        if (/\d+-digit/i.test(label)) score += 30
+
+        const placeholder = input.placeholder || ''
+        if (/code/i.test(placeholder)) score += 20
+
+        return Math.min(score, 89)
+      }
+    }
+
+    function getLabel(input) {
+      const id = input.id
+      if (id) {
+        const label = input.ownerDocument.querySelector(`label[for="${id}"]`)
+        if (label) return label.textContent
+      }
+
+      const ariaLabel = input.getAttribute('aria-label')
+      if (ariaLabel) return ariaLabel
+
+      return ''
+    }
+
+    function extractSignals(input, tier) {
+      const signals = []
+
+      const autocomplete = input.getAttribute('autocomplete')
+      if (autocomplete) signals.push(`autocomplete="${autocomplete}"`)
+
+      const inputmode = input.getAttribute('inputmode')
+      if (inputmode) signals.push(`inputmode="${inputmode}"`)
+
+      const maxLength = input.maxLength
+      if (maxLength > 0) signals.push(`maxlength=${maxLength}`)
+
+      const name = input.name
+      if (name) signals.push(`name="${name}"`)
+
+      const id = input.id
+      if (id) signals.push(`id="${id}"`)
+
+      const label = getLabel(input)
+      if (label) signals.push(`label="${label.substring(0, 50)}"`)
+
+      const placeholder = input.placeholder
+      if (placeholder) signals.push(`placeholder="${placeholder}"`)
+
+      return signals
+    }
+
+    function displayResult(result, iframeDoc) {
+      const container = document.getElementById('results-container')
+
+      if (!result.found) {
+        container.innerHTML = `
+          <div class="result-card">
+            <div class="result-header">
+              <div class="result-status warning">No Field Detected</div>
+            </div>
+            <div class="result-details">
+              <div class="detail-row">
+                <div class="detail-label">Execution Time:</div>
+                <div class="detail-value">${result.executionTime.toFixed(2)}ms</div>
+              </div>
+              <div class="detail-row">
+                <div class="detail-label">Expected:</div>
+                <div class="detail-value">No verification field (edge case test)</div>
+              </div>
+            </div>
+          </div>
+        `
+        return
+      }
+
+      const isSuccess = result.found
+      const statusClass = isSuccess ? 'success' : 'fail'
+      const statusText = isSuccess ? 'Detection Successful' : 'Detection Failed'
+
+      container.innerHTML = `
+        <div class="result-card">
+          <div class="result-header">
+            <div class="result-status ${statusClass}">${statusText}</div>
+            <div class="confidence">${result.confidence}%</div>
+          </div>
+
+          <div style="margin-bottom: 12px;">
+            <span class="badge badge-tier${result.tier}">Tier ${result.tier}</span>
+          </div>
+
+          <div class="result-details">
+            <div class="detail-row">
+              <div class="detail-label">Execution Time:</div>
+              <div class="detail-value">${result.executionTime.toFixed(2)}ms</div>
+            </div>
+            <div class="detail-row">
+              <div class="detail-label">Field ID:</div>
+              <div class="detail-value">${result.field.id || '(no id)'}</div>
+            </div>
+            <div class="detail-row">
+              <div class="detail-label">Field Name:</div>
+              <div class="detail-value">${result.field.name || '(no name)'}</div>
+            </div>
+            <div class="detail-row">
+              <div class="detail-label">Matched Signals:</div>
+              <div class="detail-value">
+                <ul class="signals-list">
+                  ${result.signals.map(s => `<li>${s}</li>`).join('')}
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+      `
+
+      // Highlight the detected field
+      highlightField(result.field, iframeDoc)
+    }
+
+    function displayError(error) {
+      const container = document.getElementById('results-container')
+      container.innerHTML = `
+        <div class="result-card">
+          <div class="result-header">
+            <div class="result-status fail">Error</div>
+          </div>
+          <div class="result-details">
+            <div class="detail-row">
+              <div class="detail-value">${error.message}</div>
+            </div>
+          </div>
+        </div>
+      `
+    }
+
+    function highlightField(field, iframeDoc) {
+      const iframe = document.getElementById('preview-frame')
+      const rect = field.getBoundingClientRect()
+      const iframeRect = iframe.getBoundingClientRect()
+
+      const overlay = document.createElement('div')
+      overlay.className = 'highlight-overlay'
+      overlay.style.left = (iframeRect.left + rect.left) + 'px'
+      overlay.style.top = (iframeRect.top + rect.top) + 'px'
+      overlay.style.width = rect.width + 'px'
+      overlay.style.height = rect.height + 'px'
+
+      document.body.appendChild(overlay)
+
+      // Also scroll the field into view in the iframe
+      field.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    }
+
+    function removeAllHighlights() {
+      document.querySelectorAll('.highlight-overlay').forEach(el => el.remove())
+    }
+  </script>
+</body>
+</html>

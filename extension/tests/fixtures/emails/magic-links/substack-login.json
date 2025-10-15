@@ -1,0 +1,13 @@
+{
+  "id": "substack-magic-001",
+  "type": "magic-link",
+  "category": "publishing",
+  "from": "noreply@substack.com",
+  "subject": "Sign in to Substack",
+  "body": "Click the link below to sign in:\n\nhttps://substack.com/auth/login?token=5a71780663f4b7609b8ed97dbea5aaa5\n\nThis link expires in 15 minutes.",
+  "extracted": {
+    "link": "https://substack.com/auth/login?token=5a71780663f4b7609b8ed97dbea5aaa5",
+    "token": "5a71780663f4b7609b8ed97dbea5aaa5",
+    "confidence": "high"
+  }
+}

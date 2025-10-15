@@ -1,0 +1,13 @@
+{
+  "id": "revolut-alpha-001",
+  "type": "alphanumeric",
+  "category": "finance",
+  "from": "noreply@revolut.com",
+  "subject": "Verification Code",
+  "body": "Your verification code is: RV82UT12",
+  "extracted": {
+    "code": "RV82UT12",
+    "pattern": "alphanumeric-8",
+    "confidence": "high"
+  }
+}

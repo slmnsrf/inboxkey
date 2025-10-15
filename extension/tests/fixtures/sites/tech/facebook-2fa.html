@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Two-Factor Authentication - Facebook</title>
+</head>
+<body>
+    <div id="globalContainer">
+        <div class="_8ien">
+            <div class="_8iep">
+                <h2 class="_8_1m">Enter Security Code</h2>
+                <div class="_8_1n">
+                    Check your authentication app for a code and enter it below.
+                </div>
+                <form method="POST" action="/checkpoint/" id="u_0_5">
+                    <div class="_8ies">
+                        <!-- Detection signals: autocomplete="one-time-code", inputmode="numeric", name="approvals_code" -->
+                        <label for="approvals_code" class="_8iet">Login Code</label>
+                        <input
+                            type="text"
+                            id="approvals_code"
+                            name="approvals_code"
+                            class="inputtext _8iev"
+                            autocomplete="one-time-code"
+                            inputmode="numeric"
+                            pattern="[0-9]{6}"
+                            maxlength="8"
+                            required
+                            autofocus
+                        >
+                    </div>
+                    <div class="_8ies">
+                        <button type="submit" class="_42ft _4jy0 _4jy4 _4jy1 selected _51sy">Continue</button>
+                    </div>
+                </form>
+                <div class="_8iew">
+                    <a href="/recover/code/">Need another way to authenticate?</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

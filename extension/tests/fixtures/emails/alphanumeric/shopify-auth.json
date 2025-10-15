@@ -1,0 +1,13 @@
+{
+  "id": "shopify-alpha-001",
+  "type": "alphanumeric",
+  "category": "ecommerce",
+  "from": "no-reply@shopify.com",
+  "subject": "Shopify Authentication Code",
+  "body": "Your Shopify authentication code is TY56UI78. This code will expire in 10 minutes.",
+  "extracted": {
+    "code": "TY56UI78",
+    "pattern": "alphanumeric-8",
+    "confidence": "high"
+  }
+}

@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>SafePass - Bank of America</title>
+</head>
+<body>
+    <div class="spa-container">
+        <div class="spa-content-area">
+            <h1 class="spa-h1">Enter your SafePass code</h1>
+            <p class="spa-body-copy">
+                We sent a one-time 6-digit SafePass code to your mobile number ending in 9012.
+            </p>
+            <form method="POST" action="/login/sign-in/signOnV2Screen.go">
+                <div class="spa-form-field">
+                    <!-- Detection signals: autocomplete="one-time-code", inputmode="numeric", id="tlpvt-safepass-input" -->
+                    <label for="tlpvt-safepass-input">SafePass code</label>
+                    <input
+                        type="tel"
+                        id="tlpvt-safepass-input"
+                        name="safePassCode"
+                        class="spa-input"
+                        autocomplete="one-time-code"
+                        inputmode="numeric"
+                        maxlength="6"
+                        pattern="[0-9]{6}"
+                        required
+                    >
+                </div>
+                <div class="spa-remember-device">
+                    <input type="checkbox" id="rememberDevice" name="rememberDevice" value="Y">
+                    <label for="rememberDevice">Remember this device</label>
+                </div>
+                <button type="submit" class="spa-btn-primary">Continue</button>
+            </form>
+            <div class="spa-links">
+                <a href="/login/reset">Resend code</a> |
+                <a href="/login/help">Need help?</a>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

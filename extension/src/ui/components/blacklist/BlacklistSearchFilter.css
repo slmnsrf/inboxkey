@@ -1,0 +1,75 @@
+/**
+ * BlacklistSearchFilter Component Styles
+ *
+ * Compact search input designed to fit inline with count and actions.
+ * Uses flexbox-friendly sizing for horizontal layout.
+ */
+
+.blacklist-search-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex: 1;
+  max-width: 300px;
+}
+
+.blacklist-search-input {
+  width: 100%;
+  min-height: var(--min-tap-target, 44px);
+  padding: var(--space-3, 12px);
+  padding-right: calc(var(--min-tap-target, 44px) + var(--space-2, 8px));
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-base, 16px);
+  font-family: var(--font-system);
+  background: var(--surface-card);
+  transition: border-color var(--duration-normal, 200ms) ease-out,
+              box-shadow var(--duration-normal, 200ms) ease-out;
+}
+
+.blacklist-search-input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.12);
+}
+
+.blacklist-search-input::placeholder {
+  color: var(--color-text-tertiary, #9ca3af);
+}
+
+/* Clear button (×) */
+.blacklist-search-clear {
+  position: absolute;
+  right: var(--space-2, 8px);
+  width: var(--min-tap-target, 44px);
+  height: var(--min-tap-target, 44px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  color: var(--color-text-secondary, #545b6a);
+  font-size: 20px;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: background var(--duration-fast, 100ms) ease,
+              color var(--duration-fast, 100ms) ease;
+}
+
+.blacklist-search-clear:hover {
+  background: var(--color-bg-secondary, rgba(0, 0, 0, 0.05));
+  color: var(--color-text-primary, #111827);
+}
+
+.blacklist-search-clear:focus-visible {
+  outline: 2px solid var(--color-primary, #3B82F6);
+  outline-offset: 2px;
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .blacklist-search-input,
+  .blacklist-search-clear {
+    transition: none;
+  }
+}

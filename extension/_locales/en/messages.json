@@ -1,0 +1,2565 @@
+{
+  "extension_name": {
+    "message": "InboxKey",
+    "description": "Extension name"
+  },
+  "extension_description": {
+    "message": "Privacy-first email code autofill and magic-link opener. Local-only, no servers.",
+    "description": "Extension description for Chrome Web Store"
+  },
+
+  "popup_title": {
+    "message": "InboxKey",
+    "description": "Popup title"
+  },
+  "popup_mailbox": {
+    "message": "$COUNT$ mailbox",
+    "description": "Mailbox count (singular)",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "1"
+      }
+    }
+  },
+  "popup_mailboxes": {
+    "message": "$COUNT$ mailboxes",
+    "description": "Mailbox count (plural)",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "2"
+      }
+    }
+  },
+  "popup_synced": {
+    "message": "Synced",
+    "description": "Sync status label"
+  },
+  "time_just_now": {
+    "message": "just now",
+    "description": "Time: just now"
+  },
+  "time_never": {
+    "message": "never",
+    "description": "Time: never synced"
+  },
+  "time_minute_ago": {
+    "message": "1 minute ago",
+    "description": "Time: 1 minute ago"
+  },
+  "time_minutes_ago": {
+    "message": "$COUNT$ minutes ago",
+    "description": "Time: minutes ago",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "5"
+      }
+    }
+  },
+  "time_hour_ago": {
+    "message": "1 hour ago",
+    "description": "Time: 1 hour ago"
+  },
+  "time_hours_ago": {
+    "message": "$COUNT$ hours ago",
+    "description": "Time: hours ago",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "3"
+      }
+    }
+  },
+
+  "section_recent_codes": {
+    "message": "Recent Codes",
+    "description": "Section heading for recent codes"
+  },
+  "section_magic_links": {
+    "message": "Magic Links",
+    "description": "Section heading for magic links"
+  },
+  "section_recent_items": {
+    "message": "Recent Items",
+    "description": "Unified section heading for recent codes and magic links combined"
+  },
+
+  "button_copy": {
+    "message": "Copy",
+    "description": "Copy button label"
+  },
+  "button_copied": {
+    "message": "Copied",
+    "description": "Copied confirmation"
+  },
+  "button_open": {
+    "message": "Open",
+    "description": "Open link button"
+  },
+  "button_open_link": {
+    "message": "Open Link",
+    "description": "Open magic link button with descriptive text"
+  },
+  "button_opened": {
+    "message": "Opened",
+    "description": "Opened confirmation"
+  },
+  "button_cancel": {
+    "message": "Cancel",
+    "description": "Cancel button"
+  },
+  "button_close": {
+    "message": "Close",
+    "description": "Close button"
+  },
+  "button_save": {
+    "message": "Save",
+    "description": "Save button"
+  },
+  "button_add": {
+    "message": "Add",
+    "description": "Add button"
+  },
+  "button_remove": {
+    "message": "Remove",
+    "description": "Remove button"
+  },
+  "button_dismiss": {
+    "message": "Dismiss",
+    "description": "Dismiss button"
+  },
+
+  "aria_copy_code": {
+    "message": "Copy code $CODE$ from $SOURCE$",
+    "description": "ARIA label for copy code button",
+    "placeholders": {
+      "code": {
+        "content": "$1",
+        "example": "123456"
+      },
+      "source": {
+        "content": "$2",
+        "example": "user@gmail.com"
+      }
+    }
+  },
+  "aria_open_link": {
+    "message": "Open $TYPE$ link for $DOMAIN$",
+    "description": "ARIA label for open link button",
+    "placeholders": {
+      "type": {
+        "content": "$1",
+        "example": "magic"
+      },
+      "domain": {
+        "content": "$2",
+        "example": "example.com"
+      }
+    }
+  },
+  "aria_mailbox_count": {
+    "message": "$COUNT$ connected mailboxes",
+    "description": "ARIA label for mailbox count",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "2"
+      }
+    }
+  },
+  "aria_sync_time": {
+    "message": "Last synced $TIME$",
+    "description": "ARIA label for sync time",
+    "placeholders": {
+      "time": {
+        "content": "$1",
+        "example": "5 minutes ago"
+      }
+    }
+  },
+
+  "empty_no_codes_title": {
+    "message": "No codes yet",
+    "description": "Empty state: no codes title"
+  },
+  "empty_no_codes_message": {
+    "message": "Verification codes will appear here when they arrive in your email.",
+    "description": "Empty state: no codes message"
+  },
+  "empty_no_links_title": {
+    "message": "No magic links yet",
+    "description": "Empty state: no links title"
+  },
+  "empty_no_links_message": {
+    "message": "Magic login links will appear here when detected.",
+    "description": "Empty state: no links message"
+  },
+  "empty_no_items_title": {
+    "message": "No items yet",
+    "description": "Empty state: unified no items title"
+  },
+  "empty_no_items_message": {
+    "message": "Verification codes and magic links will appear here when they arrive.",
+    "description": "Empty state: unified no items message"
+  },
+  "link_type_login": {
+    "message": "Login",
+    "description": "Link type: login"
+  },
+  "link_type_verify": {
+    "message": "Verify",
+    "description": "Link type: verify"
+  },
+  "link_type_reset": {
+    "message": "Reset",
+    "description": "Link type: reset"
+  },
+  "empty_no_mailboxes_title": {
+    "message": "No mailboxes connected",
+    "description": "Empty state: no mailboxes title"
+  },
+  "empty_no_mailboxes_message": {
+    "message": "Connect Gmail to get started.",
+    "description": "Empty state: no mailboxes message"
+  },
+  "button_connect_mailbox": {
+    "message": "Connect Mailbox",
+    "description": "Connect mailbox button"
+  },
+  "empty_error_title": {
+    "message": "Something went wrong",
+    "description": "Empty state: error title"
+  },
+  "empty_error_message": {
+    "message": "Unable to load your codes. Please try again.",
+    "description": "Empty state: error message"
+  },
+
+  "security_banner_setup": {
+    "message": "Set a password to protect your codes",
+    "description": "Security banner prompt"
+  },
+  "security_banner_not_now": {
+    "message": "Not now",
+    "description": "Security banner dismiss"
+  },
+  "security_banner_setup_password": {
+    "message": "Setup",
+    "description": "Security banner setup button"
+  },
+
+  "lock_screen_title": {
+    "message": "InboxKey is Locked",
+    "description": "Lock screen title"
+  },
+  "lock_screen_prompt": {
+    "message": "Enter your password to unlock",
+    "description": "Lock screen prompt"
+  },
+  "lock_screen_unlock": {
+    "message": "Unlock",
+    "description": "Unlock button"
+  },
+  "lock_screen_forgot": {
+    "message": "Forgot password?",
+    "description": "Forgot password link"
+  },
+  "lock_screen_wrong_password": {
+    "message": "Wrong password. Try again.",
+    "description": "Wrong password error"
+  },
+  "lock_screen_rate_limited": {
+    "message": "Too many attempts. Please wait $SECONDS$ seconds.",
+    "description": "Rate limit error",
+    "placeholders": {
+      "seconds": {
+        "content": "$1",
+        "example": "30"
+      }
+    }
+  },
+
+  "settings_title": {
+    "message": "InboxKey Settings",
+    "description": "Settings page title"
+  },
+  "settings_tab_security": {
+    "message": "Security",
+    "description": "Security tab"
+  },
+  "settings_tab_advanced": {
+    "message": "Advanced",
+    "description": "Advanced tab"
+  },
+  "settings_tab_about": {
+    "message": "About",
+    "description": "About tab"
+  },
+
+  "security_setup_title": {
+    "message": "Set up password protection",
+    "description": "Password setup title"
+  },
+  "security_setup_description": {
+    "message": "Protect your verification codes with a password. You'll need to enter it each time you open InboxKey.",
+    "description": "Password setup description"
+  },
+  "security_no_recovery_title": {
+    "message": "No recovery possible",
+    "description": "No recovery warning title"
+  },
+  "security_no_recovery_message": {
+    "message": "If you forget your password, you'll lose access to all your codes. There is no way to recover your data.",
+    "description": "No recovery warning message"
+  },
+  "security_password_tips": {
+    "message": "Choose a strong password:",
+    "description": "Password tips heading"
+  },
+  "security_tip_memorable": {
+    "message": "Make it memorable (you can't reset it)",
+    "description": "Password tip: memorable"
+  },
+  "security_tip_unique": {
+    "message": "Use a unique password",
+    "description": "Password tip: unique"
+  },
+  "security_tip_strength": {
+    "message": "At least 8 characters",
+    "description": "Password tip: strength"
+  },
+
+  "security_danger_zone": {
+    "message": "Danger Zone",
+    "description": "Danger zone heading"
+  },
+  "security_danger_warning_title": {
+    "message": "This action cannot be undone",
+    "description": "Danger warning title"
+  },
+  "security_danger_warning_message": {
+    "message": "Resetting InboxKey will permanently delete:",
+    "description": "Danger warning message"
+  },
+  "security_danger_delete_codes": {
+    "message": "All verification codes and magic links",
+    "description": "Danger: delete codes"
+  },
+  "security_danger_delete_settings": {
+    "message": "All settings and preferences",
+    "description": "Danger: delete settings"
+  },
+  "security_danger_disconnect_accounts": {
+    "message": "All connected email accounts",
+    "description": "Danger: disconnect accounts"
+  },
+  "security_danger_irreversible": {
+    "message": "This action is irreversible",
+    "description": "Danger: irreversible"
+  },
+  "security_danger_button": {
+    "message": "Reset InboxKey",
+    "description": "Danger button label"
+  },
+  "security_danger_confirm_message": {
+    "message": "Enter your password to confirm",
+    "description": "Danger confirm message"
+  },
+  "security_danger_confirm_label": {
+    "message": "Your password",
+    "description": "Danger confirm label"
+  },
+  "security_danger_confirm_button": {
+    "message": "Yes, reset everything",
+    "description": "Danger confirm button"
+  },
+
+  "about_open_source": {
+    "message": "Open-source",
+    "description": "About: open-source label"
+  },
+  "about_view_source": {
+    "message": "View source",
+    "description": "About: view source link"
+  },
+  "about_local_only": {
+    "message": "Local-only",
+    "description": "About: local-only label"
+  },
+  "about_no_servers": {
+    "message": "No servers",
+    "description": "About: no servers value"
+  },
+  "about_verified_publisher": {
+    "message": "Verified Publisher",
+    "description": "About: verified publisher label"
+  },
+  "about_chrome_web_store": {
+    "message": "Chrome Web Store",
+    "description": "About: Chrome Web Store value"
+  },
+  "about_privacy_title": {
+    "message": "Privacy & Security",
+    "description": "About: privacy title"
+  },
+  "about_privacy_statement": {
+    "message": "InboxKey processes everything on your device. No data is sent to external servers.",
+    "description": "About: privacy statement"
+  },
+  "about_privacy_no_tracking": {
+    "message": "No tracking or analytics",
+    "description": "About: no tracking"
+  },
+  "about_privacy_no_telemetry": {
+    "message": "No telemetry by default",
+    "description": "About: no telemetry"
+  },
+  "about_privacy_encrypted_storage": {
+    "message": "All data encrypted in browser storage",
+    "description": "About: encrypted storage"
+  },
+  "about_privacy_read_only_email": {
+    "message": "Read-only access to email (can't send)",
+    "description": "About: read-only email"
+  },
+  "about_support_title": {
+    "message": "Support Development",
+    "description": "About: support title"
+  },
+  "about_support_message": {
+    "message": "If InboxKey saves you time, consider buying me a coffee. It helps keep the project going.",
+    "description": "About: support message"
+  },
+  "about_buy_coffee": {
+    "message": "Buy me a coffee",
+    "description": "About: buy coffee button"
+  },
+  "about_support_disclaimer": {
+    "message": "Support is optional and never required. InboxKey is free and open-source forever.",
+    "description": "About: support disclaimer"
+  },
+  "about_version": {
+    "message": "Version",
+    "description": "About: version label"
+  },
+  "about_build": {
+    "message": "Build",
+    "description": "About: build label"
+  },
+  "about_verify_build": {
+    "message": "Verify build",
+    "description": "About: verify build link"
+  },
+
+  "footer_local_only": {
+    "message": "Local-only. No servers. Open source.",
+    "description": "Footer: local-only message"
+  },
+  "footer_buy_coffee": {
+    "message": "Buy me a coffee",
+    "description": "Footer: support link"
+  },
+
+  "toast_code_copied": {
+    "message": "Code copied to clipboard",
+    "description": "Toast: code copied"
+  },
+  "toast_link_opened": {
+    "message": "Link opened",
+    "description": "Toast: link opened"
+  },
+  "toast_settings_saved": {
+    "message": "Settings saved",
+    "description": "Toast: settings saved"
+  },
+  "toast_settings_failed": {
+    "message": "Failed to save settings",
+    "description": "Toast: settings save error"
+  },
+  "toast_error_copy": {
+    "message": "Failed to copy code",
+    "description": "Toast: copy error"
+  },
+  "toast_error_link": {
+    "message": "Failed to open link",
+    "description": "Toast: link error"
+  },
+  "toast_rate_limited": {
+    "message": "Too many link opens. Please wait.",
+    "description": "Toast: rate limited"
+  },
+  "toast_codes_cleared": {
+    "message": "All codes cleared",
+    "description": "Toast: codes cleared successfully"
+  },
+  "toast_clear_codes_failed": {
+    "message": "Failed to clear codes",
+    "description": "Toast: clear codes error"
+  },
+  "toast_cache_cleared": {
+    "message": "Cache cleared",
+    "description": "Toast: cache cleared successfully"
+  },
+  "toast_clear_cache_failed": {
+    "message": "Failed to clear cache",
+    "description": "Toast: clear cache error"
+  },
+  "button_close_notification": {
+    "message": "Close notification",
+    "description": "ARIA label for toast close button"
+  },
+
+  "error_token_expired_title": {
+    "message": "Session expired",
+    "description": "Error: token expired title"
+  },
+  "error_token_expired_message": {
+    "message": "Your $PROVIDER$ session has expired. Please reconnect.",
+    "description": "Error: token expired message",
+    "placeholders": {
+      "provider": {
+        "content": "$1",
+        "example": "Gmail"
+      }
+    }
+  },
+  "button_reconnect": {
+    "message": "Reconnect",
+    "description": "Reconnect button"
+  },
+  "error_offline_message": {
+    "message": "You're offline. Using cached data.",
+    "description": "Error: offline message"
+  },
+  "error_api_quota_message": {
+    "message": "$PROVIDER$ API quota exceeded. Try again later.",
+    "description": "Error: API quota message",
+    "placeholders": {
+      "provider": {
+        "content": "$1",
+        "example": "Gmail"
+      }
+    }
+  },
+
+  "sync_error_multiple_accounts": {
+    "message": "$COUNT$ accounts need attention.",
+    "description": "Grouped error banner when multiple accounts have sync errors",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "3"
+      }
+    }
+  },
+  "sync_error_open_accounts": {
+    "message": "Open Accounts",
+    "description": "Action button on grouped error banner to open accounts settings"
+  },
+
+  "site_overrides_title": {
+    "message": "Per-Site Behavior",
+    "description": "Site overrides: title"
+  },
+  "site_overrides_description": {
+    "message": "Control how InboxKey behaves on specific websites.",
+    "description": "Site overrides: description"
+  },
+  "site_overrides_domain_placeholder": {
+    "message": "example.com",
+    "description": "Site overrides: domain placeholder"
+  },
+  "site_mode_auto": {
+    "message": "Auto-fill",
+    "description": "Site mode: auto"
+  },
+  "site_mode_prompt": {
+    "message": "Prompt",
+    "description": "Site mode: prompt"
+  },
+  "site_mode_off": {
+    "message": "Off",
+    "description": "Site mode: off"
+  },
+  "site_mode_auto_description": {
+    "message": "Automatically fill codes when detected",
+    "description": "Site mode: auto description"
+  },
+  "site_mode_prompt_description": {
+    "message": "Show a prompt before filling",
+    "description": "Site mode: prompt description"
+  },
+  "site_mode_off_description": {
+    "message": "Don't fill codes on this site",
+    "description": "Site mode: off description"
+  },
+  "site_overrides_empty": {
+    "message": "No site overrides configured",
+    "description": "Site overrides: empty state"
+  },
+  "site_override_remove": {
+    "message": "Remove override for $DOMAIN$",
+    "description": "Site override: remove ARIA label",
+    "placeholders": {
+      "domain": {
+        "content": "$1",
+        "example": "example.com"
+      }
+    }
+  },
+  "site_overrides_modes_title": {
+    "message": "How it works",
+    "description": "Site overrides: modes title"
+  },
+
+  "domain_toggle_label": {
+    "message": "Active on this site:",
+    "description": "Domain toggle label in popup"
+  },
+  "domain_toggle_on": {
+    "message": "ON",
+    "description": "Domain toggle ON state"
+  },
+  "domain_toggle_off": {
+    "message": "OFF",
+    "description": "Domain toggle OFF state"
+  },
+  "domain_toggle_disabled_warning": {
+    "message": "InboxKey disabled on this site",
+    "description": "Warning shown when domain toggle is OFF"
+  },
+  "domain_toggle_url_warning": {
+    "message": "Extension disabled on this page.",
+    "description": "Warning shown when URL is blacklisted but domain is enabled"
+  },
+  "domain_toggle_manage_settings": {
+    "message": "Manage in Settings",
+    "description": "Link text to open blacklist modal in Settings"
+  },
+  "domain_toggle_enabled": {
+    "message": "Enabled",
+    "description": "Inline feedback when domain toggle is turned ON"
+  },
+  "domain_toggle_paused": {
+    "message": "Paused",
+    "description": "Inline feedback when domain toggle is turned OFF"
+  },
+  "settings_advanced_section": {
+    "message": "Advanced",
+    "description": "Advanced settings section heading"
+  },
+  "settings_advanced_section_title": {
+    "message": "Advanced Settings",
+    "description": "Advanced settings toggle button label"
+  },
+  "settings_advanced_default_enabled": {
+    "message": "Active on all sites by default",
+    "description": "Advanced setting: default domain state"
+  },
+  "settings_advanced_default_enabled_desc": {
+    "message": "When enabled, InboxKey works on all sites. It can still be turned off per site from the popup.",
+    "description": "Advanced setting: default domain state description"
+  },
+  "settings_advanced_banking_blocklist": {
+    "message": "Protect banking sites",
+    "description": "Advanced setting: banking blocklist toggle"
+  },
+  "settings_advanced_banking_blocklist_desc": {
+    "message": "When enabled, InboxKey will not run on known banking and financial sites. This is a safety measure to avoid interacting with sensitive pages.",
+    "description": "Advanced setting: banking blocklist description"
+  },
+  "settings_advanced_default_enabled_hint": {
+    "message": "When enabled, InboxKey works on all sites. It can still be turned off per site from the popup.",
+    "description": "Advanced setting: default domain state hint"
+  },
+  "settings_advanced_banking_blocklist_hint": {
+    "message": "Covers 150+ major banks worldwide. Individual exceptions can be made from the popup.",
+    "description": "Advanced setting: banking blocklist hint"
+  },
+  "settings_advanced_hint": {
+    "message": "Usually not needed",
+    "description": "Advanced settings section hint"
+  },
+  "settings_advanced_extended_detection": {
+    "message": "Extended Button Detection",
+    "description": "Advanced setting: extended button detection label"
+  },
+  "settings_advanced_extended_detection_desc": {
+    "message": "Some websites use non-standard buttons that are harder to detect. This helps find them.",
+    "description": "Advanced setting: extended button detection description"
+  },
+  "settings_advanced_extended_detection_warning": {
+    "message": "Heads up: On rare occasions, a wrong element might be detected as a button. Only needed if submit buttons are being missed on some sites.",
+    "description": "Advanced setting: extended button detection warning"
+  },
+  "settings_advanced_extended_detection_hint": {
+    "message": "This feature is in beta. Monitor its behavior and disable if issues occur.",
+    "description": "Advanced setting: extended button detection hint"
+  },
+  "settings_advanced_extended_detection_details_summary": {
+    "message": "How does this work?",
+    "description": "Advanced setting: extended detection details summary"
+  },
+  "settings_advanced_detection_standard_label": {
+    "message": "Standard (always on):",
+    "description": "Advanced setting: standard detection label"
+  },
+  "settings_advanced_detection_extended_label": {
+    "message": "Extended (when enabled):",
+    "description": "Advanced setting: extended detection label"
+  },
+  "settings_advanced_detection_safety_note": {
+    "message": "Links and custom elements styled as buttons are also detected.",
+    "description": "Advanced setting: detection safety note"
+  },
+  "settings_blacklist_label": {
+    "message": "Ignored sites",
+    "description": "Blacklist manage button label"
+  },
+  "settings_blacklist_description": {
+    "message": "Sites where InboxKey will not look for verification codes.",
+    "description": "Blacklist manage button description"
+  },
+  "settings_blacklist_manage_button": {
+    "message": "Manage",
+    "description": "Blacklist manage button text"
+  },
+  "settings_blacklist_modal_title": {
+    "message": "Ignored Sites",
+    "description": "Blacklist modal title"
+  },
+  "error_domain_load": {
+    "message": "Failed to load domain state",
+    "description": "Error: domain state load failed"
+  },
+  "error_domain_update": {
+    "message": "Failed to update preference",
+    "description": "Error: domain preference update failed"
+  },
+  "status_loading": {
+    "message": "Loading...",
+    "description": "Generic loading status"
+  },
+  "error_generic": {
+    "message": "Unable to load settings",
+    "description": "Generic error message"
+  },
+  "popup_quick_actions": {
+    "message": "Quick actions",
+    "description": "Label for quick actions group in popup"
+  },
+  "button_paste_best": {
+    "message": "Paste best code",
+    "description": "Button to paste the most recent verification code"
+  },
+  "button_open_last": {
+    "message": "Open last link",
+    "description": "Button to open the most recent magic link"
+  },
+  "popup_synced_at": {
+    "message": "Synced $1",
+    "description": "Last sync time display in popup header"
+  },
+  "popup_syncing": {
+    "message": "Syncing...",
+    "description": "Syncing status message in popup header"
+  },
+  "aria_manual_sync": {
+    "message": "Manually sync all mailboxes",
+    "description": "ARIA label for manual sync button"
+  },
+  "aria_open_settings": {
+    "message": "Open settings page",
+    "description": "ARIA label for settings button"
+  },
+  "accounts_imap_counter": {
+    "message": "$1 IMAP accounts",
+    "description": "IMAP accounts count"
+  },
+  "accounts_imap_title": {
+    "message": "IMAP Accounts",
+    "description": "IMAP accounts section title"
+  },
+  "accounts_imap_add": {
+    "message": "Add Account",
+    "description": "Button to add IMAP account in section header"
+  },
+  "accounts_imap_description": {
+    "message": "For other email providers. Requires InboxBridge, a small open-source companion app that runs on this computer.",
+    "description": "IMAP section description with InboxBridge context"
+  },
+  "accounts_imap_empty": {
+    "message": "No IMAP accounts connected",
+    "description": "Empty state for IMAP accounts"
+  },
+  "accounts_imap_retry": {
+    "message": "Retry",
+    "description": "Button to retry connection for errored IMAP account"
+  },
+  "accounts_imap_add_cta": {
+    "message": "Add IMAP Account",
+    "description": "Primary CTA button in IMAP empty state"
+  },
+  "aria_reconnect_imap": {
+    "message": "Reconnect $1",
+    "description": "ARIA label for reconnecting IMAP account"
+  },
+  "aria_remove_imap": {
+    "message": "Remove $1 from InboxKey",
+    "description": "ARIA label for removing IMAP account"
+  },
+  "status_online_label": {
+    "message": "Online - Connected and syncing",
+    "description": "Account status: online and healthy"
+  },
+  "status_offline_token_expired": {
+    "message": "Offline - Token expired",
+    "description": "Account status: OAuth token expired (legacy, use warning instead)"
+  },
+  "status_warning_token_expired": {
+    "message": "Access expired - Reconnect needed",
+    "description": "Account status: OAuth token expired, warning level (amber dot)"
+  },
+  "status_offline_connection_failed": {
+    "message": "Offline - Connection failed",
+    "description": "Account status: sync error"
+  },
+  "status_warning_token_expiring": {
+    "message": "Warning - Token expires within 24 hours",
+    "description": "Account status: token expires within 24h"
+  },
+  "status_warning_sync_delayed": {
+    "message": "Warning - Not synced in over 1 hour",
+    "description": "Account status: no sync in over 1 hour"
+  },
+  "status_syncing_label": {
+    "message": "Syncing - Checking for new messages",
+    "description": "Account status: actively syncing"
+  },
+  "accounts_recent_title": {
+    "message": "Recent Emails",
+    "description": "Recent emails section title"
+  },
+  "accounts_recent_description": {
+    "message": "Recently synced mailboxes",
+    "description": "Recent activity description"
+  },
+  "accounts_recent_empty": {
+    "message": "No verification emails detected yet. When one arrives, it will show up here automatically.",
+    "description": "Empty state for recent emails section"
+  },
+  "accounts_recent_loading": {
+    "message": "Loading recent activity...",
+    "description": "Loading state for recent activity"
+  },
+  "trust_indicator_title": {
+    "message": "Privacy & Trust",
+    "description": "Trust indicator section title"
+  },
+  "trust_indicator_readonly": {
+    "message": "Read-only access",
+    "description": "Trust indicator: read-only"
+  },
+  "trust_indicator_local_storage": {
+    "message": "Local storage only",
+    "description": "Trust indicator: local storage"
+  },
+  "trust_indicator_local": {
+    "message": "Local-only processing",
+    "description": "Trust indicator: local processing"
+  },
+  "accounts_loading_profile": {
+    "message": "Loading profile...",
+    "description": "Loading profile status"
+  },
+  "settings_category_behavior": {
+    "message": "Behavior",
+    "description": "Settings category label for behavior section"
+  },
+  "settings_category_appearance": {
+    "message": "Appearance",
+    "description": "Settings category label for appearance section"
+  },
+  "settings_category_sites": {
+    "message": "Sites",
+    "description": "Settings category label for sites section"
+  },
+  "settings_category_data": {
+    "message": "Data",
+    "description": "Settings category label for data section"
+  },
+  "settings_category_advanced": {
+    "message": "Advanced",
+    "description": "Settings category label for advanced section"
+  },
+  "settings_blacklist_card_title": {
+    "message": "Ignored Sites",
+    "description": "Ignored sites card title in settings"
+  },
+  "settings_blacklist_card_description": {
+    "message": "InboxKey can be turned off for specific websites.",
+    "description": "Ignored sites card description in settings"
+  },
+  "settings_appearance_heading": {
+    "message": "Theme",
+    "description": "Appearance settings heading"
+  },
+  "settings_appearance_description": {
+    "message": "System matches your operating system preference automatically.",
+    "description": "Appearance settings description"
+  },
+  "settings_theme_dark": {
+    "message": "Dark",
+    "description": "Dark theme option"
+  },
+  "settings_theme_light": {
+    "message": "Light",
+    "description": "Light theme option"
+  },
+  "settings_theme_system": {
+    "message": "System",
+    "description": "System theme option"
+  },
+  "settings_theme_system_status": {
+    "message": "Currently using: System ($1 detected)",
+    "description": "System theme status description"
+  },
+  "settings_theme_selected": {
+    "message": "Currently using: $1",
+    "description": "Theme selected status"
+  },
+  "settings_appearance_hint": {
+    "message": "System matches your operating system preference automatically.",
+    "description": "Appearance settings hint"
+  },
+  "settings_session_chips_heading": {
+    "message": "Code Check",
+    "description": "Code check settings heading"
+  },
+  "settings_session_chips_description": {
+    "message": "Controls how long the extension looks for incoming verification codes.",
+    "description": "Code check settings description"
+  },
+  "settings_session_chips_toggle_label": {
+    "message": "Show indicator",
+    "description": "Session chip toggle label"
+  },
+  "settings_session_chips_toggle_description": {
+    "message": "A floating badge is shown on pages while a code check is running.",
+    "description": "Session chip toggle description"
+  },
+  "settings_session_chips_hint": {
+    "message": "When disabled, codes are still detected and processed. Only the on-page badge is hidden.",
+    "description": "Session chip settings hint"
+  },
+  "settings_session_timeout_label": {
+    "message": "Check duration",
+    "description": "Session timeout slider label"
+  },
+  "settings_session_timeout_description": {
+    "message": "How long to keep looking for a verification code after a check starts.",
+    "description": "Session timeout slider description"
+  },
+  "settings_session_timeout_hint": {
+    "message": "60 seconds works well for most providers. Increase if codes tend to arrive slowly.",
+    "description": "Session timeout hint"
+  },
+  "data_management_heading": {
+    "message": "Data Management",
+    "description": "Data management heading"
+  },
+  "data_management_description": {
+    "message": "All data is stored locally in the browser. Nothing is sent to any server, ever.",
+    "description": "Data management description"
+  },
+  "button_clear_all_codes": {
+    "message": "Clear all codes",
+    "description": "Button to clear all verification codes"
+  },
+  "button_clear_cache": {
+    "message": "Clear cache",
+    "description": "Button to clear cache"
+  },
+  "data_clear_codes_description": {
+    "message": "All saved verification codes are permanently deleted. This cannot be undone.",
+    "description": "Description for clearing all codes"
+  },
+  "data_clear_cache_description": {
+    "message": "Cached email data and detection results are cleared. Settings and accounts are kept.",
+    "description": "Description for clearing cache"
+  },
+  "data_clear_codes_confirm_label": {
+    "message": "Confirm clearing codes",
+    "description": "ARIA label for clear codes confirmation"
+  },
+  "data_clear_codes_confirm_message": {
+    "message": "This will permanently delete all saved codes. This cannot be undone.",
+    "description": "Inline confirmation message for clearing codes"
+  },
+  "data_clear_codes_yes": {
+    "message": "Yes, clear all",
+    "description": "Confirm button for clearing codes"
+  },
+  "data_clear_cache_confirm_label": {
+    "message": "Confirm clearing cache",
+    "description": "ARIA label for clear cache confirmation"
+  },
+  "data_clear_cache_confirm_message": {
+    "message": "Cached email data and detection results will be cleared. Settings and accounts are kept.",
+    "description": "Inline confirmation message for clearing cache"
+  },
+  "data_clear_cache_yes": {
+    "message": "Yes, clear cache",
+    "description": "Confirm button for clearing cache"
+  },
+  "data_clearing": {
+    "message": "Clearing...",
+    "description": "Loading state while clearing data"
+  },
+  "data_cancel": {
+    "message": "Cancel",
+    "description": "Cancel button for inline confirmation"
+  },
+  "data_reset_defaults_title": {
+    "message": "Reset to Defaults",
+    "description": "Reset defaults card title"
+  },
+  "data_reset_defaults_description": {
+    "message": "All settings are reverted to their original values. Accounts and saved codes are not affected.",
+    "description": "Reset defaults card description"
+  },
+  "data_reset_defaults_button": {
+    "message": "Reset Settings",
+    "description": "Reset defaults button label"
+  },
+  "data_reset_defaults_confirm_label": {
+    "message": "Confirm resetting settings",
+    "description": "Reset defaults confirm dialog label"
+  },
+  "data_reset_defaults_confirm_message": {
+    "message": "All settings will be reverted to defaults. Accounts and saved codes are not affected.",
+    "description": "Reset defaults confirm message"
+  },
+  "data_reset_defaults_yes": {
+    "message": "Yes, reset",
+    "description": "Reset defaults confirm button"
+  },
+  "toast_settings_reset": {
+    "message": "Settings reset to defaults",
+    "description": "Toast: settings reset successfully"
+  },
+  "toast_settings_reset_failed": {
+    "message": "Failed to reset settings",
+    "description": "Toast: settings reset error"
+  },
+  "about_version_line": {
+    "message": "Version $1",
+    "description": "Version display in about section"
+  },
+  "about_trust_title": {
+    "message": "Why trust InboxKey?",
+    "description": "Trust section title"
+  },
+  "about_trust_pill_open_source": {
+    "message": "Open Source",
+    "description": "Trust pill: open source"
+  },
+  "about_trust_pill_verified": {
+    "message": "Verified Publisher",
+    "description": "Trust pill: verified publisher"
+  },
+  "about_trust_pill_builds": {
+    "message": "Reproducible Builds",
+    "description": "Trust pill: reproducible builds"
+  },
+  "about_source_label": {
+    "message": "View Source Code",
+    "description": "Label for view source link"
+  },
+  "about_source_description": {
+    "message": "Available on GitHub under Apache 2.0 license",
+    "description": "Source code description"
+  },
+  "about_support_label": {
+    "message": "Support InboxKey",
+    "description": "Label for support section"
+  },
+  "about_support_cta_aria": {
+    "message": "Support InboxKey development",
+    "description": "ARIA label for support CTA"
+  },
+  "settings_view_source_aria": {
+    "message": "View source code on GitHub",
+    "description": "ARIA label for view source button"
+  },
+  "settings_view_source": {
+    "message": "View Source",
+    "description": "View source button text"
+  },
+  "settings_trust_region_label": {
+    "message": "Privacy & Trust",
+    "description": "Trust region label in settings"
+  },
+  "settings_trust_open_source": {
+    "message": "Open source",
+    "description": "Trust indicator: open source"
+  },
+  "settings_trust_see_source": {
+    "message": "See",
+    "description": "Trust banner GitHub link label (unused)"
+  },
+  "settings_trust_see_github": {
+    "message": "See GitHub Source",
+    "description": "Trust banner GitHub link with icon"
+  },
+  "settings_trust_see_source_aria": {
+    "message": "View source code on GitHub",
+    "description": "Accessible label for trust banner GitHub link"
+  },
+  "settings_trust_local_only": {
+    "message": "Runs locally",
+    "description": "Trust indicator: local only"
+  },
+  "settings_trust_safe": {
+    "message": "No tracking",
+    "description": "Trust indicator: safe"
+  },
+  "settings_trust_summary": {
+    "message": "Everything stays on your device. Nothing is sent anywhere.",
+    "description": "Trust summary text"
+  },
+  "settings_tab_accounts": {
+    "message": "Accounts",
+    "description": "Accounts tab label"
+  },
+  "settings_tab_settings": {
+    "message": "Settings",
+    "description": "Settings tab label"
+  },
+  "accounts_panel_heading": {
+    "message": "Connected Accounts",
+    "description": "Accounts panel heading"
+  },
+  "accounts_panel_summary": {
+    "message": "Manage your email accounts",
+    "description": "Accounts panel summary"
+  },
+  "accounts_status_connected": {
+    "message": "Connected",
+    "description": "Account connected status"
+  },
+  "accounts_status_not_connected": {
+    "message": "Not connected",
+    "description": "Account not connected status"
+  },
+  "accounts_last_synced": {
+    "message": "Last synced: $1",
+    "description": "Last synced time display"
+  },
+  "accounts_imap_host": {
+    "message": "Server: $1",
+    "description": "IMAP server hostname display"
+  },
+  "accounts_imap_generic_host": {
+    "message": "IMAP account",
+    "description": "Generic IMAP account label when server unknown"
+  },
+  "aria_reconnect_gmail": {
+    "message": "Reconnect Gmail account",
+    "description": "ARIA label for reconnect Gmail button"
+  },
+  "aria_connect_gmail": {
+    "message": "Connect Gmail account",
+    "description": "ARIA label for connect Gmail button"
+  },
+  "accounts_connect_gmail": {
+    "message": "Connect Gmail",
+    "description": "Connect Gmail button text"
+  },
+  "aria_disconnect_gmail": {
+    "message": "Disconnect Gmail account",
+    "description": "ARIA label for disconnect Gmail button"
+  },
+  "accounts_disconnect": {
+    "message": "Disconnect",
+    "description": "Disconnect button text"
+  },
+  "accounts_provider_gmail": {
+    "message": "Gmail",
+    "description": "Gmail provider name in accounts panel"
+  },
+  "accounts_microcopy_gmail": {
+    "message": "Read-only access. Only verification emails are scanned, nothing else. Gmail is limited to one account per browser profile due to a Chrome API restriction.",
+    "description": "Gmail section description with trust signal and limit explanation"
+  },
+  "accounts_microcopy_gmail_limit": {
+    "message": "One account per browser profile",
+    "description": "Gmail single-account constraint for row design"
+  },
+  "accounts_gmail_limit_learn_why": {
+    "message": "Learn more.",
+    "description": "Link to open Gmail limitation explanation modal"
+  },
+  "accounts_gmail_limit_learn_why_aria": {
+    "message": "Learn why Gmail is limited to one account",
+    "description": "Accessible label for Gmail limitation link"
+  },
+  "accounts_gmail_limit_modal_title": {
+    "message": "Why one Gmail account?",
+    "description": "Modal title explaining Gmail single-account limitation"
+  },
+  "accounts_gmail_limit_modal_body": {
+    "message": "Chrome provides a built-in sign-in API that extensions use to access Gmail. This API only allows one Google account per browser profile. It is a browser-level restriction, not a choice.\n\nTo support multiple accounts, a backend server would be needed to handle Google's authentication. That would mean your email data passes through someone else's server. That is not something this extension will ever do.\n\nIf Google changes their API to support multiple accounts without a server (like Microsoft already does for Outlook), this limitation will be removed.\n\nIn the meantime, multiple Gmail accounts can be used by creating separate Chrome profiles, or by connecting additional accounts via IMAP through InboxBridge.",
+    "description": "Detailed explanation of Gmail single-account technical limitation"
+  },
+  "accounts_gmail_reconnect_mismatch": {
+    "message": "The signed-in Google account does not match the connected account. Please sign in with the correct account to reconnect.",
+    "description": "Error when Gmail reconnect authenticates with a different email"
+  },
+  "accounts_empty_gmail": {
+    "message": "Verification codes from Gmail can be detected and filled automatically. Nothing leaves this device.",
+    "description": "Gmail empty/disconnected state with trust signal"
+  },
+  "automation_heading": {
+    "message": "Automation Level",
+    "description": "Automation settings heading"
+  },
+  "automation_description": {
+    "message": "When a verification code is detected, what should happen next?",
+    "description": "Automation settings description"
+  },
+  "automation_manual_title": {
+    "message": "Manual",
+    "description": "Manual automation level title"
+  },
+  "automation_manual_description": {
+    "message": "Codes are detected and shown. Nothing else happens automatically.",
+    "description": "Manual automation description"
+  },
+  "automation_clipboard_title": {
+    "message": "Copy to Clipboard",
+    "description": "Clipboard automation level title"
+  },
+  "automation_clipboard_description": {
+    "message": "The code is copied to the clipboard automatically when detected.",
+    "description": "Clipboard automation description"
+  },
+  "automation_autofill_title": {
+    "message": "Autofill",
+    "description": "Autofill automation level title"
+  },
+  "automation_autofill_description": {
+    "message": "The code is filled into the input field on the page automatically.",
+    "description": "Autofill automation description"
+  },
+  "automation_full_title": {
+    "message": "Full Automation",
+    "description": "Full automation level title"
+  },
+  "automation_full_description": {
+    "message": "The code is filled in and the submit button is clicked automatically.",
+    "description": "Full automation description"
+  },
+  "automation_full_warning": {
+    "message": "The submit button is clicked without confirmation. Best used on sites you trust.",
+    "description": "Warning for full automation"
+  },
+  "automation_hint": {
+    "message": "This can be changed at any time. Autofill works well for most people.",
+    "description": "Automation settings hint"
+  },
+  "accounts_imap_add_title": {
+    "message": "Add IMAP Account",
+    "description": "Title for add IMAP account modal"
+  },
+  "accounts_imap_provider_preset_label": {
+    "message": "Email Provider",
+    "description": "Label for provider preset dropdown"
+  },
+  "accounts_imap_provider_preset_hint": {
+    "message": "Select your email provider to auto-fill IMAP settings",
+    "description": "Hint for provider preset dropdown"
+  },
+  "accounts_imap_provider_custom": {
+    "message": "Custom / Manual Setup",
+    "description": "Custom provider option in preset dropdown"
+  },
+  "accounts_imap_provider_gmail": {
+    "message": "Gmail",
+    "description": "Gmail provider option in preset dropdown"
+  },
+  "accounts_imap_provider_yahoo": {
+    "message": "Yahoo Mail",
+    "description": "Yahoo provider option in preset dropdown"
+  },
+  "accounts_imap_provider_outlook": {
+    "message": "Outlook / Office 365",
+    "description": "Outlook provider option in preset dropdown"
+  },
+  "accounts_imap_provider_icloud": {
+    "message": "iCloud Mail",
+    "description": "iCloud provider option in preset dropdown"
+  },
+  "accounts_imap_provider_protonmail": {
+    "message": "ProtonMail Bridge",
+    "description": "ProtonMail provider option in preset dropdown"
+  },
+  "accounts_imap_provider_fastmail": {
+    "message": "FastMail",
+    "description": "FastMail provider option in preset dropdown"
+  },
+  "accounts_imap_reconnect_title": {
+    "message": "Reconnect IMAP Account",
+    "description": "Title for reconnect IMAP account modal"
+  },
+  "accounts_imap_bridge_not_installed": {
+    "message": "InboxBridge (IMAP helper app) is not installed or not running",
+    "description": "Error when InboxBridge native app is not installed"
+  },
+  "accounts_imap_bridge_install_instructions": {
+    "message": "InboxBridge is required to connect IMAP accounts. Download and install it to continue.",
+    "description": "Instructions for installing InboxBridge"
+  },
+  "bridge_install_heading": {
+    "message": "Install InboxBridge",
+    "description": "Heading for the InboxBridge install guide"
+  },
+  "bridge_install_what": {
+    "message": "InboxBridge is a small companion app that lets InboxKey connect to your email server. It runs locally on your computer -- no data leaves your device.",
+    "description": "Description of what InboxBridge is"
+  },
+  "bridge_install_download": {
+    "message": "Download InboxBridge",
+    "description": "Download button label"
+  },
+  "bridge_install_hint_windows": {
+    "message": "Look for InboxBridge-...-windows-x64.exe",
+    "description": "OS-specific download filename hint for Windows"
+  },
+  "bridge_install_hint_macos": {
+    "message": "Look for InboxBridge-...-macos-universal.pkg",
+    "description": "OS-specific download filename hint for macOS"
+  },
+  "bridge_install_hint_linux": {
+    "message": "Look for InboxBridge-...-linux-x64.tar.gz",
+    "description": "OS-specific download filename hint for Linux"
+  },
+  "bridge_install_installed": {
+    "message": "I've installed it",
+    "description": "Button after user installs InboxBridge"
+  },
+  "bridge_install_restart": {
+    "message": "Now quit Chrome completely and reopen it, then click the button below.",
+    "description": "Instruction to restart Chrome after install"
+  },
+  "bridge_install_check": {
+    "message": "Check connection",
+    "description": "Button to retry bridge connection after restart"
+  },
+  "bridge_install_checking": {
+    "message": "Checking...",
+    "description": "Shown while pinging InboxBridge"
+  },
+  "bridge_install_retry_fail": {
+    "message": "Still not detected. Make sure you've quit Chrome completely (check your system tray) and reopened it.",
+    "description": "Shown when retry fails after install"
+  },
+  "bridge_install_source": {
+    "message": "View source code",
+    "description": "Link to GitHub source"
+  },
+  "bridge_uninstall_button": {
+    "message": "Uninstall InboxBridge",
+    "description": "Button to start InboxBridge uninstall flow"
+  },
+  "bridge_uninstall_title": {
+    "message": "Uninstall InboxBridge",
+    "description": "Modal title"
+  },
+  "bridge_uninstall_warning": {
+    "message": "This will remove all IMAP accounts from InboxKey and clear stored credentials from your system keychain. You will lose access to all IMAP-connected email accounts in InboxKey.",
+    "description": "Warning text in uninstall modal"
+  },
+  "bridge_uninstall_confirm_label": {
+    "message": "Type UNINSTALL to confirm",
+    "description": "Label for confirmation input"
+  },
+  "bridge_uninstall_confirm_word": {
+    "message": "UNINSTALL",
+    "description": "The word the user must type to confirm"
+  },
+  "bridge_uninstall_action": {
+    "message": "Remove all data and uninstall",
+    "description": "Destructive action button"
+  },
+  "bridge_uninstall_cancel": {
+    "message": "Cancel",
+    "description": "Cancel button"
+  },
+  "bridge_uninstall_cleaning": {
+    "message": "Removing data...",
+    "description": "Shown while cleanup is in progress"
+  },
+  "bridge_uninstall_done_title": {
+    "message": "Data removed",
+    "description": "Title after cleanup completes"
+  },
+  "bridge_uninstall_done_windows": {
+    "message": "All IMAP accounts have been removed. To finish uninstalling: if you used the installer, open Windows Settings > Apps > Installed apps, find InboxBridge, and click Uninstall. If you used the portable version, delete the InboxBridge folder from %LOCALAPPDATA%.",
+    "description": "Post-cleanup instructions for Windows"
+  },
+  "bridge_uninstall_done_macos": {
+    "message": "All IMAP accounts have been removed. To finish uninstalling, delete the InboxBridge binary. If you used the .pkg installer: sudo rm /usr/local/bin/inboxbridge. If you used the portable version: rm -rf ~/Library/Application\\ Support/InboxBridge",
+    "description": "Post-cleanup instructions for macOS"
+  },
+  "bridge_uninstall_done_linux": {
+    "message": "All IMAP accounts have been removed. To finish uninstalling, run: rm ~/.local/bin/inboxbridge and rm ~/.config/google-chrome/NativeMessagingHosts/com.inboxkey.bridge.json",
+    "description": "Post-cleanup instructions for Linux"
+  },
+  "bridge_uninstall_done_close": {
+    "message": "Done",
+    "description": "Close button after uninstall instructions"
+  },
+  "bridge_uninstall_partial": {
+    "message": "Some accounts could not be fully removed. You may need to reconnect and try again.",
+    "description": "Warning shown when some IMAP account removals fail during uninstall"
+  },
+  "bridge_warning_windows": {
+    "message": "You may see a \"Windows protected your PC\" message when running the installer. This happens because InboxBridge is not digitally signed. Code signing certificates cost $200-500 per year, and as an open-source project without funding, we can't afford one. The app is completely safe -- you can review every line of source code on GitHub. To proceed: click \"More info\", then \"Run anyway\".",
+    "description": "Unsigned software warning for Windows"
+  },
+  "bridge_warning_macos": {
+    "message": "You may see an \"unidentified developer\" warning when opening the installer. Apple charges $99 per year for a Developer Program membership required to sign apps, and as an open-source project without funding, we can't afford one. The app is completely safe -- you can review every line of source code on GitHub. To proceed: right-click the .pkg file, click \"Open\", then click \"Open\" again in the dialog.",
+    "description": "Unsigned software warning for macOS"
+  },
+  "bridge_update_required": {
+    "message": "InboxBridge needs to be updated to work with this version of InboxKey.",
+    "description": "Hard gate: protocol incompatible"
+  },
+  "bridge_update_available": {
+    "message": "A newer version of InboxBridge is available.",
+    "description": "Soft gate: outdated but compatible"
+  },
+  "bridge_update_download": {
+    "message": "Download Update",
+    "description": "Update download button label"
+  },
+  "accounts_imap_install_bridge": {
+    "message": "Download InboxBridge",
+    "description": "Button to download InboxBridge"
+  },
+  "accounts_imap_email_label": {
+    "message": "Email Address",
+    "description": "Label for IMAP email field"
+  },
+  "accounts_imap_server_label": {
+    "message": "IMAP Server",
+    "description": "Label for IMAP server field"
+  },
+  "accounts_imap_server_hint": {
+    "message": "Example: imap.gmail.com or imap.mail.yahoo.com",
+    "description": "Hint for IMAP server field"
+  },
+  "accounts_imap_port_label": {
+    "message": "Port",
+    "description": "Label for IMAP port field"
+  },
+  "accounts_imap_tls_label": {
+    "message": "TLS/SSL",
+    "description": "Label for TLS checkbox"
+  },
+  "accounts_imap_tls_enabled": {
+    "message": "Use TLS/SSL",
+    "description": "TLS checkbox label"
+  },
+  "accounts_imap_password_label": {
+    "message": "Password",
+    "description": "Label for IMAP password field"
+  },
+  "accounts_imap_password_hint": {
+    "message": "An app-specific password is required instead of the regular account password for Gmail, Yahoo, and Outlook.",
+    "description": "Hint for IMAP password field"
+  },
+  "accounts_imap_password_help_link": {
+    "message": "How to create one?",
+    "description": "Link text for app password help"
+  },
+  "accounts_imap_password_help_link_aria": {
+    "message": "Learn how to create app-specific password (opens in new tab)",
+    "description": "Aria-label for app password help link"
+  },
+  "accounts_imap_show": {
+    "message": "Show",
+    "description": "Button text to show password"
+  },
+  "accounts_imap_hide": {
+    "message": "Hide",
+    "description": "Button text to hide password"
+  },
+  "accounts_imap_show_password": {
+    "message": "Show password",
+    "description": "Aria-label for show password button"
+  },
+  "accounts_imap_hide_password": {
+    "message": "Hide password",
+    "description": "Aria-label for hide password button"
+  },
+  "accounts_imap_label_label": {
+    "message": "Account Label (Optional)",
+    "description": "Label for account label field"
+  },
+  "accounts_imap_label_hint": {
+    "message": "Custom name to identify this account",
+    "description": "Hint for account label field"
+  },
+  "accounts_imap_test_connection": {
+    "message": "Test Connection",
+    "description": "Button to test IMAP connection"
+  },
+  "accounts_imap_testing": {
+    "message": "Testing...",
+    "description": "Testing connection status"
+  },
+  "accounts_imap_test_success": {
+    "message": "Connection successful!",
+    "description": "Success message for IMAP connection test"
+  },
+  "accounts_imap_add_button": {
+    "message": "Add Account",
+    "description": "Button to add IMAP account"
+  },
+  "accounts_imap_update": {
+    "message": "Update Account",
+    "description": "Button to update IMAP account"
+  },
+  "accounts_imap_test_and_add": {
+    "message": "Test & Add Account",
+    "description": "Combined button to test connection and add IMAP account"
+  },
+  "accounts_imap_test_and_update": {
+    "message": "Test & Update",
+    "description": "Combined button to test connection and update IMAP account"
+  },
+  "accounts_imap_testing_connection": {
+    "message": "Testing connection...",
+    "description": "Button text while testing IMAP connection"
+  },
+  "accounts_imap_adding": {
+    "message": "Adding account...",
+    "description": "Button text while adding IMAP account after successful test"
+  },
+  "accounts_imap_connected": {
+    "message": "Connected",
+    "description": "Button text shown briefly after successful connection and account creation"
+  },
+  "modal_cancel": {
+    "message": "Cancel",
+    "description": "Cancel button in modals"
+  },
+  "toast_imap_test_failed": {
+    "message": "Connection test failed",
+    "description": "Error toast when IMAP test fails"
+  },
+  "accounts_imap_error_generic": {
+    "message": "Connection test failed. Check your server settings and credentials.",
+    "description": "Generic IMAP connection error"
+  },
+  "accounts_imap_error_auth": {
+    "message": "Authentication failed. For Gmail, Yahoo, and Outlook, an app-specific password is required.",
+    "description": "IMAP authentication error"
+  },
+  "accounts_imap_error_timeout": {
+    "message": "The server did not respond. Check the server address for typos, and verify that the port is correct.",
+    "description": "IMAP timeout error"
+  },
+  "accounts_imap_error_keychain": {
+    "message": "The password could not be stored in the operating system keychain. Restart the computer or check system permissions.",
+    "description": "IMAP keychain error"
+  },
+  "accounts_imap_error_tls": {
+    "message": "A secure connection could not be established. The standard port for TLS is 993. For port 143, TLS should be disabled.",
+    "description": "IMAP TLS/SSL connection error"
+  },
+  "accounts_imap_error_bridge_not_running": {
+    "message": "Cannot connect to InboxBridge. Is it running?",
+    "description": "Error when InboxBridge app is not running"
+  },
+  "accounts_imap_privacy_reassurance": {
+    "message": "Credentials stored in OS keychain • Local-only • No servers",
+    "description": "Privacy reassurance message for IMAP account modal"
+  },
+  "clear_codes_confirm": {
+    "message": "Are you sure you want to clear all codes? This cannot be undone.",
+    "description": "Confirmation message when clearing all codes"
+  },
+  "clear_cache_confirm": {
+    "message": "Are you sure you want to clear the cache?",
+    "description": "Confirmation message when clearing cache"
+  },
+  "accounts_authenticating": {
+    "message": "Authenticating...",
+    "description": "Status message during OAuth authentication"
+  },
+  "accounts_loading_profile": {
+    "message": "Loading profile...",
+    "description": "Status message when loading user profile"
+  },
+  "accounts_saving": {
+    "message": "Saving account...",
+    "description": "Status message when saving account credentials"
+  },
+  "accounts_connecting": {
+    "message": "Connecting...",
+    "description": "Generic connecting status message"
+  },
+  "accounts_disconnecting": {
+    "message": "Disconnecting...",
+    "description": "Status message when disconnecting account"
+  },
+  "accounts_disconnected": {
+    "message": "Disconnected",
+    "description": "Success message after account disconnection"
+  },
+  "accounts_reconnect": {
+    "message": "Reconnect",
+    "description": "Button text to reconnect an account"
+  },
+  "accounts_reconnecting": {
+    "message": "Reconnecting...",
+    "description": "Status message during account reconnection"
+  },
+  "accounts_reconnected": {
+    "message": "Reconnected",
+    "description": "Success message after account reconnection"
+  },
+  "accounts_test": {
+    "message": "Test Connection",
+    "description": "Test connection button label"
+  },
+  "accounts_testing": {
+    "message": "Testing connection...",
+    "description": "Test connection in progress"
+  },
+  "accounts_test_success": {
+    "message": "Connection successful",
+    "description": "Test connection succeeded"
+  },
+  "accounts_test_failed": {
+    "message": "Connection failed",
+    "description": "Test connection failed"
+  },
+  "time_just_now_short": {
+    "message": "now",
+    "description": "Short label for 'just now' time (under 60 seconds ago)"
+  },
+  "time_minutes_short": {
+    "message": "$COUNT$m ago",
+    "description": "Short label for minutes ago (e.g. '3m ago')",
+    "placeholders": {
+      "COUNT": {
+        "content": "$1",
+        "example": "3"
+      }
+    }
+  },
+  "aria_received_time": {
+    "message": "Received $TIME$",
+    "description": "Screen reader label for when an item was received",
+    "placeholders": {
+      "TIME": {
+        "content": "$1",
+        "example": "2 minutes ago"
+      }
+    }
+  },
+  "accounts_remove_button": {
+    "message": "Remove",
+    "description": "Button text to remove an account"
+  },
+  "accounts_removing": {
+    "message": "Removing...",
+    "description": "Status message during account removal"
+  },
+  "accounts_removed": {
+    "message": "Removed",
+    "description": "Success message after account removal"
+  },
+  "accounts_imap_heading": {
+    "message": "IMAP",
+    "description": "IMAP accounts section heading"
+  },
+  "accounts_empty_imap": {
+    "message": "ProtonMail, Fastmail, Yahoo, and most other providers are supported. Everything stays local.",
+    "description": "IMAP empty state with trust signal"
+  },
+  "toast_connect_duplicate": {
+    "message": "This account is already connected",
+    "description": "Toast message when trying to connect duplicate account"
+  },
+  "toast_connect_failed": {
+    "message": "Failed to connect account. Please try again.",
+    "description": "Toast message when account connection fails"
+  },
+  "toast_gmail_connected": {
+    "message": "Gmail account connected successfully",
+    "description": "Toast message when Gmail account is connected"
+  },
+  "toast_account_disconnected": {
+    "message": "Account disconnected successfully",
+    "description": "Toast message when account is disconnected"
+  },
+  "toast_disconnect_failed": {
+    "message": "Failed to disconnect account",
+    "description": "Toast message when account disconnection fails"
+  },
+  "accounts_remove_confirm": {
+    "message": "All sync data for this account will be deleted. This cannot be undone.",
+    "description": "Inline confirmation message when removing account"
+  },
+  "accounts_remove_confirm_button": {
+    "message": "Remove Account",
+    "description": "Confirm button text for inline account removal"
+  },
+  "accounts_remove_cancel": {
+    "message": "Cancel",
+    "description": "Cancel button text for inline account removal"
+  },
+  "toast_connect_invalid_credentials": {
+    "message": "Connection failed. Google did not complete the sign-in.",
+    "description": "Error message when provider sign-in is not configured or fails"
+  },
+  "toast_oauth_cancelled": {
+    "message": "Authentication was cancelled. Review the required permissions in Security tab. Connect when ready.",
+    "description": "Toast message when user cancels OAuth flow, with guidance"
+  },
+  "toast_connect_profile_failed": {
+    "message": "Failed to load profile information",
+    "description": "Toast message when profile fetch fails"
+  },
+  "toast_connect_network_error": {
+    "message": "Network error during connection",
+    "description": "Toast message when network error occurs"
+  },
+  "toast_imap_added": {
+    "message": "IMAP account added successfully: $1",
+    "description": "Toast message when IMAP account is added"
+  },
+
+  "accounts_provider_google_messages": {
+    "message": "Google Messages",
+    "description": "Google Messages provider display name"
+  },
+  "accounts_gm_badge_sms": {
+    "message": "SMS",
+    "description": "Badge label for SMS source type"
+  },
+  "accounts_gm_empty_text": {
+    "message": "SMS verifications? There is a way. Autofill SMS codes from Google Messages.",
+    "description": "Empty state description for Google Messages card"
+  },
+  "accounts_gm_connect": {
+    "message": "Connect Google Messages",
+    "description": "Button label to connect Google Messages"
+  },
+  "accounts_gm_disclosure_how_title": {
+    "message": "How this works",
+    "description": "Disclosure section title: how it works"
+  },
+  "accounts_gm_disclosure_how_text": {
+    "message": "When a website asks for an SMS code, InboxKey opens Google Messages for Web in a background tab. It reads only the preview text of the last few messages, looking for a verification code. If a code is found, it is extracted and the tab is closed. If nothing is found within about 20 seconds, the tab is closed anyway. The tab is visible in the browser. Nothing is hidden.",
+    "description": "Disclosure section text: how it works"
+  },
+  "accounts_gm_disclosure_phone_title": {
+    "message": "Why the phone number",
+    "description": "Disclosure section title: phone number rationale"
+  },
+  "accounts_gm_disclosure_phone_text": {
+    "message": "The phone number is stored only on this device, nowhere else. It helps InboxKey tell the difference between an SMS code and an email code. When a website shows hints like a country code, the last digits of a number, or words like \"text message\", InboxKey uses the phone number to recognize the field as SMS and check Google Messages. Without it, InboxKey would not know when to look.",
+    "description": "Disclosure section text: phone number rationale"
+  },
+  "accounts_gm_disclosure_know_title": {
+    "message": "Good to know",
+    "description": "Disclosure section title: good to know"
+  },
+  "accounts_gm_disclosure_know_text": {
+    "message": "There is no API for Google Messages. This feature works by opening the website and reading the page, the same way a person would. The Google Messages session in the browser can expire over time. If it does, re-pair the device from messages.google.com. InboxKey will let you know when that happens.",
+    "description": "Disclosure section text: good to know"
+  },
+  "accounts_gm_phone_label": {
+    "message": "Phone number",
+    "description": "Label for phone number input"
+  },
+  "accounts_gm_phone_placeholder": {
+    "message": "+XX XXX XXX XXXX",
+    "description": "Placeholder for phone number input"
+  },
+  "accounts_gm_phone_hint": {
+    "message": "Enter at least 7 digits with country code. Stored locally on this device only.",
+    "description": "Hint text below phone number input"
+  },
+  "accounts_gm_phone_error": {
+    "message": "Please enter a valid phone number starting with + and at least 7 digits.",
+    "description": "Validation error for invalid phone number"
+  },
+  "accounts_gm_continue": {
+    "message": "Continue",
+    "description": "Continue button during phone input step"
+  },
+  "accounts_gm_cancel": {
+    "message": "Cancel",
+    "description": "Cancel button during setup steps"
+  },
+  "accounts_gm_pairing_title": {
+    "message": "Waiting for Google Messages to be paired...",
+    "description": "Pairing status text"
+  },
+  "accounts_gm_pairing_instruction": {
+    "message": "A tab was opened for messages.google.com. Please pair your phone there.",
+    "description": "Instruction text during pairing"
+  },
+  "accounts_gm_pairing_fallback_prefix": {
+    "message": "Tab didn't open?",
+    "description": "Prefix text for manual open fallback link"
+  },
+  "accounts_gm_pairing_fallback_link": {
+    "message": "Open Google Messages manually",
+    "description": "Fallback link text to open Google Messages"
+  },
+  "accounts_gm_connected_meta": {
+    "message": "When an SMS code is needed, Google Messages is checked automatically.",
+    "description": "Metadata text shown when connected"
+  },
+  "accounts_gm_disconnect_confirm_text": {
+    "message": "Disconnect Google Messages? SMS verification codes will no longer be retrieved.",
+    "description": "Disconnect confirmation text"
+  },
+  "accounts_gm_disconnect_confirm_button": {
+    "message": "Confirm Disconnect",
+    "description": "Confirm disconnect button label"
+  },
+  "accounts_gm_session_expired_text": {
+    "message": "The Google Messages session has expired. Please visit messages.google.com and re-pair your device.",
+    "description": "Error banner text for expired session"
+  },
+  "accounts_gm_session_expired_meta": {
+    "message": "The browser session for Google Messages needs to be renewed.",
+    "description": "Account row metadata for expired session"
+  },
+  "accounts_gm_repair": {
+    "message": "Re-pair",
+    "description": "Re-pair button label"
+  },
+  "accounts_gm_status_pairing": {
+    "message": "Pairing...",
+    "description": "Status chip text during pairing"
+  },
+  "accounts_gm_status_setting_up": {
+    "message": "Setting up",
+    "description": "Status chip text during phone input"
+  },
+  "accounts_gm_status_expired": {
+    "message": "Expired",
+    "description": "Status chip text when session expired"
+  },
+  "aria_connect_google_messages": {
+    "message": "Connect Google Messages for SMS verification codes",
+    "description": "ARIA label for connect Google Messages button"
+  },
+  "aria_disconnect_google_messages": {
+    "message": "Disconnect Google Messages",
+    "description": "ARIA label for disconnect Google Messages button"
+  },
+
+  "security_hero_title": {
+    "message": "How InboxKey handles your data",
+    "description": "Security transparency hero title"
+  },
+  "security_hero_subtitle": {
+    "message": "This page describes what the extension does and does not do with your information. No claims to verify, just facts to read.",
+    "description": "Security transparency hero subtitle"
+  },
+
+  "security_accessed_title": {
+    "message": "What is accessed",
+    "description": "Security section: what is accessed"
+  },
+  "security_accessed_description": {
+    "message": "The only data the extension reads",
+    "description": "Security section: what is accessed subtitle"
+  },
+  "security_accessed_verification_title": {
+    "message": "Verification emails only",
+    "description": "Security fact: verification emails title"
+  },
+  "security_accessed_verification_detail": {
+    "message": "Only emails containing verification codes or magic links are read. All other emails are ignored entirely.",
+    "description": "Security fact: verification emails detail"
+  },
+  "security_accessed_readonly_title": {
+    "message": "Read-only access",
+    "description": "Security fact: read-only title"
+  },
+  "security_accessed_readonly_detail": {
+    "message": "Email content is read but never modified, deleted, or moved. The extension cannot compose, send, or alter any email.",
+    "description": "Security fact: read-only detail"
+  },
+  "security_accessed_local_title": {
+    "message": "Parsed locally",
+    "description": "Security fact: parsed locally title"
+  },
+  "security_accessed_local_detail": {
+    "message": "All email parsing happens on your device. Email content is processed in memory and never leaves the browser.",
+    "description": "Security fact: parsed locally detail"
+  },
+
+  "security_stored_title": {
+    "message": "What is stored",
+    "description": "Security section: what is stored"
+  },
+  "security_stored_description": {
+    "message": "Everything saved locally, and nothing else",
+    "description": "Security section: what is stored subtitle"
+  },
+  "security_stored_connection_title": {
+    "message": "Connection status",
+    "description": "Security fact: connection status title"
+  },
+  "security_stored_connection_detail": {
+    "message": "Which email accounts are connected and whether the connection is active. No email content is stored.",
+    "description": "Security fact: connection status detail"
+  },
+  "security_stored_preferences_title": {
+    "message": "Preferences",
+    "description": "Security fact: preferences title"
+  },
+  "security_stored_preferences_detail": {
+    "message": "Display settings, blocked domains, and automation preferences. Stored in Chrome's local encrypted storage.",
+    "description": "Security fact: preferences detail"
+  },
+  "security_stored_cache_title": {
+    "message": "Short-lived code cache",
+    "description": "Security fact: code cache title"
+  },
+  "security_stored_cache_detail": {
+    "message": "Recently detected verification codes are held briefly so they can be offered for autofill. They expire automatically and can be cleared from Settings at any time.",
+    "description": "Security fact: code cache detail"
+  },
+
+  "security_notdone_title": {
+    "message": "What is not done",
+    "description": "Security section: what is not done"
+  },
+  "security_notdone_description": {
+    "message": "Things the extension will never do",
+    "description": "Security section: what is not done subtitle"
+  },
+  "security_notdone_analytics_title": {
+    "message": "No analytics or tracking",
+    "description": "Security fact: no analytics title"
+  },
+  "security_notdone_analytics_detail": {
+    "message": "No usage analytics, no event tracking, no telemetry of any kind. There is nothing to opt out of because nothing is collected.",
+    "description": "Security fact: no analytics detail"
+  },
+  "security_notdone_connections_title": {
+    "message": "No external connections",
+    "description": "Security fact: no external connections title"
+  },
+  "security_notdone_connections_detail": {
+    "message": "The extension does not contact any server, API, or service other than your email provider. It does not phone home.",
+    "description": "Security fact: no external connections detail"
+  },
+  "security_notdone_data_title": {
+    "message": "No data leaves your device",
+    "description": "Security fact: no data leaves title"
+  },
+  "security_notdone_data_detail": {
+    "message": "Nothing is uploaded, synced, or transmitted anywhere. All data stays in your browser's local storage on your machine.",
+    "description": "Security fact: no data leaves detail"
+  },
+
+  "security_permissions_title": {
+    "message": "Permissions explained",
+    "description": "Security section: permissions"
+  },
+  "security_permissions_description": {
+    "message": "Every permission requested, and why",
+    "description": "Security section: permissions subtitle"
+  },
+  "security_perm_identity_reason": {
+    "message": "Signs in with your Google account so verification emails can be read.",
+    "description": "Permission reason: identity"
+  },
+  "security_perm_tabs_reason": {
+    "message": "Detects login and verification pages so codes can be offered for autofill.",
+    "description": "Permission reason: tabs"
+  },
+  "security_perm_storage_reason": {
+    "message": "Saves preferences and settings locally in Chrome's encrypted storage.",
+    "description": "Permission reason: storage"
+  },
+  "security_perm_alarms_reason": {
+    "message": "Schedules periodic email checks in the background.",
+    "description": "Permission reason: alarms"
+  },
+  "security_perm_notifications_reason": {
+    "message": "Can show system notifications for detected verification codes.",
+    "description": "Permission reason: notifications"
+  },
+  "security_perm_nativemessaging_reason": {
+    "message": "Communicates with the local InboxBridge helper for IMAP accounts. Only active if installed.",
+    "description": "Permission reason: nativeMessaging"
+  },
+  "security_perm_hostpermissions_reason": {
+    "message": "Allows the autofill chip to appear on any website where a verification code field is detected.",
+    "description": "Permission reason: host_permissions"
+  },
+
+  "security_opensource_title": {
+    "message": "Open source",
+    "description": "Security section: open source"
+  },
+  "security_opensource_description": {
+    "message": "The full source code is public",
+    "description": "Security section: open source subtitle"
+  },
+  "security_opensource_available_title": {
+    "message": "Publicly available",
+    "description": "Security fact: publicly available title"
+  },
+  "security_opensource_available_detail": {
+    "message": "The entire codebase is on GitHub. It can be read, audited, forked, or built from source by anyone.",
+    "description": "Security fact: publicly available detail"
+  },
+  "security_opensource_builds_title": {
+    "message": "Reproducible builds",
+    "description": "Security fact: reproducible builds title"
+  },
+  "security_opensource_builds_detail": {
+    "message": "Build instructions are included in the repository. The published extension can be verified against the source code.",
+    "description": "Security fact: reproducible builds detail"
+  },
+
+  "security_source_cta_title": {
+    "message": "Words are cheap. Code is proof.",
+    "description": "Security source CTA title"
+  },
+  "security_source_cta_detail": {
+    "message": "The full source code is on GitHub. Read it, build it, verify every claim.",
+    "description": "Security source CTA detail"
+  },
+  "security_source_cta_link": {
+    "message": "View Source",
+    "description": "Security source CTA link text"
+  },
+
+  "security_contact_title": {
+    "message": "Found something wrong?",
+    "description": "Security contact title"
+  },
+  "security_contact_detail": {
+    "message": "Security issues can be reported at $EMAIL$. Every report is appreciated.",
+    "description": "Security contact detail",
+    "placeholders": {
+      "email": {
+        "content": "$1",
+        "example": "security@inboxkey.com"
+      }
+    }
+  },
+
+  "about_hero_name": {
+    "message": "InboxKey",
+    "description": "About hero: product name"
+  },
+  "about_version_aria": {
+    "message": "Copy version to clipboard: $VERSION$",
+    "description": "About hero: version badge ARIA label",
+    "placeholders": {
+      "version": {
+        "content": "$1",
+        "example": "v1.4.2+a3f8c01e"
+      }
+    }
+  },
+  "about_version_click_hint": {
+    "message": "Click to copy",
+    "description": "About hero: version badge hover tooltip"
+  },
+  "about_version_copied": {
+    "message": "Version copied to clipboard",
+    "description": "About hero: toast after copying version"
+  },
+  "about_version_copy_failed": {
+    "message": "Failed to copy version",
+    "description": "About hero: toast when copy fails"
+  },
+  "about_devnote_heading": {
+    "message": "Why this exists",
+    "description": "About: developer note heading"
+  },
+  "about_devnote_p1": {
+    "message": "I built InboxKey because I was tired of switching between tabs to copy verification codes. It sounds small, but it interrupts your flow dozens of times a week.",
+    "description": "About: developer note paragraph 1"
+  },
+  "about_devnote_p2": {
+    "message": "Email access is sensitive. I know that. That is exactly why everything is open-source, runs locally, and will never phone home. You should not have to trust a stranger with your inbox. You should be able to verify.",
+    "description": "About: developer note paragraph 2"
+  },
+  "about_devnote_signature": {
+    "message": "Selman, the dev",
+    "description": "About: developer note signature"
+  },
+  "about_resources_title": {
+    "message": "Resources",
+    "description": "About: resources section heading"
+  },
+  "about_resource_source": {
+    "message": "Source Code",
+    "description": "About: source code link label"
+  },
+  "about_resource_source_hint": {
+    "message": "View on GitHub",
+    "description": "About: source code link hint"
+  },
+  "about_resource_issues": {
+    "message": "Report an Issue",
+    "description": "About: issues link label"
+  },
+  "about_resource_issues_hint": {
+    "message": "Bugs and feedback",
+    "description": "About: issues link hint"
+  },
+  "about_resource_privacy": {
+    "message": "Privacy Policy",
+    "description": "About: privacy policy link label"
+  },
+  "about_resource_privacy_hint": {
+    "message": "Nothing leaves your device",
+    "description": "About: privacy policy link hint"
+  },
+  "about_support_heading": {
+    "message": "If this saves you time",
+    "description": "About: support section heading"
+  },
+  "about_support_body": {
+    "message": "InboxKey is free and always will be. A coffee keeps development going and lets me know someone out there finds it useful. Thank you.",
+    "description": "About: support section message"
+  },
+  "about_support_optional": {
+    "message": "Totally optional. Never nags, never blocks features.",
+    "description": "About: support section disclaimer"
+  },
+  "about_license": {
+    "message": "Apache-2.0 License",
+    "description": "About footer: license badge"
+  },
+  "about_credits_made_by": {
+    "message": "Made with care by",
+    "description": "About footer: credits prefix"
+  },
+  "about_credits_verified": {
+    "message": "Verified publisher. Reproducible builds.",
+    "description": "About footer: credits secondary line"
+  },
+  "about_verify_toggle": {
+    "message": "How to verify this build",
+    "description": "About: build verification toggle label"
+  },
+  "about_verify_intro": {
+    "message": "The version badge above shows the exact git commit this build was made from. To verify what code is running:",
+    "description": "About: build verification intro"
+  },
+  "about_verify_step1_label": {
+    "message": "1. Read the source:",
+    "description": "About: build verify step 1 label"
+  },
+  "about_verify_step1_text": {
+    "message": "Click the version badge to open the exact commit on GitHub. Every line of code that went into this build is visible there.",
+    "description": "About: build verify step 1 text"
+  },
+  "about_verify_step2_label": {
+    "message": "2. Inspect the installed extension:",
+    "description": "About: build verify step 2 label"
+  },
+  "about_verify_step2_text_before": {
+    "message": "Open",
+    "description": "About: build verify step 2 text before code"
+  },
+  "about_verify_step2_text_after": {
+    "message": ", find InboxKey, enable Developer mode, and click Details to browse the installed files.",
+    "description": "About: build verify step 2 text after code"
+  },
+  "about_verify_step3_label": {
+    "message": "3. Build from source:",
+    "description": "About: build verify step 3 label"
+  },
+  "about_verify_step3_text_before": {
+    "message": "Clone the repository, check out the commit shown above, and run",
+    "description": "About: build verify step 3 text before code"
+  },
+  "about_verify_step3_text_after": {
+    "message": "to produce your own build.",
+    "description": "About: build verify step 3 text after code"
+  },
+  "about_verify_closing": {
+    "message": "No trust required. The code is public, the build is traceable, and the installed files are inspectable.",
+    "description": "About: build verification closing statement"
+  },
+
+  "aria_dismiss_alert": {
+    "message": "Dismiss alert",
+    "description": "ARIA label for inline alert dismiss button"
+  },
+  "aria_connect_gmail_account": {
+    "message": "Connect Gmail account",
+    "description": "ARIA label for connect Gmail button in empty state"
+  },
+  "aria_reconnect_account": {
+    "message": "Reconnect $ACCOUNT$",
+    "description": "ARIA label for reconnect button with account email",
+    "placeholders": {
+      "account": {
+        "content": "$1",
+        "example": "user@example.com"
+      }
+    }
+  },
+  "aria_remove_account": {
+    "message": "Remove $ACCOUNT$",
+    "description": "ARIA label for remove button with account email",
+    "placeholders": {
+      "account": {
+        "content": "$1",
+        "example": "user@example.com"
+      }
+    }
+  },
+  "accounts_mismatch_error": {
+    "message": "Account mismatch. Expected $EXPECTED$ but got $ACTUAL$. Sign in with the correct account.",
+    "description": "Error when reconnecting with a different account than expected",
+    "placeholders": {
+      "expected": {
+        "content": "$1",
+        "example": "user@example.com"
+      },
+      "actual": {
+        "content": "$2",
+        "example": "other@example.com"
+      }
+    }
+  },
+  "aria_session_chip_enabled": {
+    "message": "On-page indicator enabled",
+    "description": "Screen reader announcement when session chip is enabled"
+  },
+  "aria_session_chip_disabled": {
+    "message": "On-page indicator disabled",
+    "description": "Screen reader announcement when session chip is disabled"
+  },
+  "aria_check_duration_set": {
+    "message": "Check duration set to $SECONDS$ seconds",
+    "description": "Screen reader announcement when check duration changes",
+    "placeholders": {
+      "seconds": {
+        "content": "$1",
+        "example": "30"
+      }
+    }
+  },
+  "aria_save_indicator_failed": {
+    "message": "Failed to save indicator setting",
+    "description": "Screen reader announcement when saving indicator setting fails"
+  },
+  "aria_save_timeout_failed": {
+    "message": "Failed to save timeout setting",
+    "description": "Screen reader announcement when saving timeout setting fails"
+  },
+  "aria_extended_detection_enabled": {
+    "message": "Extended button detection enabled",
+    "description": "Screen reader announcement when extended detection is enabled"
+  },
+  "aria_extended_detection_disabled": {
+    "message": "Extended button detection disabled",
+    "description": "Screen reader announcement when extended detection is disabled"
+  },
+  "aria_save_extended_detection_failed": {
+    "message": "Failed to save extended button detection setting",
+    "description": "Screen reader announcement when saving extended detection fails"
+  },
+  "aria_banking_blocklist_enabled": {
+    "message": "Banking site blocklist enabled",
+    "description": "Screen reader announcement when banking blocklist is enabled"
+  },
+  "aria_banking_blocklist_disabled": {
+    "message": "Banking site blocklist disabled",
+    "description": "Screen reader announcement when banking blocklist is disabled"
+  },
+  "aria_save_banking_blocklist_failed": {
+    "message": "Failed to save banking blocklist setting",
+    "description": "Screen reader announcement when saving banking blocklist fails"
+  },
+  "accounts_imap_tls_required_hint": {
+    "message": "TLS is required for port 993.",
+    "description": "Hint shown when TLS checkbox is disabled because port is 993"
+  },
+  "settings_indicator_disabled_manual": {
+    "message": "Not available in Manual mode. No session is created.",
+    "description": "Hint shown when indicator toggle is disabled due to manual automation level"
+  },
+  "settings_blacklist_empty": {
+    "message": "No ignored sites. InboxKey is active on all sites.",
+    "description": "Empty state text shown when no sites are blacklisted"
+  },
+
+  "blacklist_tab_domains": {
+    "message": "Domains",
+    "description": "Tab label for domain-level blacklist"
+  },
+  "blacklist_tab_urls": {
+    "message": "URLs",
+    "description": "Tab label for URL-level blacklist"
+  },
+  "blacklist_modal_subtitle": {
+    "message": "Domains block an entire site. URLs block a specific page.",
+    "description": "Subtitle below Ignored Sites modal title explaining tab distinction"
+  },
+  "blacklist_domain_description": {
+    "message": "InboxKey will not look for verification codes on these domains. Subdomains are included automatically.",
+    "description": "Description text on the Domains tab"
+  },
+  "blacklist_domain_hint": {
+    "message": "Format: example.com (without http or www)",
+    "description": "Hint text for domain input format"
+  },
+  "blacklist_domain_placeholder": {
+    "message": "example.com",
+    "description": "Placeholder for domain input field"
+  },
+  "blacklist_domain_add_button": {
+    "message": "Add Domain",
+    "description": "Button label to add a domain to the ignore list"
+  },
+  "blacklist_domain_input_aria": {
+    "message": "Domain to ignore",
+    "description": "ARIA label for domain input"
+  },
+  "blacklist_domain_hint_sr": {
+    "message": "Format: example.com (without http or www)",
+    "description": "Screen reader hint for domain input"
+  },
+  "blacklist_domain_error_empty": {
+    "message": "Please enter a domain.",
+    "description": "Error when domain input is empty"
+  },
+  "blacklist_domain_error_add_failed": {
+    "message": "Failed to add domain.",
+    "description": "Fallback error when adding domain fails"
+  },
+  "blacklist_domain_limit_warning": {
+    "message": "Maximum of $COUNT$ domains reached.",
+    "description": "Warning when domain limit is reached",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "100"
+      }
+    }
+  },
+  "blacklist_domain_search_placeholder": {
+    "message": "Search domains...",
+    "description": "Placeholder for domain search input"
+  },
+  "blacklist_domain_count_singular": {
+    "message": "$COUNT$ domain",
+    "description": "Domain count (singular)",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "1"
+      }
+    }
+  },
+  "blacklist_domain_count_plural": {
+    "message": "$COUNT$ domains",
+    "description": "Domain count (plural)",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "5"
+      }
+    }
+  },
+  "blacklist_domain_count_filtered": {
+    "message": "$FILTERED$ of $TOTAL$",
+    "description": "Filtered domain count",
+    "placeholders": {
+      "filtered": {
+        "content": "$1",
+        "example": "3"
+      },
+      "total": {
+        "content": "$2",
+        "example": "10"
+      }
+    }
+  },
+  "blacklist_domain_empty_title": {
+    "message": "No ignored domains yet.",
+    "description": "Empty state title when no domains are ignored"
+  },
+  "blacklist_domain_no_match_title": {
+    "message": "No matching domains.",
+    "description": "Empty state title when search has no matches"
+  },
+  "blacklist_domain_no_match_hint": {
+    "message": "Try adjusting your search or",
+    "description": "Hint text before clear filter button"
+  },
+  "blacklist_domain_remove_aria": {
+    "message": "Remove $DOMAIN$ from ignored domains",
+    "description": "ARIA label for domain remove button",
+    "placeholders": {
+      "domain": {
+        "content": "$1",
+        "example": "example.com"
+      }
+    }
+  },
+  "blacklist_url_description": {
+    "message": "InboxKey will not look for verification codes on these specific pages.",
+    "description": "Description text on the URLs tab"
+  },
+  "blacklist_url_hint": {
+    "message": "Format: https://example.com/login",
+    "description": "Hint text for URL input format"
+  },
+  "blacklist_url_placeholder": {
+    "message": "https://example.com/login",
+    "description": "Placeholder for URL input field"
+  },
+  "blacklist_url_add_button": {
+    "message": "Add URL",
+    "description": "Button label to add a URL to the ignore list"
+  },
+  "blacklist_url_input_aria": {
+    "message": "URL to ignore",
+    "description": "ARIA label for URL input"
+  },
+  "blacklist_url_hint_sr": {
+    "message": "Enter a complete URL like https://example.com/login",
+    "description": "Screen reader hint for URL input"
+  },
+  "blacklist_url_error_empty": {
+    "message": "Please enter a URL.",
+    "description": "Error when URL input is empty"
+  },
+  "blacklist_url_error_add_failed": {
+    "message": "Failed to add URL.",
+    "description": "Fallback error when adding URL fails"
+  },
+  "blacklist_url_limit_warning": {
+    "message": "Maximum of $COUNT$ URLs reached.",
+    "description": "Warning when URL limit is reached",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "100"
+      }
+    }
+  },
+  "blacklist_url_search_placeholder": {
+    "message": "Search URLs...",
+    "description": "Placeholder for URL search input"
+  },
+  "blacklist_url_count_singular": {
+    "message": "$COUNT$ URL",
+    "description": "URL count (singular)",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "1"
+      }
+    }
+  },
+  "blacklist_url_count_plural": {
+    "message": "$COUNT$ URLs",
+    "description": "URL count (plural)",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "5"
+      }
+    }
+  },
+  "blacklist_url_count_filtered": {
+    "message": "$FILTERED$ of $TOTAL$",
+    "description": "Filtered URL count",
+    "placeholders": {
+      "filtered": {
+        "content": "$1",
+        "example": "3"
+      },
+      "total": {
+        "content": "$2",
+        "example": "10"
+      }
+    }
+  },
+  "blacklist_url_empty_title": {
+    "message": "No ignored URLs yet.",
+    "description": "Empty state title when no URLs are ignored"
+  },
+  "blacklist_url_no_match_title": {
+    "message": "No matching URLs.",
+    "description": "Empty state title when URL search has no matches"
+  },
+  "blacklist_url_no_match_hint": {
+    "message": "Try adjusting your search or",
+    "description": "Hint text before clear filter button"
+  },
+  "blacklist_url_remove_aria": {
+    "message": "Remove $URL$ from ignored URLs",
+    "description": "ARIA label for URL remove button",
+    "placeholders": {
+      "url": {
+        "content": "$1",
+        "example": "https://example.com/login"
+      }
+    }
+  },
+  "blacklist_remove_all_button": {
+    "message": "Remove All",
+    "description": "Button label to remove all entries from ignore list"
+  },
+  "blacklist_remove_all_confirm_domains": {
+    "message": "All ignored domains will be removed. Are you sure?",
+    "description": "Inline confirmation message before removing all domains"
+  },
+  "blacklist_remove_all_confirm_urls": {
+    "message": "All ignored URLs will be removed. Are you sure?",
+    "description": "Inline confirmation message before removing all URLs"
+  },
+  "blacklist_remove_all_yes": {
+    "message": "Yes, remove all",
+    "description": "Confirm button label for remove all"
+  },
+  "blacklist_cancel": {
+    "message": "Cancel",
+    "description": "Cancel button label for inline confirmation"
+  },
+  "blacklist_clear_filter": {
+    "message": "clear the filter",
+    "description": "Link text to clear search filter"
+  },
+  "blacklist_loading": {
+    "message": "Loading...",
+    "description": "Loading state text in blacklist tabs"
+  },
+  "blacklist_tabs_aria": {
+    "message": "Ignored sites management tabs",
+    "description": "ARIA label for tab navigation"
+  }
+}

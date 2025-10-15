@@ -1,0 +1,13 @@
+{
+  "id": "clickup-magic-001",
+  "type": "magic-link",
+  "category": "productivity",
+  "from": "noreply@clickup.com",
+  "subject": "Sign in to Clickup",
+  "body": "Click the link below to sign in:\n\nhttps://clickup.com/auth/login?token=51b87033cc6db1c64ccb16ea63bdbb8c\n\nThis link expires in 15 minutes.",
+  "extracted": {
+    "link": "https://clickup.com/auth/login?token=51b87033cc6db1c64ccb16ea63bdbb8c",
+    "token": "51b87033cc6db1c64ccb16ea63bdbb8c",
+    "confidence": "high"
+  }
+}

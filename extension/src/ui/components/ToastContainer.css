@@ -1,0 +1,119 @@
+.toast-container {
+  position: fixed;
+  right: var(--space-4);
+  bottom: var(--space-4);
+  display: grid;
+  gap: var(--space-2);
+  z-index: var(--z-toast);
+  pointer-events: none;
+}
+
+.toast {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 280px;
+  max-width: 360px;
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-toast);
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  pointer-events: auto;
+  opacity: 0;
+  transform: translateX(40px);
+  transition: transform var(--duration-slow) var(--easing-out),
+              opacity var(--duration-slow) var(--easing-out);
+}
+
+.toast.show {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+/* WCAG AA compliant backgrounds for light mode */
+.toast--success {
+  background: var(--color-success-dark);
+  color: var(--color-text-inverse);
+}
+
+.toast--error {
+  background: var(--color-error-dark);
+  color: var(--color-text-inverse);
+}
+
+.toast--info {
+  background: var(--color-primary);
+  color: var(--color-text-inverse);
+}
+
+/* Dark mode: lighter backgrounds with dark text */
+[data-theme="dark"] .toast--success {
+  background: var(--color-success);
+  color: var(--color-text-inverse);
+}
+
+[data-theme="dark"] .toast--error {
+  background: var(--color-error);
+  color: var(--color-text-inverse);
+}
+
+[data-theme="dark"] .toast--info {
+  background: var(--color-info);
+  color: var(--color-text-inverse);
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .toast {
+    transition: none;
+    transform: none;
+    opacity: 1;
+  }
+}
+
+/* Minimalistic icon styling */
+.toast__icon {
+  flex-shrink: 0;
+  font-size: 18px;
+  font-weight: var(--font-weight-semibold);
+  line-height: 1;
+  opacity: 0.95;
+}
+
+/* Message text */
+.toast__message {
+  flex: 1;
+  font-size: var(--font-size-base);
+  line-height: var(--line-height-normal);
+}
+
+/* Close button */
+.toast__close {
+  margin-left: auto;
+  background: transparent;
+  border: none;
+  color: currentColor;
+  cursor: pointer;
+  font-size: 18px;
+  font-weight: var(--font-weight-semibold);
+  line-height: 1;
+  padding: var(--space-1);
+  min-width: var(--min-tap-target);
+  min-height: var(--min-tap-target);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.8;
+  transition: opacity var(--duration-fast) ease-out;
+}
+
+.toast__close:hover {
+  opacity: 1;
+}
+
+.toast__close:focus-visible {
+  outline: 2px solid rgba(255, 255, 255, 0.5);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}

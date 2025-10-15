@@ -1,0 +1,14 @@
+{
+  "id": "dropbox-alert-001",
+  "type": "security-alert",
+  "category": "security",
+  "from": "security@dropbox.com",
+  "subject": "New device linked",
+  "body": "We detected a new device linked to your Dropbox account.\n\nLocation: San Francisco, CA\nDevice: Dropbox Desktop\nTime: 2025-10-15T14:31:44Z\n\nIf this was you, you can ignore this email. If not, secure your account immediately.",
+  "extracted": {
+    "alertType": "New device linked",
+    "location": "San Francisco, CA",
+    "device": "Dropbox Desktop",
+    "requiresAction": false
+  }
+}

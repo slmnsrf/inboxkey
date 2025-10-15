@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Two-step verification - Dropbox</title>
+</head>
+<body>
+    <div class="login-wrapper">
+        <div class="login-form">
+            <h1>Enter your security code</h1>
+            <p>To sign in, enter the 6-digit code from your authenticator app.</p>
+            <form action="/login/verify" method="POST">
+                <div class="text-input-wrapper">
+                    <!-- Detection signals: autocomplete="one-time-code", inputmode="numeric", name="otp" -->
+                    <label for="otp-input">Security code</label>
+                    <input
+                        type="tel"
+                        id="otp-input"
+                        name="otp"
+                        class="text-input"
+                        autocomplete="one-time-code"
+                        inputmode="numeric"
+                        pattern="[0-9]{6}"
+                        maxlength="6"
+                        placeholder="000000"
+                        required
+                        autofocus
+                    >
+                </div>
+                <div class="checkbox-row">
+                    <input type="checkbox" id="remember-me" name="remember_me">
+                    <label for="remember-me">Remember this computer for 30 days</label>
+                </div>
+                <button type="submit" class="button-primary">Continue</button>
+            </form>
+            <div class="alternate-options">
+                <a href="/login/sms">Use text message</a> |
+                <a href="/login/backup">Use backup code</a>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

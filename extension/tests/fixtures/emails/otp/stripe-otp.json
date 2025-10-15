@@ -1,0 +1,18 @@
+{
+  "id": "stripe-otp-001",
+  "type": "otp",
+  "category": "finance",
+  "from": "noreply@stripe.com",
+  "subject": "Your Stripe verification code",
+  "body": "Your Stripe verification code is 538921. Don't share this code with anyone; our employees will never ask for the code.",
+  "extracted": {
+    "code": "538921",
+    "pattern": "numeric-6",
+    "confidence": "high"
+  },
+  "metadata": {
+    "sent": "2025-10-15T11:17:44Z",
+    "expiresIn": "15 minutes",
+    "provider": "Stripe"
+  }
+}

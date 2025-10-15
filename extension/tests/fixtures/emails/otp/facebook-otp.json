@@ -1,0 +1,18 @@
+{
+  "id": "facebook-otp-001",
+  "type": "otp",
+  "category": "social",
+  "from": "security@facebookmail.com",
+  "subject": "748529 is your Facebook code",
+  "body": "748529 is your Facebook confirmation code\n\nH29Q+Fsn4Sr",
+  "extracted": {
+    "code": "748529",
+    "pattern": "numeric-6",
+    "confidence": "high"
+  },
+  "metadata": {
+    "sent": "2025-10-15T10:38:11Z",
+    "expiresIn": "10 minutes",
+    "provider": "Facebook"
+  }
+}

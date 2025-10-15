@@ -1,0 +1,14 @@
+{
+  "id": "salesforce-alert-001",
+  "type": "security-alert",
+  "category": "security",
+  "from": "security@salesforce.com",
+  "subject": "Login notification",
+  "body": "We detected a login notification to your Salesforce account.\n\nLocation: Sydney, Australia\nDevice: Salesforce Mobile\nTime: 2025-10-15T14:31:44Z\n\nIf this was you, you can ignore this email. If not, secure your account immediately.",
+  "extracted": {
+    "alertType": "Login notification",
+    "location": "Sydney, Australia",
+    "device": "Salesforce Mobile",
+    "requiresAction": false
+  }
+}

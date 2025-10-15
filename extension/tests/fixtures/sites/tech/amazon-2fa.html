@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Two-Step Verification - Amazon</title>
+</head>
+<body>
+    <div id="authportal-center-section">
+        <div class="a-box">
+            <div class="a-box-inner">
+                <h1 class="a-spacing-small">Two-Step Verification</h1>
+                <div class="a-row">
+                    <p>We've sent a One Time Password (OTP) to the phone number ending in ***-1234. Please enter it below to complete sign in.</p>
+                </div>
+                <form name="signIn" method="post" action="/ap/signin" id="auth-mfa-form">
+                    <div class="a-section">
+                        <!-- Detection signals: autocomplete="one-time-code", inputmode="numeric", name="otpCode" -->
+                        <label for="auth-mfa-otpcode">Enter OTP</label>
+                        <input
+                            type="text"
+                            id="auth-mfa-otpcode"
+                            name="otpCode"
+                            class="a-input-text a-span12"
+                            autocomplete="one-time-code"
+                            inputmode="numeric"
+                            maxlength="6"
+                            required
+                        >
+                    </div>
+                    <div class="a-section">
+                        <span class="a-button a-button-span12 a-button-primary">
+                            <button type="submit" class="a-button-inner">
+                                <span class="a-button-text">Sign in</span>
+                            </button>
+                        </span>
+                    </div>
+                    <div class="a-row a-spacing-base">
+                        <label>
+                            <input type="checkbox" name="rememberDevice" value="true">
+                            <span>Don't require OTP on this device</span>
+                        </label>
+                    </div>
+                </form>
+                <div class="a-section">
+                    <a href="/ap/mfa/resend">Resend OTP</a> |
+                    <a href="/ap/cvf/request">Try another way</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

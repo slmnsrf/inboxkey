@@ -1,0 +1,18 @@
+{
+  "id": "google-otp-001",
+  "type": "otp",
+  "category": "tech",
+  "from": "no-reply@google.com",
+  "subject": "Google verification code",
+  "body": "Your Google verification code is 842395. This code will expire in 10 minutes.",
+  "extracted": {
+    "code": "842395",
+    "pattern": "numeric-6",
+    "confidence": "high"
+  },
+  "metadata": {
+    "sent": "2025-10-15T10:30:00Z",
+    "expiresIn": "10 minutes",
+    "provider": "Google"
+  }
+}

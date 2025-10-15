@@ -1,0 +1,13 @@
+{
+  "id": "miro-magic-001",
+  "type": "magic-link",
+  "category": "design",
+  "from": "noreply@miro.com",
+  "subject": "Sign in to Miro",
+  "body": "Click the link below to sign in:\n\nhttps://miro.com/auth/login?token=530efca6e62357cb34d206b1cc8d648b\n\nThis link expires in 15 minutes.",
+  "extracted": {
+    "link": "https://miro.com/auth/login?token=530efca6e62357cb34d206b1cc8d648b",
+    "token": "530efca6e62357cb34d206b1cc8d648b",
+    "confidence": "high"
+  }
+}

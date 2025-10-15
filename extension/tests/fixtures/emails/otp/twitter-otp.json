@@ -1,0 +1,18 @@
+{
+  "id": "twitter-otp-001",
+  "type": "otp",
+  "category": "social",
+  "from": "info@x.com",
+  "subject": "Your X confirmation code is 572941",
+  "body": "Your X confirmation code is 572941. Use it to verify your account.",
+  "extracted": {
+    "code": "572941",
+    "pattern": "numeric-6",
+    "confidence": "high"
+  },
+  "metadata": {
+    "sent": "2025-10-15T10:40:23Z",
+    "expiresIn": "10 minutes",
+    "provider": "X (Twitter)"
+  }
+}
