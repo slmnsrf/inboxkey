@@ -43,11 +43,17 @@ client_secret*.json
 .DS_Store
 Thumbs.db
 
-# Test coverage
+# Test coverage and reports
 coverage/
 .nyc_output/
+playwright-report/
+test-results/
 
 # Temporary files
 *.log
 .cache/
 .temp/
+*.tsbuildinfo
+
+# Demo/prototype files
+*demo*.html
