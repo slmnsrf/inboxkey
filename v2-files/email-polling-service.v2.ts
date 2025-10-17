@@ -185,7 +185,7 @@ export class EmailPollingService {
           const topOtp = ext.otps && ext.otps[0]
           const topLink = ext.links && ext.links[0]
 
-          const otpScore = topOtp ? topOtp.confidence : 0
+          const otpScore = topOtp ? (topOtp.confidence ?? topOtp.score ?? 0) : 0
           const linkScore = topLink ? (topLink.score ?? 0) : 0
           const topScore = Math.max(otpScore, linkScore)
 
@@ -200,7 +200,7 @@ export class EmailPollingService {
               score: topScore,
             }
             if (otpScore >= linkScore && topOtp) {
-              const kind = topOtp.charset
+              const kind = (topOtp.charset ?? topOtp.kind ?? 'digits') as 'digits'|'alnum'
               rec.code = { value: topOtp.code, kind, score: otpScore }
             } else if (topLink) {
               rec.link = { href: topLink.href, domain: topLink.domain, score: linkScore }

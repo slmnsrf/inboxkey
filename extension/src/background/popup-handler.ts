@@ -10,7 +10,7 @@ import { KeyManager } from '@/lib/crypto/key-manager'
 import { getSavedSalt } from '@/lib/crypto/lock-state'
 import type { PopupRequest, PopupResponse } from '@/shared/popup-messages'
 import { EmailPollingService } from '@/lib/services/email-polling-service'
-import { GMAIL_CONFIG } from '@/lib/providers/gmail/config'
+import { createAdaptersFromMailboxes } from '@/lib/services/provider-adapter'
 import { StorageFactory } from '@/lib/storage/storage-factory'
 import { migrateToEncrypted, migrateToPlaintext } from '@/lib/storage/migration'
 
@@ -248,18 +248,24 @@ export class PopupMessageHandler {
             // Get storage for current mode
             const storage = await StorageFactory.create()
 
-            // Run email polling
-            const pollingService = new EmailPollingService(
-              storage,
-              GMAIL_CONFIG,
-              this.cacheManager
-            )
+            // Create adapters from mailboxes (v2 pattern)
+            const adapters = await createAdaptersFromMailboxes(storage)
 
-            const result = await pollingService.pollAllMailboxes()
-
-            if (result.errors.length > 0) {
-              console.warn('[PopupHandler] Manual sync had errors:', result.errors)
+            if (adapters.length === 0) {
+              return {
+                success: false,
+                error: 'No mailboxes configured',
+              }
             }
+
+            // Run email polling (v2 API)
+            const pollingService = new EmailPollingService(adapters)
+            const candidates = await pollingService.pollOnce()
+
+            console.log(`[PopupHandler] Manual sync found ${candidates.length} candidates`)
+
+            // TODO: Store candidates to storage (v2 doesn't do this automatically)
+            // For now, just trigger cache refresh from storage
 
             // Update cache and return fresh data
             const cache = await this.cacheManager.getCache()

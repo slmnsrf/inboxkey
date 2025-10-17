@@ -10,9 +10,8 @@
 import { KeyManager } from "@/lib/crypto/key-manager"
 import { findBestMatchingCode } from "@/lib/matching/code-matcher"
 import { StorageFactory } from "@/lib/storage/storage-factory"
-import type { IStorage } from "@/lib/storage/storage-interface"
 import { EmailPollingService } from "@/lib/services/email-polling-service"
-import { GMAIL_CONFIG } from "@/lib/providers/gmail/config"
+import { createAdaptersFromMailboxes } from "@/lib/services/provider-adapter"
 import type { PopupCacheManager } from "./popup-cache"
 
 const SESSION_STORAGE_KEY = "inboxkey.sessions"
@@ -293,22 +292,23 @@ export class SessionController {
       // Get appropriate storage for current mode (plaintext or encrypted)
       const storage = await StorageFactory.create()
 
-      // Poll emails from all connected mailboxes
-      const pollingService = new EmailPollingService(
-        storage,
-        GMAIL_CONFIG,
-        this.popupCacheManager
-      )
-      const result = await pollingService.pollAllMailboxes()
-      console.log(
-        `[SessionController] Email poll complete: ${result.newCodesCount} new codes from ${result.mailboxesPolled} mailboxes`
-      )
-      if (result.errors.length > 0) {
-        console.warn(
-          `[SessionController] Email poll had ${result.errors.length} errors:`,
-          result.errors
-        )
+      // Create adapters from mailboxes (v2 pattern)
+      const adapters = await createAdaptersFromMailboxes(storage)
+
+      if (adapters.length === 0) {
+        console.log('[SessionController] No mailboxes configured, skipping poll')
+        return null
       }
+
+      // Poll emails from all connected mailboxes (v2 API)
+      const pollingService = new EmailPollingService(adapters)
+      const candidates = await pollingService.pollOnce()
+      console.log(
+        `[SessionController] Email poll complete: ${candidates.length} candidates found`
+      )
+
+      // TODO: Store candidates to storage (v2 doesn't do this automatically)
+      // For now, continue with existing storage check
 
       // Check storage for matching codes
       const codes = await storage.getRecentCodes(10)

@@ -214,7 +214,7 @@ function decodeEntities(s: string): string {
 }
 
 /** Build a case-insensitive word-boundary regex for an array of keywords/regex sources */
-function buildKeywordRegex(words: readonly (string | RegExp)[]): RegExp {
+function buildKeywordRegex(words: (string | RegExp)[]): RegExp {
   // Treat incoming RegExp.source as literal where possible; keywords already curated in extraction-types
   const parts = words.map(w => {
     if (w instanceof RegExp) return w.source

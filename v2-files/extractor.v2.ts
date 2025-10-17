@@ -17,6 +17,7 @@
 /* eslint-disable no-useless-escape */
 
 import {
+  CODE_KEYWORDS,
   MAGIC_LINK_KEYWORDS,
   MAGIC_LINK_URL_HINTS,
   DANGEROUS_LINK_KEYWORDS,
