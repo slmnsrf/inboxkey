@@ -466,10 +466,12 @@ export class PlaintextStorage {
     // Emit storage change event for cross-context synchronization
     // This allows service worker, popup, and content scripts to stay in sync
     try {
-      chrome.runtime.sendMessage({
+      await chrome.runtime.sendMessage({
         type: "storage-changed",
         changeType: type,
         timestamp: Date.now(),
+      }).catch(() => {
+        // Silently ignore - no listeners available (expected during startup/shutdown)
       })
     } catch (error) {
       // Ignore errors if no listeners are registered

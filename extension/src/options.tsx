@@ -13,6 +13,7 @@ import { TabNavigation, type Tab } from './ui/components/TabNavigation'
 import { AboutSection } from './ui/components/AboutSection'
 import { AccountsPanel } from './ui/components/AccountsPanel'
 import { AppearanceSettings } from './ui/components/AppearanceSettings'
+import { DataManagement } from './ui/components/DataManagement'
 import { BuyMeACoffeeButton } from './ui/components/BuyMeACoffeeButton'
 import { t } from './lib/i18n'
 import './options.css'
@@ -116,6 +117,7 @@ function OptionsApp() {
                       </p>
                     </header>
                     <AppearanceSettings />
+                    <DataManagement />
                   </section>
                 </div>
 

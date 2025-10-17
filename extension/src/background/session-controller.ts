@@ -359,6 +359,12 @@ export class SessionController {
         }
       }
 
+      // Update lastSyncedAt for all mailboxes after successful polling
+      const now = Date.now()
+      for (const mailbox of mailboxes) {
+        await storage.updateMailbox(mailbox.id, { lastSyncedAt: now })
+      }
+
       // Update popup cache if available
       if (this.popupCacheManager && candidates.length > 0) {
         const recentCodes = await storage.getRecentCodes(10)

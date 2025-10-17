@@ -237,6 +237,11 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     return true
   }
 
+  if (msg.type === "CLEAR_ALL_CODES") {
+    handleClearAllCodes(sendResponse)
+    return true
+  }
+
   if (msg.type === "FETCH_CODE") {
     console.warn(
       "[InboxKey] FETCH_CODE is deprecated. SessionController now manages polling."
@@ -668,5 +673,40 @@ function handleRemoveMailbox(msg: any, sendResponse: (response: any) => void) {
     }
   })().catch((error) => {
     console.error("[Background] handleRemoveMailbox unhandled rejection:", error)
+  })
+}
+
+/**
+ * Handle CLEAR_ALL_CODES requests.
+ */
+function handleClearAllCodes(sendResponse: (response: any) => void) {
+  ;(async () => {
+    try {
+      const keyManager = KeyManager.getInstance()
+
+      // Check if locked
+      if (keyManager.isLocked()) {
+        sendResponse({ success: false, error: "Extension is locked" })
+        return
+      }
+
+      // Use StorageFactory to get appropriate storage
+      const storage = await StorageFactory.create()
+      await storage.clearAllCodes()
+
+      // Update popup cache to reflect cleared codes
+      const mailboxes = await storage.getMailboxes()
+      await popupCacheManager.warmCache([], mailboxes.length, mailboxes)
+
+      sendResponse({ success: true })
+    } catch (error) {
+      console.error("[Background] Failed to clear all codes:", error)
+      sendResponse({
+        success: false,
+        error: error instanceof Error ? error.message : String(error),
+      })
+    }
+  })().catch((error) => {
+    console.error("[Background] handleClearAllCodes unhandled rejection:", error)
   })
 }

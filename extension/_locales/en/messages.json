@@ -1046,5 +1046,30 @@
   "site_overrides_modes_title": {
     "message": "How it works",
     "description": "Site overrides: modes title"
+  },
+
+  "data_management_heading": {
+    "message": "Data Management",
+    "description": "Data management section heading"
+  },
+  "data_management_description": {
+    "message": "Clear verification codes and magic links from storage. Your connected accounts will remain intact.",
+    "description": "Data management section description"
+  },
+  "button_clear_all_codes": {
+    "message": "Clear All Codes",
+    "description": "Button to clear all stored codes"
+  },
+  "clear_codes_confirm": {
+    "message": "Clear all verification codes and magic links? This cannot be undone.",
+    "description": "Confirmation dialog for clearing all codes"
+  },
+  "toast_codes_cleared": {
+    "message": "✓ All codes cleared",
+    "description": "Success toast after clearing codes"
+  },
+  "toast_clear_codes_failed": {
+    "message": "Failed to clear codes",
+    "description": "Error toast when clearing codes fails"
   }
 }

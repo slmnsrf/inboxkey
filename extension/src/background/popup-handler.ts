@@ -321,6 +321,13 @@ export class PopupMessageHandler {
 
             console.log(`[PopupHandler] Stored ${newCodesCount} new items`)
 
+            // Update lastSyncedAt for all mailboxes after successful sync
+            const now = Date.now()
+            for (const mailbox of mailboxes) {
+              await storage.updateMailbox(mailbox.id, { lastSyncedAt: now })
+            }
+            console.log(`[PopupHandler] Updated lastSyncedAt for ${mailboxes.length} mailboxes`)
+
             // Update popup cache with recent codes from storage
             const recentCodes = await storage.getRecentCodes(10)
             await this.cacheManager.updateWithNewCodes(recentCodes, mailboxes.length, mailboxes)
