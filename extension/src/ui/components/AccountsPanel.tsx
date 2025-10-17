@@ -111,10 +111,17 @@ export function AccountsPanel() {
       setConnectionStage('loading_profile')
 
       // Step 2: Fetch user profile
+      console.log('[AccountsPanel] Fetching Gmail profile...')
       const email = await fetchGmailProfile(tokens.accessToken)
+      console.log('[AccountsPanel] Gmail profile email:', email)
+      console.log('[AccountsPanel] Current mailboxes:', mailboxes.map(m => `${m.email} (${m.providerId})`))
 
       // Check for duplicate
-      if (mailboxes.some(mb => mb.email === email && mb.providerId === 'gmail')) {
+      const isDuplicate = mailboxes.some(mb => mb.email === email && mb.providerId === 'gmail')
+      console.log('[AccountsPanel] Is duplicate?:', isDuplicate)
+
+      if (isDuplicate) {
+        console.warn('[AccountsPanel] Duplicate Gmail account detected, showing error toast')
         showToast(t('toast_connect_duplicate'), 'error')
         return
       }
@@ -122,17 +129,21 @@ export function AccountsPanel() {
       setConnectionStage('saving')
 
       // Step 3: Store mailbox
+      console.log('[AccountsPanel] Storing mailbox for:', email)
       const response = await chrome.runtime.sendMessage({
         type: 'STORE_MAILBOX',
         provider: 'gmail',
         email,
         tokens
       })
+      console.log('[AccountsPanel] Store mailbox response:', response)
 
       if (response.success) {
+        console.log('[AccountsPanel] Gmail account connected successfully')
         showToast(t('toast_gmail_connected'), 'success')
         await loadMailboxes()
       } else {
+        console.error('[AccountsPanel] Store mailbox failed:', response.error)
         showToast(response.error || t('toast_connect_failed'), 'error')
       }
     } catch (error) {
