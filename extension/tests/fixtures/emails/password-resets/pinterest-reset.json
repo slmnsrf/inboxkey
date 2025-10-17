@@ -1,0 +1,14 @@
+{
+  "id": "pinterest-reset-001",
+  "type": "password-reset",
+  "category": "security",
+  "from": "noreply@pinterest.com",
+  "subject": "Pinterest Password Reset",
+  "body": "You requested a password reset for your Pinterest.\n\nClick here to reset: https://pinterest.com/reset?token=996a42a4ae1c8ec0817c1ad67b5033e8e14dc763\n\nIf you didn't request this, please ignore this email.",
+  "extracted": {
+    "link": "https://pinterest.com/reset?token=996a42a4ae1c8ec0817c1ad67b5033e8e14dc763",
+    "token": "996a42a4ae1c8ec0817c1ad67b5033e8e14dc763",
+    "type": "password-reset",
+    "confidence": "high"
+  }
+}

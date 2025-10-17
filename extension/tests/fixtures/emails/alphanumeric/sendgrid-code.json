@@ -1,0 +1,13 @@
+{
+  "id": "sendgrid-alpha-001",
+  "type": "alphanumeric",
+  "category": "saas",
+  "from": "noreply@sendgrid.com",
+  "subject": "Verification Code",
+  "body": "Your verification code is: SG78ND23",
+  "extracted": {
+    "code": "SG78ND23",
+    "pattern": "alphanumeric-8",
+    "confidence": "high"
+  }
+}

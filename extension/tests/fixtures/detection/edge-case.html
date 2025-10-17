@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Edge Cases - Should NOT Detect</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 40px; max-width: 600px; margin: 0 auto; }
+    .section { margin-bottom: 40px; padding: 20px; background: #f5f5f5; border-radius: 8px; }
+    h2 { margin-top: 0; color: #333; }
+    label { display: block; margin-bottom: 6px; font-weight: 500; }
+    input { width: 100%; padding: 10px; margin-bottom: 16px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
+    .note { font-size: 13px; color: #666; font-style: italic; }
+  </style>
+</head>
+<body>
+  <!--
+    Expected Detection:
+    - Field: NONE (all inputs should be excluded or hidden)
+    - Confidence: N/A
+    - Tier: N/A
+    - Signals: N/A
+    - Rationale: Tests false positive prevention - no field should be detected
+  -->
+
+  <h1>Edge Cases Test Page</h1>
+  <p class="note">This page contains various edge cases that should NOT trigger detection</p>
+
+  <!-- Hidden field with OTP-like name (should be filtered out) -->
+  <div class="section">
+    <h2>1. Hidden Field</h2>
+    <input
+      type="hidden"
+      id="hidden-otp"
+      name="otp"
+      value="123456"
+    />
+    <p class="note">Hidden input with name="otp" - should NOT be detected (not visible)</p>
+  </div>
+
+  <!-- Password field (excluded by pattern) -->
+  <div class="section">
+    <h2>2. Password Field</h2>
+    <label for="user-password">Password</label>
+    <input
+      type="password"
+      id="user-password"
+      name="password"
+      maxlength="6"
+      placeholder="Enter password"
+    />
+    <p class="note">Password field - should NOT be detected (excluded pattern)</p>
+  </div>
+
+  <!-- ZIP code (false positive candidate) -->
+  <div class="section">
+    <h2>3. ZIP Code</h2>
+    <label for="postal-code">ZIP Code</label>
+    <input
+      type="text"
+      id="postal-code"
+      name="zipCode"
+      maxlength="5"
+      inputmode="numeric"
+      placeholder="12345"
+    />
+    <p class="note">ZIP code with numeric input - should NOT be detected (excluded pattern)</p>
+  </div>
+
+  <!-- Disabled input -->
+  <div class="section">
+    <h2>4. Disabled Field</h2>
+    <label for="disabled-code">Verification Code (Disabled)</label>
+    <input
+      type="text"
+      id="disabled-code"
+      name="code"
+      maxlength="6"
+      disabled
+    />
+    <p class="note">Disabled verification field - should NOT be detected (disabled)</p>
+  </div>
+
+  <!-- Display none -->
+  <div class="section">
+    <h2>5. CSS Hidden Field</h2>
+    <label for="hidden-verification">Verification Code</label>
+    <input
+      type="text"
+      id="hidden-verification"
+      name="verificationCode"
+      maxlength="6"
+      style="display: none;"
+    />
+    <p class="note">Field with display:none - should NOT be detected (not visible)</p>
+  </div>
+
+  <!-- Email field (excluded pattern) -->
+  <div class="section">
+    <h2>6. Email Address</h2>
+    <label for="user-email">Email Address</label>
+    <input
+      type="email"
+      id="user-email"
+      name="email"
+      placeholder="your@email.com"
+    />
+    <p class="note">Email field - should NOT be detected (excluded pattern)</p>
+  </div>
+
+  <!-- Search box -->
+  <div class="section">
+    <h2>7. Search Box</h2>
+    <label for="search-input">Search</label>
+    <input
+      type="search"
+      id="search-input"
+      name="search"
+      placeholder="Search..."
+    />
+    <p class="note">Search input - should NOT be detected (excluded pattern)</p>
+  </div>
+
+  <!-- Credit card CVV (excluded) -->
+  <div class="section">
+    <h2>8. Credit Card CVV</h2>
+    <label for="cvv-code">CVV Code</label>
+    <input
+      type="text"
+      id="cvv-code"
+      name="cvv"
+      maxlength="4"
+      inputmode="numeric"
+      placeholder="123"
+    />
+    <p class="note">CVV code - should NOT be detected (excluded pattern)</p>
+  </div>
+
+  <!-- Phone number (full, not verification) -->
+  <div class="section">
+    <h2>9. Phone Number</h2>
+    <label for="phone-number">Phone Number</label>
+    <input
+      type="tel"
+      id="phone-number"
+      name="phoneNumber"
+      placeholder="(555) 123-4567"
+      maxlength="14"
+    />
+    <p class="note">Full phone number - should NOT be detected (excluded pattern + length)</p>
+  </div>
+
+  <!-- Zero-size element -->
+  <div class="section">
+    <h2>10. Zero-Size Element</h2>
+    <label for="zero-size">Verification Code</label>
+    <input
+      type="text"
+      id="zero-size"
+      name="verificationCode"
+      maxlength="6"
+      style="width: 0; height: 0;"
+    />
+    <p class="note">Field with zero dimensions - should NOT be detected (not visible)</p>
+  </div>
+
+  <div style="margin-top: 40px; padding: 20px; background: #e8f5e9; border-radius: 8px;">
+    <strong>Expected Result:</strong> No verification field should be detected on this page.
+    All inputs are either hidden, disabled, or match exclusion patterns.
+  </div>
+</body>
+</html>

@@ -1,0 +1,569 @@
+{
+  "extension_name": {
+    "message": "InboxKey",
+    "description": "Extension name"
+  },
+  "extension_description": {
+    "message": "Privacy-first email code autofill and magic-link opener. Local-only, no servers.",
+    "description": "Extension description for Chrome Web Store"
+  },
+
+  "popup_title": {
+    "message": "InboxKey",
+    "description": "Popup title"
+  },
+  "popup_mailbox": {
+    "message": "$COUNT$ mailbox",
+    "description": "Mailbox count (singular)",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "1"
+      }
+    }
+  },
+  "popup_mailboxes": {
+    "message": "$COUNT$ mailboxes",
+    "description": "Mailbox count (plural)",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "2"
+      }
+    }
+  },
+  "popup_synced": {
+    "message": "Synced",
+    "description": "Sync status label"
+  },
+  "time_just_now": {
+    "message": "just now",
+    "description": "Time: just now"
+  },
+  "time_never": {
+    "message": "never",
+    "description": "Time: never synced"
+  },
+  "time_minute_ago": {
+    "message": "1 minute ago",
+    "description": "Time: 1 minute ago"
+  },
+  "time_minutes_ago": {
+    "message": "$COUNT$ minutes ago",
+    "description": "Time: minutes ago",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "5"
+      }
+    }
+  },
+  "time_hour_ago": {
+    "message": "1 hour ago",
+    "description": "Time: 1 hour ago"
+  },
+  "time_hours_ago": {
+    "message": "$COUNT$ hours ago",
+    "description": "Time: hours ago",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "3"
+      }
+    }
+  },
+
+  "section_recent_codes": {
+    "message": "Recent Codes",
+    "description": "Section heading for recent codes"
+  },
+  "section_magic_links": {
+    "message": "Magic Links",
+    "description": "Section heading for magic links"
+  },
+
+  "button_copy": {
+    "message": "Copy",
+    "description": "Copy button label"
+  },
+  "button_copied": {
+    "message": "✓ Copied",
+    "description": "Copied confirmation"
+  },
+  "button_open": {
+    "message": "Open",
+    "description": "Open link button"
+  },
+  "button_opened": {
+    "message": "✓ Opened",
+    "description": "Opened confirmation"
+  },
+  "button_cancel": {
+    "message": "Cancel",
+    "description": "Cancel button"
+  },
+  "button_close": {
+    "message": "Close",
+    "description": "Close button"
+  },
+  "button_save": {
+    "message": "Save",
+    "description": "Save button"
+  },
+  "button_add": {
+    "message": "Add",
+    "description": "Add button"
+  },
+  "button_remove": {
+    "message": "Remove",
+    "description": "Remove button"
+  },
+  "button_dismiss": {
+    "message": "Dismiss",
+    "description": "Dismiss button"
+  },
+
+  "aria_copy_code": {
+    "message": "Copy code $CODE$ from $SOURCE$",
+    "description": "ARIA label for copy code button",
+    "placeholders": {
+      "code": {
+        "content": "$1",
+        "example": "123456"
+      },
+      "source": {
+        "content": "$2",
+        "example": "user@gmail.com"
+      }
+    }
+  },
+  "aria_open_link": {
+    "message": "Open $TYPE$ link for $DOMAIN$",
+    "description": "ARIA label for open link button",
+    "placeholders": {
+      "type": {
+        "content": "$1",
+        "example": "magic"
+      },
+      "domain": {
+        "content": "$2",
+        "example": "example.com"
+      }
+    }
+  },
+  "aria_mailbox_count": {
+    "message": "$COUNT$ connected mailboxes",
+    "description": "ARIA label for mailbox count",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "2"
+      }
+    }
+  },
+  "aria_sync_time": {
+    "message": "Last synced $TIME$",
+    "description": "ARIA label for sync time",
+    "placeholders": {
+      "time": {
+        "content": "$1",
+        "example": "5 minutes ago"
+      }
+    }
+  },
+
+  "empty_no_codes_title": {
+    "message": "No codes yet",
+    "description": "Empty state: no codes title"
+  },
+  "empty_no_codes_message": {
+    "message": "Verification codes will appear here when they arrive in your email.",
+    "description": "Empty state: no codes message"
+  },
+  "empty_no_links_title": {
+    "message": "No magic links yet",
+    "description": "Empty state: no links title"
+  },
+  "empty_no_links_message": {
+    "message": "Magic login links will appear here when detected.",
+    "description": "Empty state: no links message"
+  },
+  "link_type_login": {
+    "message": "Login",
+    "description": "Link type: login"
+  },
+  "link_type_verify": {
+    "message": "Verify",
+    "description": "Link type: verify"
+  },
+  "link_type_reset": {
+    "message": "Reset",
+    "description": "Link type: reset"
+  },
+  "empty_no_mailboxes_title": {
+    "message": "No mailboxes connected",
+    "description": "Empty state: no mailboxes title"
+  },
+  "empty_no_mailboxes_message": {
+    "message": "Connect Gmail or Outlook to get started.",
+    "description": "Empty state: no mailboxes message"
+  },
+  "button_connect_mailbox": {
+    "message": "Connect Mailbox",
+    "description": "Connect mailbox button"
+  },
+  "empty_error_title": {
+    "message": "Something went wrong",
+    "description": "Empty state: error title"
+  },
+  "empty_error_message": {
+    "message": "Unable to load your codes. Please try again.",
+    "description": "Empty state: error message"
+  },
+  "empty_locked_title": {
+    "message": "Locked",
+    "description": "Empty state: locked title"
+  },
+  "empty_locked_message": {
+    "message": "Enter your password to unlock InboxKey.",
+    "description": "Empty state: locked message"
+  },
+
+  "security_banner_setup": {
+    "message": "Set a password to protect your codes",
+    "description": "Security banner prompt"
+  },
+  "security_banner_not_now": {
+    "message": "Not now",
+    "description": "Security banner dismiss"
+  },
+  "security_banner_setup_password": {
+    "message": "Setup",
+    "description": "Security banner setup button"
+  },
+
+  "lock_screen_title": {
+    "message": "InboxKey is Locked",
+    "description": "Lock screen title"
+  },
+  "lock_screen_prompt": {
+    "message": "Enter your password to unlock",
+    "description": "Lock screen prompt"
+  },
+  "lock_screen_unlock": {
+    "message": "Unlock",
+    "description": "Unlock button"
+  },
+  "lock_screen_forgot": {
+    "message": "Forgot password?",
+    "description": "Forgot password link"
+  },
+  "lock_screen_wrong_password": {
+    "message": "Wrong password. Try again.",
+    "description": "Wrong password error"
+  },
+  "lock_screen_rate_limited": {
+    "message": "Too many attempts. Please wait $SECONDS$ seconds.",
+    "description": "Rate limit error",
+    "placeholders": {
+      "seconds": {
+        "content": "$1",
+        "example": "30"
+      }
+    }
+  },
+
+  "settings_title": {
+    "message": "InboxKey Settings",
+    "description": "Settings page title"
+  },
+  "settings_tab_security": {
+    "message": "Security",
+    "description": "Security tab"
+  },
+  "settings_tab_advanced": {
+    "message": "Advanced",
+    "description": "Advanced tab"
+  },
+  "settings_tab_about": {
+    "message": "About",
+    "description": "About tab"
+  },
+
+  "security_setup_title": {
+    "message": "Set up password protection",
+    "description": "Password setup title"
+  },
+  "security_setup_description": {
+    "message": "Protect your verification codes with a password. You'll need to enter it each time you open InboxKey.",
+    "description": "Password setup description"
+  },
+  "security_no_recovery_title": {
+    "message": "⚠️ No recovery possible",
+    "description": "No recovery warning title"
+  },
+  "security_no_recovery_message": {
+    "message": "If you forget your password, you'll lose access to all your codes. There is no way to recover your data.",
+    "description": "No recovery warning message"
+  },
+  "security_password_tips": {
+    "message": "Choose a strong password:",
+    "description": "Password tips heading"
+  },
+  "security_tip_memorable": {
+    "message": "Make it memorable (you can't reset it)",
+    "description": "Password tip: memorable"
+  },
+  "security_tip_unique": {
+    "message": "Use a unique password",
+    "description": "Password tip: unique"
+  },
+  "security_tip_strength": {
+    "message": "At least 8 characters",
+    "description": "Password tip: strength"
+  },
+
+  "security_danger_zone": {
+    "message": "Danger Zone",
+    "description": "Danger zone heading"
+  },
+  "security_danger_warning_title": {
+    "message": "⚠️ This action cannot be undone",
+    "description": "Danger warning title"
+  },
+  "security_danger_warning_message": {
+    "message": "Resetting InboxKey will permanently delete:",
+    "description": "Danger warning message"
+  },
+  "security_danger_delete_codes": {
+    "message": "All verification codes and magic links",
+    "description": "Danger: delete codes"
+  },
+  "security_danger_delete_settings": {
+    "message": "All settings and preferences",
+    "description": "Danger: delete settings"
+  },
+  "security_danger_disconnect_accounts": {
+    "message": "All connected email accounts",
+    "description": "Danger: disconnect accounts"
+  },
+  "security_danger_irreversible": {
+    "message": "This action is irreversible",
+    "description": "Danger: irreversible"
+  },
+  "security_danger_button": {
+    "message": "Reset InboxKey",
+    "description": "Danger button label"
+  },
+  "security_danger_confirm_message": {
+    "message": "Enter your password to confirm",
+    "description": "Danger confirm message"
+  },
+  "security_danger_confirm_label": {
+    "message": "Your password",
+    "description": "Danger confirm label"
+  },
+  "security_danger_confirm_button": {
+    "message": "Yes, reset everything",
+    "description": "Danger confirm button"
+  },
+
+  "about_open_source": {
+    "message": "Open-source",
+    "description": "About: open-source label"
+  },
+  "about_view_source": {
+    "message": "View source",
+    "description": "About: view source link"
+  },
+  "about_local_only": {
+    "message": "Local-only",
+    "description": "About: local-only label"
+  },
+  "about_no_servers": {
+    "message": "No servers",
+    "description": "About: no servers value"
+  },
+  "about_verified_publisher": {
+    "message": "Verified Publisher",
+    "description": "About: verified publisher label"
+  },
+  "about_chrome_web_store": {
+    "message": "Chrome Web Store",
+    "description": "About: Chrome Web Store value"
+  },
+  "about_privacy_title": {
+    "message": "Privacy & Security",
+    "description": "About: privacy title"
+  },
+  "about_privacy_statement": {
+    "message": "InboxKey processes everything on your device. No data is sent to external servers.",
+    "description": "About: privacy statement"
+  },
+  "about_privacy_no_tracking": {
+    "message": "No tracking or analytics",
+    "description": "About: no tracking"
+  },
+  "about_privacy_no_telemetry": {
+    "message": "No telemetry by default",
+    "description": "About: no telemetry"
+  },
+  "about_privacy_encrypted_storage": {
+    "message": "All data encrypted in browser storage",
+    "description": "About: encrypted storage"
+  },
+  "about_privacy_read_only_email": {
+    "message": "Read-only access to email (can't send)",
+    "description": "About: read-only email"
+  },
+  "about_support_title": {
+    "message": "Support Development",
+    "description": "About: support title"
+  },
+  "about_support_message": {
+    "message": "If InboxKey saves you time, consider buying me a coffee. It helps keep the project going.",
+    "description": "About: support message"
+  },
+  "about_buy_coffee": {
+    "message": "Buy me a coffee",
+    "description": "About: buy coffee button"
+  },
+  "about_support_disclaimer": {
+    "message": "Support is optional and never required. InboxKey is free and open-source forever.",
+    "description": "About: support disclaimer"
+  },
+  "about_version": {
+    "message": "Version",
+    "description": "About: version label"
+  },
+  "about_build": {
+    "message": "Build",
+    "description": "About: build label"
+  },
+  "about_verify_build": {
+    "message": "Verify build",
+    "description": "About: verify build link"
+  },
+
+  "footer_local_only": {
+    "message": "Local-only - No servers",
+    "description": "Footer: local-only message"
+  },
+  "footer_buy_coffee": {
+    "message": "Buy me a coffee",
+    "description": "Footer: support link"
+  },
+
+  "toast_code_copied": {
+    "message": "✓ Code copied to clipboard",
+    "description": "Toast: code copied"
+  },
+  "toast_link_opened": {
+    "message": "✓ Link opened",
+    "description": "Toast: link opened"
+  },
+  "toast_settings_saved": {
+    "message": "✓ Settings saved",
+    "description": "Toast: settings saved"
+  },
+  "toast_error_copy": {
+    "message": "Failed to copy code",
+    "description": "Toast: copy error"
+  },
+  "toast_error_link": {
+    "message": "Failed to open link",
+    "description": "Toast: link error"
+  },
+  "toast_rate_limited": {
+    "message": "Too many link opens. Please wait.",
+    "description": "Toast: rate limited"
+  },
+
+  "error_token_expired_title": {
+    "message": "Session expired",
+    "description": "Error: token expired title"
+  },
+  "error_token_expired_message": {
+    "message": "Your $PROVIDER$ session has expired. Please reconnect.",
+    "description": "Error: token expired message",
+    "placeholders": {
+      "provider": {
+        "content": "$1",
+        "example": "Gmail"
+      }
+    }
+  },
+  "button_reconnect": {
+    "message": "Reconnect",
+    "description": "Reconnect button"
+  },
+  "error_offline_message": {
+    "message": "You're offline. Using cached data.",
+    "description": "Error: offline message"
+  },
+  "error_api_quota_message": {
+    "message": "$PROVIDER$ API quota exceeded. Try again later.",
+    "description": "Error: API quota message",
+    "placeholders": {
+      "provider": {
+        "content": "$1",
+        "example": "Gmail"
+      }
+    }
+  },
+
+  "site_overrides_title": {
+    "message": "Per-Site Behavior",
+    "description": "Site overrides: title"
+  },
+  "site_overrides_description": {
+    "message": "Control how InboxKey behaves on specific websites.",
+    "description": "Site overrides: description"
+  },
+  "site_overrides_domain_placeholder": {
+    "message": "example.com",
+    "description": "Site overrides: domain placeholder"
+  },
+  "site_mode_auto": {
+    "message": "Auto-fill",
+    "description": "Site mode: auto"
+  },
+  "site_mode_prompt": {
+    "message": "Prompt",
+    "description": "Site mode: prompt"
+  },
+  "site_mode_off": {
+    "message": "Off",
+    "description": "Site mode: off"
+  },
+  "site_mode_auto_description": {
+    "message": "Automatically fill codes when detected",
+    "description": "Site mode: auto description"
+  },
+  "site_mode_prompt_description": {
+    "message": "Show a prompt before filling",
+    "description": "Site mode: prompt description"
+  },
+  "site_mode_off_description": {
+    "message": "Don't fill codes on this site",
+    "description": "Site mode: off description"
+  },
+  "site_overrides_empty": {
+    "message": "No site overrides configured",
+    "description": "Site overrides: empty state"
+  },
+  "site_override_remove": {
+    "message": "Remove override for $DOMAIN$",
+    "description": "Site override: remove ARIA label",
+    "placeholders": {
+      "domain": {
+        "content": "$1",
+        "example": "example.com"
+      }
+    }
+  },
+  "site_overrides_modes_title": {
+    "message": "How it works",
+    "description": "Site overrides: modes title"
+  }
+}

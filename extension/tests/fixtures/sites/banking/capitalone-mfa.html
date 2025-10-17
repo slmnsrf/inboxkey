@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Security Code - Capital One</title>
+</head>
+<body>
+    <div class="c1-layout">
+        <div class="c1-auth-card">
+            <h1>Enter your security code</h1>
+            <p class="c1-subtext">
+                We sent a 6-digit code to the phone number ending in 2468. Enter it below.
+            </p>
+            <form action="/identity/authenticate" method="POST">
+                <div class="c1-form-group">
+                    <!-- Detection signals: autocomplete="one-time-code", inputmode="numeric", name="securityCode" -->
+                    <label for="securityCode">Security Code</label>
+                    <input
+                        type="tel"
+                        id="securityCode"
+                        name="securityCode"
+                        class="c1-input-text"
+                        autocomplete="one-time-code"
+                        inputmode="numeric"
+                        maxlength="6"
+                        pattern="[0-9]{6}"
+                        placeholder="000000"
+                        required
+                    >
+                </div>
+                <div class="c1-checkbox-wrapper">
+                    <input type="checkbox" id="trustBrowser" name="trustBrowser">
+                    <label for="trustBrowser">Trust this browser</label>
+                </div>
+                <button type="submit" class="c1-button">Continue</button>
+            </form>
+            <div class="c1-links">
+                <a href="/resend-code">Resend code</a>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

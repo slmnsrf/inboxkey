@@ -1,0 +1,75 @@
+{
+  "name": "inboxkey",
+  "displayName": "InboxKey",
+  "version": "0.0.1",
+  "description": "Privacy-first email code autofill and magic-link opener for Chrome",
+  "author": "InboxKey Team",
+  "license": "Apache-2.0",
+  "scripts": {
+    "dev": "plasmo dev",
+    "build": "plasmo build && npm run copy-locales",
+    "copy-locales": "cp -r _locales build/chrome-mv3-prod/",
+    "package": "plasmo package",
+    "test": "vitest",
+    "test:ui": "vitest --ui",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:debug": "playwright test --debug",
+    "test:e2e:popup": "playwright test popup-actions.test.ts popup-performance.test.ts popup-locked.test.ts",
+    "test:e2e:headed": "playwright test --headed",
+    "lint": "eslint . --ext .ts,.tsx",
+    "format": "prettier --write \"**/*.{ts,tsx,json,md}\"",
+    "type-check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "plasmo": "^0.88.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "zxcvbn": "^4.4.2"
+  },
+  "devDependencies": {
+    "@ianvs/prettier-plugin-sort-imports": "^4.3.1",
+    "@playwright/test": "^1.45.0",
+    "@testing-library/dom": "^10.4.1",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.0",
+    "@testing-library/react-hooks": "^8.0.1",
+    "@testing-library/user-event": "^14.6.1",
+    "@types/chrome": "^0.0.268",
+    "@types/node": "^20.14.0",
+    "@types/react": "^18.3.3",
+    "@types/react-dom": "^18.3.0",
+    "@types/zxcvbn": "^4.4.4",
+    "@typescript-eslint/eslint-plugin": "^7.16.0",
+    "@typescript-eslint/parser": "^7.16.0",
+    "@vitest/ui": "^1.6.0",
+    "eslint": "^8.57.0",
+    "eslint-config-prettier": "^9.1.0",
+    "eslint-plugin-react": "^7.34.0",
+    "eslint-plugin-react-hooks": "^4.6.2",
+    "happy-dom": "^14.12.0",
+    "msw": "^2.3.1",
+    "prettier": "^3.3.2",
+    "typescript": "^5.5.3",
+    "vitest": "^1.6.0"
+  },
+  "manifest": {
+    "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAxriqq/KSfWemDPZJytR7ovBfq58537RH7ax+DhCZuKaZXnUUSZy6W9/ig1E1i4KdeQ1P0tUxefaX3E2KAqoB2ybEpUG1fQkOZENRP0/ceCWlI1iQsLCuBsJNXVoiAHHtJWMhRH2imst510dQ9l475mleUwSMgXoYNhmUuLJ6WYh+HWNrmVtxSRX7P8R7d4mzLhjpdpba5Jys2twMzDYGMZD+wpuc2aqwt2eMYs8/hpU66V5mIR0Y7x6seGy4NhApI1224iAeP+w328xIkaTwKWCkALdRXIzFQTKMKlWMoWSsBC2HbuqZyJb4R5zE4rvg6khKlFld6a++TZ4j0xy70wIDAQAB",
+    "default_locale": "en",
+    "host_permissions": [
+      "https://*/*"
+    ],
+    "oauth2": {
+      "client_id": "63223580830-n7gddqh5fdl1hip8m47f4eud9c239i3c.apps.googleusercontent.com",
+      "scopes": [
+        "https://www.googleapis.com/auth/gmail.readonly"
+      ]
+    },
+    "permissions": [
+      "storage",
+      "alarms",
+      "tabs",
+      "identity"
+    ]
+  }
+}

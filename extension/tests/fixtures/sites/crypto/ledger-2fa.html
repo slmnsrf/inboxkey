@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Two-Factor Authentication - Ledger Live</title>
+</head>
+<body>
+    <div class="ledger-app">
+        <div class="ledger-auth-container">
+            <h1 class="ledger-title">Two-Factor Authentication</h1>
+            <p class="ledger-subtitle">
+                Enter the 6-digit code from your authentication app
+            </p>
+            <form method="POST" action="/auth/2fa">
+                <div class="ledger-form-field">
+                    <!-- Detection signals: autocomplete="one-time-code", inputmode="numeric", id="otp-code" -->
+                    <label for="otp-code">Authentication Code</label>
+                    <input
+                        type="text"
+                        id="otp-code"
+                        name="otp"
+                        class="ledger-input"
+                        autocomplete="one-time-code"
+                        inputmode="numeric"
+                        maxlength="6"
+                        required
+                        autofocus
+                    >
+                </div>
+                <button type="submit" class="ledger-button ledger-button-primary">
+                    Continue
+                </button>
+            </form>
+            <div class="ledger-help-links">
+                <a href="/2fa/recovery">Lost your device?</a>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

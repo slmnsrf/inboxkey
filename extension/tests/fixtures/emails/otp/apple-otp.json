@@ -1,0 +1,18 @@
+{
+  "id": "apple-otp-001",
+  "type": "otp",
+  "category": "tech",
+  "from": "appleid@id.apple.com",
+  "subject": "Your Apple ID Code",
+  "body": "Your Apple ID Code is: 937428. Don't share it with anyone.",
+  "extracted": {
+    "code": "937428",
+    "pattern": "numeric-6",
+    "confidence": "high"
+  },
+  "metadata": {
+    "sent": "2025-10-15T10:45:12Z",
+    "expiresIn": "10 minutes",
+    "provider": "Apple"
+  }
+}

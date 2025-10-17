@@ -1,0 +1,91 @@
+/**
+ * Header Component
+ *
+ * Displays InboxKey title, mailbox count, last sync time, and settings button.
+ */
+
+import React from 'react'
+import { t, plural, timeAgo } from '@/lib/i18n'
+
+const SettingsIcon = () => (
+  <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+    <path d="M17.43 10.98c.04-.32.07-.64.07-.98s-.03-.66-.07-.98l2.11-1.65c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.39-.3-.61-.22l-2.49 1c-.52-.4-1.08-.73-1.69-.98l-.38-2.65C12.46.19 12.25 0 12 0h-4c-.25 0-.46.19-.49.44l-.38 2.65c-.61.25-1.17.59-1.69.98l-2.49-1c-.23-.09-.49 0-.61.22l-2 3.46c-.13.22-.07.49.12.64l2.11 1.65c-.04.32-.07.65-.07.98s.03.66.07.98l-2.11 1.65c-.19.15-.24.42-.12.64l2 3.46c.12.22.39.3.61.22l2.49-1c.52.4 1.08.73 1.69.98l.38 2.65c.03.25.24.44.49.44h4c.25 0 .46-.19.49-.44l.38-2.65c.61-.25 1.17-.59 1.69-.98l2.49 1c.23.09.49 0 .61-.22l2-3.46c.12-.22.07-.49-.12-.64l-2.11-1.65zM10 13c-1.65 0-3-1.35-3-3s1.35-3 3-3 3 1.35 3 3-1.35 3-3 3z"/>
+  </svg>
+)
+
+const RefreshIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/>
+  </svg>
+)
+
+const LockIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+    <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+  </svg>
+)
+
+interface HeaderProps {
+  mailboxCount: number
+  lastSync: number
+  onSync?: () => void
+  isSyncing?: boolean
+  showLockButton?: boolean
+  onLock?: () => void
+  isLocking?: boolean
+}
+
+export function Header({
+  mailboxCount,
+  lastSync,
+  onSync,
+  isSyncing = false,
+  showLockButton = false,
+  onLock,
+  isLocking = false
+}: HeaderProps) {
+  return (
+    <header className="popup-header">
+      <div className="popup-header__top">
+        <h1 className="popup-title">{t('popup_title')}</h1>
+        <div className="popup-header__actions">
+          {showLockButton && onLock && (
+            <button
+              onClick={onLock}
+              className={`popup-header__lock-btn ${isLocking ? 'locking' : ''}`}
+              aria-label="Lock extension"
+              title="Lock extension"
+              disabled={isLocking}
+            >
+              <LockIcon />
+            </button>
+          )}
+          {onSync && (
+            <button
+              onClick={onSync}
+              className={`popup-header__sync-btn ${isSyncing ? 'syncing' : ''}`}
+              aria-label="Sync now"
+              title="Sync now"
+              disabled={isSyncing}
+            >
+              <RefreshIcon />
+            </button>
+          )}
+          <button
+            onClick={() => chrome.runtime.openOptionsPage()}
+            className="popup-header__settings-btn"
+            aria-label="Open settings"
+            title="Settings"
+          >
+            <SettingsIcon />
+          </button>
+        </div>
+      </div>
+      <div className="popup-status">
+        <span className="mailbox-count">{plural('popup_mailbox', 'popup_mailboxes', mailboxCount)}</span>
+        <span className="sync-time">{isSyncing ? t('popup_syncing') : `${t('popup_synced')} ${timeAgo(lastSync)}`}</span>
+      </div>
+    </header>
+  )
+}

@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Two-Factor Authentication - Binance</title>
+</head>
+<body>
+    <div class="bn-web-app">
+        <div class="css-login-container">
+            <div class="css-login-card">
+                <h3>Two-factor Authentication</h3>
+                <p class="css-text-secondary">
+                    Enter the 6-digit code from your authenticator app
+                </p>
+                <form method="POST" action="/en/my/security/verify">
+                    <div class="css-input-wrapper">
+                        <!-- Detection signals: autocomplete="one-time-code", inputmode="numeric", id="ga_code" -->
+                        <label for="ga_code">2FA Code</label>
+                        <input
+                            type="text"
+                            id="ga_code"
+                            name="code"
+                            class="css-input"
+                            autocomplete="one-time-code"
+                            inputmode="numeric"
+                            maxlength="6"
+                            placeholder="Enter 2FA code"
+                            required
+                        >
+                    </div>
+                    <div class="css-checkbox">
+                        <input type="checkbox" id="remember" name="remember">
+                        <label for="remember">Remember this device for 7 days</label>
+                    </div>
+                    <button type="submit" class="css-btn-primary">Submit</button>
+                </form>
+                <div class="css-footer-links">
+                    <a href="/en/my/security/recovery">Lost your device?</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

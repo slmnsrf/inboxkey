@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Two-factor authentication - GitHub</title>
+</head>
+<body>
+    <div class="auth-form-body">
+        <h1>Two-factor authentication</h1>
+        <p>Open your two-factor authenticator (TOTP) app or browser extension to view your authentication code.</p>
+        <form accept-charset="UTF-8" action="/sessions/two-factor" method="post">
+            <div class="form-group">
+                <!-- Detection signals: autocomplete="one-time-code", inputmode="numeric", name="otp" -->
+                <label for="otp">Authentication code</label>
+                <input
+                    type="text"
+                    id="otp"
+                    name="otp"
+                    class="form-control input-block"
+                    autocomplete="one-time-code"
+                    inputmode="numeric"
+                    pattern="[0-9]{6}"
+                    maxlength="6"
+                    required
+                    autofocus
+                >
+            </div>
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary btn-block">Verify</button>
+            </div>
+        </form>
+        <p class="mt-3">
+            <a href="/sessions/two-factor/sms">SMS code</a> |
+            <a href="/sessions/two-factor/recovery">Recovery code</a>
+        </p>
+    </div>
+</body>
+</html>

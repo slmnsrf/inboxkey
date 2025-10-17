@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Charles Schwab - Two-Factor Authentication</title>
+    <style>
+        body { font-family: 'Open Sans', Arial, sans-serif; background: linear-gradient(135deg, #00a0df 0%, #0055aa 100%); margin: 0; padding: 0; min-height: 100vh; display: flex; align-items: center; justify-content: center; }
+        .schwab-card { max-width: 450px; background: white; border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.15); overflow: hidden; }
+        .schwab-header { background: #00a0df; color: white; padding: 25px; text-align: center; }
+        .schwab-logo { font-size: 28px; font-weight: bold; letter-spacing: 1px; }
+        .schwab-body { padding: 40px; }
+        .schwab-title { color: #0055aa; margin-bottom: 15px; font-size: 22px; }
+        .schwab-text { color: #555; line-height: 1.7; margin-bottom: 25px; }
+        .code-input-container { margin: 25px 0; }
+        .code-input { width: 100%; padding: 15px; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 18px; text-align: center; letter-spacing: 5px; font-weight: 600; }
+        .code-input:focus { border-color: #00a0df; outline: none; }
+        .schwab-submit { width: 100%; padding: 15px; background: #00a0df; color: white; border: none; border-radius: 6px; font-size: 16px; font-weight: 600; cursor: pointer; transition: background 0.3s; }
+        .schwab-submit:hover { background: #0088c0; }
+        .security-badge { display: flex; align-items: center; justify-content: center; margin-top: 20px; color: #777; font-size: 13px; }
+        .security-badge::before { content: "🔒"; margin-right: 8px; }
+    </style>
+</head>
+<body>
+    <!-- Detection Signals:
+         - Banking/Investment domain: schwab, charles schwab
+         - Security keywords: two-factor, authentication, security code
+         - Input patterns: 6-digit code, centered text, letter-spacing
+         - Form structure: modern card design, gradient background
+         - Brand colors: #00a0df (Schwab blue), #0055aa
+         - Common IDs: securityCode, authCode, twoFactorCode
+    -->
+    <div class="schwab-card">
+        <div class="schwab-header">
+            <div class="schwab-logo">CHARLES SCHWAB</div>
+        </div>
+
+        <div class="schwab-body">
+            <h2 class="schwab-title">Two-Factor Authentication</h2>
+
+            <p class="schwab-text">
+                For your security, please enter the 6-digit code we sent to your mobile device ending in ***-1234.
+            </p>
+
+            <form id="twoFactorForm" action="/auth/2fa/verify" method="POST">
+                <div class="code-input-container">
+                    <input
+                        type="text"
+                        id="securityCode"
+                        name="security_code"
+                        class="code-input"
+                        placeholder="000000"
+                        maxlength="6"
+                        pattern="[0-9]{6}"
+                        inputmode="numeric"
+                        autocomplete="one-time-code"
+                        aria-label="Enter 6-digit security code"
+                        required
+                    />
+                </div>
+
+                <button type="submit" class="schwab-submit">Verify Code</button>
+            </form>
+
+            <div class="security-badge">
+                Secured with 256-bit encryption
+            </div>
+
+            <p style="text-align: center; margin-top: 20px; font-size: 14px; color: #666;">
+                Didn't receive a code? <a href="#" style="color: #00a0df; text-decoration: none;">Resend</a>
+            </p>
+        </div>
+    </div>
+</body>
+</html>

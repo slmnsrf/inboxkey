@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BlockFi - Security Verification</title>
+    <style>
+        body { font-family: 'Inter', sans-serif; background: #f5f7fa; margin: 0; padding: 20px; }
+        .blockfi-wrapper { max-width: 500px; margin: 50px auto; }
+        .blockfi-card { background: white; border-radius: 12px; padding: 40px; box-shadow: 0 4px 24px rgba(0,0,0,0.06); }
+        .blockfi-header { text-align: center; margin-bottom: 35px; }
+        .blockfi-logo { font-size: 28px; font-weight: 700; color: #1a4599; margin-bottom: 10px; }
+        .blockfi-tagline { font-size: 12px; color: #6b7280; }
+        .blockfi-title { color: #1f2937; font-size: 24px; margin-bottom: 12px; font-weight: 600; }
+        .blockfi-message { color: #4b5563; line-height: 1.7; margin-bottom: 28px; }
+        .alert-box { background: #fef3c7; border: 1px solid #fbbf24; border-radius: 6px; padding: 15px; margin-bottom: 25px; display: flex; align-items: start; }
+        .alert-icon { color: #f59e0b; margin-right: 12px; font-size: 20px; }
+        .alert-text { color: #92400e; font-size: 14px; }
+        .blockfi-form-group { margin-bottom: 20px; }
+        .blockfi-label { display: block; color: #374151; margin-bottom: 8px; font-weight: 500; font-size: 14px; }
+        .blockfi-input { width: 100%; padding: 13px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 16px; box-sizing: border-box; }
+        .blockfi-input:focus { border-color: #1a4599; outline: none; box-shadow: 0 0 0 3px rgba(26, 69, 153, 0.1); }
+        .blockfi-button { width: 100%; padding: 14px; background: #1a4599; color: white; border: none; border-radius: 6px; font-size: 16px; font-weight: 600; cursor: pointer; }
+        .blockfi-button:hover { background: #143a7a; }
+    </style>
+</head>
+<body>
+    <!-- Detection Signals:
+         - Crypto domain: blockfi, cryptocurrency platform
+         - Security keywords: security verification, authentication
+         - Input patterns: 6-digit code, clean design
+         - Form structure: alert boxes, centered layout
+         - Brand colors: #1a4599 (BlockFi blue)
+         - Common IDs: securityCode, verificationCode, authenticationCode
+    -->
+    <div class="blockfi-wrapper">
+        <div class="blockfi-card">
+            <div class="blockfi-header">
+                <div class="blockfi-logo">BlockFi</div>
+                <div class="blockfi-tagline">Crypto Management Platform</div>
+            </div>
+
+            <h2 class="blockfi-title">Security Verification</h2>
+
+            <div class="alert-box">
+                <div class="alert-icon">⚠️</div>
+                <div class="alert-text">
+                    For your account security, please verify your identity before proceeding.
+                </div>
+            </div>
+
+            <p class="blockfi-message">
+                We've sent a 6-digit verification code to your registered email address. Please enter the code below to continue.
+            </p>
+
+            <form id="securityVerificationForm" action="/account/verify" method="POST">
+                <div class="blockfi-form-group">
+                    <label for="verificationCode" class="blockfi-label">Verification Code</label>
+                    <input
+                        type="text"
+                        id="verificationCode"
+                        name="verification_code"
+                        class="blockfi-input"
+                        placeholder="Enter 6-digit code"
+                        maxlength="6"
+                        pattern="[0-9]{6}"
+                        inputmode="numeric"
+                        autocomplete="one-time-code"
+                        required
+                    />
+                </div>
+
+                <button type="submit" class="blockfi-button">Verify Code</button>
+            </form>
+
+            <p style="text-align: center; margin-top: 25px; font-size: 14px; color: #6b7280;">
+                Didn't receive the code? <a href="#" style="color: #1a4599; text-decoration: none;">Resend</a>
+            </p>
+        </div>
+    </div>
+</body>
+</html>

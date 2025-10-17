@@ -1,0 +1,14 @@
+{
+  "id": "facebook-alert-001",
+  "type": "security-alert",
+  "category": "security",
+  "from": "security@facebook.com",
+  "subject": "Login from new device",
+  "body": "We detected a login from new device to your Facebook account.\n\nLocation: New York, NY\nDevice: Safari on iPhone\nTime: 2025-10-15T14:31:44Z\n\nIf this was you, you can ignore this email. If not, secure your account immediately.",
+  "extracted": {
+    "alertType": "Login from new device",
+    "location": "New York, NY",
+    "device": "Safari on iPhone",
+    "requiresAction": false
+  }
+}

@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Verify Email - Phantom</title>
+</head>
+<body>
+    <div class="phantom-app">
+        <div class="phantom-auth-container">
+            <div class="phantom-auth-card">
+                <h1>Verify Your Email</h1>
+                <p class="phantom-subtitle">
+                    We sent a verification code to your email address. Please enter it below.
+                </p>
+                <form method="POST" action="/api/auth/verify-email">
+                    <div class="phantom-field">
+                        <!-- Detection signals: autocomplete="one-time-code", inputmode="numeric", id="email-code" -->
+                        <label for="email-code">Verification Code</label>
+                        <input
+                            type="text"
+                            id="email-code"
+                            name="code"
+                            class="phantom-input"
+                            autocomplete="one-time-code"
+                            inputmode="numeric"
+                            maxlength="6"
+                            placeholder="000000"
+                            required
+                            autofocus
+                        >
+                    </div>
+                    <button type="submit" class="phantom-btn phantom-btn-primary">
+                        Verify
+                    </button>
+                </form>
+                <div class="phantom-footer">
+                    <a href="/resend">Resend code</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

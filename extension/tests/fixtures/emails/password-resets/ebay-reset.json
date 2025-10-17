@@ -1,0 +1,14 @@
+{
+  "id": "ebay-reset-001",
+  "type": "password-reset",
+  "category": "security",
+  "from": "noreply@ebay.com",
+  "subject": "eBay Password Reset",
+  "body": "You requested a password reset for your eBay.\n\nClick here to reset: https://ebay.com/reset?token=2817d08b26feb364c7803a7aed20ff89fcaf6603\n\nIf you didn't request this, please ignore this email.",
+  "extracted": {
+    "link": "https://ebay.com/reset?token=2817d08b26feb364c7803a7aed20ff89fcaf6603",
+    "token": "2817d08b26feb364c7803a7aed20ff89fcaf6603",
+    "type": "password-reset",
+    "confidence": "high"
+  }
+}

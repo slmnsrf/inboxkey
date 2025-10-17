@@ -1,0 +1,1050 @@
+{
+  "extension_name": {
+    "message": "InboxKey",
+    "description": "Extension name"
+  },
+  "extension_description": {
+    "message": "Privacy-first email code autofill and magic-link opener. Local-only, no servers.",
+    "description": "Extension description for Chrome Web Store"
+  },
+
+  "popup_title": {
+    "message": "InboxKey",
+    "description": "Popup title"
+  },
+  "popup_mailbox": {
+    "message": "$COUNT$ mailbox",
+    "description": "Mailbox count (singular)",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "1"
+      }
+    }
+  },
+  "popup_mailboxes": {
+    "message": "$COUNT$ mailboxes",
+    "description": "Mailbox count (plural)",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "2"
+      }
+    }
+  },
+  "popup_synced": {
+    "message": "Synced",
+    "description": "Sync status label"
+  },
+  "popup_syncing": {
+    "message": "Syncing...",
+    "description": "Syncing status label"
+  },
+  "time_just_now": {
+    "message": "just now",
+    "description": "Time: just now"
+  },
+  "time_never": {
+    "message": "never",
+    "description": "Time: never synced"
+  },
+  "time_minute_ago": {
+    "message": "1 minute ago",
+    "description": "Time: 1 minute ago"
+  },
+  "time_minutes_ago": {
+    "message": "$COUNT$ minutes ago",
+    "description": "Time: minutes ago",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "5"
+      }
+    }
+  },
+  "time_hour_ago": {
+    "message": "1 hour ago",
+    "description": "Time: 1 hour ago"
+  },
+  "time_hours_ago": {
+    "message": "$COUNT$ hours ago",
+    "description": "Time: hours ago",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "3"
+      }
+    }
+  },
+
+  "section_recent_codes": {
+    "message": "Recent Codes",
+    "description": "Section heading for recent codes"
+  },
+  "section_magic_links": {
+    "message": "Magic Links",
+    "description": "Section heading for magic links"
+  },
+
+  "button_copy": {
+    "message": "Copy",
+    "description": "Copy button label"
+  },
+  "button_copied": {
+    "message": "✓ Copied",
+    "description": "Copied confirmation"
+  },
+  "button_open": {
+    "message": "Open",
+    "description": "Open link button"
+  },
+  "button_opened": {
+    "message": "✓ Opened",
+    "description": "Opened confirmation"
+  },
+  "button_cancel": {
+    "message": "Cancel",
+    "description": "Cancel button"
+  },
+  "button_close": {
+    "message": "Close",
+    "description": "Close button"
+  },
+  "button_save": {
+    "message": "Save",
+    "description": "Save button"
+  },
+  "button_add": {
+    "message": "Add",
+    "description": "Add button"
+  },
+  "button_remove": {
+    "message": "Remove",
+    "description": "Remove button"
+  },
+  "button_dismiss": {
+    "message": "Dismiss",
+    "description": "Dismiss button"
+  },
+
+  "aria_copy_code": {
+    "message": "Copy code $CODE$ from $SOURCE$",
+    "description": "ARIA label for copy code button",
+    "placeholders": {
+      "code": {
+        "content": "$1",
+        "example": "123456"
+      },
+      "source": {
+        "content": "$2",
+        "example": "user@gmail.com"
+      }
+    }
+  },
+  "aria_open_link": {
+    "message": "Open $TYPE$ link for $DOMAIN$",
+    "description": "ARIA label for open link button",
+    "placeholders": {
+      "type": {
+        "content": "$1",
+        "example": "magic"
+      },
+      "domain": {
+        "content": "$2",
+        "example": "example.com"
+      }
+    }
+  },
+  "aria_mailbox_count": {
+    "message": "$COUNT$ connected mailboxes",
+    "description": "ARIA label for mailbox count",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "2"
+      }
+    }
+  },
+  "aria_sync_time": {
+    "message": "Last synced $TIME$",
+    "description": "ARIA label for sync time",
+    "placeholders": {
+      "time": {
+        "content": "$1",
+        "example": "5 minutes ago"
+      }
+    }
+  },
+  "aria_settings_button": {
+    "message": "Open settings",
+    "description": "ARIA label for settings gear icon"
+  },
+  "aria_connect_gmail": {
+    "message": "Connect Gmail account for code autofill",
+    "description": "ARIA label for Gmail connect button"
+  },
+  "aria_connect_outlook": {
+    "message": "Connect Outlook account for code autofill",
+    "description": "ARIA label for Outlook connect button"
+  },
+  "aria_remove_account": {
+    "message": "Disconnect $EMAIL$",
+    "description": "ARIA label for remove account button",
+    "placeholders": {
+      "email": {
+        "content": "$1",
+        "example": "user@gmail.com"
+      }
+    }
+  },
+
+  "empty_no_codes_title": {
+    "message": "No codes yet",
+    "description": "Empty state: no codes title"
+  },
+  "empty_no_codes_message": {
+    "message": "Verification codes will appear here when they arrive in your email.",
+    "description": "Empty state: no codes message"
+  },
+  "empty_no_links_title": {
+    "message": "No magic links yet",
+    "description": "Empty state: no links title"
+  },
+  "empty_no_links_message": {
+    "message": "Magic login links will appear here when detected.",
+    "description": "Empty state: no links message"
+  },
+  "link_type_login": {
+    "message": "Login",
+    "description": "Link type: login"
+  },
+  "link_type_verify": {
+    "message": "Verify",
+    "description": "Link type: verify"
+  },
+  "link_type_reset": {
+    "message": "Reset",
+    "description": "Link type: reset"
+  },
+  "empty_no_mailboxes_title": {
+    "message": "No mailboxes connected",
+    "description": "Empty state: no mailboxes title"
+  },
+  "empty_no_mailboxes_message": {
+    "message": "Connect Gmail or Outlook to get started.",
+    "description": "Empty state: no mailboxes message"
+  },
+  "button_connect_mailbox": {
+    "message": "Connect Mailbox",
+    "description": "Connect mailbox button"
+  },
+  "empty_error_title": {
+    "message": "Something went wrong",
+    "description": "Empty state: error title"
+  },
+  "empty_error_message": {
+    "message": "Unable to load your codes. Please try again.",
+    "description": "Empty state: error message"
+  },
+  "empty_locked_title": {
+    "message": "Locked",
+    "description": "Empty state: locked title"
+  },
+  "empty_locked_message": {
+    "message": "Enter your PIN to unlock InboxKey.",
+    "description": "Empty state: locked message"
+  },
+
+  "security_banner_setup": {
+    "message": "Set a PIN to protect your codes",
+    "description": "Security banner prompt"
+  },
+  "security_banner_not_now": {
+    "message": "Not now",
+    "description": "Security banner dismiss"
+  },
+  "security_banner_setup_password": {
+    "message": "Set up PIN",
+    "description": "Security banner setup button"
+  },
+
+  "lock_screen_title": {
+    "message": "InboxKey is Locked",
+    "description": "Lock screen title"
+  },
+  "lock_screen_prompt": {
+    "message": "Enter your PIN to unlock",
+    "description": "Lock screen prompt"
+  },
+  "lock_screen_unlock": {
+    "message": "Unlock",
+    "description": "Unlock button"
+  },
+  "lock_screen_forgot": {
+    "message": "Forgot PIN?",
+    "description": "Forgot PIN link"
+  },
+  "lock_screen_wrong_password": {
+    "message": "Wrong PIN. Try again.",
+    "description": "Wrong PIN error"
+  },
+  "lock_screen_rate_limited": {
+    "message": "Too many attempts. Please wait $SECONDS$ seconds.",
+    "description": "Rate limit error",
+    "placeholders": {
+      "seconds": {
+        "content": "$1",
+        "example": "30"
+      }
+    }
+  },
+
+  "settings_title": {
+    "message": "InboxKey Settings",
+    "description": "Settings page title"
+  },
+  "settings_tab_security": {
+    "message": "Security",
+    "description": "Security tab"
+  },
+  "settings_tab_advanced": {
+    "message": "Advanced",
+    "description": "Advanced tab"
+  },
+  "settings_tab_accounts": {
+    "message": "Accounts",
+    "description": "Accounts tab in settings"
+  },
+  "settings_tab_about": {
+    "message": "About",
+    "description": "About tab"
+  },
+  "settings_advanced_coming_soon": {
+    "message": "Advanced settings coming soon. Site overrides and other features will be added in a future update.",
+    "description": "Placeholder message for advanced settings tab"
+  },
+  "settings_appearance_heading": {
+    "message": "Appearance",
+    "description": "Heading for appearance settings card"
+  },
+  "settings_appearance_description": {
+    "message": "Choose a theme that feels right. Light keeps things bright, Dark is easier on the eyes at night, and System follows your device.",
+    "description": "Description copy for theme selector"
+  },
+  "settings_appearance_hint": {
+    "message": "Theme updates instantly and applies everywhere you use InboxKey.",
+    "description": "Helper text under the theme selector"
+  },
+  "settings_theme_light": {
+    "message": "Light",
+    "description": "Light theme label"
+  },
+  "settings_theme_dark": {
+    "message": "Dark",
+    "description": "Dark theme label"
+  },
+  "settings_theme_system": {
+    "message": "System (Auto)",
+    "description": "System/automatic theme label"
+  },
+  "settings_theme_selected": {
+    "message": "$1 theme selected",
+    "description": "Status text when a specific theme is chosen"
+  },
+  "settings_theme_system_status": {
+    "message": "Following system theme ($1)",
+    "description": "Status text when system theme is active"
+  },
+
+  "accounts_panel_heading": {
+    "message": "Connected Accounts",
+    "description": "Heading for accounts panel"
+  },
+  "accounts_panel_empty": {
+    "message": "Connect your email to start receiving verification codes",
+    "description": "Empty state message when no accounts connected"
+  },
+  "accounts_panel_locked": {
+    "message": "Unlock InboxKey to manage accounts",
+    "description": "Message shown when trying to access accounts while locked"
+  },
+  "accounts_add_heading": {
+    "message": "Add Account",
+    "description": "Heading for add account section"
+  },
+  "accounts_connect_gmail": {
+    "message": "Connect Gmail",
+    "description": "Button to connect Gmail account"
+  },
+  "accounts_connect_outlook": {
+    "message": "Connect Outlook",
+    "description": "Button to connect Outlook account"
+  },
+  "accounts_provider_gmail": {
+    "message": "Gmail",
+    "description": "Provider name: Gmail"
+  },
+  "accounts_provider_outlook": {
+    "message": "Outlook",
+    "description": "Provider name: Outlook"
+  },
+  "accounts_connecting": {
+    "message": "Connecting...",
+    "description": "Loading state for OAuth connection"
+  },
+  "accounts_authenticating": {
+    "message": "Authenticating...",
+    "description": "OAuth authentication in progress"
+  },
+  "accounts_loading_profile": {
+    "message": "Loading profile...",
+    "description": "Loading user profile after OAuth"
+  },
+  "accounts_saving": {
+    "message": "Saving...",
+    "description": "Saving account to storage"
+  },
+  "accounts_status_connected": {
+    "message": "Connected",
+    "description": "Status badge when provider has connected accounts"
+  },
+  "accounts_status_not_connected": {
+    "message": "Not connected",
+    "description": "Status badge when provider has no accounts yet"
+  },
+  "accounts_empty_provider": {
+    "message": "No $PROVIDER$ accounts connected yet.",
+    "description": "Empty state message per provider",
+    "placeholders": {
+      "provider": {
+        "content": "$1",
+        "example": "Gmail"
+      }
+    }
+  },
+  "accounts_trust_message": {
+    "message": "🔒 Read-only access · Stored locally",
+    "description": "Trust indicator for account connection (legacy)"
+  },
+  "trust_indicator_title": {
+    "message": "Your privacy is protected",
+    "description": "Trust indicator heading"
+  },
+  "trust_indicator_readonly": {
+    "message": "Read-only access (we can't send emails)",
+    "description": "Trust indicator: read-only access"
+  },
+  "trust_indicator_encrypted": {
+    "message": "End-to-end encrypted in your browser",
+    "description": "Trust indicator: encryption"
+  },
+  "trust_indicator_local": {
+    "message": "Never uploaded to our servers",
+    "description": "Trust indicator: local storage"
+  },
+  "accounts_remove_button": {
+    "message": "Remove",
+    "description": "Button to remove/disconnect account"
+  },
+  "accounts_remove_confirm": {
+    "message": "Disconnect this account? Codes from this account will no longer sync.",
+    "description": "Confirmation dialog for removing account"
+  },
+  "accounts_last_synced": {
+    "message": "Last synced: $TIME$",
+    "description": "Last sync time for account",
+    "placeholders": {
+      "time": {
+        "content": "$1",
+        "example": "5m ago"
+      }
+    }
+  },
+
+  "security_setup_title": {
+    "message": "Set up PIN protection",
+    "description": "PIN setup title"
+  },
+  "security_password_protection": {
+    "message": "PIN protection",
+    "description": "Heading for PIN protection sections"
+  },
+  "security_setup_description": {
+    "message": "Protect your verification codes with a 6-digit PIN. You'll need it each time you open InboxKey.",
+    "description": "PIN setup description"
+  },
+  "security_no_recovery_title": {
+    "message": "⚠️ No recovery possible",
+    "description": "No recovery warning title"
+  },
+  "security_no_recovery_message": {
+    "message": "If you forget your PIN, you'll lose access to all your codes. There is no way to recover your data.",
+    "description": "No recovery warning message"
+  },
+  "security_password_tips": {
+    "message": "PIN requirements:",
+    "description": "PIN tips heading"
+  },
+  "security_tip_memorable": {
+    "message": "Use exactly 6 digits.",
+    "description": "PIN tip: length"
+  },
+  "security_tip_unique": {
+    "message": "Digits only (0–9).",
+    "description": "PIN tip: numeric"
+  },
+  "security_tip_strength": {
+    "message": "Avoid simple sequences (123456) or repeated digits.",
+    "description": "PIN tip: sequences"
+  },
+  "security_benefit_encrypt": {
+    "message": "Encrypt OAuth tokens with AES-256-GCM",
+    "description": "Security benefit: encryption"
+  },
+  "security_benefit_autolock": {
+    "message": "Lock access automatically after inactivity",
+    "description": "Security benefit: auto lock"
+  },
+  "security_benefit_require_password": {
+    "message": "Require your PIN to view OTP codes",
+    "description": "Security benefit: require PIN"
+  },
+  "security_benefit_secure_connections": {
+    "message": "Keep your email connections protected",
+    "description": "Security benefit: secure connections"
+  },
+  "security_action_enable": {
+    "message": "Enable",
+    "description": "Button label to enable password protection"
+  },
+  "security_action_change_password": {
+    "message": "Change PIN",
+    "description": "Button label to change PIN"
+  },
+  "security_action_disable": {
+    "message": "Disable protection",
+    "description": "Button label to disable password protection"
+  },
+  "security_action_disabling": {
+    "message": "Disabling…",
+    "description": "Loading label while disabling protection"
+  },
+  "security_setup_submit": {
+    "message": "Enable protection",
+    "description": "Submit label for enabling protection"
+  },
+  "security_setup_success": {
+    "message": "PIN protection enabled successfully!",
+    "description": "Success message after PIN setup"
+  },
+  "security_setup_submitting": {
+    "message": "Enabling…",
+    "description": "Loading label while enabling protection"
+  },
+  "security_pins_match": {
+    "message": "PINs match",
+    "description": "Message shown when PINs match"
+  },
+  "security_change_submit": {
+    "message": "Change PIN",
+    "description": "Submit label for changing PIN"
+  },
+  "security_change_success": {
+    "message": "PIN changed successfully!",
+    "description": "Success message after changing PIN"
+  },
+  "security_change_submitting": {
+    "message": "Saving…",
+    "description": "Loading label while changing password"
+  },
+  "security_pin_label_new": {
+    "message": "New PIN",
+    "description": "Label for new PIN field"
+  },
+  "security_pin_label_confirm": {
+    "message": "Confirm PIN",
+    "description": "Label for confirm PIN field"
+  },
+  "security_pin_label_current": {
+    "message": "Current PIN",
+    "description": "Label for current PIN field"
+  },
+  "security_pin_placeholder": {
+    "message": "Enter 6-digit PIN",
+    "description": "Placeholder for PIN inputs"
+  },
+  "security_pin_placeholder_confirm": {
+    "message": "Re-enter 6-digit PIN",
+    "description": "Placeholder for confirm PIN input"
+  },
+  "security_pin_error_invalid": {
+    "message": "PIN must be exactly 6 digits (numbers only).",
+    "description": "Error shown when PIN format is invalid"
+  },
+  "security_pin_error_mismatch": {
+    "message": "PINs do not match",
+    "description": "Error shown when PINs differ"
+  },
+  "security_pin_error_same": {
+    "message": "New PIN must be different from your current PIN",
+    "description": "Error shown when PINs are identical"
+  },
+  "security_pin_error_missing_current": {
+    "message": "Enter your current PIN",
+    "description": "Error shown when current PIN is missing"
+  },
+  "security_rate_limit_five_minutes": {
+    "message": "Too many attempts. Try again in $MINUTES$ minutes.",
+    "description": "Rate limit message for five-minute window",
+    "placeholders": {
+      "minutes": {
+        "content": "$1",
+        "example": "3"
+      }
+    }
+  },
+  "security_rate_limit_day": {
+    "message": "Too many attempts today. Try again in 24 hours.",
+    "description": "Rate limit message for daily window"
+  },
+  "security_action_lock_now": {
+    "message": "Lock now",
+    "description": "Button label to lock immediately"
+  },
+  "security_toast_locked": {
+    "message": "InboxKey locked",
+    "description": "Toast message when lock now succeeds"
+  },
+  "security_toast_lock_failed": {
+    "message": "Failed to lock. Try again.",
+    "description": "Toast message when lock now fails"
+  },
+  "security_toast_unlocked": {
+    "message": "Unlocked successfully",
+    "description": "Toast message when settings unlock succeeds"
+  },
+  "security_autolock_title": {
+    "message": "Auto-lock",
+    "description": "Auto-lock section title"
+  },
+  "security_autolock_description": {
+    "message": "Choose how long InboxKey stays unlocked before locking itself.",
+    "description": "Auto-lock description text"
+  },
+  "security_autolock_label": {
+    "message": "Lock automatically after",
+    "description": "Label for auto-lock timeout select"
+  },
+  "security_autolock_loading": {
+    "message": "Loading auto-lock settings…",
+    "description": "Loading state for auto-lock config"
+  },
+  "security_autolock_never": {
+    "message": "InboxKey will not auto-lock. You can still lock it manually.",
+    "description": "Auto-lock info message when timeout is never"
+  },
+  "security_autolock_timeout": {
+    "message": "InboxKey will lock after $TIMEOUT$ of inactivity.",
+    "description": "Auto-lock info message when timeout selected",
+    "placeholders": {
+      "timeout": {
+        "content": "$1",
+        "example": "5 minutes"
+      }
+    }
+  },
+  "security_autolock_option_1m": {
+    "message": "1 minute",
+    "description": "Auto-lock option: 1 minute"
+  },
+  "security_autolock_option_5m": {
+    "message": "5 minutes",
+    "description": "Auto-lock option: 5 minutes"
+  },
+  "security_autolock_option_15m": {
+    "message": "15 minutes",
+    "description": "Auto-lock option: 15 minutes"
+  },
+  "security_autolock_option_30m": {
+    "message": "30 minutes",
+    "description": "Auto-lock option: 30 minutes"
+  },
+  "security_autolock_option_60m": {
+    "message": "1 hour",
+    "description": "Auto-lock option: 1 hour"
+  },
+  "security_autolock_option_never": {
+    "message": "Never",
+    "description": "Auto-lock option: never lock automatically"
+  },
+  "security_reset_success": {
+    "message": "InboxKey reset. Set things up again to continue.",
+    "description": "Toast when reset succeeds"
+  },
+  "security_reset_failed": {
+    "message": "Reset failed. Check your PIN and try again.",
+    "description": "Error toast when reset fails"
+  },
+  "security_action_resetting": {
+    "message": "Resetting…",
+    "description": "Loading label while resetting"
+  },
+  "security_status_active": {
+    "message": "Protection is on",
+    "description": "Status label when password protection is active"
+  },
+  "security_status_active_description": {
+    "message": "Your verification codes and tokens are encrypted. Unlock InboxKey with your PIN when needed.",
+    "description": "Description when protection is active"
+  },
+  "security_disable_title": {
+    "message": "Turn off PIN protection",
+    "description": "Disable protection heading"
+  },
+  "security_disable_description": {
+    "message": "Disabling protection removes encryption from stored tokens. You'll need to reconnect your accounts to secure them again.",
+    "description": "Disable protection description"
+  },
+  "security_locked_message": {
+    "message": "Unlock to change security settings",
+    "description": "Message shown when settings are locked"
+  },
+
+  "security_danger_zone": {
+    "message": "Danger Zone",
+    "description": "Danger zone heading"
+  },
+  "security_danger_warning_title": {
+    "message": "⚠️ This action cannot be undone",
+    "description": "Danger warning title"
+  },
+  "security_danger_warning_message": {
+    "message": "Resetting InboxKey will permanently delete:",
+    "description": "Danger warning message"
+  },
+  "security_danger_delete_codes": {
+    "message": "All verification codes and magic links",
+    "description": "Danger: delete codes"
+  },
+  "security_danger_delete_settings": {
+    "message": "All settings and preferences",
+    "description": "Danger: delete settings"
+  },
+  "security_danger_disconnect_accounts": {
+    "message": "All connected email accounts",
+    "description": "Danger: disconnect accounts"
+  },
+  "security_danger_irreversible": {
+    "message": "This action is irreversible",
+    "description": "Danger: irreversible"
+  },
+  "security_danger_button": {
+    "message": "Reset InboxKey",
+    "description": "Danger button label"
+  },
+  "security_danger_confirm_message": {
+    "message": "Enter your PIN to confirm",
+    "description": "Danger confirm message"
+  },
+  "security_danger_confirm_label": {
+    "message": "Your PIN",
+    "description": "Danger confirm label"
+  },
+  "security_danger_confirm_button": {
+    "message": "Yes, reset everything",
+    "description": "Danger confirm button"
+  },
+
+  "about_open_source": {
+    "message": "Open-source",
+    "description": "About: open-source label"
+  },
+  "about_view_source": {
+    "message": "View source",
+    "description": "About: view source link"
+  },
+  "about_local_only": {
+    "message": "Local-only",
+    "description": "About: local-only label"
+  },
+  "about_no_servers": {
+    "message": "No servers",
+    "description": "About: no servers value"
+  },
+  "about_verified_publisher": {
+    "message": "Verified Publisher",
+    "description": "About: verified publisher label"
+  },
+  "about_chrome_web_store": {
+    "message": "Chrome Web Store",
+    "description": "About: Chrome Web Store value"
+  },
+  "about_privacy_title": {
+    "message": "Privacy & Security",
+    "description": "About: privacy title"
+  },
+  "about_privacy_statement": {
+    "message": "InboxKey processes everything on your device. No data is sent to external servers.",
+    "description": "About: privacy statement"
+  },
+  "about_privacy_no_tracking": {
+    "message": "No tracking or analytics",
+    "description": "About: no tracking"
+  },
+  "about_privacy_no_telemetry": {
+    "message": "No telemetry by default",
+    "description": "About: no telemetry"
+  },
+  "about_privacy_encrypted_storage": {
+    "message": "All data encrypted in browser storage",
+    "description": "About: encrypted storage"
+  },
+  "about_privacy_read_only_email": {
+    "message": "Read-only access to email (can't send)",
+    "description": "About: read-only email"
+  },
+  "about_support_title": {
+    "message": "Support Development",
+    "description": "About: support title"
+  },
+  "about_support_message": {
+    "message": "If InboxKey saves you time, a coffee keeps it going. Thank you.",
+    "description": "About: support message"
+  },
+  "about_support_cta_aria": {
+    "message": "Support InboxKey development (opens in a new tab)",
+    "description": "ARIA label for Buy me a coffee call-to-action"
+  },
+  "about_buy_coffee": {
+    "message": "Buy me a coffee",
+    "description": "About: buy coffee button"
+  },
+  "about_support_disclaimer": {
+    "message": "Support is optional and never required. InboxKey is free and open-source forever.",
+    "description": "About: support disclaimer"
+  },
+  "about_version": {
+    "message": "Version",
+    "description": "About: version label"
+  },
+  "about_build": {
+    "message": "Build",
+    "description": "About: build label"
+  },
+  "about_version_line": {
+    "message": "$VERSION$ • Build $BUILD$",
+    "description": "Combined version/build display",
+    "placeholders": {
+      "version": {
+        "content": "$1",
+        "example": "v0.1.0"
+      },
+      "build": {
+        "content": "$2",
+        "example": "abc123"
+      }
+    }
+  },
+  "about_verify_build": {
+    "message": "Verify build",
+    "description": "About: verify build link"
+  },
+  "about_trust_title": {
+    "message": "Open-source & Transparency",
+    "description": "About section title"
+  },
+  "about_trust_pill_open_source": {
+    "message": "Open-source • Apache-2.0",
+    "description": "About pill: open-source"
+  },
+  "about_trust_pill_verified": {
+    "message": "Verified Publisher",
+    "description": "About pill: verified publisher"
+  },
+  "about_trust_pill_builds": {
+    "message": "Reproducible Builds",
+    "description": "About pill: reproducible builds"
+  },
+  "about_source_label": {
+    "message": "Source & Verification",
+    "description": "About row label for source information"
+  },
+  "about_source_description": {
+    "message": "Review the code and verify builds to ensure privacy is verifiable.",
+    "description": "About row description for source information"
+  },
+  "about_support_label": {
+    "message": "Support",
+    "description": "About row label for support"
+  },
+
+  "footer_local_only": {
+    "message": "Local-only - No servers",
+    "description": "Footer: local-only message"
+  },
+  "footer_buy_coffee": {
+    "message": "Buy me a coffee",
+    "description": "Footer: support link"
+  },
+
+  "toast_code_copied": {
+    "message": "✓ Code copied to clipboard",
+    "description": "Toast: code copied"
+  },
+  "toast_link_opened": {
+    "message": "✓ Link opened",
+    "description": "Toast: link opened"
+  },
+  "toast_settings_saved": {
+    "message": "✓ Settings saved",
+    "description": "Toast: settings saved"
+  },
+  "toast_error_copy": {
+    "message": "Failed to copy code",
+    "description": "Toast: copy error"
+  },
+  "toast_error_link": {
+    "message": "Failed to open link",
+    "description": "Toast: link error"
+  },
+  "toast_rate_limited": {
+    "message": "Too many link opens. Please wait.",
+    "description": "Toast: rate limited"
+  },
+  "toast_gmail_connected": {
+    "message": "✓ Gmail account connected",
+    "description": "Success toast for Gmail connection"
+  },
+  "toast_outlook_connected": {
+    "message": "✓ Outlook account connected",
+    "description": "Success toast for Outlook connection"
+  },
+  "toast_account_disconnected": {
+    "message": "✓ Account disconnected",
+    "description": "Success toast for account removal"
+  },
+  "toast_oauth_cancelled": {
+    "message": "OAuth cancelled",
+    "description": "Toast when user cancels OAuth"
+  },
+  "toast_connect_failed": {
+    "message": "Failed to connect account",
+    "description": "Error toast for connection failure"
+  },
+  "toast_connect_network_error": {
+    "message": "Network error. Please check your connection and try again.",
+    "description": "Error toast for network issues during OAuth"
+  },
+  "toast_connect_invalid_credentials": {
+    "message": "OAuth configuration error. Please contact support.",
+    "description": "Error toast for invalid OAuth credentials"
+  },
+  "toast_connect_profile_failed": {
+    "message": "Connected but failed to fetch profile. Please try again.",
+    "description": "Error toast for profile fetch failure"
+  },
+  "toast_connect_duplicate": {
+    "message": "This account is already connected",
+    "description": "Error toast for duplicate account"
+  },
+  "toast_connect_popup_blocked": {
+    "message": "Popup blocked. Please allow popups and try again.",
+    "description": "Error toast for blocked popup"
+  },
+  "toast_disconnect_failed": {
+    "message": "Failed to disconnect account",
+    "description": "Error toast for disconnection failure"
+  },
+
+  "error_token_expired_title": {
+    "message": "Session expired",
+    "description": "Error: token expired title"
+  },
+  "error_token_expired_message": {
+    "message": "Your $PROVIDER$ session has expired. Please reconnect.",
+    "description": "Error: token expired message",
+    "placeholders": {
+      "provider": {
+        "content": "$1",
+        "example": "Gmail"
+      }
+    }
+  },
+  "button_reconnect": {
+    "message": "Reconnect",
+    "description": "Reconnect button"
+  },
+  "error_offline_message": {
+    "message": "You're offline. Using cached data.",
+    "description": "Error: offline message"
+  },
+  "error_api_quota_message": {
+    "message": "$PROVIDER$ API quota exceeded. Try again later.",
+    "description": "Error: API quota message",
+    "placeholders": {
+      "provider": {
+        "content": "$1",
+        "example": "Gmail"
+      }
+    }
+  },
+  "error_extension_locked": {
+    "message": "Extension is locked. Please unlock first.",
+    "description": "Error when trying to manage accounts while locked"
+  },
+
+  "site_overrides_title": {
+    "message": "Per-Site Behavior",
+    "description": "Site overrides: title"
+  },
+  "site_overrides_description": {
+    "message": "Control how InboxKey behaves on specific websites.",
+    "description": "Site overrides: description"
+  },
+  "site_overrides_domain_placeholder": {
+    "message": "example.com",
+    "description": "Site overrides: domain placeholder"
+  },
+  "site_mode_auto": {
+    "message": "Auto-fill",
+    "description": "Site mode: auto"
+  },
+  "site_mode_prompt": {
+    "message": "Prompt",
+    "description": "Site mode: prompt"
+  },
+  "site_mode_off": {
+    "message": "Off",
+    "description": "Site mode: off"
+  },
+  "site_mode_auto_description": {
+    "message": "Automatically fill codes when detected",
+    "description": "Site mode: auto description"
+  },
+  "site_mode_prompt_description": {
+    "message": "Show a prompt before filling",
+    "description": "Site mode: prompt description"
+  },
+  "site_mode_off_description": {
+    "message": "Don't fill codes on this site",
+    "description": "Site mode: off description"
+  },
+  "site_overrides_empty": {
+    "message": "No site overrides configured",
+    "description": "Site overrides: empty state"
+  },
+  "site_override_remove": {
+    "message": "Remove override for $DOMAIN$",
+    "description": "Site override: remove ARIA label",
+    "placeholders": {
+      "domain": {
+        "content": "$1",
+        "example": "example.com"
+      }
+    }
+  },
+  "site_overrides_modes_title": {
+    "message": "How it works",
+    "description": "Site overrides: modes title"
+  }
+}

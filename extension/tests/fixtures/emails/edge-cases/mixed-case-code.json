@@ -1,0 +1,15 @@
+{
+  "id": "edge-mixed-case-001",
+  "type": "alphanumeric",
+  "category": "edge-case",
+  "from": "auth@example.com",
+  "subject": "Authorization Code",
+  "body": "Your authorization code is: Hj83Kx92 (case-sensitive)",
+  "extracted": {
+    "code": "Hj83Kx92",
+    "pattern": "alphanumeric-8",
+    "caseSensitive": true,
+    "confidence": "high",
+    "note": "Mixed case alphanumeric code"
+  }
+}

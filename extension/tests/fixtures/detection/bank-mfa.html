@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Secure Banking - Multi-Factor Authentication</title>
+  <style>
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; display: flex; align-items: center; justify-content: center; margin: 0; }
+    .card { background: #fff; padding: 40px; border-radius: 12px; box-shadow: 0 10px 40px rgba(0,0,0,0.2); max-width: 480px; }
+    .header { text-align: center; margin-bottom: 30px; }
+    .bank-logo { width: 60px; height: 60px; background: #667eea; border-radius: 50%; margin: 0 auto 16px; display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 700; font-size: 24px; }
+    h1 { font-size: 24px; margin: 0 0 8px; color: #2d3748; }
+    .subtitle { color: #718096; font-size: 14px; }
+    .info-box { background: #edf2f7; border-left: 4px solid #667eea; padding: 16px; margin: 24px 0; border-radius: 4px; }
+    .info-box p { margin: 0; font-size: 14px; color: #4a5568; line-height: 1.6; }
+    .form-label { font-weight: 600; color: #2d3748; font-size: 14px; display: block; margin-bottom: 8px; }
+    .form-input { width: 100%; padding: 12px 16px; font-size: 16px; border: 2px solid #e2e8f0; border-radius: 8px; box-sizing: border-box; transition: border-color 0.2s; }
+    .form-input:focus { border-color: #667eea; outline: none; }
+    .btn-primary { width: 100%; background: #667eea; color: #fff; padding: 14px; border: none; border-radius: 8px; font-size: 16px; font-weight: 600; margin-top: 24px; cursor: pointer; }
+    .help-text { text-align: center; margin-top: 20px; font-size: 13px; color: #718096; }
+  </style>
+</head>
+<body>
+  <!--
+    Expected Detection:
+    - Field: #sms-verification-code (label text "verification code")
+    - Confidence: 80-85 (Tier 2)
+    - Tier: 2
+    - Signals: label text match, maxlength, type="text"
+    - Rationale: No Tier 1 signals (no autocomplete/inputmode), relies on verbose label text
+  -->
+  <div class="card">
+    <div class="header">
+      <div class="bank-logo">SB</div>
+      <h1>Multi-Factor Authentication</h1>
+      <p class="subtitle">Secure Banking Portal</p>
+    </div>
+
+    <div class="info-box">
+      <p>
+        <strong>Important Security Step:</strong> We have sent a unique 6-digit verification code
+        to your registered mobile phone number ending in ****5432. Please enter this code below
+        to complete your login process. This code will expire in 10 minutes.
+      </p>
+    </div>
+
+    <form>
+      <label for="sms-verification-code" class="form-label">
+        Enter Your 6-Digit Verification Code
+      </label>
+      <input
+        type="text"
+        id="sms-verification-code"
+        name="mfaInput"
+        maxlength="6"
+        placeholder="000000"
+        class="form-input"
+        required
+        data-testid="verification-field"
+      />
+
+      <button type="submit" class="btn-primary">Verify and Continue</button>
+    </form>
+
+    <p class="help-text">
+      Didn't receive a code? <a href="#" style="color: #667eea;">Resend verification code</a>
+    </p>
+  </div>
+</body>
+</html>

@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Sign In - Two-Factor Authentication - Kraken</title>
+</head>
+<body>
+    <div class="kraken-auth">
+        <div class="auth-card">
+            <h1>Two-Factor Authentication</h1>
+            <p>Enter your two-factor authentication code to continue</p>
+            <form method="POST" action="/sign-in/2fa">
+                <div class="input-field">
+                    <!-- Detection signals: autocomplete="one-time-code", inputmode="numeric", name="twofa_code" -->
+                    <label for="twofa_code">2FA Code</label>
+                    <input
+                        type="tel"
+                        id="twofa_code"
+                        name="twofa_code"
+                        class="kraken-input"
+                        autocomplete="one-time-code"
+                        inputmode="numeric"
+                        maxlength="6"
+                        required
+                        autofocus
+                    >
+                </div>
+                <div class="remember-device">
+                    <input type="checkbox" id="remember_2fa" name="remember_2fa">
+                    <label for="remember_2fa">Remember for 14 days</label>
+                </div>
+                <button type="submit" class="kraken-button-primary">Sign In</button>
+            </form>
+            <div class="help-section">
+                <a href="/help/2fa">Having trouble?</a>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

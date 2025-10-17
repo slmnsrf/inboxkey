@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>2-Step Verification - Coinbase</title>
+</head>
+<body>
+    <div class="auth-layout">
+        <div class="auth-container">
+            <h1>2-step verification</h1>
+            <p class="auth-description">
+                Enter the 7-digit code from your authenticator app
+            </p>
+            <form method="POST" action="/signin/verify_code">
+                <div class="form-group">
+                    <!-- Detection signals: autocomplete="one-time-code", inputmode="numeric", id="code" -->
+                    <label for="code">Verification code</label>
+                    <input
+                        type="text"
+                        id="code"
+                        name="code"
+                        class="form-control"
+                        autocomplete="one-time-code"
+                        inputmode="numeric"
+                        maxlength="7"
+                        placeholder="0000000"
+                        required
+                        autofocus
+                    >
+                    <div class="form-hint">Enter 7-digit code</div>
+                </div>
+                <div class="checkbox-wrapper">
+                    <input type="checkbox" id="trust_device" name="trust_device">
+                    <label for="trust_device">Trust this device for 30 days</label>
+                </div>
+                <button type="submit" class="btn btn-primary btn-block">Continue</button>
+            </form>
+            <div class="help-links">
+                <a href="/signin/two_factor_auth_options">Try another way</a>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

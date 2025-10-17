@@ -2,9 +2,13 @@
 .claude/
 AGENTS.md
 
+# Local
+*docker*
+
 # Project documentation (kept local)
 specifications.md
 implementation.md
+docs/*
 
 # Dependencies
 node_modules/
@@ -19,13 +23,14 @@ build/
 .next/
 out/
 
-# Chrome extension build
-extension/
 
 # Environment variables
 .env
 .env.local
 .env.*.local
+
+# OAuth credentials
+client_secret*.json
 
 # IDE
 .vscode/

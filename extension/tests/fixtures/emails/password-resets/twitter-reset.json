@@ -1,0 +1,14 @@
+{
+  "id": "twitter-reset-001",
+  "type": "password-reset",
+  "category": "security",
+  "from": "noreply@twitter.com",
+  "subject": "X (Twitter) Password Reset",
+  "body": "You requested a password reset for your X (Twitter).\n\nClick here to reset: https://twitter.com/reset?token=604ee4e38c2305ccf41f8456d1f5f8cda8eefb5a\n\nIf you didn't request this, please ignore this email.",
+  "extracted": {
+    "link": "https://twitter.com/reset?token=604ee4e38c2305ccf41f8456d1f5f8cda8eefb5a",
+    "token": "604ee4e38c2305ccf41f8456d1f5f8cda8eefb5a",
+    "type": "password-reset",
+    "confidence": "high"
+  }
+}

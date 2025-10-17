@@ -1,0 +1,14 @@
+{
+  "id": "aws-alert-001",
+  "type": "security-alert",
+  "category": "security",
+  "from": "security@aws.com",
+  "subject": "Root account access",
+  "body": "We detected a root account access to your Aws account.\n\nLocation: Virginia\nDevice: AWS Console\nTime: 2025-10-15T14:31:44Z\n\nIf this was you, you can ignore this email. If not, secure your account immediately.",
+  "extracted": {
+    "alertType": "Root account access",
+    "location": "Virginia",
+    "device": "AWS Console",
+    "requiresAction": false
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "id": "figma-magic-001",
+  "type": "magic-link",
+  "category": "design",
+  "from": "noreply@figma.com",
+  "subject": "Sign in to Figma",
+  "body": "Click the link below to sign in:\n\nhttps://figma.com/auth/login?token=afc5835ed324b35887c88903ef7e5cc6\n\nThis link expires in 15 minutes.",
+  "extracted": {
+    "link": "https://figma.com/auth/login?token=afc5835ed324b35887c88903ef7e5cc6",
+    "token": "afc5835ed324b35887c88903ef7e5cc6",
+    "confidence": "high"
+  }
+}

@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>monday.com - Verification</title>
+    <style>
+        body { font-family: 'Figtree', -apple-system, sans-serif; background: #f6f7fb; margin: 0; padding: 20px; }
+        .monday-container { max-width: 480px; margin: 50px auto; background: white; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); padding: 40px; }
+        .monday-logo { text-align: center; margin-bottom: 30px; font-size: 30px; font-weight: 700; color: #ff3d57; }
+        .monday-title { color: #323338; font-size: 24px; margin-bottom: 12px; font-weight: 600; }
+        .monday-text { color: #676879; line-height: 1.7; margin-bottom: 25px; }
+        .monday-input-group { margin-bottom: 20px; }
+        .monday-label { display: block; color: #323338; margin-bottom: 8px; font-weight: 600; font-size: 14px; }
+        .monday-input { width: 100%; padding: 13px; border: 1px solid #c5c7d0; border-radius: 8px; font-size: 16px; box-sizing: border-box; }
+        .monday-input:focus { border-color: #ff3d57; outline: none; box-shadow: 0 0 0 3px rgba(255, 61, 87, 0.1); }
+        .monday-button { width: 100%; padding: 14px; background: #ff3d57; color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer; }
+        .monday-button:hover { background: #ff2843; }
+    </style>
+</head>
+<body>
+    <!-- Detection Signals: SaaS domain: monday, monday.com -->
+    <div class="monday-container">
+        <div class="monday-logo">monday.com</div>
+        <h1 class="monday-title">Verification Required</h1>
+        <p class="monday-text">Please enter the verification code sent to your device.</p>
+        <form id="verifyForm" action="/auth/verify" method="POST">
+            <div class="monday-input-group">
+                <label for="verifyCode" class="monday-label">Verification Code</label>
+                <input type="tel" id="verifyCode" name="verify_code" class="monday-input" placeholder="000000" maxlength="6" pattern="[0-9]{6}" inputmode="numeric" autocomplete="one-time-code" required />
+            </div>
+            <button type="submit" class="monday-button">Verify</button>
+        </form>
+    </div>
+</body>
+</html>

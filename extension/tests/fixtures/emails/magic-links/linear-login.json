@@ -1,0 +1,13 @@
+{
+  "id": "linear-magic-001",
+  "type": "magic-link",
+  "category": "productivity",
+  "from": "noreply@linear.app",
+  "subject": "Sign in to Linear",
+  "body": "Click the link below to sign in:\n\nhttps://linear.app/auth/login?token=21144b0cd73085c299c865e56119d9b0\n\nThis link expires in 15 minutes.",
+  "extracted": {
+    "link": "https://linear.app/auth/login?token=21144b0cd73085c299c865e56119d9b0",
+    "token": "21144b0cd73085c299c865e56119d9b0",
+    "confidence": "high"
+  }
+}

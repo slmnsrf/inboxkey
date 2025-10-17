@@ -1,0 +1,340 @@
+/**
+ * InboxKey Focus Management Styles
+ *
+ * Implements visible focus indicators for keyboard navigation.
+ * Uses :focus-visible to show focus only for keyboard users, not mouse clicks.
+ *
+ * Meets WCAG 2.1 Success Criterion 2.4.7: Focus Visible (Level AA)
+ *
+ * Reference: ui-ux-principles.md - "Accessibility from the Start"
+ */
+
+/* ========================================
+   FOCUS VISIBLE - Keyboard Navigation
+   ======================================== */
+
+/**
+ * Default focus style for all interactive elements.
+ * Uses :focus-visible to only show focus ring for keyboard navigation.
+ */
+*:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+  border-radius: var(--radius-sm);
+}
+
+/* Remove default browser focus outline when not keyboard-focused */
+*:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* ========================================
+   INTERACTIVE ELEMENTS
+   ======================================== */
+
+/**
+ * Buttons, links, inputs - Enhanced focus rings
+ */
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+[role="button"]:focus-visible,
+[role="link"]:focus-visible,
+[role="tab"]:focus-visible,
+[tabindex]:not([tabindex="-1"]):focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+  box-shadow: var(--focus-ring-shadow);
+}
+
+/* ========================================
+   BUTTONS - Specific Focus Styles
+   ======================================== */
+
+/**
+ * Primary buttons - Maintain contrast when focused
+ */
+button.primary:focus-visible,
+.button--primary:focus-visible {
+  outline: var(--focus-ring-width) solid var(--color-primary-hover);
+  outline-offset: var(--focus-ring-offset);
+  box-shadow: 0 0 0 var(--focus-ring-offset) var(--color-bg-primary),
+              0 0 0 calc(var(--focus-ring-offset) + var(--focus-ring-width)) var(--color-primary-hover);
+}
+
+/**
+ * Danger buttons - Red focus ring
+ */
+button.danger:focus-visible,
+.button--danger:focus-visible,
+.security-settings__button--danger:focus-visible {
+  outline-color: var(--color-error);
+  box-shadow: 0 0 0 var(--focus-ring-offset) var(--color-bg-primary),
+              0 0 0 calc(var(--focus-ring-offset) + var(--focus-ring-width)) var(--color-error);
+}
+
+/**
+ * Success buttons - Green focus ring
+ */
+button.success:focus-visible,
+.button--success:focus-visible {
+  outline-color: var(--color-success);
+  box-shadow: 0 0 0 var(--focus-ring-offset) var(--color-bg-primary),
+              0 0 0 calc(var(--focus-ring-offset) + var(--focus-ring-width)) var(--color-success);
+}
+
+/* ========================================
+   LINKS - Focus Styles
+   ======================================== */
+
+/**
+ * Text links - Underline on focus
+ */
+a:focus-visible {
+  outline: var(--focus-ring-width) solid var(--color-primary);
+  outline-offset: var(--focus-ring-offset);
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 2px;
+}
+
+/* ========================================
+   INPUTS - Form Field Focus
+   ======================================== */
+
+/**
+ * Text inputs, textareas, selects
+ */
+input[type="text"]:focus-visible,
+input[type="email"]:focus-visible,
+input[type="password"]:focus-visible,
+input[type="search"]:focus-visible,
+input[type="number"]:focus-visible,
+input[type="tel"]:focus-visible,
+input[type="url"]:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px var(--color-primary-light);
+}
+
+/**
+ * Input error state - Red focus ring
+ */
+input[aria-invalid="true"]:focus-visible,
+textarea[aria-invalid="true"]:focus-visible,
+.input--error:focus-visible {
+  border-color: var(--color-error);
+  box-shadow: 0 0 0 3px var(--color-error-light);
+}
+
+/**
+ * Checkbox and radio inputs
+ */
+input[type="checkbox"]:focus-visible,
+input[type="radio"]:focus-visible {
+  outline: var(--focus-ring-width) solid var(--color-primary);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 2px var(--color-bg-primary),
+              0 0 0 4px var(--color-primary);
+}
+
+/* ========================================
+   CUSTOM COMPONENTS - Focus Styles
+   ======================================== */
+
+/**
+ * Code cards - Focus on entire card
+ */
+.code-card:focus-within {
+  outline: var(--focus-ring-width) solid var(--color-primary);
+  outline-offset: var(--focus-ring-offset);
+  box-shadow: var(--shadow-md);
+}
+
+/**
+ * Link cards - Focus on entire card
+ */
+.link-card:focus-within {
+  outline: var(--focus-ring-width) solid var(--color-primary);
+  outline-offset: var(--focus-ring-offset);
+  box-shadow: var(--shadow-md);
+}
+
+/**
+ * Toast notifications - No focus needed (informational only)
+ */
+.toast:focus {
+  outline: none;
+}
+
+/**
+ * Modal overlays - Focus trap active
+ */
+.modal:focus,
+.popup-lock-overlay:focus {
+  outline: none;  /* Modal itself doesn't need focus ring */
+}
+
+/**
+ * Security banner - Focus on buttons only, not banner
+ */
+.security-banner:focus {
+  outline: none;
+}
+
+/* ========================================
+   SKIP LINKS - Accessibility
+   ======================================== */
+
+/**
+ * Skip to main content link (keyboard-only)
+ * Visible only when focused, for keyboard users to skip navigation
+ */
+.skip-link {
+  position: absolute;
+  top: -40px;
+  left: 0;
+  background: var(--color-primary);
+  color: var(--color-text-inverse);
+  padding: var(--space-2) var(--space-4);
+  text-decoration: none;
+  border-radius: var(--radius-md);
+  z-index: var(--z-modal);
+}
+
+.skip-link:focus {
+  top: var(--space-2);
+  outline: var(--focus-ring-width) solid var(--color-primary-hover);
+  outline-offset: var(--focus-ring-offset);
+}
+
+/* ========================================
+   FOCUS WITHIN - Container Focus
+   ======================================== */
+
+/**
+ * Show focus indicator on parent when child is focused
+ * Useful for card-based layouts
+ */
+.code-list .code-card:focus-within,
+.link-list .link-card:focus-within {
+  background-color: var(--color-bg-secondary);
+}
+
+/* ========================================
+   KEYBOARD NAVIGATION HELPERS
+   ======================================== */
+
+/**
+ * Highlight current navigation item
+ */
+[aria-current="page"],
+[aria-current="true"] {
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-primary);
+}
+
+/**
+ * Disabled elements - No focus
+ */
+button:disabled,
+input:disabled,
+select:disabled,
+textarea:disabled,
+[aria-disabled="true"] {
+  cursor: not-allowed;
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+button:disabled:focus,
+input:disabled:focus,
+[aria-disabled="true"]:focus {
+  outline: none;
+  box-shadow: none;
+}
+
+/* ========================================
+   FOCUS TRAP - Modal/Dialog
+   ======================================== */
+
+/**
+ * When modal is open, dim background and prevent focus
+ */
+body:has(.modal[aria-hidden="false"]) {
+  overflow: hidden;
+}
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: var(--color-bg-overlay);
+  z-index: var(--z-overlay);
+}
+
+.modal[aria-hidden="true"] {
+  display: none;
+}
+
+.modal[aria-hidden="false"] {
+  display: block;
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-modal);
+}
+
+/* ========================================
+   REDUCED MOTION - Focus Transitions
+   ======================================== */
+
+@media (prefers-reduced-motion: no-preference) {
+  /**
+   * Smooth focus transitions (only if user allows motion)
+   */
+  *:focus-visible {
+    transition: outline-color var(--duration-fast) var(--easing-default),
+                box-shadow var(--duration-fast) var(--easing-default);
+  }
+
+  input:focus-visible,
+  textarea:focus-visible,
+  select:focus-visible {
+    transition: border-color var(--duration-fast) var(--easing-default),
+                box-shadow var(--duration-fast) var(--easing-default);
+  }
+}
+
+/* ========================================
+   HIGH CONTRAST MODE
+   ======================================== */
+
+/**
+ * Windows High Contrast Mode support
+ */
+@media (prefers-contrast: high) {
+  *:focus-visible {
+    outline-width: 3px;
+    outline-offset: 3px;
+  }
+
+  button:focus-visible,
+  a:focus-visible {
+    outline-style: solid;
+    outline-color: ButtonText;
+  }
+}
+
+/* ========================================
+   PRINT STYLES - No Focus Indicators
+   ======================================== */
+
+@media print {
+  *:focus-visible {
+    outline: none;
+    box-shadow: none;
+  }
+}

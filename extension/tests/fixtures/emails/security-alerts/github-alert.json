@@ -1,0 +1,14 @@
+{
+  "id": "github-alert-001",
+  "type": "security-alert",
+  "category": "security",
+  "from": "security@github.com",
+  "subject": "New SSH key",
+  "body": "We detected a new ssh key to your Github account.\n\nLocation: London, UK\nDevice: Terminal\nTime: 2025-10-15T14:31:44Z\n\nIf this was you, you can ignore this email. If not, secure your account immediately.",
+  "extracted": {
+    "alertType": "New SSH key",
+    "location": "London, UK",
+    "device": "Terminal",
+    "requiresAction": false
+  }
+}

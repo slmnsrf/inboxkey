@@ -1,0 +1,13 @@
+{
+  "id": "square-alpha-001",
+  "type": "alphanumeric",
+  "category": "finance",
+  "from": "noreply@square.com",
+  "subject": "Square Verification",
+  "body": "Your Square verification code: QW89ER12\n\nEnter this code to continue.",
+  "extracted": {
+    "code": "QW89ER12",
+    "pattern": "alphanumeric-8",
+    "confidence": "high"
+  }
+}

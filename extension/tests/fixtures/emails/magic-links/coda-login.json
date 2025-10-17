@@ -1,0 +1,13 @@
+{
+  "id": "coda-magic-001",
+  "type": "magic-link",
+  "category": "productivity",
+  "from": "noreply@coda.io",
+  "subject": "Sign in to Coda",
+  "body": "Click the link below to sign in:\n\nhttps://coda.io/auth/login?token=4de959c4e456525e20d089afc3e26af4\n\nThis link expires in 15 minutes.",
+  "extracted": {
+    "link": "https://coda.io/auth/login?token=4de959c4e456525e20d089afc3e26af4",
+    "token": "4de959c4e456525e20d089afc3e26af4",
+    "confidence": "high"
+  }
+}

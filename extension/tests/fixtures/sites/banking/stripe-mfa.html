@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Two-step authentication - Stripe</title>
+</head>
+<body>
+    <div class="Layout">
+        <div class="Layout-content">
+            <div class="Box">
+                <h1 class="db-Heading">Enter your authentication code</h1>
+                <p class="db-Text">
+                    Open your two-factor authentication app to view your code
+                </p>
+                <form method="POST" action="/login/verify">
+                    <div class="FormField">
+                        <!-- Detection signals: autocomplete="one-time-code", inputmode="numeric", id="totp_token" -->
+                        <label for="totp_token" class="FormField-label">Authentication code</label>
+                        <input
+                            type="text"
+                            id="totp_token"
+                            name="totp_token"
+                            class="FormField-input"
+                            autocomplete="one-time-code"
+                            inputmode="numeric"
+                            maxlength="6"
+                            required
+                            autofocus
+                        >
+                    </div>
+                    <div class="FormField-checkbox">
+                        <input type="checkbox" id="remember_device" name="remember_device">
+                        <label for="remember_device">Remember this device for 30 days</label>
+                    </div>
+                    <button type="submit" class="Button Button--primary">Continue</button>
+                </form>
+                <div class="db-Links">
+                    <a href="/login/sms">Use SMS code instead</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

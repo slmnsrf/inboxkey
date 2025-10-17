@@ -1,0 +1,314 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>InboxKey — First-Run Popup Demo</title>
+  <style>
+    /* ===== Design Tokens (matches docs) ===== */
+    :root {
+      --color-primary: #3b82f6;
+      --color-primary-hover: #2563eb;
+      --color-success: #10b981;
+      --color-error: #ef4444;
+      --color-gray-900: #111827;
+      --color-gray-700: #374151;
+      --color-gray-600: #6b7280;
+      --color-gray-500: #9ca3af;
+      --color-gray-300: #d1d5db;
+      --color-gray-200: #e5e7eb;
+      --color-gray-100: #f3f4f6;
+      --color-white: #ffffff;
+      --color-gmail: #ea4335;   /* Gmail badge */
+      --color-outlook: #0078d4; /* Outlook badge */
+      --radius-sm: 4px;
+      --radius-md: 6px;
+      --radius-lg: 8px;
+      --space-1: 4px;
+      --space-2: 8px;
+      --space-3: 12px;
+      --space-4: 16px;
+      --space-6: 24px;
+      --space-8: 32px;
+      --shadow-md: 0 4px 6px rgba(0,0,0,.07);
+      --shadow-toast: 0 10px 15px rgba(0,0,0,.15);
+    }
+    html, body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      color: var(--color-gray-900);
+      background: var(--color-white);
+    }
+    /* Simulate Chrome popup sizing */
+    .popup {
+      width: 400px;
+      min-height: 480px;
+      max-height: 600px;
+      border: 1px solid var(--color-gray-200);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+    header {
+      padding: var(--space-4);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--color-gray-200);
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+      font-weight: 600;
+      font-size: 16px;
+    }
+    .privacy-line {
+      display: block;
+      color: var(--color-gray-600);
+      font-size: 12px;
+      margin-top: 2px;
+    }
+    .lock-btn {
+      border: none;
+      background: transparent;
+      font-size: 20px;
+      cursor: pointer;
+    }
+    .lock-btn:focus-visible {
+      outline: 2px solid var(--color-primary);
+      outline-offset: 2px;
+      border-radius: var(--radius-sm);
+    }
+
+    main {
+      flex: 1;
+      padding: var(--space-6);
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-6);
+    }
+    .welcome {
+      text-align: left;
+      display: grid;
+      gap: var(--space-3);
+    }
+    .welcome h1 {
+      font-size: 20px;
+      line-height: 1.3;
+      margin: 0;
+    }
+    .welcome p {
+      color: var(--color-gray-700);
+      font-size: 14px;
+      margin: 0;
+    }
+    .well {
+      background: var(--color-gray-100);
+      border: 1px solid var(--color-gray-200);
+      border-radius: var(--radius-lg);
+      padding: var(--space-4);
+      color: var(--color-gray-700);
+      font-size: 13px;
+    }
+
+    .actions {
+      display: grid;
+      gap: var(--space-3);
+    }
+    .btn {
+      height: 44px; /* a11y min touch target */
+      border-radius: var(--radius-md);
+      border: 1px solid transparent;
+      background: var(--color-primary);
+      color: white;
+      font-weight: 500;
+      font-size: 14px;
+      cursor: pointer;
+      padding: 0 var(--space-4);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 150ms ease-out, transform 100ms ease-out;
+    }
+    .btn:hover { background: var(--color-primary-hover); }
+    .btn:active { transform: scale(.98); }
+    .btn:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 2px; }
+    .btn-secondary {
+      background: white;
+      color: var(--color-gray-700);
+      border: 1px solid var(--color-gray-300);
+    }
+    .btn-gmail { background: var(--color-gmail); }
+    .btn-gmail:hover { background: #d53a2d; }
+    .btn-outlook { background: var(--color-outlook); }
+    .btn-outlook:hover { background: #0069bb; }
+
+    .footer {
+      border-top: 1px solid var(--color-gray-200);
+      padding: var(--space-3) var(--space-4);
+      font-size: 13px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      color: var(--color-gray-600);
+    }
+    .link {
+      color: var(--color-primary);
+      text-decoration: underline;
+      background: transparent;
+      border: none;
+      padding: 0;
+      cursor: pointer;
+      font: inherit;
+    }
+    .link:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 2px; }
+
+    /* Toasts */
+    .toast-container {
+      position: fixed;
+      right: 16px;
+      bottom: 16px;
+      display: grid;
+      gap: 8px;
+      z-index: 9999;
+    }
+    .toast {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 280px;
+      max-width: 360px;
+      padding: 12px 16px;
+      border-radius: var(--radius-lg);
+      color: white;
+      box-shadow: var(--shadow-toast);
+      opacity: 0;
+      transform: translateX(40px);
+      transition: transform 300ms cubic-bezier(0,0,0.2,1), opacity 300ms cubic-bezier(0,0,0.2,1);
+    }
+    .toast.show { opacity: 1; transform: translateX(0); }
+    .toast-success { background: var(--color-success); }
+    .toast-info { background: var(--color-primary); }
+    .toast-error { background: var(--color-error); }
+    .toast button {
+      margin-left: auto;
+      background: transparent;
+      border: none;
+      color: white;
+      cursor: pointer;
+      font-size: 16px;
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .toast { transition: none; transform: none; }
+    }
+
+    /* Simulated states */
+    .connected {
+      display: none;
+      gap: var(--space-3);
+    }
+    .connected.active { display: grid; }
+    .connect-ctas.active { display: none; }
+    .badge {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 600;
+      color: white;
+      padding: 2px 6px;
+      border-radius: 3px;
+      vertical-align: middle;
+    }
+    .badge-gmail { background: var(--color-gmail); }
+  </style>
+</head>
+<body>
+  <div class="popup" role="dialog" aria-label="InboxKey Popup Demo">
+    <header>
+      <div class="brand" aria-label="InboxKey">
+        <span aria-hidden="true">🔑</span>
+        InboxKey
+        <small class="privacy-line">Local‑only • No servers</small>
+      </div>
+      <button class="lock-btn" aria-label="Lock InboxKey" title="Lock">
+        🔓
+      </button>
+    </header>
+
+    <main>
+      <!-- Welcome copy -->
+      <section class="welcome" id="welcome-section">
+        <h1>Welcome to InboxKey</h1>
+        <p>Auto-fill email verification codes and open login links — right when you need them.</p>
+        <div class="well">InboxKey reads only emails that look like codes. Everything happens on your device.</div>
+      </section>
+
+      <!-- Connect CTAs (default) -->
+      <section class="actions connect-ctas" id="connect-ctas">
+        <button class="btn btn-gmail" id="btnConnectGmail" aria-label="Connect Gmail">Connect Gmail</button>
+        <button class="btn btn-outlook" id="btnConnectOutlook" aria-label="Connect Outlook">Connect Outlook</button>
+      </section>
+
+      <!-- Connected state (simulated) -->
+      <section class="connected" id="connected-state" aria-live="polite">
+        <div style="font-size:14px;color:var(--color-gray-700)">
+          ✓ Gmail connected
+          <span class="badge badge-gmail" aria-hidden="true">Gmail</span>
+          <span style="color:var(--color-gray-500)">• user@gmail.com</span>
+        </div>
+        <div class="well">No codes yet — visit a site that sends a code and InboxKey will fill it automatically.</div>
+      </section>
+    </main>
+
+    <div class="footer">
+      <span>Need help? <button class="link" id="openAbout" aria-label="Open About">About</button></span>
+      <button class="link" id="supportBtn" aria-label="Buy me a coffee">Buy me a coffee</button>
+    </div>
+  </div>
+
+  <!-- Toasts -->
+  <div class="toast-container" aria-live="polite" aria-atomic="true"></div>
+
+<script>
+  // Minimal JS for demo interactions
+  const toasts = document.querySelector('.toast-container');
+  function showToast(message, kind='info', duration=3000) {
+    const el = document.createElement('div');
+    el.className = `toast toast-${kind}`;
+    el.setAttribute('role', kind === 'error' ? 'alert' : 'status');
+    el.innerHTML = `<span aria-hidden="true">${kind === 'success' ? '✓' : (kind === 'error' ? '❌' : 'ℹ️')}</span>
+                    <span>${message}</span>
+                    <button aria-label="Close notification">✕</button>`;
+    toasts.appendChild(el);
+    requestAnimationFrame(()=>el.classList.add('show'));
+    const close = () => { el.classList.remove('show'); setTimeout(()=>el.remove(), 200); };
+    el.querySelector('button').onclick = close;
+    setTimeout(close, duration);
+  }
+
+  const connectCTAs = document.getElementById('connect-ctas');
+  const connected = document.getElementById('connected-state');
+
+  document.getElementById('btnConnectGmail').addEventListener('click', () => {
+    // Simulate OAuth success
+    showToast('✓ Gmail connected', 'success', 2000);
+    connectCTAs.classList.add('active');
+    connected.classList.add('active');
+  });
+
+  document.getElementById('btnConnectOutlook').addEventListener('click', () => {
+    showToast('Outlook connection is similar — demo focuses on Gmail', 'info', 2500);
+  });
+
+  document.getElementById('supportBtn').addEventListener('click', () => {
+    // Sympathy-winning, rate-limited toast
+    showToast('Thanks for the support ❤️', 'success', 3000);
+  });
+
+  document.getElementById('openAbout').addEventListener('click', () => {
+    showToast('Open‑source • Apache‑2.0 • View source on GitHub', 'info', 3500);
+  });
+</script>
+</body>
+</html>

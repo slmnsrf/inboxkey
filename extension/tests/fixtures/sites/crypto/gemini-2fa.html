@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Verify - Gemini</title>
+</head>
+<body>
+    <div class="gemini-layout">
+        <div class="gemini-auth-page">
+            <div class="gemini-card">
+                <h1>Verify Your Identity</h1>
+                <p class="subtitle">Enter the 6-digit code from your authenticator app</p>
+                <form method="POST" action="/signin/verify">
+                    <div class="form-row">
+                        <!-- Detection signals: autocomplete="one-time-code", inputmode="numeric", id="authy-token" -->
+                        <label for="authy-token">Verification Code</label>
+                        <input
+                            type="text"
+                            id="authy-token"
+                            name="token"
+                            class="gemini-input"
+                            autocomplete="one-time-code"
+                            inputmode="numeric"
+                            maxlength="6"
+                            pattern="[0-9]{6}"
+                            required
+                        >
+                    </div>
+                    <button type="submit" class="gemini-btn-primary">Verify</button>
+                </form>
+                <div class="footer-options">
+                    <a href="/authy/sms">Use SMS verification</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

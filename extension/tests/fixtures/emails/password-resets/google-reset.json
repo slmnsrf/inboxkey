@@ -1,0 +1,14 @@
+{
+  "id": "google-reset-001",
+  "type": "password-reset",
+  "category": "security",
+  "from": "noreply@accounts.google.com",
+  "subject": "Google Account Password Reset",
+  "body": "You requested a password reset for your Google Account.\n\nClick here to reset: https://accounts.google.com/reset?token=bcd5b4871ba6be24d64391c9eace9d31aafc7d22\n\nIf you didn't request this, please ignore this email.",
+  "extracted": {
+    "link": "https://accounts.google.com/reset?token=bcd5b4871ba6be24d64391c9eace9d31aafc7d22",
+    "token": "bcd5b4871ba6be24d64391c9eace9d31aafc7d22",
+    "type": "password-reset",
+    "confidence": "high"
+  }
+}

@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>eBay - Sign In Verification</title>
+    <style>
+        body { font-family: 'Market Sans', Arial, sans-serif; background: #f7f7f7; margin: 0; padding: 20px; }
+        .ebay-wrapper { max-width: 460px; margin: 40px auto; }
+        .ebay-header { text-align: center; margin-bottom: 25px; }
+        .ebay-logo { font-size: 36px; font-weight: bold; }
+        .ebay-e { color: #e53238; }
+        .ebay-b { color: #0064d2; }
+        .ebay-a { color: #f5af02; }
+        .ebay-y { color: #86b817; }
+        .ebay-card { background: white; border: 1px solid #d6d6d6; border-radius: 4px; padding: 40px; }
+        .ebay-title { color: #191919; font-size: 26px; margin-bottom: 15px; font-weight: 600; }
+        .ebay-text { color: #707070; line-height: 1.6; margin-bottom: 25px; font-size: 15px; }
+        .ebay-form-field { margin-bottom: 20px; }
+        .ebay-label { display: block; color: #191919; margin-bottom: 8px; font-size: 14px; font-weight: 600; }
+        .ebay-input { width: 100%; padding: 13px; border: 1px solid #9b9b9b; border-radius: 4px; font-size: 16px; box-sizing: border-box; }
+        .ebay-input:focus { border-color: #0064d2; outline: none; box-shadow: 0 0 0 2px rgba(0, 100, 210, 0.2); }
+        .ebay-button { width: 100%; padding: 15px; background: #3665f3; color: white; border: none; border-radius: 20px; font-size: 16px; font-weight: 600; cursor: pointer; }
+        .ebay-button:hover { background: #2754e0; }
+        .ebay-help-link { text-align: center; margin-top: 20px; font-size: 14px; }
+        .ebay-help-link a { color: #3665f3; text-decoration: none; }
+        .ebay-help-link a:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+    <!-- Detection Signals:
+         - Ecommerce domain: ebay
+         - Security keywords: sign in verification, security code
+         - Input patterns: 6-digit code, colorful branding
+         - Form structure: centered card, rounded button
+         - Brand colors: Multi-color logo (red, blue, yellow, green)
+         - Common IDs: securityCode, otpCode, verificationCode
+    -->
+    <div class="ebay-wrapper">
+        <div class="ebay-header">
+            <div class="ebay-logo">
+                <span class="ebay-e">e</span><span class="ebay-b">b</span><span class="ebay-a">a</span><span class="ebay-y">y</span>
+            </div>
+        </div>
+
+        <div class="ebay-card">
+            <h1 class="ebay-title">Sign In Verification</h1>
+
+            <p class="ebay-text">
+                For your security, we need to verify your identity. We've sent a 6-digit code to the phone number associated with your eBay account.
+            </p>
+
+            <form id="signInVerificationForm" action="/signin/otp/verify" method="POST">
+                <div class="ebay-form-field">
+                    <label for="securityCode" class="ebay-label">Enter security code</label>
+                    <input
+                        type="tel"
+                        id="securityCode"
+                        name="security_code"
+                        class="ebay-input"
+                        placeholder="000000"
+                        maxlength="6"
+                        pattern="[0-9]{6}"
+                        inputmode="numeric"
+                        autocomplete="one-time-code"
+                        required
+                    />
+                </div>
+
+                <button type="submit" class="ebay-button">Continue</button>
+            </form>
+
+            <div class="ebay-help-link">
+                <a href="#">Didn't receive the code?</a>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

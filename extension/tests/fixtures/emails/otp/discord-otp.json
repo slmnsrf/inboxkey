@@ -1,0 +1,18 @@
+{
+  "id": "discord-otp-001",
+  "type": "otp",
+  "category": "social",
+  "from": "noreply@discord.com",
+  "subject": "Your Discord verification code",
+  "body": "Your Discord verification code is: 519264\n\nIf you didn't request this, please ignore this email.",
+  "extracted": {
+    "code": "519264",
+    "pattern": "numeric-6",
+    "confidence": "high"
+  },
+  "metadata": {
+    "sent": "2025-10-15T10:52:41Z",
+    "expiresIn": "10 minutes",
+    "provider": "Discord"
+  }
+}

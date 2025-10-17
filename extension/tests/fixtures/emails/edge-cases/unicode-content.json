@@ -1,0 +1,14 @@
+{
+  "id": "edge-unicode-001",
+  "type": "otp",
+  "category": "edge-case",
+  "from": "security@example.com",
+  "subject": "🔒 Verification Code",
+  "body": "🔐 Your security code: 582917 🔐\n\n✅ Valid for 10 minutes\n❌ Do not share",
+  "extracted": {
+    "code": "582917",
+    "pattern": "numeric-6",
+    "confidence": "high",
+    "note": "Email with Unicode emoji characters"
+  }
+}

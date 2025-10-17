@@ -1,0 +1,13 @@
+{
+  "id": "twitch-alpha-001",
+  "type": "alphanumeric",
+  "category": "entertainment",
+  "from": "noreply@twitch.tv",
+  "subject": "Verification Code",
+  "body": "Your verification code is: TW45CH91",
+  "extracted": {
+    "code": "TW45CH91",
+    "pattern": "alphanumeric-8",
+    "confidence": "high"
+  }
+}

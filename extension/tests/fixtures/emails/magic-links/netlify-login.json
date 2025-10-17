@@ -1,0 +1,13 @@
+{
+  "id": "netlify-magic-001",
+  "type": "magic-link",
+  "category": "tech",
+  "from": "noreply@netlify.com",
+  "subject": "Sign in to Netlify",
+  "body": "Click the link below to sign in:\n\nhttps://netlify.com/auth/login?token=860dd6f7aa75a2f8f84c7f1e98b6c935\n\nThis link expires in 15 minutes.",
+  "extracted": {
+    "link": "https://netlify.com/auth/login?token=860dd6f7aa75a2f8f84c7f1e98b6c935",
+    "token": "860dd6f7aa75a2f8f84c7f1e98b6c935",
+    "confidence": "high"
+  }
+}

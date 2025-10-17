@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Best Buy - Security Verification</title>
+    <style>
+        body { font-family: 'Human BBY', Arial, sans-serif; background: #f6f6f6; margin: 0; padding: 20px; }
+        .bestbuy-container { max-width: 480px; margin: 50px auto; background: white; border-radius: 4px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        .bestbuy-header { background: #0046be; color: white; padding: 25px; border-radius: 4px 4px 0 0; }
+        .bestbuy-logo { font-size: 26px; font-weight: 700; }
+        .bestbuy-logo-sub { font-size: 13px; font-weight: 400; margin-top: 5px; }
+        .bestbuy-content { padding: 35px; }
+        .bestbuy-title { color: #1d252c; font-size: 24px; margin-bottom: 12px; font-weight: 600; }
+        .bestbuy-message { color: #555; line-height: 1.7; margin-bottom: 25px; }
+        .security-alert { background: #fff4ce; border: 1px solid #ffdb4d; border-radius: 4px; padding: 15px; margin-bottom: 25px; }
+        .security-alert-title { color: #9f6000; font-weight: 600; margin-bottom: 5px; }
+        .security-alert-text { color: #9f6000; font-size: 14px; }
+        .bestbuy-input-group { margin-bottom: 20px; }
+        .bestbuy-label { display: block; color: #1d252c; margin-bottom: 8px; font-weight: 600; font-size: 14px; }
+        .bestbuy-input { width: 100%; padding: 12px; border: 1px solid #c5cbd5; border-radius: 4px; font-size: 16px; box-sizing: border-box; }
+        .bestbuy-input:focus { border-color: #0046be; outline: none; box-shadow: 0 0 0 1px #0046be; }
+        .bestbuy-button { width: 100%; padding: 14px; background: #0046be; color: white; border: none; border-radius: 4px; font-size: 16px; font-weight: 600; cursor: pointer; }
+        .bestbuy-button:hover { background: #003d9c; }
+    </style>
+</head>
+<body>
+    <!-- Detection Signals:
+         - Ecommerce domain: bestbuy, best buy
+         - Security keywords: security verification, authentication
+         - Input patterns: 6-digit code, clean modern design
+         - Form structure: security alerts, branded header
+         - Brand colors: #0046be (Best Buy blue), #ffdb4d (yellow)
+         - Common IDs: mfaCode, securityCode, verificationCode
+    -->
+    <div class="bestbuy-container">
+        <div class="bestbuy-header">
+            <div class="bestbuy-logo">Best Buy</div>
+            <div class="bestbuy-logo-sub">My Best Buy® Rewards</div>
+        </div>
+
+        <div class="bestbuy-content">
+            <h1 class="bestbuy-title">Security Verification</h1>
+
+            <div class="security-alert">
+                <div class="security-alert-title">Verification Required</div>
+                <div class="security-alert-text">
+                    For your protection, we need to verify your identity.
+                </div>
+            </div>
+
+            <p class="bestbuy-message">
+                We've sent a 6-digit verification code to your mobile phone. Please enter the code below to continue with your purchase.
+            </p>
+
+            <form id="mfaVerificationForm" action="/identity/verify" method="POST">
+                <div class="bestbuy-input-group">
+                    <label for="mfaCode" class="bestbuy-label">Verification Code</label>
+                    <input
+                        type="tel"
+                        id="mfaCode"
+                        name="mfa_code"
+                        class="bestbuy-input"
+                        placeholder="000000"
+                        maxlength="6"
+                        pattern="[0-9]{6}"
+                        inputmode="numeric"
+                        autocomplete="one-time-code"
+                        required
+                    />
+                </div>
+
+                <button type="submit" class="bestbuy-button">Verify</button>
+            </form>
+
+            <p style="text-align: center; margin-top: 25px; font-size: 14px; color: #555;">
+                Didn't receive a code? <a href="#" style="color: #0046be; text-decoration: none; font-weight: 600;">Resend code</a>
+            </p>
+        </div>
+    </div>
+</body>
+</html>

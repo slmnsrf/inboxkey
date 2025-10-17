@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>U.S. Bank - Identity Verification</title>
+    <style>
+        body { font-family: 'Roboto', Arial, sans-serif; background: #f7f7f7; margin: 0; padding: 0; }
+        .usb-header { background: #db162f; color: white; padding: 15px 20px; display: flex; align-items: center; }
+        .usb-logo { font-size: 24px; font-weight: bold; }
+        .usb-container { max-width: 480px; margin: 40px auto; background: white; padding: 35px; border-radius: 4px; }
+        .usb-title { color: #333; margin-bottom: 15px; font-size: 24px; }
+        .usb-description { color: #666; margin-bottom: 25px; line-height: 1.6; }
+        .usb-input-group { margin-bottom: 20px; }
+        .usb-label { display: block; color: #333; margin-bottom: 8px; font-weight: 500; }
+        .usb-input { width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 4px; font-size: 16px; box-sizing: border-box; }
+        .usb-input:focus { border-color: #db162f; outline: none; box-shadow: 0 0 0 2px rgba(219, 22, 47, 0.1); }
+        .usb-button { width: 100%; padding: 14px; background: #db162f; color: white; border: none; border-radius: 4px; font-size: 16px; cursor: pointer; font-weight: 600; }
+        .usb-button:hover { background: #c01329; }
+        .helper-text { font-size: 13px; color: #666; margin-top: 5px; }
+    </style>
+</head>
+<body>
+    <!-- Detection Signals:
+         - Banking domain: usbank, us bank
+         - Security keywords: identity, verification, passcode
+         - Input patterns: 6-digit numeric code
+         - Form structure: labeled inputs, clear hierarchy
+         - Brand colors: #db162f (US Bank red)
+         - Common attributes: autocomplete="one-time-code"
+    -->
+    <div class="usb-header">
+        <div class="usb-logo">U.S. BANK</div>
+    </div>
+
+    <div class="usb-container">
+        <h1 class="usb-title">Identity Verification</h1>
+
+        <p class="usb-description">
+            We've sent a 6-digit passcode to your registered device. Please enter it below to continue.
+        </p>
+
+        <form id="identityVerificationForm" action="/auth/verify" method="POST">
+            <div class="usb-input-group">
+                <label for="passcode" class="usb-label">Verification Passcode</label>
+                <input
+                    type="tel"
+                    id="passcode"
+                    name="passcode"
+                    class="usb-input"
+                    placeholder="000000"
+                    maxlength="6"
+                    pattern="[0-9]{6}"
+                    inputmode="numeric"
+                    autocomplete="one-time-code"
+                    aria-label="Enter 6-digit passcode"
+                    required
+                />
+                <div class="helper-text">Enter the 6-digit code from your text message or authenticator app</div>
+            </div>
+
+            <button type="submit" class="usb-button">Continue</button>
+        </form>
+
+        <p style="text-align: center; margin-top: 25px; font-size: 14px;">
+            <a href="#" style="color: #db162f; text-decoration: none;">Try another verification method</a>
+        </p>
+    </div>
+</body>
+</html>

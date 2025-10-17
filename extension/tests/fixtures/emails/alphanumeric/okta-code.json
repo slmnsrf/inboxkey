@@ -1,0 +1,13 @@
+{
+  "id": "okta-alpha-001",
+  "type": "alphanumeric",
+  "category": "tech",
+  "from": "noreply@okta.com",
+  "subject": "Verification Code",
+  "body": "Your verification code is: OK56TA78",
+  "extracted": {
+    "code": "OK56TA78",
+    "pattern": "alphanumeric-8",
+    "confidence": "high"
+  }
+}

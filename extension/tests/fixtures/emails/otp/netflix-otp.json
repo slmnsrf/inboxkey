@@ -1,0 +1,18 @@
+{
+  "id": "netflix-otp-001",
+  "type": "otp",
+  "category": "entertainment",
+  "from": "info@mailer.netflix.com",
+  "subject": "Netflix verification code",
+  "body": "Your Netflix verification code is 304826. Please enter this code to continue.",
+  "extracted": {
+    "code": "304826",
+    "pattern": "numeric-6",
+    "confidence": "high"
+  },
+  "metadata": {
+    "sent": "2025-10-15T11:07:56Z",
+    "expiresIn": "15 minutes",
+    "provider": "Netflix"
+  }
+}

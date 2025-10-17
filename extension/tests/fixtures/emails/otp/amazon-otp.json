@@ -1,0 +1,18 @@
+{
+  "id": "amazon-otp-001",
+  "type": "otp",
+  "category": "ecommerce",
+  "from": "account-update@amazon.com",
+  "subject": "Amazon One-Time Password",
+  "body": "To continue, please use this One-Time Password (OTP): 293847. Do not share this OTP with anyone. Amazon will never ask you to disclose or verify your password, OTP, credit card, or banking account number.",
+  "extracted": {
+    "code": "293847",
+    "pattern": "numeric-6",
+    "confidence": "high"
+  },
+  "metadata": {
+    "sent": "2025-10-15T10:32:15Z",
+    "expiresIn": "15 minutes",
+    "provider": "Amazon"
+  }
+}
