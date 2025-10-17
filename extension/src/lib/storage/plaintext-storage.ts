@@ -294,6 +294,13 @@ export class PlaintextStorage {
     })
   }
 
+  async clearAllCodes(): Promise<void> {
+    await this.mutex.runExclusive(async () => {
+      await this.saveCodes([])
+      await this.notifyChange("codes")
+    })
+  }
+
   private async saveCodes(codes: StoredCode[]): Promise<void> {
     // Store directly as JSON (no encryption)
     await chrome.storage.local.set({

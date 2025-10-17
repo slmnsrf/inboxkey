@@ -79,6 +79,12 @@ sessionController
     // Warm popup cache with mailbox count and recent codes
     try {
       const storage = await StorageFactory.create()
+
+      // Clean up old codes (older than 24 hours) on startup to prevent showing stale v1 entries
+      const TWENTY_FOUR_HOURS = 24 * 60 * 60 * 1000
+      await storage.clearOldCodes(TWENTY_FOUR_HOURS)
+      console.log(`[InboxKey] Cleared codes older than 24 hours`)
+
       const mailboxes = await storage.getMailboxes()
       const recentCodes = await storage.getRecentCodes(10)
       await popupCacheManager.updateWithNewCodes(recentCodes, mailboxes.length, mailboxes)

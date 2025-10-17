@@ -83,6 +83,11 @@ export interface IStorage {
    */
   clearOldCodes(olderThanMs: number): Promise<void>
 
+  /**
+   * Clear all verification codes
+   */
+  clearAllCodes(): Promise<void>
+
   // ============================================================================
   // Settings Operations
   // ============================================================================
