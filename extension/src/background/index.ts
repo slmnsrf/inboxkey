@@ -75,6 +75,17 @@ sessionController
     console.log("[InboxKey] SessionController initialized")
     await popupCacheManager.initialize()
     console.log("[InboxKey] PopupCacheManager initialized")
+
+    // Warm popup cache with mailbox count and recent codes
+    try {
+      const storage = await StorageFactory.create()
+      const mailboxes = await storage.getMailboxes()
+      const recentCodes = await storage.getRecentCodes(10)
+      await popupCacheManager.updateWithNewCodes(recentCodes, mailboxes.length, mailboxes)
+      console.log(`[InboxKey] PopupCache warmed with ${mailboxes.length} mailboxes, ${recentCodes.length} codes`)
+    } catch (error) {
+      console.warn("[InboxKey] Failed to warm popup cache:", error)
+    }
   })
   .catch((error) => {
     console.error("[InboxKey] Failed to initialize:", error)

@@ -292,13 +292,16 @@ export class SessionController {
       // Get appropriate storage for current mode (plaintext or encrypted)
       const storage = await StorageFactory.create()
 
-      // Create adapters from mailboxes (v2 pattern)
-      const adapters = await createAdaptersFromMailboxes(storage)
+      // Get mailboxes
+      const mailboxes = await storage.getMailboxes()
 
-      if (adapters.length === 0) {
+      if (mailboxes.length === 0) {
         console.log('[SessionController] No mailboxes configured, skipping poll')
         return null
       }
+
+      // Create adapters from mailboxes (v2 pattern)
+      const adapters = await createAdaptersFromMailboxes(storage)
 
       // Poll emails from all connected mailboxes (v2 API)
       const pollingService = new EmailPollingService(adapters)
@@ -307,8 +310,60 @@ export class SessionController {
         `[SessionController] Email poll complete: ${candidates.length} candidates found`
       )
 
-      // TODO: Store candidates to storage (v2 doesn't do this automatically)
-      // For now, continue with existing storage check
+      // Convert v2 candidates to StoredCode format and save to storage
+      for (const candidate of candidates) {
+        // Find mailbox for this provider
+        const mailbox = mailboxes.find(m => m.providerId === candidate.provider)
+        if (!mailbox) continue
+
+        if (candidate.code) {
+          // Save OTP code
+          const storedCode = {
+            code: candidate.code.value,
+            timestamp: candidate.receivedEpochMs || Date.now(),
+            source: `${candidate.from || 'Unknown'} - ${candidate.subject || 'No subject'}`,
+            used: false,
+            siteMatch: undefined,
+            mailboxId: mailbox.id,
+          }
+
+          // Check for duplicates
+          const recentCodes = await storage.getRecentCodes(50)
+          const isDuplicate = recentCodes.some(c => c.code === storedCode.code)
+
+          if (!isDuplicate) {
+            await storage.addCode(storedCode)
+            console.log(`[SessionController] Saved code: ${storedCode.code}`)
+          }
+        }
+
+        if (candidate.link) {
+          // Save magic link (with "magic-link:" prefix for compatibility)
+          const storedLink = {
+            code: `magic-link:${candidate.link.href}`,
+            timestamp: candidate.receivedEpochMs || Date.now(),
+            source: `${candidate.from || 'Unknown'} - ${candidate.subject || 'No subject'}`,
+            used: false,
+            siteMatch: candidate.link.domain,
+            mailboxId: mailbox.id,
+          }
+
+          // Check for duplicates
+          const recentCodes = await storage.getRecentCodes(50)
+          const isDuplicate = recentCodes.some(c => c.code === storedLink.code)
+
+          if (!isDuplicate) {
+            await storage.addCode(storedLink)
+            console.log(`[SessionController] Saved magic link from: ${candidate.link.domain}`)
+          }
+        }
+      }
+
+      // Update popup cache if available
+      if (this.popupCacheManager && candidates.length > 0) {
+        const recentCodes = await storage.getRecentCodes(10)
+        await this.popupCacheManager.updateWithNewCodes(recentCodes, mailboxes.length, mailboxes)
+      }
 
       // Check storage for matching codes
       const codes = await storage.getRecentCodes(10)

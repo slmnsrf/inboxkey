@@ -248,15 +248,18 @@ export class PopupMessageHandler {
             // Get storage for current mode
             const storage = await StorageFactory.create()
 
-            // Create adapters from mailboxes (v2 pattern)
-            const adapters = await createAdaptersFromMailboxes(storage)
+            // Get mailboxes
+            const mailboxes = await storage.getMailboxes()
 
-            if (adapters.length === 0) {
+            if (mailboxes.length === 0) {
               return {
                 success: false,
                 error: 'No mailboxes configured',
               }
             }
+
+            // Create adapters from mailboxes (v2 pattern)
+            const adapters = await createAdaptersFromMailboxes(storage)
 
             // Run email polling (v2 API)
             const pollingService = new EmailPollingService(adapters)
@@ -264,10 +267,65 @@ export class PopupMessageHandler {
 
             console.log(`[PopupHandler] Manual sync found ${candidates.length} candidates`)
 
-            // TODO: Store candidates to storage (v2 doesn't do this automatically)
-            // For now, just trigger cache refresh from storage
+            // Convert v2 candidates to StoredCode format and save to storage
+            let newCodesCount = 0
+            for (const candidate of candidates) {
+              // Find mailbox for this provider
+              const mailbox = mailboxes.find(m => m.providerId === candidate.provider)
+              if (!mailbox) continue
 
-            // Update cache and return fresh data
+              if (candidate.code) {
+                // Save OTP code
+                const storedCode = {
+                  code: candidate.code.value,
+                  timestamp: candidate.receivedEpochMs || Date.now(),
+                  source: `${candidate.from || 'Unknown'} - ${candidate.subject || 'No subject'}`,
+                  used: false,
+                  siteMatch: undefined,
+                  mailboxId: mailbox.id,
+                }
+
+                // Check for duplicates
+                const recentCodes = await storage.getRecentCodes(50)
+                const isDuplicate = recentCodes.some(c => c.code === storedCode.code)
+
+                if (!isDuplicate) {
+                  await storage.addCode(storedCode)
+                  newCodesCount++
+                  console.log(`[PopupHandler] Saved code: ${storedCode.code}`)
+                }
+              }
+
+              if (candidate.link) {
+                // Save magic link (with "magic-link:" prefix for compatibility)
+                const storedLink = {
+                  code: `magic-link:${candidate.link.href}`,
+                  timestamp: candidate.receivedEpochMs || Date.now(),
+                  source: `${candidate.from || 'Unknown'} - ${candidate.subject || 'No subject'}`,
+                  used: false,
+                  siteMatch: candidate.link.domain,
+                  mailboxId: mailbox.id,
+                }
+
+                // Check for duplicates
+                const recentCodes = await storage.getRecentCodes(50)
+                const isDuplicate = recentCodes.some(c => c.code === storedLink.code)
+
+                if (!isDuplicate) {
+                  await storage.addCode(storedLink)
+                  newCodesCount++
+                  console.log(`[PopupHandler] Saved magic link from: ${candidate.link.domain}`)
+                }
+              }
+            }
+
+            console.log(`[PopupHandler] Stored ${newCodesCount} new items`)
+
+            // Update popup cache with recent codes from storage
+            const recentCodes = await storage.getRecentCodes(10)
+            await this.cacheManager.updateWithNewCodes(recentCodes, mailboxes.length, mailboxes)
+
+            // Return updated cache
             const cache = await this.cacheManager.getCache()
 
             return {
