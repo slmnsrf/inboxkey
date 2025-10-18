@@ -41,9 +41,9 @@ function PopupContent() {
     try {
       await clipboardService.copyCode(code)
       await bridge.markCodeUsed(code)
-      showToast('✓ Copied to clipboard', 'success')
+      showToast(`📋 Code copied: ${code}`, 'success', 3000)
     } catch (err) {
-      showToast('Failed to copy code', 'error')
+      showToast('⚠️ Failed to copy code', 'error', 5000)
       console.error('[Popup] Copy failed:', err)
     }
   }
@@ -52,12 +52,13 @@ function PopupContent() {
     try {
       await linkService.openLink(link)
       await bridge.markLinkOpened(link.url)
-      showToast('✓ Link opened', 'success')
+      const domain = link.source || new URL(link.url).hostname
+      showToast(`🔗 Opened ${domain}`, 'success', 3000)
     } catch (err) {
       if (err instanceof Error && err.message.includes('wait')) {
-        showToast('Too many link opens. Please wait.', 'error')
+        showToast('⚠️ Too many link opens. Wait...', 'error', 5000)
       } else {
-        showToast('Failed to open link', 'error')
+        showToast('⚠️ Failed to open link', 'error', 5000)
       }
       console.error('[Popup] Open link failed:', err)
     }
@@ -75,10 +76,14 @@ function PopupContent() {
     try {
       await bridge.triggerSync()
       await refresh()
-      showToast('✓ Synced successfully', 'success')
+      const mailboxCount = data?.mailboxCount ?? 0
+      const message = mailboxCount > 0
+        ? `🔄 Synced ${mailboxCount} ${mailboxCount === 1 ? 'account' : 'accounts'}`
+        : '🔄 Synced successfully'
+      showToast(message, 'success', 3000)
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : 'Sync failed'
-      showToast(errorMsg, 'error')
+      showToast(`⚠️ ${errorMsg}`, 'error', 5000)
       console.error('[Popup] Sync failed:', err)
     } finally {
       setIsSyncing(false)
@@ -94,7 +99,7 @@ function PopupContent() {
       // No toast needed - UI will update to show lock screen
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : 'Failed to lock extension'
-      showToast(errorMsg, 'error')
+      showToast(`⚠️ ${errorMsg}`, 'error', 5000)
       console.error('[Popup] Lock failed:', err)
     } finally {
       setIsLocking(false)

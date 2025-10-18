@@ -65,7 +65,6 @@ export function AccountsPanel() {
   const [connectionError, setConnectionError] = useState<ConnectionError | null>(null)
   const [isConnecting, setIsConnecting] = useState(false)
 
-  const [recentLimit, setRecentLimit] = useState<3 | 5>(3)
   const [recentItems, setRecentItems] = useState<RecentItem[]>([])
   const [recentLoading, setRecentLoading] = useState(false)
 
@@ -113,22 +112,6 @@ export function AccountsPanel() {
     }
   }
 
-  const handleRecentLimitChange = (limit: 3 | 5) => {
-    setRecentLimit(limit)
-    void chrome.storage.local.set({ accounts_recent_limit: limit }).catch((error) => {
-      console.warn('[AccountsPanel] Failed to persist recent limit:', error)
-    })
-  }
-
-  useEffect(() => {
-    void chrome.storage.local.get('accounts_recent_limit').then((result) => {
-      const saved = result.accounts_recent_limit
-      if (saved === 3 || saved === 5) {
-        setRecentLimit(saved)
-      }
-    })
-  }, [])
-
   const getProviderStageLabel = () => {
     if (!connectionStage) return ''
     if (connectionStage === 'authenticating') return t('accounts_authenticating')
@@ -149,14 +132,14 @@ export function AccountsPanel() {
       if (provider === 'gmail' && !isGmailConfigured()) {
         const errorMsg = t('toast_connect_invalid_credentials')
         setConnectionError({ provider, message: errorMsg })
-        showToast(errorMsg, 'error')
+        showToast(errorMsg, 'error', 5000)
         return
       }
 
       if (provider === 'outlook' && !isOutlookConfigured()) {
         const errorMsg = t('toast_connect_invalid_credentials')
         setConnectionError({ provider, message: errorMsg })
-        showToast(errorMsg, 'error')
+        showToast(errorMsg, 'error', 5000)
         return
       }
 
@@ -176,7 +159,7 @@ export function AccountsPanel() {
       const existing = mailboxes.find((mb) => mb.providerId === provider)
 
       if (mode === 'connect' && existing) {
-        showToast(t('toast_connect_duplicate'), 'error')
+        showToast(t('toast_connect_duplicate'), 'error', 5000)
         setConnectionError({
           provider,
           message: t('toast_connect_duplicate'),
@@ -202,18 +185,19 @@ export function AccountsPanel() {
 
         showToast(
           provider === 'gmail' ? t('toast_gmail_connected') : t('toast_outlook_connected'),
-          'success'
+          'success',
+          4000
         )
         await loadMailboxes()
         await loadRecentItems()
       } else {
-        showToast(storeResponse.error || t('toast_connect_failed'), 'error')
+        showToast(storeResponse.error || t('toast_connect_failed'), 'error', 5000)
       }
     } catch (error) {
       console.error('[AccountsPanel] Connection error:', error)
       const message = getConnectionErrorMessage(error)
       setConnectionError({ provider, message })
-      showToast(message, 'error')
+      showToast(message, 'error', 5000)
     } finally {
       setIsConnecting(false)
       setConnectingProvider(null)
@@ -236,15 +220,15 @@ export function AccountsPanel() {
       })
 
       if (response.success) {
-        showToast(t('toast_account_disconnected'), 'success')
+        showToast(t('toast_account_disconnected'), 'success', 4000)
         await loadMailboxes()
         await loadRecentItems()
       } else {
-        showToast(t('toast_disconnect_failed'), 'error')
+        showToast(t('toast_disconnect_failed'), 'error', 5000)
       }
     } catch (error) {
       console.error('[AccountsPanel] Disconnect failed:', error)
-      showToast(t('toast_disconnect_failed'), 'error')
+      showToast(t('toast_disconnect_failed'), 'error', 5000)
     }
   }
 
@@ -315,10 +299,10 @@ export function AccountsPanel() {
     try {
       await navigator.clipboard.writeText(item.code)
       await chrome.runtime.sendMessage({ type: 'MARK_CODE_USED', code: item.code })
-      showToast(t('toast_code_copied', item.code), 'success')
+      showToast(t('toast_code_copied', item.code), 'success', 3000)
     } catch (error) {
       console.error('[AccountsPanel] Failed to copy code:', error)
-      showToast(t('toast_error_copy'), 'error')
+      showToast(t('toast_error_copy'), 'error', 5000)
     }
   }
 
@@ -327,10 +311,11 @@ export function AccountsPanel() {
     try {
       await chrome.runtime.sendMessage({ type: 'MARK_LINK_OPENED', url: item.url })
       await chrome.tabs.create({ url: item.url })
-      showToast(t('toast_link_opened'), 'success')
+      const domain = item.domain || new URL(item.url).hostname
+      showToast(`🔗 Opened ${domain}`, 'success', 3000)
     } catch (error) {
       console.error('[AccountsPanel] Failed to open link:', error)
-      showToast(t('toast_error_link'), 'error')
+      showToast(t('toast_error_link'), 'error', 5000)
     }
   }
 
@@ -362,7 +347,6 @@ export function AccountsPanel() {
               key={slot.provider}
               slot={slot}
               onConnect={() => handleConnect(slot.provider, 'connect')}
-              onReconnect={() => handleConnect(slot.provider, 'reconnect')}
               onDisconnect={() => handleDisconnect(slot.provider)}
             />
           ))}
@@ -377,8 +361,6 @@ export function AccountsPanel() {
 
       <RecentEmailsSection
         items={recentItems}
-        limit={recentLimit}
-        onLimitChange={handleRecentLimitChange}
         onCopyCode={handleCopyCode}
         onOpenLink={handleOpenLink}
         isLocked={isInitialized && !isUnlocked}

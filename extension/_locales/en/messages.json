@@ -568,6 +568,52 @@
     "message": "Disconnect",
     "description": "Button label to disconnect an email provider"
   },
+  "modal_disconnect_title": {
+    "message": "Disconnect $PROVIDER$?",
+    "description": "Modal title for disconnect confirmation",
+    "placeholders": {
+      "provider": {
+        "content": "$1",
+        "example": "Gmail"
+      }
+    }
+  },
+  "modal_disconnect_intro": {
+    "message": "You're about to disconnect this account. Here's what will happen:",
+    "description": "Modal intro text explaining disconnect consequences"
+  },
+  "modal_disconnect_stop_monitoring": {
+    "message": "Stop monitoring",
+    "description": "Modal: stop monitoring consequence"
+  },
+  "modal_disconnect_remove_data": {
+    "message": "Remove all tokens and authentication data",
+    "description": "Modal: remove data consequence"
+  },
+  "modal_disconnect_clear_emails": {
+    "message": "Clear verification codes and magic links from this account",
+    "description": "Modal: clear emails consequence"
+  },
+  "modal_disconnect_reassurance": {
+    "message": "You can reconnect this account anytime. Your email data remains untouched.",
+    "description": "Modal: reassurance message"
+  },
+  "modal_cancel": {
+    "message": "Cancel",
+    "description": "Modal cancel button"
+  },
+  "modal_disconnect_confirm": {
+    "message": "Yes, disconnect",
+    "description": "Modal confirmation button for disconnect"
+  },
+  "aria_disconnect_gmail": {
+    "message": "Disconnect Gmail account",
+    "description": "ARIA label for Gmail disconnect button"
+  },
+  "aria_disconnect_outlook": {
+    "message": "Disconnect Outlook account",
+    "description": "ARIA label for Outlook disconnect button"
+  },
   "accounts_microcopy_gmail": {
     "message": "Only one Gmail account can be connected.",
     "description": "Microcopy reminder for Gmail single-slot"
@@ -1158,7 +1204,7 @@
   },
 
   "toast_code_copied": {
-    "message": "Code copied: $CODE$",
+    "message": "📋 Code copied: $CODE$",
     "description": "Toast: code copied",
     "placeholders": {
       "code": {
@@ -1168,67 +1214,67 @@
     }
   },
   "toast_link_opened": {
-    "message": "✓ Link opened",
+    "message": "🔗 Link opened",
     "description": "Toast: link opened"
   },
   "toast_settings_saved": {
-    "message": "✓ Settings saved",
+    "message": "✅ Settings saved",
     "description": "Toast: settings saved"
   },
   "toast_error_copy": {
-    "message": "Failed to copy code",
+    "message": "⚠️ Failed to copy code",
     "description": "Toast: copy error"
   },
   "toast_error_link": {
-    "message": "Failed to open link",
+    "message": "⚠️ Failed to open link",
     "description": "Toast: link error"
   },
   "toast_rate_limited": {
-    "message": "Too many link opens. Please wait.",
+    "message": "⚠️ Too many link opens. Wait...",
     "description": "Toast: rate limited"
   },
   "toast_gmail_connected": {
-    "message": "✓ Gmail account connected",
+    "message": "✅ Gmail connected",
     "description": "Success toast for Gmail connection"
   },
   "toast_outlook_connected": {
-    "message": "✓ Outlook account connected",
+    "message": "✅ Outlook connected",
     "description": "Success toast for Outlook connection"
   },
   "toast_account_disconnected": {
-    "message": "✓ Account disconnected",
+    "message": "✅ Account disconnected",
     "description": "Success toast for account removal"
   },
   "toast_oauth_cancelled": {
-    "message": "OAuth cancelled",
+    "message": "⚠️ OAuth cancelled",
     "description": "Toast when user cancels OAuth"
   },
   "toast_connect_failed": {
-    "message": "Failed to connect account",
+    "message": "⚠️ Failed to connect account",
     "description": "Error toast for connection failure"
   },
   "toast_connect_network_error": {
-    "message": "Network error. Please check your connection and try again.",
+    "message": "⚠️ Network error. Check your connection.",
     "description": "Error toast for network issues during OAuth"
   },
   "toast_connect_invalid_credentials": {
-    "message": "OAuth configuration error. Please contact support.",
+    "message": "⚠️ OAuth configuration error",
     "description": "Error toast for invalid OAuth credentials"
   },
   "toast_connect_profile_failed": {
-    "message": "Connected but failed to fetch profile. Please try again.",
+    "message": "⚠️ Connected but failed to fetch profile",
     "description": "Error toast for profile fetch failure"
   },
   "toast_connect_duplicate": {
-    "message": "This account is already connected",
+    "message": "⚠️ Account already connected",
     "description": "Error toast for duplicate account"
   },
   "toast_connect_popup_blocked": {
-    "message": "Popup blocked. Please allow popups and try again.",
+    "message": "⚠️ Popup blocked. Allow popups and retry.",
     "description": "Error toast for blocked popup"
   },
   "toast_disconnect_failed": {
-    "message": "Failed to disconnect account",
+    "message": "⚠️ Failed to disconnect account",
     "description": "Error toast for disconnection failure"
   },
 

@@ -1,13 +1,13 @@
-import React from 'react'
+import React, { useState } from 'react'
 import { ProviderIcon } from '../icons/ProviderIcon'
 import { LoadingSpinner } from '../icons/LoadingSpinner'
+import { ConfirmDisconnectModal } from './ConfirmDisconnectModal'
 import type { ProviderKey, ProviderSlotState } from './types'
 import { t } from '@/lib/i18n'
 
 interface ProviderSlotCardProps {
   slot: ProviderSlotState
   onConnect?: () => void
-  onReconnect?: () => void
   onDisconnect?: () => void
 }
 
@@ -40,14 +40,28 @@ function getStatusLabel(slot: ProviderSlotState) {
 export function ProviderSlotCard({
   slot,
   onConnect,
-  onReconnect,
   onDisconnect,
 }: ProviderSlotCardProps) {
+  const [showDisconnectModal, setShowDisconnectModal] = useState(false)
   const statusVariant = getStatusVariant(slot.status)
   const statusLabel = getStatusLabel(slot)
 
+  const handleDisconnectClick = () => {
+    setShowDisconnectModal(true)
+  }
+
+  const handleConfirmDisconnect = () => {
+    setShowDisconnectModal(false)
+    onDisconnect?.()
+  }
+
+  const handleCancelDisconnect = () => {
+    setShowDisconnectModal(false)
+  }
+
   return (
-    <article className="provider-card" data-status={slot.status}>
+    <>
+      <article className="provider-card" data-status={slot.status}>
       <div className="provider-card__head">
         <div className="provider-card__title">
           <span className={getProviderBadgeColor(slot.provider)} aria-hidden="true" />
@@ -98,20 +112,12 @@ export function ProviderSlotCard({
 
         <button
           type="button"
-          className="btn btn--secondary"
-          onClick={onReconnect}
-          disabled={
-            slot.status !== 'connected' || slot.status === 'connecting' || slot.status === 'locked'
-          }
-        >
-          {t('accounts_reconnect')}
-        </button>
-
-        <button
-          type="button"
           className="btn btn--danger"
-          onClick={onDisconnect}
+          onClick={handleDisconnectClick}
           disabled={slot.status !== 'connected' || slot.status === 'locked'}
+          aria-label={
+            slot.provider === 'gmail' ? t('aria_disconnect_gmail') : t('aria_disconnect_outlook')
+          }
         >
           {t('accounts_disconnect')}
         </button>
@@ -126,5 +132,14 @@ export function ProviderSlotCard({
         </div>
       )}
     </article>
+
+    <ConfirmDisconnectModal
+      isOpen={showDisconnectModal}
+      provider={slot.provider}
+      email={slot.email || ''}
+      onConfirm={handleConfirmDisconnect}
+      onCancel={handleCancelDisconnect}
+    />
+    </>
   )
 }

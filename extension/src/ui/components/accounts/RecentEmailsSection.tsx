@@ -4,48 +4,28 @@ import type { RecentItem } from './types'
 
 interface RecentEmailsSectionProps {
   items: RecentItem[]
-  limit: 3 | 5
-  onLimitChange: (limit: 3 | 5) => void
   onCopyCode?: (item: RecentItem) => Promise<void>
   onOpenLink?: (item: RecentItem) => Promise<void>
   isLocked?: boolean
   loading?: boolean
 }
 
-const LIMIT_OPTIONS: Array<3 | 5> = [3, 5]
-
 export function RecentEmailsSection({
   items,
-  limit,
-  onLimitChange,
   onCopyCode,
   onOpenLink,
   isLocked = false,
   loading = false,
 }: RecentEmailsSectionProps) {
-  const visibleItems = items.slice(0, limit)
+  const visibleItems = items.slice(0, 5)
   const disabled = isLocked || loading
 
   return (
     <section className="accounts-section" aria-labelledby="recent-emails-title">
-      <div className="accounts-section__header recent-header">
+      <div className="accounts-section__header">
         <h3 id="recent-emails-title" className="accounts-section__title">
           {t('accounts_recent_title')}
         </h3>
-        <div className="recent-toggle" role="group" aria-label={t('accounts_recent_toggle')}>
-          {LIMIT_OPTIONS.map((option) => (
-            <button
-              key={option}
-              type="button"
-              className="recent-toggle__button"
-              aria-pressed={limit === option}
-              onClick={() => onLimitChange(option)}
-              disabled={disabled}
-            >
-              {t('accounts_recent_limit', String(option))}
-            </button>
-          ))}
-        </div>
       </div>
 
       <p className="accounts-section__description">
