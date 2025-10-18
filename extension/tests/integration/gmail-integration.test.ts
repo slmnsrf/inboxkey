@@ -109,7 +109,7 @@ const server = setupServer(
 
     // Handle query parameters
     const query = url.searchParams.get('q')
-    const maxResults = url.searchParams.get('maxResults')
+    const _maxResults = url.searchParams.get('maxResults')
 
     // Return appropriate response based on query
     if (query?.includes('from:nonexistent')) {

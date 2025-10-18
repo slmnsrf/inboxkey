@@ -69,7 +69,7 @@ describe("SessionController Load Testing", () => {
       mockGetRecentCodes.mockResolvedValue([])
 
       // Start 10 sessions simultaneously
-      const sessions = await Promise.all(
+      const _sessions = await Promise.all(
         Array.from({ length: 10 }, (_, i) =>
           controller.startSession({
             tabId: i + 1,
@@ -111,7 +111,7 @@ describe("SessionController Load Testing", () => {
       mockGetRecentCodes.mockResolvedValue([])
 
       // Start 25 sessions
-      const sessions = await Promise.all(
+      const _sessions = await Promise.all(
         Array.from({ length: 25 }, (_, i) =>
           controller.startSession({
             tabId: i + 1,
@@ -261,7 +261,7 @@ describe("SessionController Load Testing", () => {
       mockGetRecentCodes.mockResolvedValue([])
 
       // Create sessions for 5 tabs
-      const sessions = await Promise.all(
+      const _sessions = await Promise.all(
         Array.from({ length: 5 }, (_, i) =>
           controller.startSession({
             tabId: i + 1,
@@ -447,7 +447,7 @@ describe("SessionController Load Testing", () => {
       mockGetRecentCodes.mockResolvedValue([])
 
       // Create 20 sessions with large expected objects
-      const sessions = await Promise.all(
+      const _sessions = await Promise.all(
         Array.from({ length: 20 }, (_, i) =>
           controller.startSession({
             tabId: i + 1,

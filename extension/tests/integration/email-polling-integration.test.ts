@@ -174,7 +174,7 @@ describe('Email Polling Integration', () => {
       expect(pollResult.newCodesCount).toBeGreaterThan(0)
 
       // Check if magic link was stored
-      const magicLinks = storedCodes.filter((c) => c.code.startsWith('magic-link:'))
+      const _magicLinks = storedCodes.filter((c) => c.code.startsWith('magic-link:'))
       expect(magicLinks.length).toBeGreaterThan(0)
     })
 
@@ -200,7 +200,7 @@ describe('Email Polling Integration', () => {
 
       // Should have both OTP and magic link
       const otpCodes = storedCodes.filter((c) => !c.code.startsWith('magic-link:'))
-      const magicLinks = storedCodes.filter((c) => c.code.startsWith('magic-link:'))
+      const _magicLinks = storedCodes.filter((c) => c.code.startsWith('magic-link:'))
 
       expect(otpCodes.length).toBeGreaterThan(0)
       expect(otpCodes.some((c) => c.code === '654321')).toBe(true)

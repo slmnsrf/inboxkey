@@ -8,7 +8,7 @@ import { Window } from 'happy-dom'
 import { FieldDetector } from '../../src/lib/detection/field-detector'
 import { startWatch, stopActiveWatch, getActiveWatch } from '../../src/contents/watch-session'
 import { autofillCode, isFieldFilledByInboxKey } from '../../src/contents/autofill'
-import { findBestMatchingCode } from '../../src/contents/code-fetcher'
+import { findBestMatchingCode } from '../../src/lib/matching/code-matcher'
 import type { StoredCode } from '../../src/lib/storage/schema'
 
 describe('Autofill Integration', () => {
@@ -63,6 +63,7 @@ describe('Autofill Integration', () => {
         {
           code: '123456',
           timestamp: now - 1000,
+          source: 'test@example.com',
           siteMatch: 'example.com',
           used: false,
         },
@@ -84,7 +85,7 @@ describe('Autofill Integration', () => {
       startWatch(
         field,
         detectionResult,
-        async (pollNumber: number) => {
+        async (_pollNumber: number) => {
           // Simulate code fetcher
           const codes: StoredCode[] = mockCodes
           const bestCode = findBestMatchingCode(codes, 'https://example.com', Date.now())
@@ -126,7 +127,7 @@ describe('Autofill Integration', () => {
       startWatch(
         field,
         detectionResult,
-        async (pollNumber: number) => {
+        async (_pollNumber: number) => {
           pollCount++
 
           // Return code only on 2nd poll
@@ -135,6 +136,7 @@ describe('Autofill Integration', () => {
               {
                 code: '789012',
                 timestamp: now - 500,
+                source: 'test@example.com',
                 siteMatch: 'example.com',
                 used: false,
               },
@@ -294,12 +296,14 @@ describe('Autofill Integration', () => {
         {
           code: '111111',
           timestamp: now - 1000,
+          source: 'test@example.com',
           siteMatch: 'github.com',
           used: false,
         },
         {
           code: '222222',
           timestamp: now - 1000,
+          source: 'test@example.com',
           siteMatch: 'example.com',
           used: false,
         },
@@ -317,12 +321,14 @@ describe('Autofill Integration', () => {
         {
           code: '111111',
           timestamp: now - 1000,
+          source: 'test@example.com',
           siteMatch: 'example.com',
           used: true, // Already used
         },
         {
           code: '222222',
           timestamp: now - 2000,
+          source: 'test@example.com',
           siteMatch: 'example.com',
           used: false,
         },
@@ -340,6 +346,7 @@ describe('Autofill Integration', () => {
         {
           code: '123456',
           timestamp: now - 6 * 60 * 1000, // 6 minutes ago
+          source: 'test@example.com',
           siteMatch: 'example.com',
           used: false,
         },

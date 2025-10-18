@@ -22,12 +22,14 @@ describe('Code Fetcher', () => {
         {
           code: '111111',
           timestamp: now - 1000,
+          source: 'test@example.com',
           siteMatch: 'other.com',
           used: false,
         },
         {
           code: '222222',
           timestamp: now - 2000,
+          source: 'test@example.com',
           siteMatch: 'example.com',
           used: false,
         },
@@ -45,6 +47,7 @@ describe('Code Fetcher', () => {
         {
           code: '123456',
           timestamp: now - 1000,
+          source: 'test@example.com',
           siteMatch: 'example.com',
           used: false,
         },
@@ -85,6 +88,7 @@ describe('Code Fetcher', () => {
         {
           code: '111111',
           timestamp: now - 1000,
+          source: 'test@example.com',
           siteMatch: 'example.com',
           used: true, // Already used
         },
@@ -124,6 +128,7 @@ describe('Code Fetcher', () => {
         {
           code: '123456',
           timestamp: now - 1000,
+          source: 'test@example.com',
           siteMatch: undefined,
           used: false,
         },
@@ -158,18 +163,21 @@ describe('Code Fetcher', () => {
         {
           code: '111111',
           timestamp: now - 5000,
+          source: 'test@example.com',
           siteMatch: 'other.com',
           used: false,
         },
         {
           code: '222222',
           timestamp: now - 3000,
+          source: 'test@example.com',
           siteMatch: 'example.com',
           used: true, // Right domain but used
         },
         {
           code: '333333',
           timestamp: now - 1000,
+          source: 'test@example.com',
           siteMatch: 'example.com',
           used: false, // Best match
         },
@@ -187,6 +195,7 @@ describe('Code Fetcher', () => {
         {
           code: '123456',
           timestamp: now - 1000,
+          source: 'test@example.com',
           siteMatch: 'EXAMPLE.COM',
           used: false,
         },
@@ -204,6 +213,7 @@ describe('Code Fetcher', () => {
         {
           code: '123456',
           timestamp: now - 1000,
+          source: 'test@example.com',
           siteMatch: 'example.com',
           used: false,
         },
@@ -248,6 +258,7 @@ describe('Code Fetcher', () => {
         {
           code: '123456',
           timestamp: now - 1000,
+          source: 'test@example.com',
           siteMatch: 'example.com',
           used: false,
         },
@@ -316,6 +327,7 @@ describe('Code Fetcher', () => {
         {
           code: '123456',
           timestamp: now - 1000,
+          source: 'test@example.com',
           siteMatch: 'example.com',
           used: false,
         },
@@ -332,6 +344,7 @@ describe('Code Fetcher', () => {
         type: 'FETCH_CODE',
         url: 'https://example.com',
         timestamp: expect.any(Number),
+          source: 'test@example.com',
         pollNumber: 1,
       })
     })
@@ -387,12 +400,14 @@ describe('Code Fetcher', () => {
         {
           code: '111111',
           timestamp: now - 5000,
+          source: 'test@example.com',
           siteMatch: 'other.com',
           used: false,
         },
         {
           code: '222222',
           timestamp: now - 1000,
+          source: 'test@example.com',
           siteMatch: 'example.com',
           used: false,
         },
@@ -415,6 +430,7 @@ describe('Code Fetcher', () => {
         {
           code: '123456',
           timestamp: now - 1000,
+          source: 'test@example.com',
           siteMatch: 'example.com',
           used: false,
         },
@@ -431,6 +447,7 @@ describe('Code Fetcher', () => {
         {
           code: '123456',
           timestamp: now - 1000,
+          source: 'test@example.com',
           siteMatch: 'example.com',
           used: false,
         },
@@ -447,6 +464,7 @@ describe('Code Fetcher', () => {
         {
           code: '123456',
           timestamp: now - 1000,
+          source: 'test@example.com',
           siteMatch: 'example.com',
           used: false,
         },
@@ -463,6 +481,7 @@ describe('Code Fetcher', () => {
         {
           code: '123456',
           timestamp: now - 1000,
+          source: 'test@example.com',
           siteMatch: 'example.com',
           used: false,
         },
@@ -479,6 +498,7 @@ describe('Code Fetcher', () => {
         {
           code: '123456',
           timestamp: now - 1000,
+          source: 'test@example.com',
           siteMatch: 'example.com',
           used: false,
         },
@@ -499,6 +519,7 @@ describe('Code Fetcher', () => {
         {
           code: '123456',
           timestamp: now - 1000,
+          source: 'test@example.com',
           siteMatch: 'example.co.uk',
           used: false,
         },
@@ -517,6 +538,7 @@ describe('Code Fetcher', () => {
         {
           code: '111111',
           timestamp: now - 1000,
+          source: 'test@example.com',
           siteMatch: 'example.com', // +100 points
           used: false,
         },
@@ -561,12 +583,14 @@ describe('Code Fetcher', () => {
         {
           code: '111111',
           timestamp: now - 1000,
+          source: 'test@example.com',
           siteMatch: 'example.com', // +100 points
           used: true, // -50 points = 50 total
         },
         {
           code: '222222',
           timestamp: now - 1000,
+          source: 'test@example.com',
           siteMatch: undefined, // +~50 points for recency
           used: false, // 50 total
         },

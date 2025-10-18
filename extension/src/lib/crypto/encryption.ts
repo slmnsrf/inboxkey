@@ -43,10 +43,10 @@ export interface DerivedKey {
 }
 
 /**
- * Convert ArrayBuffer to Base64 string for JSON serialization
+ * Convert ArrayBuffer or Uint8Array to Base64 string for JSON serialization
  */
-function arrayBufferToBase64(buffer: ArrayBuffer): string {
-  const bytes = new Uint8Array(buffer)
+function arrayBufferToBase64(buffer: ArrayBuffer | Uint8Array): string {
+  const bytes = buffer instanceof Uint8Array ? buffer : new Uint8Array(buffer)
   let binary = ""
   for (let i = 0; i < bytes.byteLength; i++) {
     binary += String.fromCharCode(bytes[i])
@@ -119,7 +119,7 @@ export async function deriveKey(
     const derivedKey = await crypto.subtle.deriveKey(
       {
         name: "PBKDF2",
-        salt: actualSalt,
+        salt: actualSalt as BufferSource,
         iterations: CRYPTO_CONFIG.PBKDF2_ITERATIONS,
         hash: CRYPTO_CONFIG.HASH_ALGORITHM,
       },
@@ -182,7 +182,7 @@ export async function encrypt(
     const ciphertextBuffer = await crypto.subtle.encrypt(
       {
         name: "AES-GCM",
-        iv: iv,
+        iv: iv as BufferSource,
         tagLength: CRYPTO_CONFIG.TAG_LENGTH,
       },
       key,

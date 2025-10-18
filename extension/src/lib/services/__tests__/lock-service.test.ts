@@ -259,7 +259,7 @@ describe('LockService', () => {
       await lockService.unlock('wrong3')
 
       // Wait for lockout to expire (1 second)
-      const lockoutUntil = (lockService as any).lockoutUntil
+      const _lockoutUntil = (lockService as any).lockoutUntil
       ;(lockService as any).lockoutUntil = Date.now() - 100 // Expire lockout
 
       // 4th attempt should trigger 2-second lockout

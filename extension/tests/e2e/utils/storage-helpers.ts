@@ -2,7 +2,7 @@
  * Helper utilities for working with chrome.storage in E2E tests
  */
 
-import type { Page, BrowserContext } from '@playwright/test'
+import type { BrowserContext } from '@playwright/test'
 
 export interface StoredCode {
   code: string

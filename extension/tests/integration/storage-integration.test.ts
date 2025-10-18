@@ -23,7 +23,7 @@ import {
   importStorage,
   migrateStorage,
 } from "../../src/lib/storage/init"
-import type { Mailbox, StoredCode, Settings } from "../../src/lib/storage/schema"
+import type { Mailbox, StoredCode } from "../../src/lib/storage/schema"
 import { STORAGE_KEYS } from "../../src/lib/storage/schema"
 
 // Test constants

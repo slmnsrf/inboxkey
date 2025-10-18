@@ -59,7 +59,6 @@ export async function autofillCode(options: AutofillOptions): Promise<boolean> {
   field.focus()
 
   // Set the value
-  const previousValue = field.value
   field.value = code
 
   // Dispatch events to trigger framework reactivity
@@ -116,7 +115,7 @@ function showSuccessFeedback(field: HTMLInputElement): void {
 /**
  * Check if we should auto-submit the form
  */
-async function checkForAutoSubmit(field: HTMLInputElement): Promise<boolean> {
+async function checkForAutoSubmit(_field: HTMLInputElement): Promise<boolean> {
   // For now, don't auto-submit to be safe
   // In the future, this could check user settings
   return false

@@ -4,7 +4,7 @@
 
 import { test, expect } from './fixtures/extension-fixture'
 import { injectCode, clearStorage } from './utils/storage-helpers'
-import { waitForFieldDetection, waitForFieldAutofill } from './utils/extension-helpers'
+import { waitForFieldDetection } from './utils/extension-helpers'
 import * as path from 'path'
 
 test.describe('Autofill Flow', () => {

@@ -337,7 +337,7 @@ const server = setupServer(
     // Check query parameters
     const filter = url.searchParams.get('$filter')
     const search = url.searchParams.get('$search')
-    const top = url.searchParams.get('$top')
+    const _top = url.searchParams.get('$top')
 
     // Handle search query returning no results
     if (search?.includes('nonexistent')) {

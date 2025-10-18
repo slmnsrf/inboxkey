@@ -5,8 +5,6 @@
  * simulating user interactions, and testing OTP input detection.
  */
 
-import { JSDOM } from 'jsdom';
-
 export interface DOMSimulatorOptions {
   url?: string;
   userAgent?: string;
@@ -24,29 +22,24 @@ export interface InputElement {
 
 /**
  * Create a DOM environment from HTML string
+ * Note: This is a placeholder. Use happy-dom's Window class directly in tests.
  */
-export function createDOM(html: string, options: DOMSimulatorOptions = {}): JSDOM {
+export function createDOM(html: string, options: DOMSimulatorOptions = {}): Document {
   const {
     url = 'https://example.com',
-    userAgent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-    runScripts = 'outside-only',
-    pretendToBeVisual = true,
   } = options;
 
-  return new JSDOM(html, {
-    url,
-    userAgent,
-    runScripts,
-    pretendToBeVisual,
-    resources: 'usable',
-  });
+  // This is a placeholder implementation
+  // In actual tests, use happy-dom's Window class directly
+  const parser = new DOMParser()
+  return parser.parseFromString(html, 'text/html')
 }
 
 /**
  * Find all OTP-like input fields in a DOM
  */
-export function findOTPInputs(dom: JSDOM | Document): InputElement[] {
-  const document = 'window' in dom ? dom.window.document : dom;
+export function findOTPInputs(dom: Document): InputElement[] {
+  const document = dom;
   const inputs: InputElement[] = [];
 
   // Query selectors for OTP detection
@@ -88,7 +81,7 @@ export function findOTPInputs(dom: JSDOM | Document): InputElement[] {
   for (const selector of selectors) {
     try {
       const elements = document.querySelectorAll(selector);
-      elements.forEach((el) => {
+      elements.forEach((el: Element) => {
         if (el instanceof HTMLInputElement) {
           foundElements.add(el);
         }
@@ -212,12 +205,12 @@ export function simulatePaste(element: HTMLInputElement, value: string): void {
  * Inject an input element dynamically (simulates SPA behavior)
  */
 export function injectInputDynamically(
-  dom: JSDOM | Document,
+  dom: Document,
   parentSelector: string,
   inputHTML: string,
   delay: number = 0
 ): Promise<HTMLInputElement> {
-  const document = 'window' in dom ? dom.window.document : dom;
+  const document = dom;
 
   return new Promise((resolve, reject) => {
     setTimeout(() => {
@@ -261,11 +254,11 @@ export function isElementVisible(element: HTMLElement): boolean {
  * Wait for an element to appear in the DOM
  */
 export function waitForElement(
-  dom: JSDOM | Document,
+  dom: Document,
   selector: string,
   timeout: number = 5000
 ): Promise<Element> {
-  const document = 'window' in dom ? dom.window.document : dom;
+  const document = dom;
 
   return new Promise((resolve, reject) => {
     const element = document.querySelector(selector);
@@ -349,11 +342,11 @@ export function simulateFormSubmit(form: HTMLFormElement): boolean {
  * Create a split-input OTP field (6 separate inputs)
  */
 export function createSplitOTPInputs(
-  dom: JSDOM | Document,
+  dom: Document,
   parentSelector: string,
   digitCount: number = 6
 ): HTMLInputElement[] {
-  const document = 'window' in dom ? dom.window.document : dom;
+  const document = dom;
   const parent = document.querySelector(parentSelector);
 
   if (!parent) {

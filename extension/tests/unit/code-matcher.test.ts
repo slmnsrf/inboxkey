@@ -180,12 +180,12 @@ describe("Code Matcher", () => {
         createCode({
           code: "OLD",
           timestamp: now - 4 * 60 * 1000,
-          siteMatch: null,
+          siteMatch: undefined,
         }),
         createCode({
           code: "NEW",
           timestamp: now,
-          siteMatch: null,
+          siteMatch: undefined,
         }),
       ]
 
@@ -210,7 +210,7 @@ describe("Code Matcher", () => {
         createCode({
           code: "123456",
           timestamp: now - 10 * 60 * 1000, // Too old
-          siteMatch: null,
+          siteMatch: undefined,
         }),
       ]
 
@@ -225,7 +225,7 @@ describe("Code Matcher", () => {
         createCode({
           code: "A",
           timestamp: now,
-          siteMatch: null,
+          siteMatch: undefined,
           used: true,
         }),
         // Medium recency, domain match, unused
@@ -272,7 +272,7 @@ describe("Code Matcher", () => {
       const codes = [
         createCode({
           code: "123456",
-          siteMatch: null,
+          siteMatch: undefined,
           timestamp: now,
           used: false,
         }),
@@ -289,7 +289,7 @@ describe("Code Matcher", () => {
         createCode({
           code: "LOW",
           timestamp: now - 4 * 60 * 1000,
-          siteMatch: null,
+          siteMatch: undefined,
         }),
         createCode({
           code: "HIGH",
@@ -299,7 +299,7 @@ describe("Code Matcher", () => {
         createCode({
           code: "MEDIUM",
           timestamp: now - 2 * 60 * 1000,
-          siteMatch: null,
+          siteMatch: undefined,
         }),
       ]
 
@@ -361,7 +361,7 @@ describe("Code Matcher", () => {
           code: "123456",
           used: true,
           timestamp: now - 10 * 60 * 1000,
-          siteMatch: null,
+          siteMatch: undefined,
         }),
       ]
 
@@ -403,7 +403,7 @@ describe("Code Matcher", () => {
         createCode({
           code: "UNUSED_UNMATCHED",
           used: false,
-          siteMatch: null,
+          siteMatch: undefined,
           timestamp: now,
         }),
       ]
@@ -438,7 +438,7 @@ describe("Code Matcher", () => {
         createCode({
           code: "BELOW",
           timestamp: now - 4.9 * 60 * 1000, // ~9 points
-          siteMatch: null,
+          siteMatch: undefined,
           used: false,
         }),
       ]
@@ -503,7 +503,7 @@ describe("Code Matcher", () => {
           timestamp: now - 10 * 60 * 1000, // 10 minutes ago
           source: "Gmail",
           used: false,
-          siteMatch: null, // No domain match
+          siteMatch: undefined, // No domain match
         },
       ]
 

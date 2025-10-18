@@ -120,7 +120,7 @@ function setupFocusListeners(): void {
 
       // Try to detect if this is a verification field
       // Use fast detection (Tier 1 only for focus events)
-      const inputs = [target]
+      // const inputs = [target]
       const tier1Results = detector.detectExisting({ strictVisibility: true })
 
       if (tier1Results.length > 0 && tier1Results[0].field === target) {

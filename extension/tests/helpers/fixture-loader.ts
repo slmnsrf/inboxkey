@@ -67,7 +67,8 @@ export async function loadEmailFixture(relativePath: string): Promise<EmailFixtu
 
     return fixture;
   } catch (error) {
-    throw new Error(`Failed to load email fixture ${relativePath}: ${error.message}`);
+    const message = error instanceof Error ? error.message : String(error);
+    throw new Error(`Failed to load email fixture ${relativePath}: ${message}`);
   }
 }
 
@@ -90,7 +91,8 @@ export async function loadSiteFixture(relativePath: string): Promise<SiteFixture
       html,
     };
   } catch (error) {
-    throw new Error(`Failed to load site fixture ${relativePath}: ${error.message}`);
+    const message = error instanceof Error ? error.message : String(error);
+    throw new Error(`Failed to load site fixture ${relativePath}: ${message}`);
   }
 }
 
@@ -117,7 +119,8 @@ export async function loadAllFixtures(
         fixtures.push(await loadSiteFixture(relativePath));
       }
     } catch (error) {
-      console.warn(`Warning: Failed to load ${relativePath}: ${error.message}`);
+      const message = error instanceof Error ? error.message : String(error);
+      console.warn(`Warning: Failed to load ${relativePath}: ${message}`);
     }
   }
 
@@ -163,7 +166,8 @@ async function getFilesRecursive(dir: string): Promise<string[]> {
       }
     }
   } catch (error) {
-    console.warn(`Warning: Could not read directory ${dir}: ${error.message}`);
+    const message = error instanceof Error ? error.message : String(error);
+    console.warn(`Warning: Could not read directory ${dir}: ${message}`);
   }
 
   return files;
@@ -188,7 +192,8 @@ export async function validateAllFixtures(): Promise<ValidationResult> {
       result.passed += fixtures.length;
     } catch (error) {
       result.failed++;
-      result.errors.push({ path: `emails/${type}`, error: error.message });
+      const message = error instanceof Error ? error.message : String(error);
+      result.errors.push({ path: `emails/${type}`, error: message });
     }
   }
 
@@ -201,7 +206,8 @@ export async function validateAllFixtures(): Promise<ValidationResult> {
       result.passed += fixtures.length;
     } catch (error) {
       result.failed++;
-      result.errors.push({ path: `sites/${category}`, error: error.message });
+      const message = error instanceof Error ? error.message : String(error);
+      result.errors.push({ path: `sites/${category}`, error: message });
     }
   }
 

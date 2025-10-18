@@ -45,7 +45,7 @@ export function LiveRegion({
   message,
   politeness = 'polite',
   atomic = true,
-  relevant = 'additions text',
+  relevant = 'additions',
 }: LiveRegionProps) {
   // Use role="status" for polite, role="alert" for assertive
   const role = politeness === 'assertive' ? 'alert' : 'status'

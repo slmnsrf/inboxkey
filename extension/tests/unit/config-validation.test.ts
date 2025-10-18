@@ -4,7 +4,7 @@
  * Tests for OAuth credential validation functions
  */
 
-import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { describe, it, expect } from 'vitest'
 import { isGmailConfigured } from '@/lib/providers/gmail/config'
 import { isOutlookConfigured } from '@/lib/providers/outlook/config'
 

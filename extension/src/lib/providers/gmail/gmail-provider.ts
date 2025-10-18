@@ -6,7 +6,6 @@
 
 import type {
   IEmailProvider,
-  OAuthTokens,
   EmailMessage,
   FetchOptions,
 } from '../provider-interface'

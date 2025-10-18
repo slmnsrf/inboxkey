@@ -96,7 +96,7 @@ test.describe('Popup Performance', () => {
     }
 
     // All opens should meet performance target
-    loadTimes.forEach((time, index) => {
+    loadTimes.forEach((time, _index) => {
       expect(time).toBeLessThan(200)
     })
 

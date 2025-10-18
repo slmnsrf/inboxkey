@@ -24,7 +24,7 @@ import {
  * Target: <1ms execution time
  */
 function detectTier1(inputs: HTMLInputElement[]): DetectionResult | null {
-  const startTime = performance.now()
+  // const startTime = performance.now()
   const candidates: Array<{
     input: HTMLInputElement
     confidence: number
@@ -167,8 +167,8 @@ function getNearbyText(input: HTMLInputElement): string {
   while (element && levels < 3) {
     // Get all text from siblings
     if (element.parentElement) {
-      const siblings = Array.from(element.parentElement.children)
-      for (const sibling of siblings) {
+      const siblings: Element[] = Array.from(element.parentElement.children)
+      for (const sibling: Element of siblings) {
         if (sibling !== element && sibling instanceof HTMLElement) {
           const text = sibling.textContent?.trim()
           if (text && text.length < 200) {
@@ -191,7 +191,7 @@ function getNearbyText(input: HTMLInputElement): string {
  * Target: <50ms execution time
  */
 function detectTier2(inputs: HTMLInputElement[]): DetectionResult | null {
-  const startTime = performance.now()
+  // const startTime = performance.now()
   const candidates: Array<{
     input: HTMLInputElement
     score: number
@@ -415,7 +415,7 @@ function getInputFields(strictVisibility = true): HTMLInputElement[] {
 export function detectVerificationField(options?: {
   strictVisibility?: boolean
 }): DetectionResult | null {
-  const startTime = performance.now()
+  // const startTime = performance.now()
   const strictVisibility = options?.strictVisibility ?? true
 
   // Get all visible input fields

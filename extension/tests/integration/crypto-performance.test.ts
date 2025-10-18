@@ -13,8 +13,8 @@ import {
   deriveKey,
   encrypt,
   decrypt,
-  deriveAndEncrypt,
-  deriveAndDecrypt,
+  
+  
   type EncryptedData,
   type DerivedKey,
 } from "../../src/lib/crypto/encryption"
