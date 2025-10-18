@@ -19,6 +19,7 @@
 // -----------------------------------------------------------------------------
 
 import { extractFromEmail } from '../extraction/extractor'
+import { SCORE_POPUP } from '@/lib/popup/popup-config'
 
 // ---------------- Types ----------------
 
@@ -73,7 +74,7 @@ export interface PollConfig {
   globalMax?: number
   /** Keep top-N candidates in memory for popup. Default: 5. */
   keepTopN?: number
-  /** Minimum score to keep a candidate (OTP or link). Default: 0.5. */
+  /** Minimum score to keep a candidate (OTP or link). Default: 0.60 (SCORE_POPUP). */
   minScore?: number
   /** Abort signal to cancel this poll (MV3 safe). */
   signal?: AbortSignal
@@ -99,6 +100,7 @@ export class EmailPollingService {
   private adapters: ProviderAdapter[] = []
   private cache: CandidateRecord[] = []
   private seenMessageIds = new Set<string>()   // suppress duplicates between polls
+  // @ts-expect-error: Reserved for future rate limiting
   private lastPollEpochMs = 0
 
   constructor(adapters: ProviderAdapter[] = []) {
@@ -140,7 +142,7 @@ export class EmailPollingService {
     const since = now - 1000 * 60 * (cfg.timeWindowMin ?? 10)
     const perProviderMax = clampInt(cfg.perProviderMax ?? 8, 1, 50)
     const globalMax = clampInt(cfg.globalMax ?? 20, 1, 100)
-    const minScore = clamp01(cfg.minScore ?? 0.5)
+    const minScore = clamp01(cfg.minScore ?? SCORE_POPUP)
     const keepTopN = clampInt(cfg.keepTopN ?? 5, 1, 20)
 
     // Build hint to reduce provider payloads
