@@ -16,7 +16,7 @@ export function EmptyState({ variant, message }: EmptyStateProps) {
   // If custom message provided, use it
   if (message) {
     return (
-      <div className="empty-state">
+      <div className="empty-state" role="note">
         <p>{message}</p>
       </div>
     )
@@ -49,7 +49,7 @@ export function EmptyState({ variant, message }: EmptyStateProps) {
   const config = variantConfig[variant]
 
   return (
-    <div className="empty-state">
+    <div className="empty-state" role="note">
       <p className="empty-state-title">{config.title}</p>
       <p className="empty-state-message">{config.message}</p>
     </div>

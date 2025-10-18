@@ -18,17 +18,17 @@ interface CodeListSectionProps {
 export function CodeListSection({ codes, onCopy }: CodeListSectionProps) {
   if (codes.length === 0) {
     return (
-      <section className="popup-section">
-        <h2>{t('section_recent_codes')}</h2>
+      <section className="popup-section" aria-label={t('section_recent_codes')}>
+        <h2 className="popup-section__title">{t('section_recent_codes')}</h2>
         <EmptyState variant="no-codes" />
       </section>
     )
   }
 
   return (
-    <section className="popup-section">
-      <h2>{t('section_recent_codes')}</h2>
-      <div className="code-list">
+    <section className="popup-section" aria-label={t('section_recent_codes')}>
+      <h2 className="popup-section__title">{t('section_recent_codes')}</h2>
+      <div className="card-list card-list--codes">
         {codes.map((item, i) => (
           <CodeCard key={`${item.code}-${i}`} item={item} onCopy={onCopy} />
         ))}

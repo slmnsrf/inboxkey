@@ -64,5 +64,223 @@
   },
   "footer_local_only": {
     "message": "[Lõçål-õñlý - Ñõ sërvërs one two three four five]"
+  },
+  "footer_buy_coffee": {
+    "message": "[Büý më å çõffëë one two three four five]"
+  },
+  "footer_buy_coffee_link": {
+    "message": "[Büý më å çõffëë one two three four five six]"
+  },
+  "trust_open_source": {
+    "message": "[Õþëñ-sõürçë one two three four]"
+  },
+  "trust_local_only": {
+    "message": "[Lõçål-õñlý one two three four]"
+  },
+  "trust_read_only": {
+    "message": "[Rëåd-õñlý one two three four]"
+  },
+  "popup_synced_at": {
+    "message": "[Sýñçëd $1 one two three four]",
+    "placeholders": {
+      "time": {
+        "content": "$1"
+      }
+    }
+  },
+  "popup_quick_actions": {
+    "message": "[Qüîçk åçtîõñs one two three four]"
+  },
+  "button_paste_best": {
+    "message": "[Påstë ßëst çõdë one two three four]"
+  },
+  "button_open_last": {
+    "message": "[Õþëñ låst lîñk one two three four]"
+  },
+  "button_opening": {
+    "message": "[Õþëñîñğ... one two three four]"
+  },
+  "label_from": {
+    "message": "[Frõm one two three]"
+  },
+  "label_to": {
+    "message": "[Tõ one two three]"
+  },
+  "label_subject": {
+    "message": "[Süßjëçt one two three]"
+  },
+  "label_code": {
+    "message": "[Çõdë one two three]"
+  },
+  "value_not_available": {
+    "message": "[Ñ/Å one two three]"
+  },
+  "time_just_now_short": {
+    "message": "[ñõŵ one two three]"
+  },
+  "time_minutes_short": {
+    "message": "[$COUNT$m åğõ one two three]",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "time_hours_short": {
+    "message": "[$COUNT$h åğõ one two three]",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "time_days_short": {
+    "message": "[$COUNT$d åğõ one two three]",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "aria_open_link_simple": {
+    "message": "[Õþëñ $1 one two three]",
+    "placeholders": {
+      "item": {
+        "content": "$1"
+      }
+    }
+  },
+  "aria_received_time": {
+    "message": "[Rëçëîvëd $1 one two three]",
+    "placeholders": {
+      "time": {
+        "content": "$1"
+      }
+    }
+  },
+  "aria_lock_extension": {
+    "message": "[Lõçk Îñbõxƙëý one two three]"
+  },
+  "aria_manual_sync": {
+    "message": "[Sýñç ñõw one two three]"
+  },
+  "aria_open_settings": {
+    "message": "[Õþëñ sëttîñğs one two three]"
+  },
+  "settings_view_source": {
+    "message": "[Vîëw Søûrçë one two three]"
+  },
+  "settings_view_source_aria": {
+    "message": "[Vîëw Îñbõxƙëý søûrçë õñ Ğîthûb one two three]"
+  },
+  "settings_trust_region_label": {
+    "message": "[Trûst åñd Tråñsþårëñçý one two three]"
+  },
+  "settings_trust_open_source": {
+    "message": "[Õþëñ-sõûrçë • Åþåçhë-2.0 one two three]"
+  },
+  "settings_trust_local_only": {
+    "message": "[Lõçål-õñlý • Rëåd-õñlý one two three]"
+  },
+  "settings_trust_safe": {
+    "message": "[Såfé bý dëfåûlt one two three]"
+  },
+  "settings_trust_summary": {
+    "message": "[Ýõû çåñ çõññëçt 1 Ğmåîl, 1 Õûtløõƙ, åñð ûþ tø 10 ÎMÅP åççõûñts. one two three]"
+  },
+  "accounts_panel_summary": {
+    "message": "[Ğmåîl åñð Õûtløõƙ årë sìñğlë-slõt. ÎMÅP sùþþõrts mûltìþlë åççõûñts. one two three]"
+  },
+  "accounts_status_locked": {
+    "message": "[Lõçkëð one two three]"
+  },
+  "accounts_reconnect": {
+    "message": "[Rëçõññëçt one two three]"
+  },
+  "accounts_disconnect": {
+    "message": "[Ðîsåññëçt one two three]"
+  },
+  "accounts_microcopy_gmail": {
+    "message": "[Õñlý õñë Ğmåîl åççõûñt çåñ bë çõññëçtëð. one two three]"
+  },
+  "accounts_microcopy_outlook": {
+    "message": "[Õñlý õñë Õûtløõƙ åççõûñt çåñ bë çõññëçtëð. one two three]"
+  },
+  "accounts_empty_gmail": {
+    "message": "[Çõññëçt ýöûr Ğõõğlë åççõûñt tø ðëtëçt çõðës åñð måğîç lïñƙs ìñ Ğmåîl. one two three]"
+  },
+  "accounts_empty_outlook": {
+    "message": "[Çõññëçt ýöûr Mîçrõsõft åççõûñt tø ðëtëçt çõðës åñð måğîç lïñƙs ìñ Õûtløõƙ. one two three]"
+  },
+  "accounts_imap_title": {
+    "message": "[ÎMÅP Åççõûñts one two three]"
+  },
+  "accounts_imap_description": {
+    "message": "[Åðð ûþ tø 10 ÎMÅP måîlbõxës vîå thë Îñbõxƙëý ßrîðğë. Såþþõrt çõmîñğ søõñ. one two three]"
+  },
+  "accounts_imap_add": {
+    "message": "[Åðð ÎMÅP one two three]"
+  },
+  "accounts_imap_counter": {
+    "message": "[$USED$ / $TOTAL$ ûsëð one two three]",
+    "placeholders": {
+      "used": {
+        "content": "$1"
+      },
+      "total": {
+        "content": "$2"
+      }
+    }
+  },
+  "accounts_imap_placeholder": {
+    "message": "[ÎMÅP søûþþõrt ìs bëîñğ wîrëð ûþ. Çhëçƙ ßåçƙ søõñ! one two three]"
+  },
+  "accounts_imap_empty": {
+    "message": "[Ñõ ÎMÅP åççõûñts çõññëçtëð. Çlîçƙ “Åðð ÎMÅP” tø çõññëçt õñë. one two three]"
+  },
+  "accounts_imap_host": {
+    "message": "[Hõst: $1 one two three]",
+    "placeholders": {
+      "host": {
+        "content": "$1"
+      }
+    }
+  },
+  "accounts_imap_generic_host": {
+    "message": "[Hõst ìñfõrmåtîõñ ñõt åvåîlåßlë one two three]"
+  },
+  "accounts_recent_title": {
+    "message": "[Rëçëñt Ëmåîls one two three]"
+  },
+  "accounts_recent_description": {
+    "message": "[Îñbõxƙëý õñlý sûrføçës ëmåîls thåt çõñtäîñ vérîfîçåtîõñ çõðës õr såfë måğîç lïñƙs. one two three]"
+  },
+  "accounts_recent_toggle": {
+    "message": "[Shõw rëçëñt ëmåîls one two three]"
+  },
+  "accounts_recent_limit": {
+    "message": "[Shõw $1 one two three]",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "accounts_recent_locked": {
+    "message": "[Ûñløçƙ Îñbõxƙëý tø rëvîëw rëçëñt vérîfîçåtîõñ ëmåîls. one two three]"
+  },
+  "accounts_recent_loading": {
+    "message": "[Lõåðîñğ rëçëñt ëmåîls… one two three]"
+  },
+  "accounts_recent_empty": {
+    "message": "[Ñõ rëçëñt vérîfîçåtîõñ ëmåîls ýët. one two three]"
+  },
+  "toast_code_copied": {
+    "message": "[Çõðë çõþîëð: $CODE$ one two three]",
+    "placeholders": {
+      "code": {
+        "content": "$1"
+      }
+    }
   }
 }

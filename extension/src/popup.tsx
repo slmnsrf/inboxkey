@@ -5,7 +5,7 @@
  * Designed for <200ms open time with cached data.
  */
 
-import React, { useState } from 'react'
+import React, { useMemo, useState } from 'react'
 import { LockProvider, useLockContext } from './ui/contexts/LockContext'
 import { ThemeProvider } from './ui/contexts/ThemeContext'
 import { ToastProvider, useToast } from './ui/contexts/ToastContext'
@@ -22,6 +22,7 @@ import { ClipboardService } from './ui/services/clipboard-service'
 import { LinkService } from './ui/services/link-service'
 import './popup.css'
 import type { PopupCacheMagicLink } from '@/shared/popup-messages'
+import { t } from '@/lib/i18n'
 
 const bridge = new PopupBridge()
 const clipboardService = new ClipboardService()
@@ -32,6 +33,9 @@ function PopupContent() {
   const { showToast } = useToast()
   const [isSyncing, setIsSyncing] = useState(false)
   const [isLocking, setIsLocking] = useState(false)
+
+  const hasCodes = useMemo(() => (data?.codes?.length ?? 0) > 0, [data])
+  const hasLinks = useMemo(() => (data?.magicLinks?.length ?? 0) > 0, [data])
 
   const handleCopy = async (code: string) => {
     try {
@@ -120,8 +124,11 @@ function PopupContent() {
     return <LoadingSkeleton />
   }
 
+  const bestCode = hasCodes ? data.codes[0] : null
+  const latestLink = hasLinks ? data.magicLinks[0] : null
+
   return (
-    <div className="popup-container">
+    <div className="popup-container" role="dialog" aria-label={t('popup_title')}>
       <Header
         mailboxCount={data.mailboxCount}
         lastSync={data.lastSync}
@@ -131,8 +138,28 @@ function PopupContent() {
         onLock={handleLock}
         isLocking={isLocking}
       />
-      <CodeListSection codes={data.codes} onCopy={handleCopy} />
-      <MagicLinkSection links={data.magicLinks} onOpen={handleOpenLink} />
+      <main className="popup-main" aria-live="polite">
+        <div className="popup-quick-actions" role="group" aria-label={t('popup_quick_actions')}>
+          <button
+            type="button"
+            className="popup-quick-actions__button popup-quick-actions__button--primary"
+            onClick={() => bestCode && handleCopy(bestCode.code)}
+            disabled={!bestCode}
+          >
+            {t('button_paste_best')}
+          </button>
+          <button
+            type="button"
+            className="popup-quick-actions__button popup-quick-actions__button--secondary"
+            onClick={() => latestLink && handleOpenLink(latestLink)}
+            disabled={!latestLink}
+          >
+            {t('button_open_last')}
+          </button>
+        </div>
+        <CodeListSection codes={data.codes} onCopy={handleCopy} />
+        <MagicLinkSection links={data.magicLinks} onOpen={handleOpenLink} />
+      </main>
       <PopupFooter />
       <ToastContainer />
     </div>

@@ -45,17 +45,38 @@ export function Header({
   onLock,
   isLocking = false
 }: HeaderProps) {
+  const mailboxLabel = plural('popup_mailbox', 'popup_mailboxes', mailboxCount)
+  const syncLabel = isSyncing
+    ? t('popup_syncing')
+    : t('popup_synced_at', [timeAgo(lastSync)])
+
   return (
     <header className="popup-header">
-      <div className="popup-header__top">
-        <h1 className="popup-title">{t('popup_title')}</h1>
+      <div className="popup-header__row">
+        <div className="popup-header__title-group">
+          <h1 className="popup-title">{t('popup_title')}</h1>
+          <div className="popup-header__pills" role="status">
+            <span className="header-pill" data-testid="mailbox-pill">
+              {mailboxLabel}
+            </span>
+            <span
+              className="header-pill"
+              data-testid="sync-pill"
+              aria-live="polite"
+              data-syncing={isSyncing}
+            >
+              {syncLabel}
+            </span>
+          </div>
+        </div>
         <div className="popup-header__actions">
           {showLockButton && onLock && (
             <button
+              type="button"
               onClick={onLock}
-              className={`popup-header__lock-btn ${isLocking ? 'locking' : ''}`}
-              aria-label="Lock extension"
-              title="Lock extension"
+              className="icon-button icon-button--lock"
+              aria-label={t('aria_lock_extension')}
+              title={t('aria_lock_extension')}
               disabled={isLocking}
             >
               <LockIcon />
@@ -63,28 +84,26 @@ export function Header({
           )}
           {onSync && (
             <button
+              type="button"
               onClick={onSync}
-              className={`popup-header__sync-btn ${isSyncing ? 'syncing' : ''}`}
-              aria-label="Sync now"
-              title="Sync now"
+              className={`icon-button icon-button--refresh ${isSyncing ? 'is-active' : ''}`}
+              aria-label={t('aria_manual_sync')}
+              title={t('aria_manual_sync')}
               disabled={isSyncing}
             >
               <RefreshIcon />
             </button>
           )}
           <button
+            type="button"
             onClick={() => chrome.runtime.openOptionsPage()}
-            className="popup-header__settings-btn"
-            aria-label="Open settings"
-            title="Settings"
+            className="icon-button icon-button--settings"
+            aria-label={t('aria_open_settings')}
+            title={t('aria_open_settings')}
           >
             <SettingsIcon />
           </button>
         </div>
-      </div>
-      <div className="popup-status">
-        <span className="mailbox-count">{plural('popup_mailbox', 'popup_mailboxes', mailboxCount)}</span>
-        <span className="sync-time">{isSyncing ? t('popup_syncing') : `${t('popup_synced')} ${timeAgo(lastSync)}`}</span>
       </div>
     </header>
   )

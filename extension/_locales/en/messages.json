@@ -36,9 +36,23 @@
     "message": "Synced",
     "description": "Sync status label"
   },
+  "popup_synced_at": {
+    "message": "Synced $1",
+    "description": "Sync status with relative time",
+    "placeholders": {
+      "time": {
+        "content": "$1",
+        "example": "2m ago"
+      }
+    }
+  },
   "popup_syncing": {
     "message": "Syncing...",
     "description": "Syncing status label"
+  },
+  "popup_quick_actions": {
+    "message": "Quick actions",
+    "description": "Aria label for quick action group"
   },
   "time_just_now": {
     "message": "just now",
@@ -76,6 +90,40 @@
       }
     }
   },
+  "time_just_now_short": {
+    "message": "now",
+    "description": "Short time label: just now"
+  },
+  "time_minutes_short": {
+    "message": "$COUNT$m ago",
+    "description": "Short time label: minutes ago",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "5"
+      }
+    }
+  },
+  "time_hours_short": {
+    "message": "$COUNT$h ago",
+    "description": "Short time label: hours ago",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "3"
+      }
+    }
+  },
+  "time_days_short": {
+    "message": "$COUNT$d ago",
+    "description": "Short time label: days ago",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "2"
+      }
+    }
+  },
 
   "section_recent_codes": {
     "message": "Recent Codes",
@@ -84,6 +132,26 @@
   "section_magic_links": {
     "message": "Magic Links",
     "description": "Section heading for magic links"
+  },
+  "label_from": {
+    "message": "From",
+    "description": "Metadata label for sender"
+  },
+  "label_to": {
+    "message": "To",
+    "description": "Metadata label for recipient"
+  },
+  "label_subject": {
+    "message": "Subject",
+    "description": "Metadata label for email subject"
+  },
+  "label_code": {
+    "message": "Code",
+    "description": "Metadata label for verification code"
+  },
+  "value_not_available": {
+    "message": "N/A",
+    "description": "Placeholder when value is not available"
   },
 
   "button_copy": {
@@ -94,6 +162,10 @@
     "message": "✓ Copied",
     "description": "Copied confirmation"
   },
+  "button_paste_best": {
+    "message": "Paste best code",
+    "description": "Quick action to copy best code"
+  },
   "button_open": {
     "message": "Open",
     "description": "Open link button"
@@ -101,6 +173,14 @@
   "button_opened": {
     "message": "✓ Opened",
     "description": "Opened confirmation"
+  },
+  "button_open_last": {
+    "message": "Open last link",
+    "description": "Quick action to open last magic link"
+  },
+  "button_opening": {
+    "message": "Opening...",
+    "description": "Button label while opening a link"
   },
   "button_cancel": {
     "message": "Cancel",
@@ -155,6 +235,26 @@
       }
     }
   },
+  "aria_open_link_simple": {
+    "message": "Open $ITEM$",
+    "description": "ARIA label for open link button with subject or sender",
+    "placeholders": {
+      "item": {
+        "content": "$1",
+        "example": "GitHub sign-in link"
+      }
+    }
+  },
+  "aria_received_time": {
+    "message": "Received $TIME$",
+    "description": "ARIA label for received time pill",
+    "placeholders": {
+      "time": {
+        "content": "$1",
+        "example": "2m ago"
+      }
+    }
+  },
   "aria_mailbox_count": {
     "message": "$COUNT$ connected mailboxes",
     "description": "ARIA label for mailbox count",
@@ -164,6 +264,18 @@
         "example": "2"
       }
     }
+  },
+  "aria_lock_extension": {
+    "message": "Lock InboxKey",
+    "description": "ARIA label for lock button"
+  },
+  "aria_manual_sync": {
+    "message": "Sync now",
+    "description": "ARIA label for manual sync button"
+  },
+  "aria_open_settings": {
+    "message": "Open settings",
+    "description": "ARIA label for settings button"
   },
   "aria_sync_time": {
     "message": "Last synced $TIME$",
@@ -355,10 +467,42 @@
     "message": "Following system theme ($1)",
     "description": "Status text when system theme is active"
   },
+  "settings_view_source": {
+    "message": "View Source",
+    "description": "Button label to open the project repository"
+  },
+  "settings_view_source_aria": {
+    "message": "View InboxKey source on GitHub",
+    "description": "Aria label for View Source button"
+  },
+  "settings_trust_region_label": {
+    "message": "Trust and Transparency",
+    "description": "Accessible label for trust banner"
+  },
+  "settings_trust_open_source": {
+    "message": "Open-source • Apache-2.0",
+    "description": "Trust chip highlighting open-source license"
+  },
+  "settings_trust_local_only": {
+    "message": "Local-only • Read-only",
+    "description": "Trust chip highlighting local-only, read-only access"
+  },
+  "settings_trust_safe": {
+    "message": "Safe by default",
+    "description": "Trust chip highlighting safety posture"
+  },
+  "settings_trust_summary": {
+    "message": "You can connect 1 Gmail, 1 Outlook, and up to 10 IMAP accounts.",
+    "description": "Summary note for trust banner"
+  },
 
   "accounts_panel_heading": {
     "message": "Connected Accounts",
     "description": "Heading for accounts panel"
+  },
+  "accounts_panel_summary": {
+    "message": "Gmail and Outlook are single-slot. IMAP supports multiple accounts.",
+    "description": "Summary text explaining provider limits"
   },
   "accounts_panel_empty": {
     "message": "Connect your email to start receiving verification codes",
@@ -412,6 +556,34 @@
     "message": "Not connected",
     "description": "Status badge when provider has no accounts yet"
   },
+  "accounts_status_locked": {
+    "message": "Locked",
+    "description": "Status badge when Lock Mode prevents actions"
+  },
+  "accounts_reconnect": {
+    "message": "Reconnect",
+    "description": "Button label to reconnect an email provider"
+  },
+  "accounts_disconnect": {
+    "message": "Disconnect",
+    "description": "Button label to disconnect an email provider"
+  },
+  "accounts_microcopy_gmail": {
+    "message": "Only one Gmail account can be connected.",
+    "description": "Microcopy reminder for Gmail single-slot"
+  },
+  "accounts_microcopy_outlook": {
+    "message": "Only one Outlook account can be connected.",
+    "description": "Microcopy reminder for Outlook single-slot"
+  },
+  "accounts_empty_gmail": {
+    "message": "Connect your Google account to detect codes and magic links in Gmail.",
+    "description": "Onboarding text for Gmail slot"
+  },
+  "accounts_empty_outlook": {
+    "message": "Connect your Microsoft account to detect codes and magic links in Outlook.",
+    "description": "Onboarding text for Outlook slot"
+  },
   "accounts_empty_provider": {
     "message": "No $PROVIDER$ accounts connected yet.",
     "description": "Empty state message per provider",
@@ -459,6 +631,88 @@
         "example": "5m ago"
       }
     }
+  },
+  "accounts_imap_title": {
+    "message": "IMAP Accounts",
+    "description": "Section heading for IMAP accounts"
+  },
+  "accounts_imap_description": {
+    "message": "Add up to 10 IMAP mailboxes via the InboxKey bridge. Support coming soon.",
+    "description": "Description text for IMAP section"
+  },
+  "accounts_imap_add": {
+    "message": "Add IMAP",
+    "description": "Button label to add an IMAP account"
+  },
+  "accounts_imap_counter": {
+    "message": "$USED$ / $TOTAL$ used",
+    "description": "Usage counter for IMAP slots",
+    "placeholders": {
+      "used": {
+        "content": "$1",
+        "example": "3"
+      },
+      "total": {
+        "content": "$2",
+        "example": "10"
+      }
+    }
+  },
+  "accounts_imap_placeholder": {
+    "message": "IMAP support is being wired up. Check back soon!",
+    "description": "Placeholder message when IMAP is disabled"
+  },
+  "accounts_imap_empty": {
+    "message": "No IMAP accounts connected. Click “Add IMAP” to connect one.",
+    "description": "Empty state message for IMAP list"
+  },
+  "accounts_imap_host": {
+    "message": "Host: $1",
+    "description": "Host label for IMAP row",
+    "placeholders": {
+      "host": {
+        "content": "$1",
+        "example": "imap.fastmail.com"
+      }
+    }
+  },
+  "accounts_imap_generic_host": {
+    "message": "Host information not available",
+    "description": "Fallback host message for IMAP row"
+  },
+  "accounts_recent_title": {
+    "message": "Recent Emails",
+    "description": "Section heading for recent emails list"
+  },
+  "accounts_recent_description": {
+    "message": "InboxKey only surfaces emails that contain verification codes or safe magic links.",
+    "description": "Description text for recent emails section"
+  },
+  "accounts_recent_toggle": {
+    "message": "Show recent emails",
+    "description": "Accessible label for recent emails toggle"
+  },
+  "accounts_recent_limit": {
+    "message": "Show $1",
+    "description": "Toggle label for number of recent emails to display",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "3"
+      }
+    }
+  },
+  "accounts_recent_locked": {
+    "message": "Unlock InboxKey to review recent verification emails.",
+    "description": "Message when recent emails are inaccessible due to Lock Mode"
+  },
+  "accounts_recent_loading": {
+    "message": "Loading recent emails…",
+    "description": "Loading message while fetching recent emails"
+  },
+  "accounts_recent_empty": {
+    "message": "No recent verification emails yet.",
+    "description": "Empty state message for recent emails list"
   },
 
   "security_setup_title": {
@@ -886,10 +1140,32 @@
     "message": "Buy me a coffee",
     "description": "Footer: support link"
   },
+  "footer_buy_coffee_link": {
+    "message": "Buy me a coffee",
+    "description": "Support link label styled as pill"
+  },
+  "trust_open_source": {
+    "message": "Open-source",
+    "description": "Trust tag: open-source transparency"
+  },
+  "trust_local_only": {
+    "message": "Local-only",
+    "description": "Trust tag: local-only processing"
+  },
+  "trust_read_only": {
+    "message": "Read-only",
+    "description": "Trust tag: read-only access"
+  },
 
   "toast_code_copied": {
-    "message": "✓ Code copied to clipboard",
-    "description": "Toast: code copied"
+    "message": "Code copied: $CODE$",
+    "description": "Toast: code copied",
+    "placeholders": {
+      "code": {
+        "content": "$1",
+        "example": "123456"
+      }
+    }
   },
   "toast_link_opened": {
     "message": "✓ Link opened",

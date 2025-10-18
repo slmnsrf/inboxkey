@@ -14,24 +14,15 @@ import { BuyMeACoffeeButton } from './BuyMeACoffeeButton'
 export function PopupFooter() {
   return (
     <footer className="popup-footer">
-      <div className="popup-footer__privacy">
-        <svg
-          className="popup-footer__icon"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          aria-hidden="true"
-        >
-          <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-          <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-        </svg>
-        <span>{t('footer_local_only')}</span>
+      <div className="popup-footer__trust">
+        <span className="trust-tag">{t('trust_open_source')}</span>
+        <span className="trust-tag">{t('trust_local_only')}</span>
+        <span className="trust-tag">{t('trust_read_only')}</span>
       </div>
 
       <BuyMeACoffeeButton
         variant="popup"
-        label={t('footer_buy_coffee')}
+        label={t('footer_buy_coffee_link')}
         ariaLabel={t('about_buy_coffee')}
         className="popup-footer__support"
       />

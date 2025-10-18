@@ -4,8 +4,8 @@
  * Displays a single verification code with copy button.
  */
 
-import React, { useState } from 'react'
-import { t } from '@/lib/i18n'
+import React, { useMemo, useState } from 'react'
+import { t, timeAgoShort } from '@/lib/i18n'
 import type { PopupCacheCode } from '@/shared/popup-messages'
 
 interface CodeCardProps {
@@ -25,49 +25,68 @@ export function CodeCard({ item, onCopy }: CodeCardProps) {
     }
   }
 
-  const formatTime = (timestamp: number) => {
-    const seconds = Math.floor((Date.now() - timestamp) / 1000)
-    if (seconds < 60) return t('time_just_now')
-    const minutes = Math.floor(seconds / 60)
-    if (minutes < 60) return `${minutes}m ago`
-    const hours = Math.floor(minutes / 60)
-    return `${hours}h ago`
-  }
-
-  // Parse sender and subject from source ("from@email.com - Subject")
-  const parseSource = (source: string) => {
-    const parts = source.split(' - ')
+  const meta = useMemo(() => {
+    const from = item.from ?? item.source?.split(' - ')[0] ?? ''
+    const subjectParts = item.subject
+      ? [item.subject]
+      : item.source?.split(' - ').slice(1)
+    const subject = subjectParts?.length ? subjectParts.join(' - ') : ''
     return {
-      sender: parts[0] || source,
-      subject: parts.slice(1).join(' - ') || ''
+      from,
+      to: item.to ?? undefined,
+      subject,
     }
-  }
+  }, [item.from, item.subject, item.source, item.to])
 
-  const { sender, subject } = parseSource(item.source)
+  const timeLabel = timeAgoShort(item.receivedAt)
 
   return (
-    <div className="code-card">
-      <div className="code-header">
-        <div className="code-display">{item.code}</div>
-        {item.providerName && (
-          <span className="provider-badge" data-provider={item.providerId}>
-            {item.providerName}
+    <article className="code-card" data-kind="code">
+      <div className="code-card__body">
+        <div className="card-head">
+          <span className="time-pill" aria-label={t('aria_received_time', [timeLabel])}>
+            {timeLabel}
           </span>
-        )}
+        </div>
+        <dl className="meta-grid">
+          <dt className="meta-grid__label">{t('label_from')}</dt>
+          <dd className="meta-grid__value" title={meta.from}>
+            {meta.from}
+          </dd>
+          <dt className="meta-grid__label">{t('label_to')}</dt>
+          <dd className="meta-grid__value" title={meta.to || undefined}>
+            {meta.to ?? t('value_not_available')}
+          </dd>
+          <dt className="meta-grid__label">{t('label_subject')}</dt>
+          <dd className="meta-grid__value" title={meta.subject || undefined}>
+            {meta.subject || t('value_not_available')}
+          </dd>
+          <dt className="meta-grid__label">{t('label_code')}</dt>
+          <dd className="meta-grid__value meta-grid__value--code">
+            <button
+              type="button"
+              className={`code-pill ${copying ? 'code-pill--copied' : ''}`}
+              data-code={item.code}
+              onClick={handleCopy}
+              disabled={copying}
+              aria-label={t('aria_copy_code', [item.code, meta.from || item.source])}
+            >
+              <span className="code-pill__text">{item.code}</span>
+            </button>
+          </dd>
+        </dl>
       </div>
-      <div className="code-meta">
-        <div className="code-source-sender">{sender}</div>
-        {subject && <div className="code-source-subject">{subject}</div>}
-        <div className="code-time">{formatTime(item.receivedAt)}</div>
+      <div className="code-card__actions">
+        <button
+          type="button"
+          className={`action-button action-button--primary ${copying ? 'action-button--success' : ''}`}
+          onClick={handleCopy}
+          disabled={copying}
+          data-code={item.code}
+        >
+          {copying ? t('button_copied') : t('button_copy')}
+        </button>
       </div>
-      <button
-        className={`code-copy-button ${copying ? 'code-copy-button--copied' : ''}`}
-        onClick={handleCopy}
-        disabled={copying}
-        aria-label={t('aria_copy_code', [item.code, item.source])}
-      >
-        {copying ? t('button_copied') : t('button_copy')}
-      </button>
-    </div>
+    </article>
   )
 }

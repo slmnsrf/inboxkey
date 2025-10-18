@@ -101,6 +101,26 @@ export function timeAgo(timestamp: number): string {
 }
 
 /**
+ * Format time ago in compact form (e.g., "2m ago").
+ */
+export function timeAgoShort(timestamp: number): string {
+  if (timestamp === 0) return t('time_never')
+
+  const seconds = Math.floor((Date.now() - timestamp) / 1000)
+
+  if (seconds < 60) return t('time_just_now_short')
+
+  const minutes = Math.floor(seconds / 60)
+  if (minutes < 60) return t('time_minutes_short', String(minutes))
+
+  const hours = Math.floor(minutes / 60)
+  if (hours < 24) return t('time_hours_short', String(hours))
+
+  const days = Math.floor(hours / 24)
+  return t('time_days_short', String(days))
+}
+
+/**
  * Get current UI language
  *
  * @returns Language code (e.g., 'en', 'es', 'fr')
