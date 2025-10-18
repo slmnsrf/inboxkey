@@ -44,6 +44,42 @@
   gap: var(--space-3);
 }
 
+.options-header__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.support-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-4);
+  min-height: var(--min-tap-target);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  background: var(--surface-card-muted);
+  color: var(--color-text-primary);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  text-decoration: none;
+  transition: transform 150ms ease-out, box-shadow 150ms ease-out,
+    background 150ms ease-out;
+}
+
+.support-link:hover {
+  background: var(--surface-card);
+  box-shadow: var(--shadow-sm);
+}
+
+.support-link:focus-visible {
+  outline: var(--focus-ring-width) solid var(--color-primary);
+  outline-offset: var(--focus-ring-offset);
+}
+
 .brand {
   font-size: var(--font-size-2xl);
   font-weight: var(--font-weight-semibold);
@@ -73,7 +109,74 @@
 }
 
 .options-header__support {
-  margin-left: auto;
+  margin-left: 0;
+}
+
+/* ===========================
+   TRUST BANNER
+   =========================== */
+
+.trust-banner {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border);
+  background: var(--surface-card);
+  color: var(--color-text-primary);
+  box-shadow: var(--shadow-sm);
+}
+
+.trust-banner__spacer {
+  flex: 1;
+}
+
+.trust-banner__note {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  text-align: right;
+}
+
+.trust-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-1) var(--space-3);
+  border-radius: 999px;
+  background: var(--surface-card-muted);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  letter-spacing: var(--letter-spacing-wide);
+  text-transform: uppercase;
+}
+
+@media (max-width: 768px) {
+  .options-shell {
+    padding: var(--space-5) var(--space-4);
+  }
+
+  .options-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-4);
+  }
+
+  .options-header__actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .trust-banner {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-3);
+  }
+
+  .trust-banner__note {
+    text-align: left;
+  }
 }
 
 /* ===========================

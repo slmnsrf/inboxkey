@@ -67,13 +67,38 @@ function OptionsApp() {
                     <p className="privacy-line">{t('footer_local_only')}</p>
                   </div>
                 </div>
-                <BuyMeACoffeeButton
-                  variant="options"
-                  label={t('about_buy_coffee')}
-                  ariaLabel={t('about_support_cta_aria')}
-                  className="options-header__support"
-                />
+                <div className="options-header__actions">
+                  <a
+                    className="support-link"
+                    href="https://github.com/inboxkey/extension"
+                    target="_blank"
+                    rel="noreferrer"
+                    aria-label={t('settings_view_source_aria')}
+                  >
+                    {t('settings_view_source')}
+                  </a>
+                  <BuyMeACoffeeButton
+                    variant="options"
+                    label={t('about_buy_coffee')}
+                    ariaLabel={t('about_support_cta_aria')}
+                    className="options-header__support"
+                  />
+                </div>
               </header>
+
+              <section
+                className="trust-banner"
+                role="region"
+                aria-label={t('settings_trust_region_label')}
+              >
+                <span className="trust-chip">🧩 {t('settings_trust_open_source')}</span>
+                <span className="trust-chip">🔒 {t('settings_trust_local_only')}</span>
+                <span className="trust-chip">🛡️ {t('settings_trust_safe')}</span>
+                <span className="trust-banner__spacer" aria-hidden="true" />
+                <span className="trust-banner__note">
+                  {t('settings_trust_summary')}
+                </span>
+              </section>
 
               <TabNavigation activeTab={activeTab} onTabChange={setActiveTab} />
 

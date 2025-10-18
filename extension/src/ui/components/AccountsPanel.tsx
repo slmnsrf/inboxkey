@@ -1,11 +1,11 @@
 /**
- * AccountsPanel Component
+ * AccountsPanel Component (UI Rework)
  *
- * Displays connected email accounts and allows users to add/remove mailboxes.
- * Handles OAuth flows for Gmail and Outlook providers.
+ * Presents Gmail/Outlook single-slot cards, IMAP placeholder section, and
+ * recent email activity aligned with the inboxkey-accounts-single.v2.html design.
  */
 
-import React, { useState, useEffect } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { useLockContext } from '../contexts/LockContext'
 import { useToast } from '../contexts/ToastContext'
 import { authenticateGmail } from '@/lib/providers/gmail/chrome-auth'
@@ -14,10 +14,15 @@ import { fetchGmailProfile } from '@/lib/providers/gmail/profile'
 import { fetchOutlookProfile } from '@/lib/providers/outlook/profile'
 import { isGmailConfigured } from '@/lib/providers/gmail/config'
 import { isOutlookConfigured } from '@/lib/providers/outlook/config'
-import { ProviderIcon } from './icons/ProviderIcon'
-import { LoadingSpinner } from './icons/LoadingSpinner'
 import { TrustIndicator } from './TrustIndicator'
 import { t, timeAgo } from '@/lib/i18n'
+import type { PopupCache } from '@/shared/popup-messages'
+import type { ProviderKey, ProviderSlotState, ImapAccountRow, RecentItem } from './accounts/types'
+import { ProviderSlotCard } from './accounts/ProviderSlotCard'
+import { ImapAccountsSection } from './accounts/ImapAccountsSection'
+import { RecentEmailsSection } from './accounts/RecentEmailsSection'
+
+import './accounts/AccountsPanel.css'
 
 interface MailboxInfo {
   id: string
@@ -31,35 +36,45 @@ interface MailboxInfo {
 type ConnectionStage = 'authenticating' | 'loading_profile' | 'saving' | null
 
 interface ConnectionError {
-  provider: 'gmail' | 'outlook'
+  provider: ProviderKey
   message: string
 }
 
-type ProviderConfig = {
-  id: 'gmail' | 'outlook'
-  displayName: string
-  badgeClass: string
-  mailboxes: MailboxInfo[]
-  onConnect: () => Promise<void>
-  connectLabel: string
+type PopupResponseData = PopupCache | null
+
+const PROVIDER_DISPLAY: Record<ProviderKey, { name: string; microcopy: string; empty: string }> = {
+  gmail: {
+    name: t('accounts_provider_gmail'),
+    microcopy: t('accounts_microcopy_gmail'),
+    empty: t('accounts_empty_gmail'),
+  },
+  outlook: {
+    name: t('accounts_provider_outlook'),
+    microcopy: t('accounts_microcopy_outlook'),
+    empty: t('accounts_empty_outlook'),
+  },
 }
 
 export function AccountsPanel() {
   const { isInitialized, isUnlocked } = useLockContext()
   const { showToast } = useToast()
+
   const [mailboxes, setMailboxes] = useState<MailboxInfo[]>([])
-  const [connectingProvider, setConnectingProvider] = useState<'gmail' | 'outlook' | null>(null)
+  const [connectingProvider, setConnectingProvider] = useState<ProviderKey | null>(null)
   const [connectionStage, setConnectionStage] = useState<ConnectionStage>(null)
-  const [isConnecting, setIsConnecting] = useState(false)
   const [connectionError, setConnectionError] = useState<ConnectionError | null>(null)
+  const [isConnecting, setIsConnecting] = useState(false)
+
+  const [recentLimit, setRecentLimit] = useState<3 | 5>(3)
+  const [recentItems, setRecentItems] = useState<RecentItem[]>([])
+  const [recentLoading, setRecentLoading] = useState(false)
 
   useEffect(() => {
-    // Load mailboxes if unlocked OR if passwordless mode (not initialized)
     if (isUnlocked || !isInitialized) {
-      loadMailboxes()
+      void loadMailboxes()
+      void loadRecentItems()
     }
   }, [isUnlocked, isInitialized])
-
 
   const loadMailboxes = async () => {
     try {
@@ -74,236 +89,45 @@ export function AccountsPanel() {
     }
   }
 
-  const handleConnectGmail = async () => {
-    // Prevent race conditions - only one connection at a time
-    if (isConnecting) {
-      console.log('[AccountsPanel] Connection already in progress, ignoring')
-      return
-    }
-
+  const loadRecentItems = async () => {
+    setRecentLoading(true)
     try {
-      // Clear any previous errors
-      setConnectionError(null)
+      const response = (await chrome.runtime.sendMessage({ type: 'GET_POPUP_DATA' })) as {
+        success: boolean
+        data?: PopupResponseData
+        error?: string
+      }
 
-      // Validate OAuth configuration
-      if (!isGmailConfigured()) {
-        console.error('[AccountsPanel] Gmail OAuth client ID not configured')
-        const errorMsg = t('toast_connect_invalid_credentials')
-        setConnectionError({ provider: 'gmail', message: errorMsg })
-        showToast(errorMsg, 'error')
+      if (!response.success || !response.data) {
+        console.warn('[AccountsPanel] No recent popup data available:', response.error)
+        setRecentItems([])
         return
       }
 
-      console.log('[AccountsPanel] Starting Gmail connection...')
-      setIsConnecting(true)
-      setConnectingProvider('gmail')
-      setConnectionStage('authenticating')
-
-      // Step 1: Authenticate with OAuth
-      console.log('[AccountsPanel] Calling authenticateGmail()...')
-      const tokens = await authenticateGmail()
-      console.log('[AccountsPanel] OAuth tokens received:', {
-        hasAccessToken: !!tokens.accessToken,
-        hasRefreshToken: !!tokens.refreshToken,
-        expiresIn: tokens.expiresIn
-      })
-
-      setConnectionStage('loading_profile')
-
-      // Step 2: Fetch user profile
-      console.log('[AccountsPanel] Fetching Gmail profile...')
-      const email = await fetchGmailProfile(tokens.accessToken)
-      console.log('[AccountsPanel] Gmail profile email:', email)
-      console.log('[AccountsPanel] Current mailboxes:', mailboxes.map(m => `${m.email} (${m.providerId})`))
-
-      // Check for duplicate
-      const isDuplicate = mailboxes.some(mb => mb.email === email && mb.providerId === 'gmail')
-      console.log('[AccountsPanel] Is duplicate?:', isDuplicate)
-
-      if (isDuplicate) {
-        console.warn('[AccountsPanel] Duplicate Gmail account detected, showing error toast')
-        showToast(t('toast_connect_duplicate'), 'error')
-        return
-      }
-
-      setConnectionStage('saving')
-
-      // Step 3: Store mailbox
-      console.log('[AccountsPanel] Storing mailbox for:', email)
-      const response = await chrome.runtime.sendMessage({
-        type: 'STORE_MAILBOX',
-        provider: 'gmail',
-        email,
-        tokens
-      })
-      console.log('[AccountsPanel] Store mailbox response:', response)
-
-      if (response.success) {
-        console.log('[AccountsPanel] Gmail account connected successfully')
-        showToast(t('toast_gmail_connected'), 'success')
-        await loadMailboxes()
-      } else {
-        console.error('[AccountsPanel] Store mailbox failed:', response.error)
-        showToast(response.error || t('toast_connect_failed'), 'error')
-      }
+      setRecentItems(transformRecentItems(response.data))
     } catch (error) {
-      console.error('[AccountsPanel] Gmail connection error:', error)
-      console.error('[AccountsPanel] Error type:', error instanceof Error ? error.constructor.name : typeof error)
-      console.error('[AccountsPanel] Error message:', error instanceof Error ? error.message : String(error))
-      console.error('[AccountsPanel] Error stack:', error instanceof Error ? error.stack : 'No stack trace')
-
-      let message = t('toast_connect_failed')
-      let detailedMessage = ''
-
-      if (error instanceof Error) {
-        detailedMessage = error.message
-
-        // Handle specific error cases
-        if (error.message.includes('cancelled') || error.message.includes('OAuth cancelled')) {
-          message = t('toast_oauth_cancelled')
-        } else if (error.message.includes('PROFILE_')) {
-          message = t('toast_connect_profile_failed')
-        } else if (error.message.includes('network') || error.message.includes('Network error')) {
-          message = t('toast_connect_network_error')
-        } else if (error.message.includes('credentials') || error.message.includes('invalid_client')) {
-          message = t('toast_connect_invalid_credentials')
-        } else if (error.message === 'No redirect URL received from OAuth flow') {
-          message = t('toast_connect_popup_blocked')
-        } else {
-          // Include actual error in message for debugging
-          message = `${t('toast_connect_failed')}: ${error.message}`
-        }
-      }
-
-      console.error('[AccountsPanel] User-facing error message:', message)
-      setConnectionError({ provider: 'gmail', message })
-      showToast(message, 'error')
+      console.error('[AccountsPanel] Failed to load recent items:', error)
+      setRecentItems([])
     } finally {
-      setIsConnecting(false)
-      setConnectingProvider(null)
-      setConnectionStage(null)
+      setRecentLoading(false)
     }
   }
 
-  const handleConnectOutlook = async () => {
-    // Prevent race conditions - only one connection at a time
-    if (isConnecting) {
-      console.log('[AccountsPanel] Connection already in progress, ignoring')
-      return
-    }
-
-    try {
-      // Clear any previous errors
-      setConnectionError(null)
-
-      // Validate OAuth configuration
-      if (!isOutlookConfigured()) {
-        console.error('[AccountsPanel] Outlook OAuth client ID not configured')
-        const errorMsg = t('toast_connect_invalid_credentials')
-        setConnectionError({ provider: 'outlook', message: errorMsg })
-        showToast(errorMsg, 'error')
-        return
-      }
-
-      setIsConnecting(true)
-      setConnectingProvider('outlook')
-      setConnectionStage('authenticating')
-
-      // Step 1: Authenticate with OAuth
-      const tokens = await authenticateOutlook()
-
-      setConnectionStage('loading_profile')
-
-      // Step 2: Fetch user profile
-      const email = await fetchOutlookProfile(tokens.accessToken)
-
-      // Check for duplicate
-      if (mailboxes.some(mb => mb.email === email && mb.providerId === 'outlook')) {
-        showToast(t('toast_connect_duplicate'), 'error')
-        return
-      }
-
-      setConnectionStage('saving')
-
-      // Step 3: Store mailbox
-      const response = await chrome.runtime.sendMessage({
-        type: 'STORE_MAILBOX',
-        provider: 'outlook',
-        email,
-        tokens
-      })
-
-      if (response.success) {
-        showToast(t('toast_outlook_connected'), 'success')
-        await loadMailboxes()
-      } else {
-        showToast(response.error || t('toast_connect_failed'), 'error')
-      }
-    } catch (error) {
-      console.error('[AccountsPanel] Outlook connection error:', error)
-
-      let message = t('toast_connect_failed')
-
-      if (error instanceof Error) {
-        // Handle specific error cases
-        if (error.message.includes('cancelled') || error.message.includes('OAuth cancelled')) {
-          message = t('toast_oauth_cancelled')
-        } else if (error.message.includes('PROFILE_')) {
-          message = t('toast_connect_profile_failed')
-        } else if (error.message.includes('network') || error.message.includes('Network error')) {
-          message = t('toast_connect_network_error')
-        } else if (error.message.includes('credentials') || error.message.includes('invalid_client')) {
-          message = t('toast_connect_invalid_credentials')
-        } else if (error.message === 'OAuth cancelled by user') {
-          message = t('toast_oauth_cancelled')
-        }
-      }
-
-      setConnectionError({ provider: 'outlook', message })
-      showToast(message, 'error')
-    } finally {
-      setIsConnecting(false)
-      setConnectingProvider(null)
-      setConnectionStage(null)
-    }
+  const handleRecentLimitChange = (limit: 3 | 5) => {
+    setRecentLimit(limit)
+    void chrome.storage.local.set({ accounts_recent_limit: limit }).catch((error) => {
+      console.warn('[AccountsPanel] Failed to persist recent limit:', error)
+    })
   }
 
-  const handleRemoveMailbox = async (mailboxId: string) => {
-    if (!confirm(t('accounts_remove_confirm'))) {
-      return
-    }
-
-    try {
-      const response = await chrome.runtime.sendMessage({
-        type: 'REMOVE_MAILBOX',
-        mailboxId
-      })
-
-      if (response.success) {
-        showToast(t('toast_account_disconnected'), 'success')
-        await loadMailboxes()
-      } else {
-        showToast(t('toast_disconnect_failed'), 'error')
+  useEffect(() => {
+    void chrome.storage.local.get('accounts_recent_limit').then((result) => {
+      const saved = result.accounts_recent_limit
+      if (saved === 3 || saved === 5) {
+        setRecentLimit(saved)
       }
-    } catch (error) {
-      showToast(t('toast_disconnect_failed'), 'error')
-    }
-  }
-
-  // Only show locked state if password IS SET but user is locked
-  // Passwordless users (!isInitialized) should see connect buttons
-  if (isInitialized && !isUnlocked) {
-    return (
-      <div className="accounts-panel accounts-panel--locked">
-        <p className="accounts-panel__lock-message">
-          {t('accounts_panel_locked')}
-        </p>
-      </div>
-    )
-  }
-
-  const gmailMailboxes = mailboxes.filter(mb => mb.providerId === 'gmail')
-  const outlookMailboxes = mailboxes.filter(mb => mb.providerId === 'outlook')
+    })
+  }, [])
 
   const getProviderStageLabel = () => {
     if (!connectionStage) return ''
@@ -313,162 +137,256 @@ export function AccountsPanel() {
     return ''
   }
 
-  const providers: ProviderConfig[] = [
-    {
-      id: 'gmail',
-      displayName: t('accounts_provider_gmail'),
-      badgeClass: 'badge badge-gmail',
-      mailboxes: gmailMailboxes,
-      onConnect: handleConnectGmail,
-      connectLabel: t('accounts_connect_gmail')
-    },
-    {
-      id: 'outlook',
-      displayName: t('accounts_provider_outlook'),
-      badgeClass: 'badge badge-outlook',
-      mailboxes: outlookMailboxes,
-      onConnect: handleConnectOutlook,
-      connectLabel: t('accounts_connect_outlook')
-    }
-  ]
-
-  const renderMailboxList = (config: ProviderConfig) => {
-    if (config.mailboxes.length === 0) {
-      return (
-        <div className="account-card__empty" role="note">
-          <p>{t('accounts_empty_provider', config.displayName)}</p>
-        </div>
-      )
+  const handleConnect = async (provider: ProviderKey, mode: 'connect' | 'reconnect' = 'connect') => {
+    if (isConnecting) {
+      console.log('[AccountsPanel] Connection already in progress, ignoring')
+      return
     }
 
+    try {
+      setConnectionError(null)
+
+      if (provider === 'gmail' && !isGmailConfigured()) {
+        const errorMsg = t('toast_connect_invalid_credentials')
+        setConnectionError({ provider, message: errorMsg })
+        showToast(errorMsg, 'error')
+        return
+      }
+
+      if (provider === 'outlook' && !isOutlookConfigured()) {
+        const errorMsg = t('toast_connect_invalid_credentials')
+        setConnectionError({ provider, message: errorMsg })
+        showToast(errorMsg, 'error')
+        return
+      }
+
+      setIsConnecting(true)
+      setConnectingProvider(provider)
+      setConnectionStage('authenticating')
+
+      const authenticate =
+        provider === 'gmail' ? authenticateGmail : authenticateOutlook
+      const fetchProfile =
+        provider === 'gmail' ? fetchGmailProfile : fetchOutlookProfile
+
+      const tokens = await authenticate()
+      setConnectionStage('loading_profile')
+
+      const email = await fetchProfile(tokens.accessToken)
+      const existing = mailboxes.find((mb) => mb.providerId === provider)
+
+      if (mode === 'connect' && existing) {
+        showToast(t('toast_connect_duplicate'), 'error')
+        setConnectionError({
+          provider,
+          message: t('toast_connect_duplicate'),
+        })
+        return
+      }
+
+      setConnectionStage('saving')
+      const storeResponse = await chrome.runtime.sendMessage({
+        type: 'STORE_MAILBOX',
+        provider,
+        email,
+        tokens,
+      })
+
+      if (storeResponse.success) {
+        if (existing) {
+          await chrome.runtime.sendMessage({
+            type: 'REMOVE_MAILBOX',
+            mailboxId: existing.id,
+          })
+        }
+
+        showToast(
+          provider === 'gmail' ? t('toast_gmail_connected') : t('toast_outlook_connected'),
+          'success'
+        )
+        await loadMailboxes()
+        await loadRecentItems()
+      } else {
+        showToast(storeResponse.error || t('toast_connect_failed'), 'error')
+      }
+    } catch (error) {
+      console.error('[AccountsPanel] Connection error:', error)
+      const message = getConnectionErrorMessage(error)
+      setConnectionError({ provider, message })
+      showToast(message, 'error')
+    } finally {
+      setIsConnecting(false)
+      setConnectingProvider(null)
+      setConnectionStage(null)
+    }
+  }
+
+  const handleDisconnect = async (provider: ProviderKey) => {
+    const mailbox = mailboxes.find((mb) => mb.providerId === provider)
+    if (!mailbox) return
+
+    if (!confirm(t('accounts_remove_confirm'))) {
+      return
+    }
+
+    try {
+      const response = await chrome.runtime.sendMessage({
+        type: 'REMOVE_MAILBOX',
+        mailboxId: mailbox.id,
+      })
+
+      if (response.success) {
+        showToast(t('toast_account_disconnected'), 'success')
+        await loadMailboxes()
+        await loadRecentItems()
+      } else {
+        showToast(t('toast_disconnect_failed'), 'error')
+      }
+    } catch (error) {
+      console.error('[AccountsPanel] Disconnect failed:', error)
+      showToast(t('toast_disconnect_failed'), 'error')
+    }
+  }
+
+  const providerSlots = useMemo<ProviderSlotState[]>(() => {
+    return (['gmail', 'outlook'] as ProviderKey[]).map((provider) => {
+      const display = PROVIDER_DISPLAY[provider]
+      const mailbox = mailboxes.find((mb) => mb.providerId === provider)
+      const error =
+        connectionError && connectionError.provider === provider
+          ? connectionError.message
+          : null
+
+      const isLocked = isInitialized && !isUnlocked
+      const isBusy = connectingProvider === provider && connectionStage !== null
+      const status: ProviderSlotState['status'] = isLocked
+        ? 'locked'
+        : isBusy
+        ? 'connecting'
+        : mailbox
+        ? 'connected'
+        : 'disconnected'
+
+      const infoLine =
+        mailbox && mailbox.email
+          ? mailbox.email
+          : display.empty
+
+      const lastSyncedLabel =
+        mailbox && mailbox.lastSyncedAt
+          ? timeAgo(mailbox.lastSyncedAt)
+          : undefined
+
+      return {
+        provider,
+        displayName: display.name,
+        status,
+        email: mailbox?.email,
+        infoLine,
+        microcopy: display.microcopy,
+        lastSyncedLabel,
+        isBusy,
+        stageLabel: isBusy ? getProviderStageLabel() : undefined,
+        errorMessage: error,
+        connectDisabled: isLocked,
+      }
+    })
+  }, [
+    mailboxes,
+    connectionError,
+    connectingProvider,
+    connectionStage,
+    isInitialized,
+    isUnlocked,
+  ])
+
+  const imapAccounts: ImapAccountRow[] = useMemo(() => {
+    return mailboxes
+      .filter((mb) => mb.providerId === 'imap-bridge')
+      .map((mb) => ({
+        id: mb.id,
+        email: mb.email,
+        lastSyncedLabel: mb.lastSyncedAt ? timeAgo(mb.lastSyncedAt) : undefined,
+      }))
+  }, [mailboxes])
+
+  const handleCopyCode = async (item: RecentItem) => {
+    if (!item.code) return
+    try {
+      await navigator.clipboard.writeText(item.code)
+      await chrome.runtime.sendMessage({ type: 'MARK_CODE_USED', code: item.code })
+      showToast(t('toast_code_copied', item.code), 'success')
+    } catch (error) {
+      console.error('[AccountsPanel] Failed to copy code:', error)
+      showToast(t('toast_error_copy'), 'error')
+    }
+  }
+
+  const handleOpenLink = async (item: RecentItem) => {
+    if (!item.url) return
+    try {
+      await chrome.runtime.sendMessage({ type: 'MARK_LINK_OPENED', url: item.url })
+      await chrome.tabs.create({ url: item.url })
+      showToast(t('toast_link_opened'), 'success')
+    } catch (error) {
+      console.error('[AccountsPanel] Failed to open link:', error)
+      showToast(t('toast_error_link'), 'error')
+    }
+  }
+
+  if (isInitialized && !isUnlocked) {
     return (
-      <ul className="account-card__list">
-        {config.mailboxes.map(mailbox => (
-          <li key={mailbox.id} className="account-card__list-item">
-            <div className="account-card__identity">
-              <span className="account-card__email">{mailbox.email}</span>
-              <span className="account-card__meta">
-                {t('accounts_last_synced', timeAgo(mailbox.lastSyncedAt))}
-              </span>
-            </div>
-            <button
-              onClick={() => handleRemoveMailbox(mailbox.id)}
-              className="account-card__disconnect"
-              aria-label={t('aria_remove_account', mailbox.email)}
-            >
-              {t('accounts_remove_button')}
-            </button>
-          </li>
-        ))}
-      </ul>
+      <div className="accounts-panel accounts-panel--locked">
+        <p className="accounts-panel__lock-message">{t('accounts_panel_locked')}</p>
+      </div>
     )
   }
 
   return (
     <div className="accounts-panel">
-      <header className="accounts-panel__header">
-        <h2 className="accounts-panel__heading">{t('accounts_panel_heading')}</h2>
-        {mailboxes.length === 0 && (
-          <p className="accounts-panel__description">{t('accounts_panel_empty')}</p>
-        )}
-      </header>
+      <section className="accounts-section" aria-labelledby="connected-accounts-title">
+        <div className="accounts-section__header">
+          <div>
+            <h2 id="connected-accounts-title" className="accounts-section__title">
+              {t('accounts_panel_heading')}
+            </h2>
+            <p className="accounts-section__description">
+              {t('accounts_panel_summary')}
+            </p>
+          </div>
+        </div>
 
-      <div className="accounts-panel__cards">
-        {providers.map(provider => {
-          const isProviderConnecting = connectingProvider === provider.id
-          const error =
-            connectionError && connectionError.provider === provider.id
-              ? connectionError.message
-              : null
-          const isActive = provider.mailboxes.length > 0
-          const statusLabel = isActive
-            ? t('accounts_status_connected')
-            : t('accounts_status_not_connected')
-          const statusIcon = isActive ? '✓' : '✕'
+        <div className="provider-grid">
+          {providerSlots.map((slot) => (
+            <ProviderSlotCard
+              key={slot.provider}
+              slot={slot}
+              onConnect={() => handleConnect(slot.provider, 'connect')}
+              onReconnect={() => handleConnect(slot.provider, 'reconnect')}
+              onDisconnect={() => handleDisconnect(slot.provider)}
+            />
+          ))}
+        </div>
+      </section>
 
-          return (
-            <article key={provider.id} className="account-card">
-              <div className="account-card__head">
-                <div>
-                  <div className="account-card__provider">
-                    {provider.displayName}{' '}
-                    <span className={provider.badgeClass} aria-hidden="true">
-                      {provider.displayName}
-                    </span>
-                  </div>
-                </div>
-                <span
-                  className={`account-card__status ${
-                    isActive
-                      ? 'account-card__status--active'
-                      : 'account-card__status--inactive'
-                  }`}
-                  aria-live="polite"
-                >
-                  <span aria-hidden="true">{statusIcon}</span>
-                  <span>{statusLabel}</span>
-                </span>
-              </div>
+      <ImapAccountsSection
+        accounts={imapAccounts}
+        disabled
+        isLocked={isInitialized && !isUnlocked}
+      />
 
-              {renderMailboxList(provider)}
-
-              <div className="account-card__actions">
-                <button
-                  onClick={provider.onConnect}
-                  disabled={isProviderConnecting || isConnecting}
-                  className={`btn ${
-                    provider.id === 'gmail' ? 'btn-gmail' : 'btn-outlook'
-                  } account-card__connect ${isProviderConnecting ? 'account-card__connect--loading' : ''}`}
-                  aria-label={
-                    provider.id === 'gmail' ? t('aria_connect_gmail') : t('aria_connect_outlook')
-                  }
-                  aria-busy={isProviderConnecting}
-                  aria-describedby={
-                    error ? `${provider.id}-connection-error` : undefined
-                  }
-                  aria-invalid={Boolean(error)}
-                >
-                  {isProviderConnecting ? (
-                    <>
-                      <LoadingSpinner size="small" />
-                      {getProviderStageLabel()}
-                    </>
-                  ) : (
-                    <>
-                      <ProviderIcon provider={provider.id} />
-                      {provider.connectLabel}
-                    </>
-                  )}
-                </button>
-              </div>
-
-              {error && (
-                <div
-                  id={`${provider.id}-connection-error`}
-                  className="account-card__error"
-                  role="alert"
-                >
-                  <svg
-                    className="account-card__error-icon"
-                    viewBox="0 0 24 24"
-                    aria-hidden="true"
-                  >
-                    <path
-                      fill="currentColor"
-                      d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"
-                    />
-                  </svg>
-                  <span>{error}</span>
-                </div>
-              )}
-            </article>
-          )
-        })}
-      </div>
+      <RecentEmailsSection
+        items={recentItems}
+        limit={recentLimit}
+        onLimitChange={handleRecentLimitChange}
+        onCopyCode={handleCopyCode}
+        onOpenLink={handleOpenLink}
+        isLocked={isInitialized && !isUnlocked}
+        loading={recentLoading}
+      />
 
       <TrustIndicator />
 
-      {/* Live region for screen reader announcements */}
       <div className="sr-only" role="status" aria-live="polite" aria-atomic="true">
         {connectingProvider && connectionStage && (
           <>
@@ -482,4 +400,50 @@ export function AccountsPanel() {
       </div>
     </div>
   )
+}
+
+function transformRecentItems(cache: PopupCache): RecentItem[] {
+  const codes = (cache.codes || []).map<RecentItem>((code) => ({
+    id: `code:${code.code}:${code.receivedAt}`,
+    kind: 'code',
+    provider: mapProvider(code.providerId),
+    from: code.from,
+    subject: code.subject,
+    receivedAt: code.receivedAt,
+    receivedLabel: timeAgo(code.receivedAt),
+    code: code.code,
+  }))
+
+  const links = (cache.magicLinks || []).map<RecentItem>((link) => ({
+    id: `link:${link.url}:${link.receivedAt}`,
+    kind: 'link',
+    provider: mapProvider(link.providerId),
+    from: link.from,
+    subject: link.subject,
+    receivedAt: link.receivedAt,
+    receivedLabel: timeAgo(link.receivedAt),
+    url: link.url,
+    domain: link.source,
+  }))
+
+  return [...codes, ...links].sort((a, b) => b.receivedAt - a.receivedAt)
+}
+
+function mapProvider(providerId?: string): 'gmail' | 'outlook' | 'imap' | undefined {
+  if (providerId === 'gmail' || providerId === 'outlook') return providerId
+  if (providerId === 'imap-bridge') return 'imap'
+  return undefined
+}
+
+function getConnectionErrorMessage(error: unknown): string {
+  if (error instanceof Error) {
+    if (error.message.includes('cancelled')) return t('toast_oauth_cancelled')
+    if (error.message.includes('PROFILE_')) return t('toast_connect_profile_failed')
+    if (error.message.includes('network')) return t('toast_connect_network_error')
+    if (error.message.includes('credentials') || error.message.includes('invalid_client')) {
+      return t('toast_connect_invalid_credentials')
+    }
+    return `${t('toast_connect_failed')}: ${error.message}`
+  }
+  return t('toast_connect_failed')
 }
