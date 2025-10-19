@@ -6,8 +6,6 @@
  * recent verification codes and notifies the content script when a suitable
  * candidate is found.
  */
-
-import { KeyManager } from "@/lib/crypto/key-manager"
 import { findBestMatchingCode } from "@/lib/matching/code-matcher"
 import { StorageFactory } from "@/lib/storage/storage-factory"
 import { EmailPollingService } from "@/lib/services/email-polling-service"
@@ -274,20 +272,11 @@ export class SessionController {
   }
 
   /**
-   * Poll for codes. Works in both password-protected and passwordless modes.
-   * Returns null if locked (password mode) or no match found.
+   * Poll for codes and return best match, or null if no match found.
    */
   private async pollForCode(
     session: SessionState
   ): Promise<SessionCodeResult | null> {
-    const keyManager = KeyManager.getInstance()
-
-    // Skip polling if extension is locked
-    if (keyManager.isLocked()) {
-      console.log("[SessionController] Extension locked, skipping poll")
-      return null
-    }
-
     try {
       // Get appropriate storage for current mode (plaintext or encrypted)
       const storage = await StorageFactory.create()

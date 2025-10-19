@@ -1,14 +1,13 @@
 /**
  * InboxKey Options Page
  *
- * Settings page for configuring Lock Mode and security options.
+ * Settings page for managing accounts, appearance, and security information.
  */
 
 import React, { useState, useEffect } from 'react'
-import { LockProvider } from './ui/contexts/LockContext'
 import { ToastProvider } from './ui/contexts/ToastContext'
 import { ThemeProvider } from './ui/contexts/ThemeContext'
-import { SecuritySettings } from './ui/components/security'
+import { SecurityInfo } from './ui/components/security/SecurityInfo'
 import { TabNavigation, type Tab } from './ui/components/TabNavigation'
 import { AboutSection } from './ui/components/AboutSection'
 import { AccountsPanel } from './ui/components/AccountsPanel'
@@ -17,6 +16,7 @@ import { DataManagement } from './ui/components/DataManagement'
 import { BuyMeACoffeeButton } from './ui/components/BuyMeACoffeeButton'
 import { t } from './lib/i18n'
 import './options.css'
+import './ui/components/security/SecurityInfo.css'
 
 function OptionsApp() {
   const [mailboxCount, setMailboxCount] = useState<number | null>(null)
@@ -51,9 +51,8 @@ function OptionsApp() {
 
   return (
     <ThemeProvider>
-      <LockProvider>
-        <ToastProvider>
-          <div className="options-container">
+      <ToastProvider>
+        <div className="options-container">
             <div className="options-shell">
               <header className="options-header" aria-labelledby="options-title">
                 <div className="options-header__identity">
@@ -123,7 +122,7 @@ function OptionsApp() {
                   className="tab-panel"
                 >
                   <section className="section">
-                    <SecuritySettings />
+                    <SecurityInfo />
                   </section>
                 </div>
 
@@ -161,7 +160,6 @@ function OptionsApp() {
             </div>
           </div>
         </ToastProvider>
-      </LockProvider>
     </ThemeProvider>
   )
 }

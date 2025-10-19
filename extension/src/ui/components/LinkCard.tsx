@@ -41,7 +41,7 @@ export function LinkCard({ item, onOpen }: LinkCardProps) {
   const timeLabel = timeAgoShort(item.receivedAt)
 
   return (
-    <article className="link-card" data-kind="link">
+    <article className="link-card" data-kind="link" aria-labelledby={`link-${item.id}-from`}>
       <div className="link-card__body">
         <div className="card-head">
           <span className="time-pill" aria-label={t('aria_received_time', [timeLabel])}>
@@ -50,7 +50,7 @@ export function LinkCard({ item, onOpen }: LinkCardProps) {
         </div>
         <dl className="meta-grid">
           <dt className="meta-grid__label">{t('label_from')}</dt>
-          <dd className="meta-grid__value" title={meta.from}>
+          <dd id={`link-${item.id}-from`} className="meta-grid__value" title={meta.from}>
             {meta.from}
           </dd>
           <dt className="meta-grid__label">{t('label_to')}</dt>

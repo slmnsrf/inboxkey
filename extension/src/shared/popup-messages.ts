@@ -119,14 +119,6 @@ export interface PopupCache {
 }
 
 /**
- * Lock status with initialization state
- */
-export interface LockStatusResponse {
-  isInitialized: boolean
-  isUnlocked: boolean
-}
-
-/**
  * Mailbox information returned to popup (without sensitive tokens)
  */
 export interface MailboxInfo {
@@ -143,15 +135,9 @@ export interface MailboxInfo {
  */
 export type PopupRequest =
   | { type: 'GET_POPUP_DATA' }
-  | { type: 'GET_LOCK_STATUS' }
   | { type: 'TRIGGER_SYNC' }
   | { type: 'MARK_CODE_USED'; code: string }
   | { type: 'MARK_LINK_OPENED'; url: string }
-  | { type: 'INITIALIZE_PASSWORD'; password: string }
-  | { type: 'UNLOCK'; password: string }
-  | { type: 'LOCK' }
-  | { type: 'CHANGE_PASSWORD'; currentPassword: string; newPassword: string }
-  | { type: 'DISABLE_PASSWORD'; password: string }
   | { type: 'GET_MAILBOXES' }
 
 /**
@@ -159,8 +145,6 @@ export type PopupRequest =
  */
 export type PopupResponse =
   | { success: true; data: PopupCache }
-  | { success: true; locked: boolean }
-  | { success: true; isInitialized: boolean; isUnlocked: boolean }
   | { success: true; mailboxes: MailboxInfo[] }
   | { success: true }
   | { success: false; error: string }

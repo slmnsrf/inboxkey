@@ -3,13 +3,12 @@
  * Entry point for the MV3 background service worker.
  *
  * Responsibilities:
- * - Manage lock/unlock workflow (KeyManager)
  * - Coordinate watch sessions via SessionController
  * - Maintain keep-alive ports from content scripts
+ * - Handle extension lifecycle events
  */
 
-import { KeyManager } from "@/lib/crypto/key-manager"
-import { getSavedSalt } from "@/lib/crypto/lock-state"
+import { needsMigration } from "@/lib/storage/migration-to-plaintext"
 import {
   SessionController,
   type SessionCompletion,
@@ -52,8 +51,7 @@ const sessionContexts = new Map<string, WatchPortContext>()
 // Create popup cache manager and handler
 const popupCacheManager = new PopupCacheManager()
 const popupMessageHandler = new PopupMessageHandler(
-  popupCacheManager,
-  KeyManager.getInstance()
+  popupCacheManager
 )
 
 const sessionController = new SessionController(
@@ -109,7 +107,7 @@ if (typeof chrome.identity !== "undefined" && chrome.identity?.getRedirectURL) {
 }
 
 // Auto-open options page on first install
-chrome.runtime.onInstalled.addListener((details) => {
+chrome.runtime.onInstalled.addListener(async (details) => {
   console.log("[InboxKey] SW onInstalled fired:", details.reason)
   console.log("[InboxKey] Installation timestamp:", Date.now())
 
@@ -118,11 +116,38 @@ chrome.runtime.onInstalled.addListener((details) => {
       url: chrome.runtime.getURL('options.html?tab=accounts')
     })
   }
+
+  // Check for migration needs on update
+  if (details.reason === 'update') {
+    const migrationNeeded = await needsMigration()
+    if (migrationNeeded) {
+      console.log('[InboxKey] Migration needed - setting badge')
+      chrome.action.setBadgeText({ text: '!' })
+      chrome.action.setBadgeBackgroundColor({ color: '#FF6B6B' })
+
+      // Show notification
+      chrome.notifications.create('migration-needed', {
+        type: 'basic',
+        iconUrl: chrome.runtime.getURL('icon-128.png'),
+        title: 'InboxKey Update',
+        message: 'Action required: Click extension icon to migrate your data',
+        priority: 2
+      })
+    }
+  }
 })
 
-chrome.runtime.onStartup.addListener(() => {
+chrome.runtime.onStartup.addListener(async () => {
   console.log("[InboxKey] SW onStartup fired at:", new Date().toISOString())
   startupTimestamp = Date.now()
+
+  // Check for migration needs on startup
+  const migrationNeeded = await needsMigration()
+  if (migrationNeeded) {
+    console.log('[InboxKey] Migration needed - setting badge')
+    chrome.action.setBadgeText({ text: '!' })
+    chrome.action.setBadgeBackgroundColor({ color: '#FF6B6B' })
+  }
 })
 
 // Validate Chrome APIs are available
@@ -177,42 +202,13 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 
   lastMessageTimestamp = now
 
-  if (msg.type === "INITIALIZE_LOCK") {
-    handleInitializeLock(msg, sendResponse)
-    return true
-  }
-
-  if (msg.type === "UNLOCK") {
-    handleUnlock(msg, sendResponse)
-    return true
-  }
-
-  if (msg.type === "LOCK") {
-    handleLock(sendResponse)
-    return false
-  }
-
-  if (msg.type === "CHECK_LOCK_STATUS") {
-    handleCheckLockStatus(sendResponse)
-    return false
-  }
-
-  if (msg.type === "ACTIVITY") {
-    handleActivity(sendResponse)
-    return false
-  }
-
   // Handle popup messages
   if (
     msg.type === "GET_POPUP_DATA" ||
-    msg.type === "GET_LOCK_STATUS" ||
     msg.type === "TRIGGER_SYNC" ||
     msg.type === "MARK_CODE_USED" ||
     msg.type === "MARK_LINK_OPENED" ||
-    msg.type === "GET_MAILBOXES" ||
-    msg.type === "INITIALIZE_PASSWORD" ||
-    msg.type === "CHANGE_PASSWORD" ||
-    msg.type === "DISABLE_PASSWORD"
+    msg.type === "GET_MAILBOXES"
   ) {
     popupMessageHandler
       .handleMessage(msg)
@@ -494,116 +490,11 @@ function getOrCreateContext(tabId: number): WatchPortContext {
 }
 
 /**
- * Handle INITIALIZE_LOCK requests.
- */
-function handleInitializeLock(msg: any, sendResponse: (response: any) => void) {
-  const { password } = msg
-
-  if (!password) {
-    sendResponse({ success: false, error: "PIN required" })
-    return
-  }
-
-  ;(async () => {
-    try {
-      const keyManager = KeyManager.getInstance()
-      const { salt } = await keyManager.initialize(password)
-
-      sendResponse({ success: true, salt: Array.from(salt) })
-    } catch (error) {
-      console.error("[InboxKey] Failed to initialize lock:", error)
-      sendResponse({
-        success: false,
-        error: error instanceof Error ? error.message : String(error),
-      })
-    }
-  })().catch((error) => {
-    console.error("[InboxKey] initializeLock unhandled rejection:", error)
-  })
-}
-
-/**
- * Handle UNLOCK requests.
- */
-function handleUnlock(msg: any, sendResponse: (response: any) => void) {
-  const { password } = msg
-
-  if (!password) {
-    sendResponse({ success: false, error: "PIN required" })
-    return
-  }
-
-  ;(async () => {
-    try {
-      const salt = await getSavedSalt()
-
-      if (!salt) {
-        sendResponse({ success: false, error: "Extension not initialized" })
-        return
-      }
-
-      const keyManager = KeyManager.getInstance()
-      const unlocked = await keyManager.unlock(password, salt)
-
-      if (unlocked) {
-        sendResponse({ success: true })
-      } else {
-        sendResponse({ success: false, error: "Incorrect PIN" })
-      }
-    } catch (error) {
-      console.error("[InboxKey] Failed to unlock:", error)
-      sendResponse({
-        success: false,
-        error: error instanceof Error ? error.message : String(error),
-      })
-    }
-  })().catch((error) => {
-    console.error("[InboxKey] unlock unhandled rejection:", error)
-  })
-}
-
-/**
- * Handle LOCK requests.
- */
-function handleLock(sendResponse: (response: any) => void) {
-  const keyManager = KeyManager.getInstance()
-  keyManager.lock()
-  sendResponse({ success: true })
-}
-
-/**
- * Handle CHECK_LOCK_STATUS requests.
- */
-function handleCheckLockStatus(sendResponse: (response: any) => void) {
-  const keyManager = KeyManager.getInstance()
-  sendResponse({ isUnlocked: keyManager.isUnlocked() })
-}
-
-/**
- * Handle ACTIVITY notifications (reset auto-lock timer).
- */
-function handleActivity(sendResponse: (response: any) => void) {
-  const keyManager = KeyManager.getInstance()
-  if (keyManager.isUnlocked()) {
-    keyManager.resetAutoLockTimer()
-  }
-  sendResponse({ success: true })
-}
-
-/**
  * Handle STORE_MAILBOX requests.
  */
 function handleStoreMailbox(msg: any, sendResponse: (response: any) => void) {
   ;(async () => {
     try {
-      const keyManager = KeyManager.getInstance()
-
-      // Check if locked
-      if (keyManager.isLocked()) {
-        sendResponse({ success: false, error: "Extension is locked" })
-        return
-      }
-
       // Use StorageFactory to get appropriate storage
       const storage = await StorageFactory.create()
 
@@ -647,14 +538,6 @@ function handleStoreMailbox(msg: any, sendResponse: (response: any) => void) {
 function handleRemoveMailbox(msg: any, sendResponse: (response: any) => void) {
   ;(async () => {
     try {
-      const keyManager = KeyManager.getInstance()
-
-      // Check if locked
-      if (keyManager.isLocked()) {
-        sendResponse({ success: false, error: "Extension is locked" })
-        return
-      }
-
       // Use StorageFactory to get appropriate storage
       const storage = await StorageFactory.create()
       await storage.removeMailbox(msg.mailboxId)
@@ -682,14 +565,6 @@ function handleRemoveMailbox(msg: any, sendResponse: (response: any) => void) {
 function handleClearAllCodes(sendResponse: (response: any) => void) {
   ;(async () => {
     try {
-      const keyManager = KeyManager.getInstance()
-
-      // Check if locked
-      if (keyManager.isLocked()) {
-        sendResponse({ success: false, error: "Extension is locked" })
-        return
-      }
-
       // Use StorageFactory to get appropriate storage
       const storage = await StorageFactory.create()
       await storage.clearAllCodes()

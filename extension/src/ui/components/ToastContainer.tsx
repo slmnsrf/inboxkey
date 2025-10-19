@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { useToast } from '../contexts/ToastContext'
+import { LiveRegion } from './LiveRegion'
 import './ToastContainer.css'
 
 export function ToastContainer() {
@@ -20,27 +21,29 @@ export function ToastContainer() {
   if (toasts.length === 0) return null
 
   return (
-    <div className="toast-container" aria-live="polite" aria-atomic="false">
+    <div className="toast-container">
       {toasts.map(toast => {
         const icon = toast.variant === 'success' ? '✓' :
                      toast.variant === 'error' ? '❌' : 'ℹ️'
+        const politeness = toast.variant === 'error' ? 'assertive' : 'polite'
 
         return (
-          <div
-            key={toast.id}
-            className={`toast toast--${toast.variant}${visibleToasts.has(toast.id) ? ' show' : ''}`}
-            role={toast.variant === 'error' ? 'alert' : 'status'}
-          >
-            <span className="toast__icon" aria-hidden="true">{icon}</span>
-            <span className="toast__message">{toast.message}</span>
-            <button
-              className="toast__close"
-              onClick={() => dismissToast(toast.id)}
-              aria-label="Close notification"
+          <React.Fragment key={toast.id}>
+            <LiveRegion message={toast.message} politeness={politeness} />
+            <div
+              className={`toast toast--${toast.variant}${visibleToasts.has(toast.id) ? ' show' : ''}`}
             >
-              ✕
-            </button>
-          </div>
+              <span className="toast__icon" aria-hidden="true">{icon}</span>
+              <span className="toast__message">{toast.message}</span>
+              <button
+                className="toast__close"
+                onClick={() => dismissToast(toast.id)}
+                aria-label="Close notification"
+              >
+                ✕
+              </button>
+            </div>
+          </React.Fragment>
         )
       })}
     </div>

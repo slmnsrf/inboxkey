@@ -44,22 +44,6 @@ export interface OAuthToken {
   scope: string[]
 }
 
-export interface EncryptedBlob {
-  ciphertext: Uint8Array
-  iv: Uint8Array
-  algorithm: "AES-GCM"
-}
-
-/**
- * Encrypted data structure for storage serialization
- * Used by crypto utilities for base64-encoded encrypted data
- */
-export interface EncryptedData {
-  ciphertext: string // Base64 encoded encrypted data
-  iv: string // Base64 encoded initialization vector
-  salt: string // Base64 encoded salt (for PBKDF2 key derivation)
-}
-
 export interface Mailbox {
   id: string
   provider: ProviderId
@@ -87,8 +71,9 @@ export interface StorageSchema {
     autoFillEnabled: boolean
     magicLinkAutoOpen: boolean
     pollingIntervals: [number, number, number] // [0, 5, 10]
-    lockEnabled: boolean
-    lockTimeoutMinutes: number
+    // TODO: Phase 3 - Remove lockEnabled and lockTimeoutMinutes during migration
+    // lockEnabled: boolean
+    // lockTimeoutMinutes: number
   }
 }
 
@@ -103,11 +88,3 @@ export interface DetectionResult {
   executionTime: number // ms
 }
 
-/**
- * Lock state stored in chrome.storage.local
- */
-export interface LockState {
-  isLocked: boolean
-  lastUnlockedAt: number | null
-  masterKeySalt: number[] // Stored as array, converted to Uint8Array on load
-}

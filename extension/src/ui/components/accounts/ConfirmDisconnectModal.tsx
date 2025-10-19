@@ -5,8 +5,9 @@
  * Prevents accidental disconnection by requiring explicit user confirmation.
  */
 
-import React, { useEffect, useRef } from 'react'
+import React, { useEffect } from 'react'
 import { t } from '@/lib/i18n'
+import { useFocusTrap, useEscapeKey } from '@/ui/hooks/useFocusTrap'
 import type { ProviderKey } from './types'
 
 interface ConfirmDisconnectModalProps {
@@ -24,15 +25,13 @@ export function ConfirmDisconnectModal({
   onConfirm,
   onCancel
 }: ConfirmDisconnectModalProps) {
-  const cancelButtonRef = useRef<HTMLButtonElement>(null)
+  // Use existing hooks for focus management
+  const modalRef = useFocusTrap(isOpen)
+  useEscapeKey(onCancel, isOpen)
 
-  // Focus management
+  // Prevent body scroll when modal is open
   useEffect(() => {
     if (isOpen) {
-      // Focus cancel button (safe default)
-      cancelButtonRef.current?.focus()
-
-      // Prevent body scroll
       document.body.style.overflow = 'hidden'
     } else {
       document.body.style.overflow = ''
@@ -42,20 +41,6 @@ export function ConfirmDisconnectModal({
       document.body.style.overflow = ''
     }
   }, [isOpen])
-
-  // Keyboard shortcuts
-  useEffect(() => {
-    if (!isOpen) return
-
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        onCancel() // ESC = Cancel (safe default)
-      }
-    }
-
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [isOpen, onCancel])
 
   if (!isOpen) return null
 
@@ -68,6 +53,7 @@ export function ConfirmDisconnectModal({
       role="presentation"
     >
       <div
+        ref={modalRef as React.RefObject<HTMLDivElement>}
         className="modal-content"
         onClick={(e) => e.stopPropagation()}
         role="dialog"
@@ -97,7 +83,6 @@ export function ConfirmDisconnectModal({
 
         <div className="modal-footer">
           <button
-            ref={cancelButtonRef}
             type="button"
             onClick={onCancel}
             className="btn btn--secondary"

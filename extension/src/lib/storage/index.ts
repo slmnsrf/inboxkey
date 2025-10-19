@@ -1,11 +1,11 @@
 /**
  * Storage layer exports
  *
- * This module provides encrypted storage for InboxKey using Chrome Storage API.
- * All sensitive data (tokens, codes) is encrypted using AES-GCM.
+ * This module provides plaintext storage for InboxKey using Chrome Storage API.
  */
 
-export { EncryptedStorage } from "./encrypted-storage"
+export { PlaintextStorage } from "./plaintext-storage"
+export { StorageFactory } from "./storage-factory"
 export {
   initializeStorage,
   resetStorage,
@@ -17,7 +17,6 @@ export {
 } from "./init"
 export {
   StorageError,
-  DecryptionError,
   ValidationError,
   MigrationError,
 } from "./errors"

@@ -1,10 +1,9 @@
 /**
  * Storage interface for InboxKey
  *
- * Abstracts storage operations to support both encrypted and plaintext modes.
+ * Abstracts storage operations for the extension.
  * Implemented by:
- * - EncryptedStorage: Password-protected mode with AES-GCM encryption
- * - PlaintextStorage: Passwordless mode with unencrypted storage
+ * - PlaintextStorage: Stores data in plaintext using Chrome Storage API
  */
 
 import type { Mailbox, SessionState, Settings, StoredCode } from "./schema"

@@ -2,7 +2,6 @@
  * Storage initialization and migration utilities
  */
 
-import { EncryptedStorage } from "./encrypted-storage"
 import { MigrationError, StorageError } from "./errors"
 import {
   CURRENT_SCHEMA_VERSION,
@@ -15,29 +14,17 @@ import {
 } from "./schema"
 
 /**
- * Initialize storage with a master key
+ * Initialize storage
  *
- * This should be called once per session after the user unlocks the extension.
- * It creates an EncryptedStorage instance and ensures the schema is up to date.
- *
- * @param masterKey - Derived CryptoKey from user passphrase
- * @param salt - Salt used to derive the master key
- * @returns Promise resolving to EncryptedStorage instance
+ * Ensures default values exist and runs migrations if needed.
  *
  * @example
  * ```typescript
- * const { key, salt } = await deriveKey("user-passphrase")
- * const storage = await initializeStorage(key, salt)
+ * await initializeStorage()
  * ```
  */
-export async function initializeStorage(
-  masterKey: CryptoKey,
-  salt: Uint8Array
-): Promise<EncryptedStorage> {
+export async function initializeStorage(): Promise<void> {
   try {
-    // Create storage instance
-    const storage = new EncryptedStorage(masterKey, salt)
-
     // Ensure default values exist
     await ensureDefaults()
 
@@ -46,8 +33,6 @@ export async function initializeStorage(
     if (currentVersion < CURRENT_SCHEMA_VERSION) {
       await migrateStorage(currentVersion, CURRENT_SCHEMA_VERSION)
     }
-
-    return storage
   } catch (error) {
     throw new StorageError("Failed to initialize storage", error)
   }

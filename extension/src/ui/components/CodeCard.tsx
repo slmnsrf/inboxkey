@@ -41,7 +41,7 @@ export function CodeCard({ item, onCopy }: CodeCardProps) {
   const timeLabel = timeAgoShort(item.receivedAt)
 
   return (
-    <article className="code-card" data-kind="code">
+    <article className="code-card" data-kind="code" aria-labelledby={`code-${item.id}-from`}>
       <div className="code-card__body">
         <div className="card-head">
           <span className="time-pill" aria-label={t('aria_received_time', [timeLabel])}>
@@ -50,7 +50,7 @@ export function CodeCard({ item, onCopy }: CodeCardProps) {
         </div>
         <dl className="meta-grid">
           <dt className="meta-grid__label">{t('label_from')}</dt>
-          <dd className="meta-grid__value" title={meta.from}>
+          <dd id={`code-${item.id}-from`} className="meta-grid__value" title={meta.from}>
             {meta.from}
           </dd>
           <dt className="meta-grid__label">{t('label_to')}</dt>

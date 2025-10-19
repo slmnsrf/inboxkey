@@ -6,7 +6,6 @@
  */
 
 import React, { useEffect, useMemo, useState } from 'react'
-import { useLockContext } from '../contexts/LockContext'
 import { useToast } from '../contexts/ToastContext'
 import { authenticateGmail } from '@/lib/providers/gmail/chrome-auth'
 import { authenticateOutlook } from '@/lib/providers/outlook/chrome-auth'
@@ -56,7 +55,6 @@ const PROVIDER_DISPLAY: Record<ProviderKey, { name: string; microcopy: string; e
 }
 
 export function AccountsPanel() {
-  const { isInitialized, isUnlocked } = useLockContext()
   const { showToast } = useToast()
 
   const [mailboxes, setMailboxes] = useState<MailboxInfo[]>([])
@@ -69,11 +67,9 @@ export function AccountsPanel() {
   const [recentLoading, setRecentLoading] = useState(false)
 
   useEffect(() => {
-    if (isUnlocked || !isInitialized) {
-      void loadMailboxes()
-      void loadRecentItems()
-    }
-  }, [isUnlocked, isInitialized])
+    void loadMailboxes()
+    void loadRecentItems()
+  }, [])
 
   const loadMailboxes = async () => {
     try {
@@ -241,11 +237,8 @@ export function AccountsPanel() {
           ? connectionError.message
           : null
 
-      const isLocked = isInitialized && !isUnlocked
       const isBusy = connectingProvider === provider && connectionStage !== null
-      const status: ProviderSlotState['status'] = isLocked
-        ? 'locked'
-        : isBusy
+      const status: ProviderSlotState['status'] = isBusy
         ? 'connecting'
         : mailbox
         ? 'connected'
@@ -272,7 +265,7 @@ export function AccountsPanel() {
         isBusy,
         stageLabel: isBusy ? getProviderStageLabel() : undefined,
         errorMessage: error,
-        connectDisabled: isLocked,
+        connectDisabled: false,
       }
     })
   }, [
@@ -280,8 +273,6 @@ export function AccountsPanel() {
     connectionError,
     connectingProvider,
     connectionStage,
-    isInitialized,
-    isUnlocked,
   ])
 
   const imapAccounts: ImapAccountRow[] = useMemo(() => {
@@ -319,14 +310,6 @@ export function AccountsPanel() {
     }
   }
 
-  if (isInitialized && !isUnlocked) {
-    return (
-      <div className="accounts-panel accounts-panel--locked">
-        <p className="accounts-panel__lock-message">{t('accounts_panel_locked')}</p>
-      </div>
-    )
-  }
-
   return (
     <div className="accounts-panel">
       <section className="accounts-section" aria-labelledby="connected-accounts-title">
@@ -356,14 +339,14 @@ export function AccountsPanel() {
       <ImapAccountsSection
         accounts={imapAccounts}
         disabled
-        isLocked={isInitialized && !isUnlocked}
+        isLocked={false}
       />
 
       <RecentEmailsSection
         items={recentItems}
         onCopyCode={handleCopyCode}
         onOpenLink={handleOpenLink}
-        isLocked={isInitialized && !isUnlocked}
+        isLocked={false}
         loading={recentLoading}
       />
 

@@ -191,9 +191,9 @@
   padding: var(--space-2) var(--space-4);
   min-height: var(--min-tap-target);
   border-radius: 999px;
-  background: #ffdd00;
-  border: 1px solid #000000;
-  color: #000000;
+  background: var(--color-support-bg);
+  border: 1px solid var(--color-support-border);
+  color: var(--color-support-text);
   font-family: var(--font-system);
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-semibold);
@@ -1313,7 +1313,7 @@ textarea.input {
 
 .security-pill--success {
   background: var(--color-success-light);
-  color: #047857;
+  color: var(--color-success-dark);
 }
 
 .security-banner {
@@ -1376,7 +1376,7 @@ textarea.input {
   align-items: center;
   gap: var(--space-2);
   font-size: var(--font-size-sm);
-  color: #047857;
+  color: var(--color-success-dark);
 }
 
 .security-error {
@@ -1384,7 +1384,7 @@ textarea.input {
   border-radius: var(--radius-md);
   background: var(--color-error-light);
   border: 1px solid var(--color-error);
-  color: #991b1b;
+  color: var(--color-error-darker);
   font-size: var(--font-size-sm);
 }
 
@@ -1402,7 +1402,7 @@ textarea.input {
 .security-feedback--success {
   background: var(--color-success-light);
   border-color: var(--color-success);
-  color: #047857;
+  color: var(--color-success-dark);
 }
 
 .security-feedback__icon {
@@ -1523,7 +1523,7 @@ textarea.input {
 
 .password-input__error {
   font-size: var(--font-size-sm);
-  color: #b91c1c;
+  color: var(--color-error-dark);
 }
 
 /* Auto-lock configuration */
@@ -1802,7 +1802,7 @@ textarea.input {
 
 .account-card__status--active {
   background: var(--color-success-light);
-  color: #065f46;
+  color: var(--color-success-darker);
 }
 
 .account-card__status--inactive {
@@ -1920,9 +1920,9 @@ textarea.input {
   align-items: flex-start;
   padding: var(--space-3);
   background: var(--color-error-light);
-  border: 1px solid #fecaca;
+  border: 1px solid var(--color-error-light);
   border-radius: var(--radius-md);
-  color: #991b1b;
+  color: var(--color-error-darker);
   font-size: var(--font-size-sm);
 }
 
@@ -1939,8 +1939,8 @@ textarea.input {
   gap: var(--space-3);
   align-items: flex-start;
   padding: var(--space-4);
-  background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
-  border: 1px solid #86efac;
+  background: var(--color-success-light);
+  border: 1px solid var(--color-success);
   border-radius: var(--radius-lg);
   text-align: left;
   margin: 0;
@@ -1949,7 +1949,7 @@ textarea.input {
 .trust-indicator__icon {
   width: 24px;
   height: 24px;
-  color: #16a34a;
+  color: var(--color-success-hover);
   flex-shrink: 0;
 }
 
@@ -1961,7 +1961,7 @@ textarea.input {
   display: block;
   font-size: var(--font-size-base);
   font-weight: var(--font-weight-semibold);
-  color: #166534;
+  color: var(--color-success-darker);
   margin-bottom: 6px;
 }
 
@@ -1969,7 +1969,7 @@ textarea.input {
   margin: 0;
   padding-left: var(--space-5);
   font-size: var(--font-size-sm);
-  color: #166534;
+  color: var(--color-success-darker);
   line-height: var(--line-height-normal);
 }
 

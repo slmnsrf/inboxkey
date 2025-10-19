@@ -5,12 +5,10 @@
  * Designed for <200ms open time with cached data.
  */
 
-import React, { useMemo, useState } from 'react'
-import { LockProvider, useLockContext } from './ui/contexts/LockContext'
+import React, { useEffect, useMemo, useState } from 'react'
 import { ThemeProvider } from './ui/contexts/ThemeContext'
 import { ToastProvider, useToast } from './ui/contexts/ToastContext'
 import { ToastContainer } from './ui/components/ToastContainer'
-import { PopupLockOverlay } from './ui/components/security'
 import { PopupFooter } from './ui/components/PopupFooter'
 import { Header } from './ui/components/Header'
 import { CodeListSection } from './ui/components/CodeListSection'
@@ -20,7 +18,10 @@ import { usePopupData } from './ui/hooks/usePopupData'
 import { PopupBridge } from './ui/services/popup-bridge'
 import { ClipboardService } from './ui/services/clipboard-service'
 import { LinkService } from './ui/services/link-service'
+import { needsMigration } from '@/lib/storage/migration-to-plaintext'
+import { MigrationDialog } from './ui/components/migration/MigrationDialog'
 import './popup.css'
+import './ui/components/migration/MigrationDialog.css'
 import type { PopupCacheMagicLink } from '@/shared/popup-messages'
 import { t } from '@/lib/i18n'
 
@@ -29,10 +30,26 @@ const clipboardService = new ClipboardService()
 const linkService = new LinkService()
 function PopupContent() {
   const { data, loading, error, refresh } = usePopupData()
-  const { isInitialized, isUnlocked, isLoading, lock } = useLockContext()
   const { showToast } = useToast()
   const [isSyncing, setIsSyncing] = useState(false)
-  const [isLocking, setIsLocking] = useState(false)
+  const [showMigration, setShowMigration] = useState(false)
+  const [checkingMigration, setCheckingMigration] = useState(true)
+
+  // Check for migration needs on mount
+  useEffect(() => {
+    checkMigrationStatus()
+  }, [])
+
+  async function checkMigrationStatus() {
+    try {
+      const needed = await needsMigration()
+      setShowMigration(needed)
+    } catch (error) {
+      console.error('[Popup] Failed to check migration status:', error)
+    } finally {
+      setCheckingMigration(false)
+    }
+  }
 
   const hasCodes = useMemo(() => (data?.codes?.length ?? 0) > 0, [data])
   const hasLinks = useMemo(() => (data?.magicLinks?.length ?? 0) > 0, [data])
@@ -64,11 +81,6 @@ function PopupContent() {
     }
   }
 
-  const handleUnlock = async () => {
-    // Refresh data after unlocking
-    await refresh()
-  }
-
   const handleSync = async () => {
     if (isSyncing) return
 
@@ -90,30 +102,31 @@ function PopupContent() {
     }
   }
 
-  const handleLock = async () => {
-    if (isLocking) return
-
-    setIsLocking(true)
-    try {
-      await lock()
-      // No toast needed - UI will update to show lock screen
-    } catch (err) {
-      const errorMsg = err instanceof Error ? err.message : 'Failed to lock extension'
-      showToast(`⚠️ ${errorMsg}`, 'error', 5000)
-      console.error('[Popup] Lock failed:', err)
-    } finally {
-      setIsLocking(false)
-    }
-  }
-
-  // Show loading skeleton while data or lock status is loading
-  if (loading || isLoading) {
+  // Show loading skeleton while checking migration or loading data
+  if (checkingMigration || loading) {
     return <LoadingSkeleton />
   }
 
-  // Show lock screen if initialized and locked
-  if (isInitialized && !isUnlocked) {
-    return <PopupLockOverlay onUnlock={handleUnlock} />
+  // Show migration dialog if migration needed (highest priority)
+  if (showMigration) {
+    return (
+      <MigrationDialog
+        onComplete={async () => {
+          setShowMigration(false)
+          // Clear badge
+          chrome.action.setBadgeText({ text: '' })
+          // Refresh data after migration
+          await refresh()
+        }}
+        onSkip={async () => {
+          setShowMigration(false)
+          // Clear badge
+          chrome.action.setBadgeText({ text: '' })
+          // Refresh data after skip
+          await refresh()
+        }}
+      />
+    )
   }
 
   if (error) {
@@ -133,15 +146,12 @@ function PopupContent() {
   const latestLink = hasLinks ? data.magicLinks[0] : null
 
   return (
-    <div className="popup-container" role="dialog" aria-label={t('popup_title')}>
+    <div className="popup-container" aria-label={t('popup_title')}>
       <Header
         mailboxCount={data.mailboxCount}
         lastSync={data.lastSync}
         onSync={handleSync}
         isSyncing={isSyncing}
-        showLockButton={isInitialized && isUnlocked}
-        onLock={handleLock}
-        isLocking={isLocking}
       />
       <main className="popup-main" aria-live="polite">
         <div className="popup-quick-actions" role="group" aria-label={t('popup_quick_actions')}>
@@ -174,11 +184,9 @@ function PopupContent() {
 function PopupApp() {
   return (
     <ThemeProvider>
-      <LockProvider>
-        <ToastProvider>
-          <PopupContent />
-        </ToastProvider>
-      </LockProvider>
+      <ToastProvider>
+        <PopupContent />
+      </ToastProvider>
     </ThemeProvider>
   )
 }

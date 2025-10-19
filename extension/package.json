@@ -19,7 +19,8 @@
     "test:e2e:headed": "playwright test --headed",
     "lint": "eslint . --ext .ts,.tsx",
     "format": "prettier --write \"**/*.{ts,tsx,json,md}\"",
-    "type-check": "tsc --noEmit"
+    "type-check": "tsc --noEmit",
+    "validate:i18n": "node scripts/validate-i18n.js"
   },
   "dependencies": {
     "plasmo": "^0.88.0",

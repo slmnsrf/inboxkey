@@ -2020,9 +2020,9 @@ body {
   padding: var(--space-2) var(--space-4);
   min-height: var(--min-tap-target);
   border-radius: 999px;
-  background: #ffdd00;
-  border: 1px solid #000000;
-  color: #000000;
+  background: var(--color-support-bg);
+  border: 1px solid var(--color-support-border);
+  color: var(--color-support-text);
   font-family: var(--font-system);
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-semibold);

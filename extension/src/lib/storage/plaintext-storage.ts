@@ -1,13 +1,12 @@
 /**
- * Plaintext storage layer for InboxKey (passwordless mode)
+ * Plaintext storage layer for InboxKey
  *
  * Provides type-safe storage operations using Chrome Storage API.
- * All data is stored in plaintext - this is the default mode for 99% of users.
+ * All data is stored in plaintext (the lock/unlock feature has been removed).
  *
  * Architecture:
  * - chrome.storage.local: plaintext persistent data
- * - chrome.storage.session: ephemeral session state (unencrypted)
- * - Uses different storage keys to avoid collision with encrypted mode
+ * - chrome.storage.session: ephemeral session state
  * - Change notifications for cross-context synchronization
  */
 
@@ -31,13 +30,13 @@ import {
 } from "./schema"
 
 /**
- * Storage keys for plaintext mode (different from encrypted mode to avoid collision)
+ * Storage keys for plaintext mode
  */
 const PLAINTEXT_STORAGE_KEYS = {
   MAILBOXES: "mailboxes_plain",
   RECENT_CODES: "recent_codes_plain",
-  SETTINGS: "settings", // Same as encrypted - not sensitive
-  SESSION_STATE: "session_state", // Same as encrypted - ephemeral
+  SETTINGS: "settings",
+  SESSION_STATE: "session_state",
 } as const
 
 /**
@@ -184,7 +183,7 @@ export class PlaintextStorage {
   }
 
   private async saveMailboxes(mailboxes: Mailbox[]): Promise<void> {
-    // Store directly as JSON (no encryption)
+    // Store directly as JSON
     await chrome.storage.local.set({
       [PLAINTEXT_STORAGE_KEYS.MAILBOXES]: mailboxes,
     })
@@ -302,7 +301,7 @@ export class PlaintextStorage {
   }
 
   private async saveCodes(codes: StoredCode[]): Promise<void> {
-    // Store directly as JSON (no encryption)
+    // Store directly as JSON
     await chrome.storage.local.set({
       [PLAINTEXT_STORAGE_KEYS.RECENT_CODES]: codes,
     })
@@ -432,8 +431,7 @@ export class PlaintextStorage {
 
   async clear(): Promise<void> {
     await this.mutex.runExclusive(async () => {
-      // Only clear plaintext storage keys, not all storage
-      // This prevents collision with encrypted mode if both are used
+      // Clear all plaintext storage keys
       await chrome.storage.local.remove([
         PLAINTEXT_STORAGE_KEYS.MAILBOXES,
         PLAINTEXT_STORAGE_KEYS.RECENT_CODES,

@@ -14,6 +14,7 @@ export class CryptoError extends Error {
 
 /**
  * Error thrown when key derivation fails
+ * PRESERVED FOR MIGRATION: Phase 3 decryption needs this error type
  */
 export class KeyDerivationError extends CryptoError {
   constructor(message: string, public readonly cause?: unknown) {
@@ -23,17 +24,8 @@ export class KeyDerivationError extends CryptoError {
 }
 
 /**
- * Error thrown when lock/unlock operations fail
- */
-export class LockError extends CryptoError {
-  constructor(message: string, public readonly cause?: unknown) {
-    super(message)
-    this.name = "LockError"
-  }
-}
-
-/**
  * Error thrown when encryption/decryption fails
+ * PRESERVED FOR MIGRATION: Phase 3 decryption needs this error type
  */
 export class EncryptionError extends CryptoError {
   constructor(message: string, public readonly cause?: unknown) {

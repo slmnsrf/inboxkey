@@ -2,7 +2,6 @@ import React from 'react'
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { AccountsPanel } from '../AccountsPanel'
-import { LockProvider } from '../../contexts/LockContext'
 import { ToastProvider } from '../../contexts/ToastContext'
 
 const mockAuthenticateGmail = vi.fn()
@@ -37,7 +36,7 @@ vi.mock('@/lib/providers/outlook/config', () => ({
 const renderWithProviders = (ui: React.ReactElement) => {
   return render(
     <ToastProvider>
-      <LockProvider>{ui}</LockProvider>
+      {ui}
     </ToastProvider>
   )
 }
