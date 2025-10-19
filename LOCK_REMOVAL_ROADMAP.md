@@ -14,17 +14,41 @@ Complete removal of password protection and lock/unlock functionality from Inbox
 
 ### Overall Progress: 0% Complete (0/7 phases)
 
+⚠️ **CRITICAL PHASE REORDERING**: Migration moved to Phase 3 (after Crypto, before Background SW)
+
 | Phase | Status | Progress | Files | Priority |
 |-------|--------|----------|-------|----------|
 | Phase 1: Storage Layer | 🔴 Not Started | 0/5 | 5 files | CRITICAL |
-| Phase 2: Crypto Layer | 🔴 Not Started | 0/4 | 4 files | HIGH |
-| Phase 3: Background SW | 🔴 Not Started | 0/3 | 3 files | HIGH |
-| Phase 4: UI Components | 🔴 Not Started | 0/14 | 14 files | MEDIUM |
-| Phase 5: Main UI | 🔴 Not Started | 0/3 | 3 files | MEDIUM |
-| Phase 6: Migration | 🔴 Not Started | 0/4 | 4 files | CRITICAL |
+| Phase 2: Crypto Layer | 🔴 Not Started | 0/4 | 4 files | CRITICAL |
+| Phase 3: Migration ⚠️ MOVED UP | 🔴 Not Started | 0/4 | 4 files | CRITICAL |
+| Phase 4: Background SW | 🔴 Not Started | 0/3 | 3 files | HIGH |
+| Phase 5: UI Components | 🔴 Not Started | 0/14 | 14 files | MEDIUM |
+| Phase 6: Main UI | 🔴 Not Started | 0/3 | 3 files | MEDIUM |
 | Phase 7: Tests & Docs | 🔴 Not Started | 0/20 | 20+ files | LOW |
 
 **Legend:** 🔴 Not Started | 🟡 In Progress | 🟢 Complete | ⚠️ Blocked
+
+### ⚠️ CRITICAL ARCHITECTURAL DECISIONS (2025-10-19)
+
+**WHY MIGRATION MOVED TO PHASE 3:**
+- Migration REQUIRES KeyManager crypto utilities (`deriveKey()`, `decrypt()`)
+- If we delete these in Phase 2 before implementing migration, user data becomes UNRECOVERABLE
+- Migration must be TESTED and VERIFIED before Background SW changes in Phase 4
+
+**CODE PRESERVATION STRATEGY:**
+```
+Phase 2: Delete lock STATE management, KEEP crypto UTILITIES
+  ✓ DELETE: lock(), unlock(), isLocked(), resetAutoLockTimer()
+  ⚠️ KEEP: deriveKey(), decrypt() - REQUIRED for migration
+
+Phase 3: Implement migration using PRESERVED crypto utilities
+  ✓ Use old KeyManager methods to decrypt existing data
+  ✓ Test with 10+ real encrypted datasets
+  ✓ Rollback mechanism mandatory
+
+Phase 7: Delete crypto utilities AFTER migration complete
+  ✓ Safe to delete after all users migrated
+```
 
 ---
 
@@ -127,8 +151,9 @@ Complete removal of password protection and lock/unlock functionality from Inbox
 
 ---
 
-## Phase 3: Background Service Worker Updates
-**Timeline:** 2-3 days | **Risk:** MEDIUM | **Priority:** P0
+## Phase 3: Data Migration Implementation (CRITICAL - MOVED UP)
+**Timeline:** 3-5 days | **Risk:** HIGH | **Priority:** P0
+**⚠️ MUST complete before Phase 4 (Background SW changes)**
 
 ### Tasks
 
