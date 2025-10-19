@@ -2,8 +2,8 @@ import React from 'react'
 import './SecurityInfo.css'
 
 export function SecurityInfo() {
-  const openSourceUrl = 'https://github.com/[YOUR-REPO]/inboxkey'
-  const docsUrl = '/docs/SECURITY_ARCHITECTURE.md'
+  const openSourceUrl = 'https://github.com/slmnsrf/inboxkey'
+  const docsUrl = 'https://github.com/slmnsrf/inboxkey/blob/main/docs/SECURITY_ARCHITECTURE.md'
 
   return (
     <div className="security-info">
@@ -83,7 +83,12 @@ export function SecurityInfo() {
         <h4>Questions or Concerns?</h4>
         <p>
           Report security issues:{' '}
-          <a href="mailto:security@inboxkey.com">security@inboxkey.com</a>
+          <a
+            href="mailto:security@inboxkey.com"
+            aria-label="Email security team at security@inboxkey.com"
+          >
+            security@inboxkey.com
+          </a>
         </p>
       </div>
     </div>
