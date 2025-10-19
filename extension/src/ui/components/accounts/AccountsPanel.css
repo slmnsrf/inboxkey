@@ -3,19 +3,6 @@
   gap: var(--space-5);
 }
 
-.accounts-panel--locked {
-  padding: var(--space-6);
-  border: 1px dashed var(--color-border);
-  border-radius: var(--radius-lg);
-  background: var(--surface-card);
-  text-align: center;
-}
-
-.accounts-panel__lock-message {
-  margin: 0;
-  font-size: var(--font-size-base);
-  color: var(--color-text-secondary);
-}
 
 .accounts-section {
   display: grid;

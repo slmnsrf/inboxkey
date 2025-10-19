@@ -1148,19 +1148,6 @@ textarea.input {
   color: var(--color-text-secondary);
 }
 
-.security-settings--locked {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  min-height: 60vh;
-  gap: var(--space-4);
-}
-
-.security-locked__message {
-  font-size: var(--font-size-sm);
-  color: var(--color-text-secondary);
-}
 
 .security-card {
   background: var(--surface-card);
@@ -1526,95 +1513,6 @@ textarea.input {
   color: var(--color-error-dark);
 }
 
-/* Auto-lock configuration */
-.auto-lock-config {
-  display: grid;
-  gap: var(--space-4);
-}
-
-.auto-lock-config__header {
-  display: grid;
-  gap: var(--space-2);
-}
-
-.auto-lock-config__title {
-  margin: 0;
-  font-size: var(--font-size-lg);
-  font-weight: var(--font-weight-semibold);
-  color: var(--color-text-primary);
-}
-
-.auto-lock-config__description {
-  margin: 0;
-  font-size: var(--font-size-sm);
-  color: var(--color-text-secondary);
-  line-height: var(--line-height-normal);
-}
-
-.auto-lock-config__content {
-  display: grid;
-  gap: var(--space-4);
-}
-
-.auto-lock-config__field {
-  display: grid;
-  gap: var(--space-2);
-}
-
-.auto-lock-config__label {
-  font-size: var(--font-size-sm);
-  color: var(--color-text-secondary);
-}
-
-.auto-lock-config__select {
-  width: 100%;
-  height: var(--min-tap-target);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  background: var(--surface-card);
-  font-size: var(--font-size-base);
-  color: var(--color-text-primary);
-  padding: 0 var(--space-4);
-}
-
-.auto-lock-config__select:focus-visible {
-  outline: var(--focus-ring-width) solid var(--focus-ring-color);
-  outline-offset: var(--focus-ring-offset);
-}
-
-.auto-lock-config__info {
-  display: flex;
-  align-items: flex-start;
-  gap: var(--space-2);
-  padding: var(--space-3);
-  border-radius: var(--radius-md);
-  background: color-mix(in srgb, var(--color-primary-light) 45%, transparent);
-  border: 1px solid color-mix(in srgb, var(--color-primary) 30%, transparent);
-  color: var(--color-text-secondary);
-  font-size: var(--font-size-sm);
-}
-
-.auto-lock-config__info-icon {
-  font-size: var(--font-size-lg);
-  color: var(--color-primary);
-}
-
-.auto-lock-config--loading {
-  padding: var(--space-4);
-  text-align: center;
-  color: var(--color-text-secondary);
-}
-
-.auto-lock-config__loading {
-  font-size: var(--font-size-sm);
-  color: var(--color-text-secondary);
-  padding: var(--space-4);
-}
-
-.auto-lock-config__lock-button {
-  align-self: flex-start;
-  min-width: 160px;
-}
 
 .security-card--danger {
   border-color: var(--color-error);
@@ -1729,16 +1627,6 @@ textarea.input {
   color: var(--color-text-primary);
 }
 
-.accounts-panel--locked {
-  text-align: center;
-  padding: var(--space-12) var(--space-4);
-}
-
-.accounts-panel__lock-message {
-  font-size: var(--font-size-base);
-  color: var(--color-text-secondary);
-  margin-bottom: var(--space-4);
-}
 
 /* Mailbox List */
 .accounts-panel__header {

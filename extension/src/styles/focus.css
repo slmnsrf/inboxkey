@@ -174,8 +174,7 @@ input[type="radio"]:focus-visible {
 /**
  * Modal overlays - Focus trap active
  */
-.modal:focus,
-.popup-lock-overlay:focus {
+.modal:focus {
   outline: none;  /* Modal itself doesn't need focus ring */
 }
 

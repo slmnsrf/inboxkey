@@ -265,10 +265,6 @@
       }
     }
   },
-  "aria_lock_extension": {
-    "message": "Lock InboxKey",
-    "description": "ARIA label for lock button"
-  },
   "aria_manual_sync": {
     "message": "Sync now",
     "description": "ARIA label for manual sync button"
@@ -358,58 +354,7 @@
     "message": "Unable to load your codes. Please try again.",
     "description": "Empty state: error message"
   },
-  "empty_locked_title": {
-    "message": "Locked",
-    "description": "Empty state: locked title"
-  },
-  "empty_locked_message": {
-    "message": "Enter your PIN to unlock InboxKey.",
-    "description": "Empty state: locked message"
-  },
 
-  "security_banner_setup": {
-    "message": "Set a PIN to protect your codes",
-    "description": "Security banner prompt"
-  },
-  "security_banner_not_now": {
-    "message": "Not now",
-    "description": "Security banner dismiss"
-  },
-  "security_banner_setup_password": {
-    "message": "Set up PIN",
-    "description": "Security banner setup button"
-  },
-
-  "lock_screen_title": {
-    "message": "InboxKey is Locked",
-    "description": "Lock screen title"
-  },
-  "lock_screen_prompt": {
-    "message": "Enter your PIN to unlock",
-    "description": "Lock screen prompt"
-  },
-  "lock_screen_unlock": {
-    "message": "Unlock",
-    "description": "Unlock button"
-  },
-  "lock_screen_forgot": {
-    "message": "Forgot PIN?",
-    "description": "Forgot PIN link"
-  },
-  "lock_screen_wrong_password": {
-    "message": "Wrong PIN. Try again.",
-    "description": "Wrong PIN error"
-  },
-  "lock_screen_rate_limited": {
-    "message": "Too many attempts. Please wait $SECONDS$ seconds.",
-    "description": "Rate limit error",
-    "placeholders": {
-      "seconds": {
-        "content": "$1",
-        "example": "30"
-      }
-    }
-  },
 
   "settings_title": {
     "message": "InboxKey Settings",
@@ -508,10 +453,6 @@
     "message": "Connect your email to start receiving verification codes",
     "description": "Empty state message when no accounts connected"
   },
-  "accounts_panel_locked": {
-    "message": "Unlock InboxKey to manage accounts",
-    "description": "Message shown when trying to access accounts while locked"
-  },
   "accounts_add_heading": {
     "message": "Add Account",
     "description": "Heading for add account section"
@@ -555,10 +496,6 @@
   "accounts_status_not_connected": {
     "message": "Not connected",
     "description": "Status badge when provider has no accounts yet"
-  },
-  "accounts_status_locked": {
-    "message": "Locked",
-    "description": "Status badge when Lock Mode prevents actions"
   },
   "accounts_reconnect": {
     "message": "Reconnect",
@@ -652,9 +589,9 @@
     "message": "Read-only access (we can't send emails)",
     "description": "Trust indicator: read-only access"
   },
-  "trust_indicator_encrypted": {
-    "message": "End-to-end encrypted in your browser",
-    "description": "Trust indicator: encryption"
+  "trust_indicator_local_storage": {
+    "message": "Stored securely on your device",
+    "description": "Trust indicator: local storage"
   },
   "trust_indicator_local": {
     "message": "Never uploaded to our servers",
@@ -748,10 +685,6 @@
       }
     }
   },
-  "accounts_recent_locked": {
-    "message": "Unlock InboxKey to review recent verification emails.",
-    "description": "Message when recent emails are inaccessible due to Lock Mode"
-  },
   "accounts_recent_loading": {
     "message": "Loading recent emails…",
     "description": "Loading message while fetching recent emails"
@@ -761,254 +694,6 @@
     "description": "Empty state message for recent emails list"
   },
 
-  "security_setup_title": {
-    "message": "Set up PIN protection",
-    "description": "PIN setup title"
-  },
-  "security_password_protection": {
-    "message": "PIN protection",
-    "description": "Heading for PIN protection sections"
-  },
-  "security_setup_description": {
-    "message": "Protect your verification codes with a 6-digit PIN. You'll need it each time you open InboxKey.",
-    "description": "PIN setup description"
-  },
-  "security_no_recovery_title": {
-    "message": "⚠️ No recovery possible",
-    "description": "No recovery warning title"
-  },
-  "security_no_recovery_message": {
-    "message": "If you forget your PIN, you'll lose access to all your codes. There is no way to recover your data.",
-    "description": "No recovery warning message"
-  },
-  "security_password_tips": {
-    "message": "PIN requirements:",
-    "description": "PIN tips heading"
-  },
-  "security_tip_memorable": {
-    "message": "Use exactly 6 digits.",
-    "description": "PIN tip: length"
-  },
-  "security_tip_unique": {
-    "message": "Digits only (0–9).",
-    "description": "PIN tip: numeric"
-  },
-  "security_tip_strength": {
-    "message": "Avoid simple sequences (123456) or repeated digits.",
-    "description": "PIN tip: sequences"
-  },
-  "security_benefit_encrypt": {
-    "message": "Encrypt OAuth tokens with AES-256-GCM",
-    "description": "Security benefit: encryption"
-  },
-  "security_benefit_autolock": {
-    "message": "Lock access automatically after inactivity",
-    "description": "Security benefit: auto lock"
-  },
-  "security_benefit_require_password": {
-    "message": "Require your PIN to view OTP codes",
-    "description": "Security benefit: require PIN"
-  },
-  "security_benefit_secure_connections": {
-    "message": "Keep your email connections protected",
-    "description": "Security benefit: secure connections"
-  },
-  "security_action_enable": {
-    "message": "Enable",
-    "description": "Button label to enable password protection"
-  },
-  "security_action_change_password": {
-    "message": "Change PIN",
-    "description": "Button label to change PIN"
-  },
-  "security_action_disable": {
-    "message": "Disable protection",
-    "description": "Button label to disable password protection"
-  },
-  "security_action_disabling": {
-    "message": "Disabling…",
-    "description": "Loading label while disabling protection"
-  },
-  "security_setup_submit": {
-    "message": "Enable protection",
-    "description": "Submit label for enabling protection"
-  },
-  "security_setup_success": {
-    "message": "PIN protection enabled successfully!",
-    "description": "Success message after PIN setup"
-  },
-  "security_setup_submitting": {
-    "message": "Enabling…",
-    "description": "Loading label while enabling protection"
-  },
-  "security_pins_match": {
-    "message": "PINs match",
-    "description": "Message shown when PINs match"
-  },
-  "security_change_submit": {
-    "message": "Change PIN",
-    "description": "Submit label for changing PIN"
-  },
-  "security_change_success": {
-    "message": "PIN changed successfully!",
-    "description": "Success message after changing PIN"
-  },
-  "security_change_submitting": {
-    "message": "Saving…",
-    "description": "Loading label while changing password"
-  },
-  "security_pin_label_new": {
-    "message": "New PIN",
-    "description": "Label for new PIN field"
-  },
-  "security_pin_label_confirm": {
-    "message": "Confirm PIN",
-    "description": "Label for confirm PIN field"
-  },
-  "security_pin_label_current": {
-    "message": "Current PIN",
-    "description": "Label for current PIN field"
-  },
-  "security_pin_placeholder": {
-    "message": "Enter 6-digit PIN",
-    "description": "Placeholder for PIN inputs"
-  },
-  "security_pin_placeholder_confirm": {
-    "message": "Re-enter 6-digit PIN",
-    "description": "Placeholder for confirm PIN input"
-  },
-  "security_pin_error_invalid": {
-    "message": "PIN must be exactly 6 digits (numbers only).",
-    "description": "Error shown when PIN format is invalid"
-  },
-  "security_pin_error_mismatch": {
-    "message": "PINs do not match",
-    "description": "Error shown when PINs differ"
-  },
-  "security_pin_error_same": {
-    "message": "New PIN must be different from your current PIN",
-    "description": "Error shown when PINs are identical"
-  },
-  "security_pin_error_missing_current": {
-    "message": "Enter your current PIN",
-    "description": "Error shown when current PIN is missing"
-  },
-  "security_rate_limit_five_minutes": {
-    "message": "Too many attempts. Try again in $MINUTES$ minutes.",
-    "description": "Rate limit message for five-minute window",
-    "placeholders": {
-      "minutes": {
-        "content": "$1",
-        "example": "3"
-      }
-    }
-  },
-  "security_rate_limit_day": {
-    "message": "Too many attempts today. Try again in 24 hours.",
-    "description": "Rate limit message for daily window"
-  },
-  "security_action_lock_now": {
-    "message": "Lock now",
-    "description": "Button label to lock immediately"
-  },
-  "security_toast_locked": {
-    "message": "InboxKey locked",
-    "description": "Toast message when lock now succeeds"
-  },
-  "security_toast_lock_failed": {
-    "message": "Failed to lock. Try again.",
-    "description": "Toast message when lock now fails"
-  },
-  "security_toast_unlocked": {
-    "message": "Unlocked successfully",
-    "description": "Toast message when settings unlock succeeds"
-  },
-  "security_autolock_title": {
-    "message": "Auto-lock",
-    "description": "Auto-lock section title"
-  },
-  "security_autolock_description": {
-    "message": "Choose how long InboxKey stays unlocked before locking itself.",
-    "description": "Auto-lock description text"
-  },
-  "security_autolock_label": {
-    "message": "Lock automatically after",
-    "description": "Label for auto-lock timeout select"
-  },
-  "security_autolock_loading": {
-    "message": "Loading auto-lock settings…",
-    "description": "Loading state for auto-lock config"
-  },
-  "security_autolock_never": {
-    "message": "InboxKey will not auto-lock. You can still lock it manually.",
-    "description": "Auto-lock info message when timeout is never"
-  },
-  "security_autolock_timeout": {
-    "message": "InboxKey will lock after $TIMEOUT$ of inactivity.",
-    "description": "Auto-lock info message when timeout selected",
-    "placeholders": {
-      "timeout": {
-        "content": "$1",
-        "example": "5 minutes"
-      }
-    }
-  },
-  "security_autolock_option_1m": {
-    "message": "1 minute",
-    "description": "Auto-lock option: 1 minute"
-  },
-  "security_autolock_option_5m": {
-    "message": "5 minutes",
-    "description": "Auto-lock option: 5 minutes"
-  },
-  "security_autolock_option_15m": {
-    "message": "15 minutes",
-    "description": "Auto-lock option: 15 minutes"
-  },
-  "security_autolock_option_30m": {
-    "message": "30 minutes",
-    "description": "Auto-lock option: 30 minutes"
-  },
-  "security_autolock_option_60m": {
-    "message": "1 hour",
-    "description": "Auto-lock option: 1 hour"
-  },
-  "security_autolock_option_never": {
-    "message": "Never",
-    "description": "Auto-lock option: never lock automatically"
-  },
-  "security_reset_success": {
-    "message": "InboxKey reset. Set things up again to continue.",
-    "description": "Toast when reset succeeds"
-  },
-  "security_reset_failed": {
-    "message": "Reset failed. Check your PIN and try again.",
-    "description": "Error toast when reset fails"
-  },
-  "security_action_resetting": {
-    "message": "Resetting…",
-    "description": "Loading label while resetting"
-  },
-  "security_status_active": {
-    "message": "Protection is on",
-    "description": "Status label when password protection is active"
-  },
-  "security_status_active_description": {
-    "message": "Your verification codes and tokens are encrypted. Unlock InboxKey with your PIN when needed.",
-    "description": "Description when protection is active"
-  },
-  "security_disable_title": {
-    "message": "Turn off PIN protection",
-    "description": "Disable protection heading"
-  },
-  "security_disable_description": {
-    "message": "Disabling protection removes encryption from stored tokens. You'll need to reconnect your accounts to secure them again.",
-    "description": "Disable protection description"
-  },
-  "security_locked_message": {
-    "message": "Unlock to change security settings",
-    "description": "Message shown when settings are locked"
-  },
 
   "security_danger_zone": {
     "message": "Danger Zone",
@@ -1095,9 +780,9 @@
     "message": "No telemetry by default",
     "description": "About: no telemetry"
   },
-  "about_privacy_encrypted_storage": {
-    "message": "All data encrypted in browser storage",
-    "description": "About: encrypted storage"
+  "about_privacy_local_storage": {
+    "message": "All data stored locally in your browser",
+    "description": "About: local storage"
   },
   "about_privacy_read_only_email": {
     "message": "Read-only access to email (can't send)",
@@ -1309,10 +994,6 @@
         "example": "Gmail"
       }
     }
-  },
-  "error_extension_locked": {
-    "message": "Extension is locked. Please unlock first.",
-    "description": "Error when trying to manage accounts while locked"
   },
 
   "site_overrides_title": {
