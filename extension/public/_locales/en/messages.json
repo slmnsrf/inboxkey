@@ -220,14 +220,6 @@
     "message": "Unable to load your codes. Please try again.",
     "description": "Empty state: error message"
   },
-  "empty_locked_title": {
-    "message": "Locked",
-    "description": "Empty state: locked title"
-  },
-  "empty_locked_message": {
-    "message": "Enter your password to unlock InboxKey.",
-    "description": "Empty state: locked message"
-  },
 
   "security_banner_setup": {
     "message": "Set a password to protect your codes",

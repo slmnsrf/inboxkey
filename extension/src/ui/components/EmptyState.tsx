@@ -8,7 +8,7 @@ import React from 'react'
 import { t } from '@/lib/i18n'
 
 interface EmptyStateProps {
-  variant: 'no-codes' | 'no-links' | 'no-mailboxes' | 'error' | 'locked'
+  variant: 'no-codes' | 'no-links' | 'no-mailboxes' | 'error'
   message?: string // Optional custom message (overrides variant)
 }
 
@@ -39,10 +39,6 @@ export function EmptyState({ variant, message }: EmptyStateProps) {
     error: {
       title: t('empty_error_title'),
       message: t('empty_error_message'),
-    },
-    locked: {
-      title: t('empty_locked_title'),
-      message: t('empty_locked_message'),
     },
   }
 
