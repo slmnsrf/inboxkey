@@ -666,6 +666,129 @@ describe("PlaintextStorage", () => {
   })
 
   // ============================================================================
+  // Backward Compatibility Tests
+  // ============================================================================
+
+  describe("Backward Compatibility - StoredCode", () => {
+    it("should accept old format codes without new optional fields", async () => {
+      const oldFormatCode = createTestCode({
+        code: "123456",
+        timestamp: Date.now(),
+        source: "test@example.com",
+        used: false,
+      })
+
+      await storage.addCode(oldFormatCode)
+
+      const codes = await storage.getRecentCodes()
+      expect(codes).toHaveLength(1)
+      expect(codes[0].code).toBe("123456")
+      expect(codes[0].senderETLD).toBeUndefined()
+      expect(codes[0].receivedAt).toBeUndefined()
+      expect(codes[0].domainAffinity).toBeUndefined()
+    })
+
+    it("should accept new format codes with all optional fields", async () => {
+      const newFormatCode = createTestCode({
+        code: "654321",
+        timestamp: Date.now(),
+        source: "noreply@example.com",
+        used: false,
+        senderETLD: "example.com",
+        receivedAt: Date.now() - 1000,
+        domainAffinity: 0.95,
+      })
+
+      await storage.addCode(newFormatCode)
+
+      const codes = await storage.getRecentCodes()
+      expect(codes).toHaveLength(1)
+      expect(codes[0].code).toBe("654321")
+      expect(codes[0].senderETLD).toBe("example.com")
+      expect(codes[0].receivedAt).toBeDefined()
+      expect(codes[0].domainAffinity).toBe(0.95)
+    })
+
+    it("should handle mixed format codes in storage", async () => {
+      const oldCode = createTestCode({
+        code: "111111",
+        timestamp: Date.now() - 2000,
+        source: "old@example.com",
+        used: false,
+      })
+
+      const newCode = createTestCode({
+        code: "222222",
+        timestamp: Date.now(),
+        source: "new@example.com",
+        used: false,
+        senderETLD: "example.com",
+        receivedAt: Date.now() - 500,
+        domainAffinity: 0.8,
+      })
+
+      await storage.addCode(oldCode)
+      await storage.addCode(newCode)
+
+      const codes = await storage.getRecentCodes()
+      expect(codes).toHaveLength(2)
+
+      const retrievedNew = codes.find(c => c.code === "222222")
+      const retrievedOld = codes.find(c => c.code === "111111")
+
+      expect(retrievedNew?.senderETLD).toBe("example.com")
+      expect(retrievedNew?.domainAffinity).toBe(0.8)
+
+      expect(retrievedOld?.senderETLD).toBeUndefined()
+      expect(retrievedOld?.receivedAt).toBeUndefined()
+    })
+
+    it("should preserve all fields during retrieval including optional ones", async () => {
+      const codeWithAllFields = createTestCode({
+        code: "999999",
+        timestamp: Date.now(),
+        source: "complete@example.com",
+        siteMatch: "example.com",
+        used: false,
+        mailboxId: crypto.randomUUID(),
+        senderETLD: "example.com",
+        receivedAt: Date.now() - 2000,
+        domainAffinity: 0.75,
+      })
+
+      await storage.addCode(codeWithAllFields)
+
+      const codes = await storage.getRecentCodes()
+      expect(codes[0]).toMatchObject({
+        code: "999999",
+        source: "complete@example.com",
+        siteMatch: "example.com",
+        used: false,
+        mailboxId: codeWithAllFields.mailboxId,
+        senderETLD: "example.com",
+        receivedAt: codeWithAllFields.receivedAt,
+        domainAffinity: 0.75,
+      })
+    })
+
+    it("should store code with invalid receivedAt but fail on retrieval", async () => {
+      const invalidCode = createTestCode({
+        code: "123456",
+        timestamp: Date.now(),
+        source: "test@example.com",
+        used: false,
+        receivedAt: -1, // Invalid timestamp
+      })
+
+      // addCode only validates required fields, not optional ones
+      await storage.addCode(invalidCode)
+
+      // But retrieval validates with isStoredCode which checks receivedAt
+      await expect(storage.getRecentCodes()).rejects.toThrow(ValidationError)
+    })
+  })
+
+  // ============================================================================
   // Validation Logic
   // ============================================================================
 

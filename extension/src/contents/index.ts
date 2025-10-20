@@ -16,7 +16,7 @@ import {
   isFieldWatched,
   stopActiveWatch,
 } from './watch-session'
-import { autofillCode } from './autofill'
+import { autofillCode, isFieldFilledByInboxKey } from './autofill'
 import type { DetectionResult } from '@/lib/types'
 
 console.log('[InboxKey] Content script loaded on', window.location.href)
@@ -115,6 +115,18 @@ function setupFocusListeners(): void {
 
       // Skip if active watch exists (don't start multiple sessions)
       if (getActiveWatch()) {
+        return
+      }
+
+      // FIXED: Skip if field already filled by InboxKey (prevents re-trigger)
+      if (isFieldFilledByInboxKey(target)) {
+        console.log('[InboxKey] Field already filled, skipping re-trigger')
+        return
+      }
+
+      // FIXED: Skip if field has any value (user filled or other source)
+      if (target.value && target.value.trim().length > 0) {
+        console.log('[InboxKey] Field has existing value, skipping')
         return
       }
 

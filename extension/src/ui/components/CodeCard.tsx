@@ -35,19 +35,22 @@ export function CodeCard({ item, onCopy }: CodeCardProps) {
       from,
       to: item.to ?? undefined,
       subject,
+      senderDomain: item.senderETLD,
     }
-  }, [item.from, item.subject, item.source, item.to])
+  }, [item.from, item.subject, item.source, item.to, item.senderETLD])
 
   const timeLabel = timeAgoShort(item.receivedAt)
+
+  // Debug scoring display (enabled via localStorage: inboxkey.debug.scoring = "true")
+  const showDebugScoring = typeof window !== 'undefined' &&
+    localStorage.getItem('inboxkey.debug.scoring') === 'true'
 
   return (
     <article className="code-card" data-kind="code" aria-labelledby={`code-${item.id}-from`}>
       <div className="code-card__body">
-        <div className="card-head">
-          <span className="time-pill" aria-label={t('aria_received_time', [timeLabel])}>
-            {timeLabel}
-          </span>
-        </div>
+        <span className="time-pill time-pill--floating" aria-label={t('aria_received_time', [timeLabel])}>
+          {timeLabel}
+        </span>
         <dl className="meta-grid">
           <dt className="meta-grid__label">{t('label_from')}</dt>
           <dd id={`code-${item.id}-from`} className="meta-grid__value" title={meta.from}>
@@ -73,19 +76,45 @@ export function CodeCard({ item, onCopy }: CodeCardProps) {
             >
               <span className="code-pill__text">{item.code}</span>
             </button>
+            <button
+              type="button"
+              className={`copy-button ${copying ? 'copy-button--success' : ''}`}
+              onClick={handleCopy}
+              disabled={copying}
+              data-code={item.code}
+            >
+              {copying ? t('button_copied') : t('button_copy')}
+            </button>
           </dd>
         </dl>
-      </div>
-      <div className="code-card__actions">
-        <button
-          type="button"
-          className={`action-button action-button--primary ${copying ? 'action-button--success' : ''}`}
-          onClick={handleCopy}
-          disabled={copying}
-          data-code={item.code}
-        >
-          {copying ? t('button_copied') : t('button_copy')}
-        </button>
+        {showDebugScoring && item.totalScore !== undefined && (
+          <div className="score-breakdown">
+            <div className="score-breakdown__title">Debug Scoring</div>
+            <div className="score-breakdown__grid">
+              <span>Total:</span><span>{item.totalScore.toFixed(3)}</span>
+              {item.domainAffinity !== undefined && (
+                <>
+                  <span>Domain:</span><span>{item.domainAffinity.toFixed(3)}</span>
+                </>
+              )}
+              {item.recencyScore !== undefined && (
+                <>
+                  <span>Recency:</span><span>{item.recencyScore.toFixed(3)}</span>
+                </>
+              )}
+              {item.sessionBoost !== undefined && item.sessionBoost > 0 && (
+                <>
+                  <span>Session:</span><span>+{item.sessionBoost.toFixed(3)}</span>
+                </>
+              )}
+              {item.shapeScore !== undefined && item.shapeScore !== 0 && (
+                <>
+                  <span>Shape:</span><span>{item.shapeScore > 0 ? '+' : ''}{item.shapeScore.toFixed(3)}</span>
+                </>
+              )}
+            </div>
+          </div>
+        )}
       </div>
     </article>
   )

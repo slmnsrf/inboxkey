@@ -2,7 +2,7 @@
  * Helper utilities for working with chrome.storage in E2E tests
  */
 
-import type { BrowserContext } from '@playwright/test'
+import type { Page } from '@playwright/test'
 
 export interface StoredCode {
   code: string
@@ -25,14 +25,12 @@ export interface Settings {
  * Inject a verification code into chrome.storage.local
  */
 export async function injectCode(
-  context: BrowserContext,
+  backgroundPage: Page,
   code: string,
   siteUrl?: string,
   source = 'E2E Test'
 ): Promise<void> {
-  const [page] = context.pages()
-
-  await page.evaluate(
+  await backgroundPage.evaluate(
     async ({ code, siteUrl, source }) => {
       const storedCode = {
         code,
@@ -57,10 +55,8 @@ export async function injectCode(
 /**
  * Get all stored codes from chrome.storage.local
  */
-export async function getStoredCodes(context: BrowserContext): Promise<StoredCode[]> {
-  const [page] = context.pages()
-
-  return await page.evaluate(async () => {
+export async function getStoredCodes(backgroundPage: Page): Promise<StoredCode[]> {
+  return await backgroundPage.evaluate(async () => {
     return new Promise<StoredCode[]>((resolve) => {
       chrome.storage.local.get(['recent_codes'], (result) => {
         resolve(result.recent_codes || [])
@@ -72,10 +68,8 @@ export async function getStoredCodes(context: BrowserContext): Promise<StoredCod
 /**
  * Clear all codes from storage
  */
-export async function clearCodes(context: BrowserContext): Promise<void> {
-  const [page] = context.pages()
-
-  await page.evaluate(async () => {
+export async function clearCodes(backgroundPage: Page): Promise<void> {
+  await backgroundPage.evaluate(async () => {
     return new Promise<void>((resolve) => {
       chrome.storage.local.set({ recent_codes: [] }, () => resolve())
     })
@@ -85,10 +79,8 @@ export async function clearCodes(context: BrowserContext): Promise<void> {
 /**
  * Clear all storage data
  */
-export async function clearStorage(context: BrowserContext): Promise<void> {
-  const [page] = context.pages()
-
-  await page.evaluate(async () => {
+export async function clearStorage(backgroundPage: Page): Promise<void> {
+  await backgroundPage.evaluate(async () => {
     return new Promise<void>((resolve) => {
       chrome.storage.local.clear(() => {
         chrome.storage.session.clear(() => resolve())
@@ -101,12 +93,10 @@ export async function clearStorage(context: BrowserContext): Promise<void> {
  * Initialize extension with master password
  */
 export async function initializeExtension(
-  context: BrowserContext,
+  backgroundPage: Page,
   password: string
 ): Promise<void> {
-  const [page] = context.pages()
-
-  await page.evaluate(
+  await backgroundPage.evaluate(
     async (pwd) => {
       // This would call the extension's initialization API
       // For now, just set up basic storage structure
@@ -135,10 +125,8 @@ export async function initializeExtension(
 /**
  * Lock the extension
  */
-export async function lockExtension(context: BrowserContext): Promise<void> {
-  const [page] = context.pages()
-
-  await page.evaluate(async () => {
+export async function lockExtension(backgroundPage: Page): Promise<void> {
+  await backgroundPage.evaluate(async () => {
     return new Promise<void>((resolve) => {
       chrome.storage.session.set(
         {
@@ -158,12 +146,10 @@ export async function lockExtension(context: BrowserContext): Promise<void> {
  * Unlock the extension
  */
 export async function unlockExtension(
-  context: BrowserContext,
+  backgroundPage: Page,
   password: string
 ): Promise<void> {
-  const [page] = context.pages()
-
-  await page.evaluate(
+  await backgroundPage.evaluate(
     async (pwd) => {
       // This would verify the password and unlock
       // For now, just set unlocked state
@@ -187,10 +173,8 @@ export async function unlockExtension(
 /**
  * Get extension settings
  */
-export async function getSettings(context: BrowserContext): Promise<Settings> {
-  const [page] = context.pages()
-
-  return await page.evaluate(async () => {
+export async function getSettings(backgroundPage: Page): Promise<Settings> {
+  return await backgroundPage.evaluate(async () => {
     return new Promise<Settings>((resolve) => {
       chrome.storage.local.get(['settings'], (result) => {
         resolve(result.settings || {
@@ -210,12 +194,10 @@ export async function getSettings(context: BrowserContext): Promise<Settings> {
  * Update extension settings
  */
 export async function updateSettings(
-  context: BrowserContext,
+  backgroundPage: Page,
   settings: Partial<Settings>
 ): Promise<void> {
-  const [page] = context.pages()
-
-  await page.evaluate(
+  await backgroundPage.evaluate(
     async (newSettings) => {
       return new Promise<void>((resolve) => {
         chrome.storage.local.get(['settings'], (result) => {
@@ -232,10 +214,8 @@ export async function updateSettings(
 /**
  * Check if extension is locked
  */
-export async function isExtensionLocked(context: BrowserContext): Promise<boolean> {
-  const [page] = context.pages()
-
-  return await page.evaluate(async () => {
+export async function isExtensionLocked(backgroundPage: Page): Promise<boolean> {
+  return await backgroundPage.evaluate(async () => {
     return new Promise<boolean>((resolve) => {
       chrome.storage.session.get(['session_state'], (result) => {
         resolve(result.session_state?.isLocked || false)
@@ -247,10 +227,8 @@ export async function isExtensionLocked(context: BrowserContext): Promise<boolea
 /**
  * Get the number of active watch sessions
  */
-export async function getActiveWatchCount(context: BrowserContext): Promise<number> {
-  const [page] = context.pages()
-
-  return await page.evaluate(async () => {
+export async function getActiveWatchCount(backgroundPage: Page): Promise<number> {
+  return await backgroundPage.evaluate(async () => {
     return new Promise<number>((resolve) => {
       chrome.storage.session.get(['session_state'], (result) => {
         resolve(result.session_state?.activeWatchSessions?.length || 0)

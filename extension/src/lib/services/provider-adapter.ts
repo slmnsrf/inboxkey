@@ -9,10 +9,11 @@ import type { IStorage } from '@/lib/storage/storage-interface'
 import type { IEmailProvider } from '@/lib/providers/provider-interface'
 import { GmailProvider } from '@/lib/providers/gmail/gmail-provider'
 import { OutlookProvider } from '@/lib/providers/outlook/outlook-provider'
+import { IMAPBridgeAdapter } from '@/lib/providers/imap-bridge/imap-bridge-adapter'
 import type { Mailbox } from '@/lib/storage/schema'
 
 // Re-export types that v2 email-polling-service needs
-export type ProviderId = 'gmail' | 'outlook'
+export type ProviderId = 'gmail' | 'outlook' | 'imap-bridge'
 
 export interface EmailLike {
   id: string
@@ -140,10 +141,19 @@ export async function createAdaptersFromMailboxes(
   const mailboxes = await storage.getMailboxes()
 
   return mailboxes.map(mailbox => {
-    const provider = mailbox.providerId === 'gmail'
-      ? new GmailProvider()
-      : new OutlookProvider()
+    if (mailbox.providerId === 'imap-bridge') {
+      // IMAP provider: use IMAPBridgeAdapter (no OAuth provider needed)
+      return new IMAPBridgeAdapter(
+        mailbox.imapAccountId || '',
+        mailbox.email
+      )
+    } else {
+      // OAuth provider: use StorageProviderAdapter with Gmail/Outlook provider
+      const provider = mailbox.providerId === 'gmail'
+        ? new GmailProvider()
+        : new OutlookProvider()
 
-    return new StorageProviderAdapter(storage, provider, mailbox)
+      return new StorageProviderAdapter(storage, provider, mailbox)
+    }
   })
 }

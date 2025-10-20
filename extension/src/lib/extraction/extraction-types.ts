@@ -23,6 +23,17 @@
  */
 
 // ------------------------------
+// Re-exports for backward compatibility
+// ------------------------------
+
+/**
+ * Re-export DOMAIN_ALIASES and WATCH_SESSION_SCORING from scoring-config.
+ * These are now centralized in the matching module but re-exported here
+ * for backward compatibility with existing code that imports from extraction-types.
+ */
+export { DOMAIN_ALIASES, WATCH_SESSION_SCORING } from '../matching/scoring-config'
+
+// ------------------------------
 // Types
 // ------------------------------
 
@@ -97,10 +108,10 @@ const RX_NUMERIC: RegExp = /(?<!\d)(\d{4,8})(?!\d)/gu
 const RX_GROUPED_NUMERIC: RegExp = /\b(\d{3,4}[-\s]\d{3,4})\b/gu
 
 /**
- * Alphanumeric blocks: 4–10 uppercase letters/digits.
+ * Alphanumeric blocks: 4–10 letters (upper or lowercase) + digits.
  * Intentionally broad — downstream filters reject all-letter tokens, etc.
  */
-const RX_ALNUM: RegExp = /\b([A-Z0-9]{4,10})\b/gu
+const RX_ALNUM: RegExp = /\b([A-Za-z0-9]{4,10})\b/gu
 
 /** Normalizers (small and inline to avoid allocations). */
 const normalizeSame = (s: string) => s
@@ -174,6 +185,8 @@ export const CODE_KEYWORDS_BY_LANG: Readonly<Record<string, ReadonlyArray<string
       'confirmation code',
       'confirm code',
       'your code',
+      'passcode',
+      'pass code',
     ],
     es: [
       'código',

@@ -46,14 +46,6 @@ export function SecurityInfo() {
         >
           View Source Code →
         </a>
-        <a
-          href={docsUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="link-button secondary"
-        >
-          Security Documentation →
-        </a>
       </div>
 
       <hr className="divider" />

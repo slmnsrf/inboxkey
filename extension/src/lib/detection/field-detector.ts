@@ -24,7 +24,7 @@ import {
  * Target: <1ms execution time
  */
 function detectTier1(inputs: HTMLInputElement[]): DetectionResult | null {
-  // const startTime = performance.now()
+  const startTime = performance.now()
   const candidates: Array<{
     input: HTMLInputElement
     confidence: number
@@ -191,7 +191,7 @@ function getNearbyText(input: HTMLInputElement): string {
  * Target: <50ms execution time
  */
 function detectTier2(inputs: HTMLInputElement[]): DetectionResult | null {
-  // const startTime = performance.now()
+  const startTime = performance.now()
   const candidates: Array<{
     input: HTMLInputElement
     score: number

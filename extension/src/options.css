@@ -544,6 +544,11 @@
   animation: spin 0.8s linear infinite;
 }
 
+.loading-spinner--xsmall {
+  width: 12px;
+  height: 12px;
+}
+
 .loading-spinner--small {
   width: 16px;
   height: 16px;

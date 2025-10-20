@@ -56,17 +56,24 @@ export const test = base.extend<ExtensionFixtures>({
   },
 
   // Get the background service worker page
+  // For MV3, we create an offscreen document page to access chrome APIs
   backgroundPage: async ({ context, extensionId }, use) => {
+    // Wait for service worker to be ready
     let [background] = context.serviceWorkers()
     if (!background) {
       background = await context.waitForEvent('serviceworker')
     }
 
-    // Create a page handle for the service worker
-    const backgroundPage = await context.newPage()
-    await backgroundPage.goto(`chrome-extension://${extensionId}/_generated_background_page.html`)
+    // Create a simple HTML page in extension context to access chrome APIs
+    // We'll use a blank page that navigates to the extension's context
+    const bgPage = await context.newPage()
 
-    await use(backgroundPage)
+    // Navigate to extension's options page or create a minimal HTML page
+    // For now, we'll use the popup page which has access to chrome APIs
+    await bgPage.goto(`chrome-extension://${extensionId}/popup.html`)
+
+    await use(bgPage)
+    await bgPage.close()
   },
 
   // Get the popup page

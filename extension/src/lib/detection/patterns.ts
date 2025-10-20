@@ -96,7 +96,7 @@ export const TYPICAL_CODE_LENGTHS = {
  */
 export const EXCLUSION_PATTERNS = {
   password: /password/i,
-  email: /e[-\s]?mail/i,
+  email: /^e[-\s]?mail$/i,  // Exact match only - don't exclude "email_code"
   username: /user[-\s]?name/i,
   search: /search/i,
   name: /^(?:first|last|full)[-\s]?name$/i,

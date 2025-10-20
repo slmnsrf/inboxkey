@@ -7,6 +7,7 @@
 
 import type { EmailMessage } from '../provider-interface'
 import type { GraphMessage } from './outlook-api'
+import { extractETLD } from '@/lib/matching/domain-affinity'
 
 export class OutlookParser {
   /**
@@ -30,12 +31,15 @@ export class OutlookParser {
     // Trim and normalize snippet
     const snippet = graphMessage.bodyPreview?.trim()
 
+    const senderEmail = graphMessage.from.emailAddress.address
+
     return {
       id: graphMessage.id,
       from: {
-        email: graphMessage.from.emailAddress.address,
+        email: senderEmail,
         name: senderName || undefined,
       },
+      senderETLD: this.extractSenderETLD(senderEmail),
       subject: subject || '(No Subject)',
       date: new Date(graphMessage.receivedDateTime),
       bodyText: this.extractBodyText(graphMessage),
@@ -76,5 +80,30 @@ export class OutlookParser {
     }
 
     return undefined
+  }
+
+  /**
+   * Extract eTLD+1 from sender email address
+   *
+   * Extracts the domain from an email address and returns the effective
+   * top-level domain (eTLD+1) for domain affinity matching.
+   *
+   * @param email - The sender's email address
+   * @returns The eTLD+1 domain (e.g., "example.com")
+   *
+   * @example
+   * extractSenderETLD("user@mail.example.com") // returns "example.com"
+   * extractSenderETLD("noreply@example.com") // returns "example.com"
+   * extractSenderETLD("invalid") // returns ""
+   */
+  private extractSenderETLD(email: string): string {
+    if (!email) return ''
+
+    // Extract domain from email (part after @)
+    const atIndex = email.lastIndexOf('@')
+    if (atIndex === -1) return ''
+
+    const domain = email.slice(atIndex + 1)
+    return extractETLD(domain)
   }
 }

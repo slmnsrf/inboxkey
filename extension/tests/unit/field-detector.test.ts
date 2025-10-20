@@ -75,7 +75,7 @@ describe('FieldDetector', () => {
 
       expect(results).toHaveLength(1)
       expect(results[0].field.id).toBe('code')
-      expect(results[0].tier).toBe(2)
+      expect(results[0].tier).toBe(1)  // Tier 1 detects id="code" via exact match
     })
 
     it('should return empty array when no fields found', () => {
@@ -120,6 +120,28 @@ describe('FieldDetector', () => {
       const results = detector.detectExisting({ strictVisibility: false })
 
       expect(results).toHaveLength(0)
+    })
+
+    it('should detect email_code field (tarkov.com pattern)', () => {
+      // Regression test: fields with "email" prefix but containing "code"
+      // should be detected, not excluded
+      document.body.innerHTML = `
+        <input
+          type="text"
+          id="email_code"
+          name="email_code"
+          placeholder="Enter verification code"
+          autocomplete="off"
+          data-testid="verification-field"
+        >
+      `
+
+      const results = detector.detectExisting({ strictVisibility: false })
+
+      expect(results).toHaveLength(1)
+      expect(results[0].field.name).toBe('email_code')
+      expect(results[0].confidence).toBeGreaterThanOrEqual(90)
+      expect(results[0].signals).toContain('name/id="email_code" (contains match)')
     })
 
     it('should track detected fields to avoid duplicates', () => {
@@ -385,7 +407,7 @@ describe('FieldDetector', () => {
       expect(results[0].executionTime).toBeLessThan(1)
     })
 
-    it('should meet Tier 2 performance target (<50ms)', () => {
+    it('should meet Tier 1 performance target (<1ms)', () => {
       document.body.innerHTML = `
         <label for="code">Enter your verification code</label>
         <input type="text" id="code" data-testid="verification-field">
@@ -394,8 +416,8 @@ describe('FieldDetector', () => {
       const results = detector.detectExisting({ strictVisibility: false })
 
       expect(results).toHaveLength(1)
-      expect(results[0].tier).toBe(2)
-      expect(results[0].executionTime).toBeLessThan(50)
+      expect(results[0].tier).toBe(1)  // Tier 1 detects id="code" via exact match
+      expect(results[0].executionTime).toBeLessThan(1)
     })
   })
 })

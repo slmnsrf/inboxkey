@@ -1,0 +1,20 @@
+{
+  "name": "inboxkey-monorepo",
+  "version": "0.1.0",
+  "private": true,
+  "workspaces": [
+    "packages/*",
+    "extension",
+    "apps/*"
+  ],
+  "scripts": {
+    "build:core": "cd packages/extraction-core && npm run build",
+    "build:extension": "cd extension && npm run build",
+    "build:reviewer": "cd apps/reviewer && npm run build",
+    "build:all": "npm run build:core && npm run build:extension && npm run build:reviewer",
+    "test": "npm run test --workspaces"
+  },
+  "devDependencies": {
+    "typescript": "^5.5.3"
+  }
+}

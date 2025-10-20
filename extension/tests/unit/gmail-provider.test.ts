@@ -49,6 +49,7 @@ describe('GmailParser', () => {
           email: 'sender@example.com',
           name: undefined,
         },
+        senderETLD: 'example.com',
         subject: 'Test Email',
         date: new Date(1609459200000),
         bodyText: 'Hello world',
@@ -536,6 +537,113 @@ describe('GmailParser', () => {
 
       expect(result.date).toEqual(new Date(1640995200000))
       expect(result.date.toISOString()).toBe('2022-01-01T00:00:00.000Z')
+    })
+  })
+
+  describe('senderETLD extraction', () => {
+    it('should extract eTLD from simple email address', () => {
+      const gmailMsg: GmailMessage = {
+        id: 'msg123',
+        threadId: 'thread123',
+        labelIds: [],
+        snippet: '',
+        internalDate: '1609459200000',
+        payload: {
+          headers: [
+            { name: 'From', value: 'user@example.com' },
+            { name: 'Subject', value: 'Test' },
+          ],
+          body: { size: 0 },
+        },
+      }
+
+      const result = parser.parseMessage(gmailMsg)
+
+      expect(result.senderETLD).toBe('example.com')
+    })
+
+    it('should extract eTLD from email with name and angle brackets', () => {
+      const gmailMsg: GmailMessage = {
+        id: 'msg123',
+        threadId: 'thread123',
+        labelIds: [],
+        snippet: '',
+        internalDate: '1609459200000',
+        payload: {
+          headers: [
+            { name: 'From', value: 'John Doe <user@example.com>' },
+            { name: 'Subject', value: 'Test' },
+          ],
+          body: { size: 0 },
+        },
+      }
+
+      const result = parser.parseMessage(gmailMsg)
+
+      expect(result.senderETLD).toBe('example.com')
+    })
+
+    it('should extract eTLD from subdomain email address', () => {
+      const gmailMsg: GmailMessage = {
+        id: 'msg123',
+        threadId: 'thread123',
+        labelIds: [],
+        snippet: '',
+        internalDate: '1609459200000',
+        payload: {
+          headers: [
+            { name: 'From', value: 'noreply@mail.example.com' },
+            { name: 'Subject', value: 'Test' },
+          ],
+          body: { size: 0 },
+        },
+      }
+
+      const result = parser.parseMessage(gmailMsg)
+
+      expect(result.senderETLD).toBe('example.com')
+    })
+
+    it('should extract eTLD from multiple subdomains', () => {
+      const gmailMsg: GmailMessage = {
+        id: 'msg123',
+        threadId: 'thread123',
+        labelIds: [],
+        snippet: '',
+        internalDate: '1609459200000',
+        payload: {
+          headers: [
+            { name: 'From', value: 'user@a.b.c.example.com' },
+            { name: 'Subject', value: 'Test' },
+          ],
+          body: { size: 0 },
+        },
+      }
+
+      const result = parser.parseMessage(gmailMsg)
+
+      expect(result.senderETLD).toBe('example.com')
+    })
+
+    it('should handle invalid email gracefully', () => {
+      const gmailMsg: GmailMessage = {
+        id: 'msg123',
+        threadId: 'thread123',
+        labelIds: [],
+        snippet: '',
+        internalDate: '1609459200000',
+        payload: {
+          headers: [
+            { name: 'From', value: 'invalid-email-without-at' },
+            { name: 'Subject', value: 'Test' },
+          ],
+          body: { size: 0 },
+        },
+      }
+
+      const result = parser.parseMessage(gmailMsg)
+
+      expect(result.senderETLD).toBe('')
     })
   })
 })

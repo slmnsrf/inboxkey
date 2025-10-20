@@ -18,6 +18,13 @@ import { PopupCacheManager } from "./popup-cache"
 import { PopupMessageHandler } from "./popup-handler"
 import { StorageFactory } from "@/lib/storage/storage-factory"
 import type { Mailbox } from "@/lib/storage/schema"
+import notificationIconUrl from "url:~assets/icon.png"
+import {
+  setBadgeListening,
+  setBadgeSuccess,
+  setBadgeNoCode,
+  clearBadge,
+} from "@/contents/badge-manager"
 
 interface StartSessionMessage {
   type: "START_SESSION"
@@ -125,14 +132,23 @@ chrome.runtime.onInstalled.addListener(async (details) => {
       chrome.action.setBadgeText({ text: '!' })
       chrome.action.setBadgeBackgroundColor({ color: '#FF6B6B' })
 
-      // Show notification
-      chrome.notifications.create('migration-needed', {
-        type: 'basic',
-        iconUrl: chrome.runtime.getURL('icon-128.png'),
-        title: 'InboxKey Update',
-        message: 'Action required: Click extension icon to migrate your data',
-        priority: 2
-      })
+      const notificationsApi = chrome.notifications
+
+      // Show notification if API is available; otherwise log for diagnostics
+      if (
+        notificationsApi &&
+        typeof notificationsApi.create === 'function'
+      ) {
+        notificationsApi.create('migration-needed', {
+          type: 'basic',
+          iconUrl: notificationIconUrl,
+          title: 'InboxKey Update',
+          message: 'Action required: Click extension icon to migrate your data',
+          priority: 2
+        })
+      } else {
+        console.warn('[InboxKey] Notifications API unavailable - badge will indicate migration requirement')
+      }
     }
   }
 })
@@ -150,18 +166,8 @@ chrome.runtime.onStartup.addListener(async () => {
   }
 })
 
-// Validate Chrome APIs are available
-if (!chrome.alarms) {
-  console.error("[InboxKey] chrome.alarms API not available - check permissions and reinstall extension")
-} else {
-  chrome.alarms.onAlarm.addListener((alarm) => {
-    if (!alarm.name) return
-
-    sessionController.handleAlarm(alarm.name).catch((error) => {
-      console.error("[InboxKey] Alarm handling failed:", error)
-    })
-  })
-}
+// V2: SessionPoller handles alarms internally via its own listener
+// No need to register chrome.alarms.onAlarm listener here
 
 chrome.runtime.onConnect.addListener((port) => {
   if (port.name !== "watch-session") {
@@ -201,6 +207,12 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   console.log("[InboxKey] ==========================================")
 
   lastMessageTimestamp = now
+
+  // Handle badge update messages from content scripts
+  if (msg.type === "UPDATE_BADGE") {
+    handleBadgeUpdate(msg)
+    return false
+  }
 
   // Handle popup messages
   if (
@@ -269,6 +281,28 @@ chrome.runtime.onMessage.addListener(() => {
 })
 
 console.log("[InboxKey] Service worker initialization complete")
+
+/**
+ * Handle badge update requests from content scripts
+ */
+function handleBadgeUpdate(msg: { state: string }): void {
+  switch (msg.state) {
+    case 'listening':
+      setBadgeListening()
+      break
+    case 'success':
+      setBadgeSuccess()
+      break
+    case 'no-code':
+      setBadgeNoCode()
+      break
+    case 'clear':
+      clearBadge()
+      break
+    default:
+      console.warn('[InboxKey] Unknown badge state:', msg.state)
+  }
+}
 
 /**
  * Attach a runtime port to an existing context.

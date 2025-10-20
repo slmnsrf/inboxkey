@@ -124,8 +124,10 @@ describe("SessionController Integration", () => {
       await vi.advanceTimersByTimeAsync(1)
       expect(mockGetRecentCodes).toHaveBeenCalledTimes(1)
 
-      // Simulate alarm firing for second poll (timer might have failed)
-      await controller.handleAlarm(`inboxkey.session.${session.id}:1`)
+      // Note: handleAlarm() removed - SessionPoller handles alarms internally
+      // Alarm fallback is tested in session-poller.test.ts
+      // Complete remaining polls via timer
+      await vi.runAllTimersAsync()
 
       expect(mockGetRecentCodes).toHaveBeenCalledTimes(2)
       expect(onCompleted).toHaveBeenCalledWith(
@@ -154,22 +156,17 @@ describe("SessionController Integration", () => {
       await vi.advanceTimersByTimeAsync(1)
       expect(mockGetRecentCodes).toHaveBeenCalledTimes(1)
 
-      // Try to trigger same poll via alarm (should be skipped)
-      await controller.handleAlarm(`inboxkey.session.${session.id}:0`)
-      expect(mockGetRecentCodes).toHaveBeenCalledTimes(1) // Still 1
+      // Note: handleAlarm() removed - SessionPoller handles alarms internally
+      // Idempotency is tested in session-poller.test.ts
 
       // Second poll via timer
       await vi.advanceTimersByTimeAsync(100)
       expect(mockGetRecentCodes).toHaveBeenCalledTimes(2)
 
-      // Try both timer and alarm for third poll
-      const pollPromise = controller.handleAlarm(
-        `inboxkey.session.${session.id}:2`
-      )
+      // Third poll via timer
       await vi.advanceTimersByTimeAsync(100)
-      await pollPromise
 
-      // Should only execute once despite both triggers
+      // Should execute all 3 polls
       expect(mockGetRecentCodes).toHaveBeenCalledTimes(3)
     })
 
@@ -331,8 +328,9 @@ describe("SessionController Integration", () => {
 
       await controller.initialize()
 
-      // Trigger alarm for second poll
-      await controller.handleAlarm("inboxkey.session.test-session:1")
+      // Note: handleAlarm() removed - SessionPoller handles alarms internally
+      // Resume behavior is tested via timer-based polls
+      await vi.runAllTimersAsync()
 
       expect(mockGetRecentCodes).toHaveBeenCalled()
     })
@@ -596,8 +594,8 @@ describe("SessionController Integration", () => {
 
       await controller.initialize()
 
-      // Should not throw
-      await controller.handleAlarm("inboxkey.session.non-existent:0")
+      // Note: handleAlarm() removed - SessionPoller handles alarms internally
+      // Edge case handling is tested in session-poller.test.ts
     })
 
     it("should handle alarm for completed session", async () => {
@@ -626,8 +624,8 @@ describe("SessionController Integration", () => {
       // Complete the session
       await vi.runAllTimersAsync()
 
-      // Try to handle alarm for completed session
-      await controller.handleAlarm(`inboxkey.session.${session.id}:1`)
+      // Note: handleAlarm() removed - SessionPoller handles alarms internally
+      // Duplicate execution prevention is tested in session-poller.test.ts
 
       // Should not cause issues or duplicate completion
       expect(onCompleted).toHaveBeenCalledTimes(1)

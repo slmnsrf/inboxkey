@@ -25,11 +25,12 @@ import './accounts/AccountsPanel.css'
 
 interface MailboxInfo {
   id: string
-  providerId: 'gmail' | 'outlook'
+  providerId: 'gmail' | 'outlook' | 'imap-bridge'
   email: string
   addedAt: number
   lastSyncedAt: number
-  tokenExpiresAt: number
+  /** OAuth token expiry (undefined for IMAP providers) */
+  tokenExpiresAt?: number
 }
 
 type ConnectionStage = 'authenticating' | 'loading_profile' | 'saving' | null

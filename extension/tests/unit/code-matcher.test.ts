@@ -8,6 +8,7 @@ import {
   __testing,
 } from "../../src/lib/matching/code-matcher"
 import type { StoredCode } from "../../src/lib/storage/schema"
+import type { ExpectedShape } from "../../src/lib/matching/shape-matcher"
 
 const { extractDomain, domainsMatch, calculateRecencyScore } = __testing
 
@@ -510,6 +511,303 @@ describe("Code Matcher", () => {
       const result = findBestMatchingCode(codes, "https://example.com", now)
       // Too old (>5min) = 0 recency score, no domain match = null
       expect(result).toBe(null)
+    })
+  })
+
+  describe("V2 Scoring Algorithm", () => {
+    const createV2Code = (
+      overrides: Partial<StoredCode> = {}
+    ): StoredCode => ({
+      code: "123456",
+      timestamp: Date.now(),
+      source: "Test <noreply@example.com>",
+      used: false,
+      senderETLD: "example.com",
+      receivedAt: Date.now(),
+      ...overrides,
+    })
+
+    describe("Domain Affinity", () => {
+      it("should score exact eTLD match highest (1.0 affinity)", () => {
+        const now = Date.now()
+        const codes = [
+          createV2Code({
+            code: "EXACT",
+            senderETLD: "github.com",
+            receivedAt: now,
+            source: "GitHub <noreply@github.com>",
+          }),
+          createV2Code({
+            code: "OTHER",
+            senderETLD: "example.com",
+            receivedAt: now,
+            source: "Example <noreply@example.com>",
+          }),
+        ]
+
+        const result = findBestMatchingCode(codes, "https://github.com", now)
+        // Exact match should win due to domain affinity (1.0 * 100 = 100 points)
+        expect(result?.code).toBe("EXACT")
+      })
+
+      it("should score alias match high (0.9 affinity)", () => {
+        const now = Date.now()
+        const codes = [
+          createV2Code({
+            code: "ALIAS",
+            senderETLD: "dropboxmail.com", // Known alias for dropbox.com
+            receivedAt: now,
+            source: "Dropbox <noreply@dropboxmail.com>",
+          }),
+          createV2Code({
+            code: "UNRELATED",
+            senderETLD: "example.com",
+            receivedAt: now,
+            source: "Example <noreply@example.com>",
+          }),
+        ]
+
+        const result = findBestMatchingCode(codes, "https://dropbox.com", now)
+        // Alias match (0.9 * 100 = 90 points) should beat no match (0.0 * 100 = 0 points)
+        expect(result?.code).toBe("ALIAS")
+      })
+
+      it("should score token overlap medium (0.6 affinity)", () => {
+        const now = Date.now()
+        const codes = [
+          createV2Code({
+            code: "TOKEN",
+            senderETLD: "notification.com",
+            receivedAt: now,
+            source: "GitHub Security Alert", // "github" token in subject
+          }),
+          createV2Code({
+            code: "UNRELATED",
+            senderETLD: "example.com",
+            receivedAt: now,
+            source: "Example <noreply@example.com>",
+          }),
+        ]
+
+        const result = findBestMatchingCode(
+          codes,
+          "https://github.com",
+          now
+        )
+        // Token overlap (0.6 * 100 = 60 points) should beat no match
+        expect(result?.code).toBe("TOKEN")
+      })
+    })
+
+    describe("Recency + Session Boost", () => {
+      it("should prefer recent codes over old codes", () => {
+        const now = Date.now()
+        const codes = [
+          createV2Code({
+            code: "OLD",
+            senderETLD: "example.com",
+            receivedAt: now - 300 * 1000, // 300 seconds old (5 minutes)
+          }),
+          createV2Code({
+            code: "NEW",
+            senderETLD: "example.com",
+            receivedAt: now, // Just received
+          }),
+        ]
+
+        const result = findBestMatchingCode(codes, "https://example.com", now)
+        // Recent code gets higher recency score (1.0 vs 0.0)
+        // NEW: 100 (domain) + 250 (recency) = 350
+        // OLD: 100 (domain) + 0 (recency, >120s) = 100
+        expect(result?.code).toBe("NEW")
+      })
+
+      it("should apply session boost to codes received during session", () => {
+        const now = Date.now()
+        const sessionStart = now - 5000 // Session started 5 seconds ago
+
+        const codes = [
+          createV2Code({
+            code: "DURING_SESSION",
+            senderETLD: "example.com",
+            receivedAt: now - 2000, // Received 2 seconds ago (within session window)
+          }),
+          createV2Code({
+            code: "BEFORE_SESSION",
+            senderETLD: "example.com",
+            receivedAt: sessionStart - 20000, // Received 20s before session
+          }),
+        ]
+
+        const result = findBestMatchingCode(
+          codes,
+          "https://example.com",
+          now,
+          sessionStart
+        )
+        // DURING_SESSION gets session boost (100 points) on top of domain + recency
+        expect(result?.code).toBe("DURING_SESSION")
+      })
+
+      it("should not apply session boost to old codes", () => {
+        const now = Date.now()
+        const sessionStart = now - 5000 // Session started 5 seconds ago
+
+        const codes = [
+          createV2Code({
+            code: "RECENT_NO_BOOST",
+            senderETLD: "example.com",
+            receivedAt: sessionStart - 20000, // 20s before session start
+          }),
+          createV2Code({
+            code: "OLDER_NO_BOOST",
+            senderETLD: "example.com",
+            receivedAt: sessionStart - 60000, // 60s before session start
+          }),
+        ]
+
+        const result = findBestMatchingCode(
+          codes,
+          "https://example.com",
+          now,
+          sessionStart
+        )
+        // More recent code should win (higher recency score)
+        expect(result?.code).toBe("RECENT_NO_BOOST")
+      })
+    })
+
+    describe("Shape Matching", () => {
+      it("should prefer codes matching expected shape", () => {
+        const now = Date.now()
+        const expectedShape: ExpectedShape = {
+          len: 6,
+          charset: "digits",
+        }
+
+        const codes = [
+          createV2Code({
+            code: "123456", // Matches: 6 digits
+            senderETLD: "example.com",
+            receivedAt: now,
+          }),
+          createV2Code({
+            code: "ABC123", // Doesn't match: has letters
+            senderETLD: "example.com",
+            receivedAt: now,
+          }),
+        ]
+
+        const result = findBestMatchingCode(
+          codes,
+          "https://example.com",
+          now,
+          undefined,
+          expectedShape
+        )
+        // Shape match adds 8 points as tiebreaker
+        expect(result?.code).toBe("123456")
+      })
+
+      it("should handle codes without expected shape gracefully", () => {
+        const now = Date.now()
+
+        const codes = [
+          createV2Code({
+            code: "123456",
+            senderETLD: "example.com",
+            receivedAt: now,
+          }),
+          createV2Code({
+            code: "ABC123",
+            senderETLD: "example.com",
+            receivedAt: now - 1000, // Slightly older
+          }),
+        ]
+
+        // No expectedShape parameter
+        const result = findBestMatchingCode(
+          codes,
+          "https://example.com",
+          now
+        )
+        // Without shape matching, recency determines winner
+        expect(result?.code).toBe("123456")
+      })
+    })
+
+    describe("Integration Scenarios", () => {
+      it("should combine all v2 factors correctly", () => {
+        const now = Date.now()
+        const sessionStart = now - 3000
+        const expectedShape: ExpectedShape = {
+          len: 6,
+          charset: "digits",
+        }
+
+        const codes = [
+          createV2Code({
+            code: "999999",
+            senderETLD: "github.com", // Exact match (100 pts)
+            receivedAt: now - 10000, // Older (~33 recency pts)
+            source: "GitHub <noreply@github.com>",
+            used: false,
+          }),
+          createV2Code({
+            code: "123456",
+            senderETLD: "notification.com", // No match (0 pts)
+            receivedAt: now - 500, // Very recent (~49 recency pts)
+            source: "GitHub Security Alert", // Token overlap (60 pts)
+            used: false,
+          }),
+          createV2Code({
+            code: "888888",
+            senderETLD: "github.com", // Exact match (100 pts)
+            receivedAt: sessionStart + 1000, // During session (15 session boost pts)
+            source: "GitHub <noreply@github.com>",
+            used: false,
+          }),
+        ]
+
+        const result = findBestMatchingCode(
+          codes,
+          "https://github.com",
+          now,
+          sessionStart,
+          expectedShape
+        )
+        // Code 888888: 100 (domain) + ~49 (recency, 2s old) + 15 (session) + 8 (shape) = ~172
+        // Code 999999: 100 (domain) + ~33 (recency, 10s old) + 0 (session) + 8 (shape) = ~141
+        // Code 123456: 60 (token) + ~49 (recency, 0.5s old) + 0 (session) + 8 (shape) = ~117
+        expect(result?.code).toBe("888888")
+      })
+
+      it("should handle missing optional fields gracefully", () => {
+        const now = Date.now()
+
+        // Legacy code without v2 fields
+        const codes = [
+          {
+            code: "LEGACY",
+            timestamp: now - 5000,
+            source: "Example <noreply@example.com>",
+            used: false,
+            siteMatch: "example.com",
+            // No senderETLD or receivedAt
+          },
+          createV2Code({
+            code: "V2",
+            senderETLD: "other.com",
+            receivedAt: now - 10000,
+          }),
+        ]
+
+        const result = findBestMatchingCode(codes, "https://example.com", now)
+        // Should handle backward compatibility:
+        // LEGACY: Falls back to extractETLD(siteMatch) and timestamp
+        // Should still find a match
+        expect(result).not.toBe(null)
+      })
     })
   })
 })

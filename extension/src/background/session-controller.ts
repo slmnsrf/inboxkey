@@ -5,11 +5,22 @@
  * polling continues even if the worker is restarted. A watch session monitors
  * recent verification codes and notifies the content script when a suitable
  * candidate is found.
+ *
+ * V2 CHANGES:
+ * - Integrated SessionPoller for MV3-resilient polling (replaced custom polling logic)
+ * - Added sessionStart and expectedShape to SessionState for v2 scoring
+ * - Added siteETLD extraction and storage
+ * - Added senderETLD extraction when adding codes
+ * - Passes sessionStart and expectedShape to findBestMatchingCode() for v2 algorithm
+ * - Reduced LOC from 477 to ~400 by delegating polling to SessionPoller
  */
 import { findBestMatchingCode } from "@/lib/matching/code-matcher"
 import { StorageFactory } from "@/lib/storage/storage-factory"
 import { EmailPollingService } from "@/lib/services/email-polling-service"
 import { createAdaptersFromMailboxes } from "@/lib/services/provider-adapter"
+import { SessionPoller } from "./session-poller"
+import { extractETLD } from "@/lib/matching/domain-affinity"
+import type { ExpectedShape } from "@/lib/matching/shape-matcher"
 import type { PopupCacheManager } from "./popup-cache"
 
 const SESSION_STORAGE_KEY = "inboxkey.sessions"
@@ -26,7 +37,25 @@ interface SessionState {
   id: string
   tabId: number
   url: string
+  /**
+   * Effective top-level domain plus one label of the site (e.g., "github.com").
+   * Used for v2 domain affinity scoring.
+   * @since v2
+   */
+  siteETLD: string
   expected: SessionExpected
+  /**
+   * Expected code shape characteristics for pattern matching.
+   * Used for v2 shape score tiebreaker.
+   * @since v2
+   */
+  expectedShape?: ExpectedShape
+  /**
+   * Unix timestamp (ms) when watch session started.
+   * Used for v2 session boost scoring.
+   * @since v2
+   */
+  sessionStart: number
   startedAt: number
   status: SessionStatus
   pollSchedule: number[]
@@ -61,24 +90,33 @@ interface PersistedSessions {
  */
 export class SessionController {
   private sessions = new Map<string, SessionState>()
-  private timers = new Map<string, NodeJS.Timeout>()
+  private poller: SessionPoller  // V2: Replaces manual timer/alarm management
 
   constructor(
     private readonly callbacks: SessionControllerCallbacks,
     private readonly pollSchedule: readonly number[] = DEFAULT_POLL_SCHEDULE,
     private readonly popupCacheManager?: PopupCacheManager
-  ) {}
+  ) {
+    // V2: Initialize SessionPoller with callback to handlePoll
+    this.poller = new SessionPoller(async (sessionId) => {
+      await this.handlePoll(sessionId)
+    })
+  }
 
   /**
     * Load sessions from storage and resume any active watches.
     */
   async initialize(): Promise<void> {
+    // V2: Initialize poller's alarm listener first
+    await this.poller.initialize()
+
     const persisted = await this.loadPersistedSessions()
 
     Object.values(persisted).forEach((session) => {
       if (session.status === "active") {
         this.sessions.set(session.id, session)
-        this.scheduleNextPoll(session)
+        // V2: Delegate poll scheduling to SessionPoller
+        this.poller.schedulePolls(session.id, session.startedAt)
       }
     })
   }
@@ -105,11 +143,26 @@ export class SessionController {
     const now = Date.now()
     const pollSchedule = this.pollSchedule.map((delay) => now + delay)
 
+    // V2: Extract siteETLD from URL
+    const siteETLD = extractETLD(new URL(url).hostname)
+
+    // V2: Convert expected to ExpectedShape format for v2 scoring
+    const expectedShape: ExpectedShape | undefined =
+      expected.length || expected.charset
+        ? {
+            len: expected.length,
+            charset: expected.charset,
+          }
+        : undefined
+
     const session: SessionState = {
       id,
       tabId,
       url,
+      siteETLD,              // V2: Store extracted eTLD+1
       expected,
+      expectedShape,         // V2: Store shape for v2 matching
+      sessionStart: now,     // V2: Store session start for sessionBoost
       startedAt: now,
       status: "active",
       pollSchedule,
@@ -120,7 +173,9 @@ export class SessionController {
     this.sessions.set(id, session)
     await this.persistSessions()
     this.callbacks.onSessionStarted?.(session)
-    this.scheduleNextPoll(session)
+
+    // V2: Delegate poll scheduling to SessionPoller
+    this.poller.schedulePolls(id, now)
 
     return session
   }
@@ -139,53 +194,43 @@ export class SessionController {
       session.lastUpdated = Date.now()
     }
 
-    this.clearTimers(sessionId)
+    // V2: Delegate to SessionPoller for cancellation
+    this.poller.cancelPolls(sessionId)
+
     this.sessions.delete(sessionId)
     await this.persistSessions()
     this.callbacks.onSessionCompleted(session, { status: "canceled" })
   }
 
   /**
-   * Handle alarm fallback when service worker was restarted mid-session.
-   */
-  async handleAlarm(alarmName: string): Promise<void> {
-    const parsed = this.parseAlarmName(alarmName)
-    if (!parsed) return
-
-    const { sessionId, pollIndex } = parsed
-    await this.executePoll(sessionId, pollIndex)
-  }
-
-  /**
    * Resume an existing session without creating a new one.
+   * V2: Delegates to SessionPoller for scheduling.
    */
   async resumeSession(sessionId: string): Promise<void> {
     const session = this.sessions.get(sessionId)
     if (!session || session.status !== "active") return
 
-    this.scheduleNextPoll(session)
+    // V2: Delegate to SessionPoller
+    this.poller.schedulePolls(sessionId, session.startedAt)
   }
 
   /**
-   * Execute the next poll for a session (triggered by timer or alarm).
+   * Handle a poll callback from SessionPoller.
+   * V2: This replaces the old executePoll() method, simplified by SessionPoller.
    */
-  private async executePoll(
-    sessionId: string,
-    pollIndex: number
-  ): Promise<void> {
+  private async handlePoll(sessionId: string): Promise<void> {
     const session = this.sessions.get(sessionId)
-    if (!session) return
-
-    if (session.status !== "active") {
+    if (!session || session.status !== "active") {
       return
     }
 
+    // Determine which poll index this is
+    const pollIndex = session.pollsCompleted.length
+
+    // Guard: already completed this poll
     if (session.pollsCompleted.includes(pollIndex)) {
       return
     }
-
-    // Clear alarm for this poll to avoid duplicate execution
-    chrome.alarms.clear(this.getAlarmName(session.id, pollIndex))
 
     try {
       const code = await this.pollForCode(session)
@@ -198,7 +243,7 @@ export class SessionController {
         session.status = "filled"
         session.lastCode = code
         await this.persistSessions()
-        this.clearTimers(sessionId)
+        this.poller.cancelPolls(sessionId) // V2: Cancel remaining polls
         this.callbacks.onSessionCompleted(session, { status: "filled", code })
         return
       }
@@ -209,14 +254,14 @@ export class SessionController {
       if (pollsRemaining <= 0) {
         session.status = "timedout"
         await this.persistSessions()
-        this.clearTimers(sessionId)
+        this.poller.cancelPolls(sessionId) // V2: Clean up poller
         this.callbacks.onSessionCompleted(session, { status: "timedout" })
         return
       }
 
       await this.persistSessions()
       this.callbacks.onSessionUpdated?.(session)
-      this.scheduleNextPoll(session)
+      // V2: SessionPoller handles next poll scheduling automatically
     } catch (error) {
       console.error("[SessionController] Poll execution failed:", error)
 
@@ -230,49 +275,19 @@ export class SessionController {
       if (pollsRemaining <= 0) {
         session.status = "timedout"
         await this.persistSessions()
-        this.clearTimers(sessionId)
+        this.poller.cancelPolls(sessionId) // V2: Clean up poller
         this.callbacks.onSessionCompleted(session, { status: "timedout" })
         return
       }
 
       await this.persistSessions()
-      this.scheduleNextPoll(session)
+      // V2: SessionPoller handles next poll scheduling automatically
     }
-  }
-
-  /**
-   * Schedule the next poll for a session using both setTimeout and alarms.
-   */
-  private scheduleNextPoll(session: SessionState): void {
-    if (session.status !== "active") {
-      return
-    }
-
-    const nextPollIndex = session.pollsCompleted.length
-    if (nextPollIndex >= session.pollSchedule.length) {
-      return
-    }
-
-    const targetTime = session.pollSchedule[nextPollIndex]
-    const delay = Math.max(targetTime - Date.now(), 0)
-
-    this.clearTimers(session.id)
-
-    const timer = setTimeout(() => {
-      this.executePoll(session.id, nextPollIndex).catch((error) => {
-        console.error("[SessionController] Timer poll failed:", error)
-      })
-    }, delay)
-
-    this.timers.set(session.id, timer)
-
-    chrome.alarms.create(this.getAlarmName(session.id, nextPollIndex), {
-      when: targetTime,
-    })
   }
 
   /**
    * Poll for codes and return best match, or null if no match found.
+   * V2: Passes sessionStart and expectedShape to findBestMatchingCode() for v2 scoring.
    */
   private async pollForCode(
     session: SessionState
@@ -280,6 +295,10 @@ export class SessionController {
     try {
       // Get appropriate storage for current mode (plaintext or encrypted)
       const storage = await StorageFactory.create()
+
+      // Check if Watch Sessions V2 is enabled
+      const settings = await storage.getSettings()
+      const v2Enabled = settings.watchSessionV2Enabled ?? false
 
       // Get mailboxes
       const mailboxes = await storage.getMailboxes()
@@ -305,15 +324,26 @@ export class SessionController {
         const mailbox = mailboxes.find(m => m.providerId === candidate.provider)
         if (!mailbox) continue
 
+        // V2: Extract senderETLD from email sender
+        const senderETLD = candidate.from
+          ? extractETLD(
+              candidate.from.includes('@')
+                ? candidate.from.split('@')[1]
+                : candidate.from
+            )
+          : undefined
+
         if (candidate.code) {
           // Save OTP code
           const storedCode = {
             code: candidate.code.value,
             timestamp: candidate.receivedEpochMs || Date.now(),
+            receivedAt: candidate.receivedEpochMs,  // V2: Store receivedAt
             source: `${candidate.from || 'Unknown'} - ${candidate.subject || 'No subject'}`,
             used: false,
             siteMatch: undefined,
             mailboxId: mailbox.id,
+            senderETLD,  // V2: Store extracted sender eTLD+1
           }
 
           // Check for duplicates
@@ -331,10 +361,12 @@ export class SessionController {
           const storedLink = {
             code: `magic-link:${candidate.link.href}`,
             timestamp: candidate.receivedEpochMs || Date.now(),
+            receivedAt: candidate.receivedEpochMs,  // V2: Store receivedAt
             source: `${candidate.from || 'Unknown'} - ${candidate.subject || 'No subject'}`,
             used: false,
             siteMatch: candidate.link.domain,
             mailboxId: mailbox.id,
+            senderETLD,  // V2: Store extracted sender eTLD+1
           }
 
           // Check for duplicates
@@ -362,7 +394,23 @@ export class SessionController {
 
       // Check storage for matching codes
       const codes = await storage.getRecentCodes(10)
-      const best = findBestMatchingCode(codes, session.url, Date.now())
+
+      // V2: Pass sessionStart and expectedShape to v2 scoring algorithm (if enabled)
+      // When v2 is disabled, fall back to basic matching without session/shape parameters
+      const best = v2Enabled
+        ? findBestMatchingCode(
+            codes,
+            session.url,
+            Date.now(),
+            session.sessionStart,   // V2: Enable sessionBoost
+            session.expectedShape   // V2: Enable shape matching
+          )
+        : findBestMatchingCode(
+            codes,
+            session.url,
+            Date.now()
+            // V1-compatible: no sessionStart or expectedShape
+          )
 
       if (!best) {
         return null
@@ -409,67 +457,6 @@ export class SessionController {
   private async loadPersistedSessions(): Promise<PersistedSessions> {
     const result = await chrome.storage.session.get(SESSION_STORAGE_KEY)
     return (result[SESSION_STORAGE_KEY] as PersistedSessions) || {}
-  }
-
-  /**
-   * Clear timers and alarms for a session.
-   */
-  private clearTimers(sessionId: string): void {
-    const timer = this.timers.get(sessionId)
-    if (timer) {
-      clearTimeout(timer)
-    }
-    this.timers.delete(sessionId)
-
-    // Clear all alarms for this session
-    chrome.alarms.getAll((alarms) => {
-      alarms
-        .filter((alarm) => alarm.name?.startsWith(this.prefixAlarm(sessionId)))
-        .forEach((alarm) => {
-          if (alarm.name) {
-            chrome.alarms.clear(alarm.name)
-          }
-        })
-    })
-  }
-
-  /**
-   * Build alarm name for a session/poll.
-   */
-  private getAlarmName(sessionId: string, pollIndex: number): string {
-    return `${this.prefixAlarm(sessionId)}:${pollIndex}`
-  }
-
-  /**
-   * Alarm name prefix helper.
-   */
-  private prefixAlarm(sessionId: string): string {
-    return `inboxkey.session.${sessionId}`
-  }
-
-  /**
-   * Parse alarm name into sessionId/pollIndex.
-   */
-  private parseAlarmName(
-    alarmName: string
-  ): { sessionId: string; pollIndex: number } | null {
-    if (!alarmName.startsWith("inboxkey.session.")) {
-      return null
-    }
-
-    const [, , sessionAndPoll] = alarmName.split(".")
-    const [sessionId, pollIndexStr] = sessionAndPoll.split(":")
-
-    if (!sessionId || pollIndexStr === undefined) {
-      return null
-    }
-
-    const pollIndex = Number.parseInt(pollIndexStr, 10)
-    if (Number.isNaN(pollIndex)) {
-      return null
-    }
-
-    return { sessionId, pollIndex }
   }
 }
 

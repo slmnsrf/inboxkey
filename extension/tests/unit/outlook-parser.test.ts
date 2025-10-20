@@ -616,4 +616,133 @@ If you did not request this reset, please ignore this email.`,
     expect(result.id).toBe('AAMkAGI2TG93TTT=')
     expect(result.bodyText).toBe('Please find the document attached.')
   })
+
+  // senderETLD extraction tests
+  describe('senderETLD extraction', () => {
+    it('should extract eTLD from simple email address', () => {
+      const graphMessage: GraphMessage = {
+        id: 'AAMkAGI2TG93UUU=',
+        subject: 'Test',
+        from: {
+          emailAddress: {
+            name: 'Test User',
+            address: 'user@example.com',
+          },
+        },
+        receivedDateTime: '2024-01-15T12:00:00Z',
+        body: {
+          contentType: 'text',
+          content: 'Test content',
+        },
+        bodyPreview: 'Test content',
+        isRead: false,
+        hasAttachments: false,
+      }
+
+      const result = parser.parseMessage(graphMessage)
+
+      expect(result.senderETLD).toBe('example.com')
+    })
+
+    it('should extract eTLD from email with name (Graph API already separates them)', () => {
+      const graphMessage: GraphMessage = {
+        id: 'AAMkAGI2TG93VVV=',
+        subject: 'Test',
+        from: {
+          emailAddress: {
+            name: 'John Doe',
+            address: 'user@example.com',
+          },
+        },
+        receivedDateTime: '2024-01-15T12:00:00Z',
+        body: {
+          contentType: 'text',
+          content: 'Test content',
+        },
+        bodyPreview: 'Test content',
+        isRead: false,
+        hasAttachments: false,
+      }
+
+      const result = parser.parseMessage(graphMessage)
+
+      expect(result.senderETLD).toBe('example.com')
+      expect(result.from.name).toBe('John Doe')
+    })
+
+    it('should extract eTLD from subdomain email address', () => {
+      const graphMessage: GraphMessage = {
+        id: 'AAMkAGI2TG93WWW=',
+        subject: 'Test',
+        from: {
+          emailAddress: {
+            name: 'No Reply',
+            address: 'noreply@mail.example.com',
+          },
+        },
+        receivedDateTime: '2024-01-15T12:00:00Z',
+        body: {
+          contentType: 'text',
+          content: 'Test content',
+        },
+        bodyPreview: 'Test content',
+        isRead: false,
+        hasAttachments: false,
+      }
+
+      const result = parser.parseMessage(graphMessage)
+
+      expect(result.senderETLD).toBe('example.com')
+    })
+
+    it('should extract eTLD from multiple subdomains', () => {
+      const graphMessage: GraphMessage = {
+        id: 'AAMkAGI2TG93XXX=',
+        subject: 'Test',
+        from: {
+          emailAddress: {
+            name: 'User',
+            address: 'user@a.b.c.example.com',
+          },
+        },
+        receivedDateTime: '2024-01-15T12:00:00Z',
+        body: {
+          contentType: 'text',
+          content: 'Test content',
+        },
+        bodyPreview: 'Test content',
+        isRead: false,
+        hasAttachments: false,
+      }
+
+      const result = parser.parseMessage(graphMessage)
+
+      expect(result.senderETLD).toBe('example.com')
+    })
+
+    it('should handle invalid email gracefully', () => {
+      const graphMessage: GraphMessage = {
+        id: 'AAMkAGI2TG93YYY=',
+        subject: 'Test',
+        from: {
+          emailAddress: {
+            name: 'Invalid',
+            address: 'invalid-email-without-at',
+          },
+        },
+        receivedDateTime: '2024-01-15T12:00:00Z',
+        body: {
+          contentType: 'text',
+          content: 'Test content',
+        },
+        bodyPreview: 'Test content',
+        isRead: false,
+        hasAttachments: false,
+      }
+
+      const result = parser.parseMessage(graphMessage)
+
+      expect(result.senderETLD).toBe('')
+    })
+  })
 })

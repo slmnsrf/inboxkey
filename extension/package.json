@@ -17,6 +17,7 @@
     "test:e2e:debug": "playwright test --debug",
     "test:e2e:popup": "playwright test popup-actions.test.ts popup-performance.test.ts popup-locked.test.ts",
     "test:e2e:headed": "playwright test --headed",
+    "test:screenshots": "bash scripts/test-ui.sh",
     "lint": "eslint . --ext .ts,.tsx",
     "format": "prettier --write \"**/*.{ts,tsx,json,md}\"",
     "type-check": "tsc --noEmit",
@@ -69,7 +70,9 @@
       "storage",
       "alarms",
       "tabs",
-      "identity"
+      "identity",
+      "notifications",
+      "nativeMessaging"
     ]
   }
 }

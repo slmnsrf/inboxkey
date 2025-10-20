@@ -27,6 +27,15 @@ export interface EmailMessage {
     email: string
     name?: string
   }
+  /**
+   * The effective top-level domain (eTLD+1) extracted from the sender's email address.
+   * Used for domain affinity matching in watch sessions.
+   *
+   * @example
+   * // "user@mail.example.com" → "example.com"
+   * // "noreply@example.com" → "example.com"
+   */
+  senderETLD: string
   subject: string
   date: Date
   bodyText?: string

@@ -38,18 +38,39 @@ export interface StorageSchema {
 export type ProviderId = "gmail" | "outlook" | "imap-bridge"
 
 /**
- * Mailbox account with OAuth tokens
+ * Mailbox account with OAuth tokens or IMAP credentials
  *
- * Note: refreshToken is optional for providers using Chrome Identity API (Gmail),
- * where Chrome manages token refresh internally. Required for PKCE providers (Outlook).
+ * OAuth providers (Gmail, Outlook):
+ * - accessToken: Required (encrypted before storage)
+ * - refreshToken: Optional (encrypted before storage; Chrome Identity API handles refresh for Gmail)
+ * - tokenExpiresAt: Required
+ * - IMAP fields: Must be undefined
+ *
+ * IMAP provider (imap-bridge):
+ * - OAuth fields: Must be undefined (credentials stored in OS keychain by native app)
+ * - imapServer, imapPort, imapAccountId: Required
+ * - imapUsername: Optional (defaults to email)
  */
 export interface Mailbox {
   id: string // UUID v4
   providerId: ProviderId
   email: string // Email address
-  accessToken: string // Encrypted before storage
+
+  // OAuth fields (required for 'gmail', 'outlook'; must be undefined for 'imap-bridge')
+  accessToken?: string // Encrypted before storage
   refreshToken?: string // Encrypted before storage (optional for Gmail)
-  tokenExpiresAt: number // Unix timestamp (ms)
+  tokenExpiresAt?: number // Unix timestamp (ms)
+
+  // IMAP fields (required for 'imap-bridge'; must be undefined for OAuth providers)
+  /** IMAP server hostname (e.g., "imap.mail.yahoo.com") */
+  imapServer?: string
+  /** IMAP server port (e.g., 993 for TLS) */
+  imapPort?: number
+  /** IMAP username (defaults to email if not specified) */
+  imapUsername?: string
+  /** Native app account ID (e.g., "acc_abc123") - reference to OS keychain entry */
+  imapAccountId?: string
+
   addedAt: number // Unix timestamp (ms)
   lastSyncedAt: number // Unix timestamp (ms)
 }
@@ -64,6 +85,12 @@ export interface StoredCode {
   siteMatch?: string // Domain that was matched (if any)
   used: boolean // Whether code has been used
   mailboxId?: string // ID of the mailbox this code came from (for provider tracking)
+  /** eTLD+1 of sender email (e.g., "example.com" from "noreply@example.com") */
+  senderETLD?: string
+  /** Unix timestamp (ms) when email was received */
+  receivedAt?: number
+  /** Optional domain affinity score for popup display prioritization */
+  domainAffinity?: number
 }
 
 /**
@@ -76,6 +103,18 @@ export interface Settings {
   allowedDomains: string[] // Empty = all domains allowed
   deniedDomains: string[]
   notificationsEnabled: boolean
+  /**
+   * Enable Watch Sessions V2 scoring algorithm.
+   * When enabled, uses domain affinity, recency boost, session boost, and shape matching.
+   * When disabled, uses simplified matching without v2 enhancements.
+   * @default false (initially), true (after v2.0 stable release)
+   */
+  watchSessionV2Enabled?: boolean
+  /**
+   * Show debug scoring breakdown in popup (development only).
+   * @default false
+   */
+  debugScoringEnabled?: boolean
 }
 
 /**
@@ -109,6 +148,8 @@ export const DEFAULT_SETTINGS: Settings = {
   allowedDomains: [],
   deniedDomains: [],
   notificationsEnabled: true,
+  watchSessionV2Enabled: false, // Conservative default: disabled for gradual rollout
+  debugScoringEnabled: false,
 }
 
 /**
@@ -163,22 +204,52 @@ export function isValidTimestamp(timestamp: number): boolean {
 export function isMailbox(obj: unknown): obj is Mailbox {
   if (typeof obj !== "object" || obj === null) return false
   const m = obj as Partial<Mailbox>
-  return (
+
+  // Basic fields validation
+  const basicValid =
     typeof m.id === "string" &&
     isValidUUID(m.id) &&
     typeof m.providerId === "string" &&
     isValidProviderId(m.providerId) &&
     typeof m.email === "string" &&
     isValidEmail(m.email) &&
-    typeof m.accessToken === "string" &&
-    (m.refreshToken === undefined || typeof m.refreshToken === "string") &&
-    typeof m.tokenExpiresAt === "number" &&
-    isValidTimestamp(m.tokenExpiresAt) &&
     typeof m.addedAt === "number" &&
     isValidTimestamp(m.addedAt) &&
     typeof m.lastSyncedAt === "number" &&
     isValidTimestamp(m.lastSyncedAt)
-  )
+
+  if (!basicValid) return false
+
+  // Provider-specific validation
+  if (m.providerId === "imap-bridge") {
+    // IMAP provider: require IMAP fields, OAuth fields must be undefined
+    return (
+      m.accessToken === undefined &&
+      m.refreshToken === undefined &&
+      m.tokenExpiresAt === undefined &&
+      typeof m.imapServer === "string" &&
+      m.imapServer.length > 0 &&
+      typeof m.imapPort === "number" &&
+      m.imapPort > 0 &&
+      m.imapPort <= 65535 &&
+      (m.imapUsername === undefined || typeof m.imapUsername === "string") &&
+      typeof m.imapAccountId === "string" &&
+      m.imapAccountId.length > 0
+    )
+  } else {
+    // OAuth provider: require accessToken and tokenExpiresAt, IMAP fields must be undefined
+    return (
+      typeof m.accessToken === "string" &&
+      m.accessToken.length > 0 &&
+      (m.refreshToken === undefined || typeof m.refreshToken === "string") &&
+      typeof m.tokenExpiresAt === "number" &&
+      isValidTimestamp(m.tokenExpiresAt) &&
+      m.imapServer === undefined &&
+      m.imapPort === undefined &&
+      m.imapUsername === undefined &&
+      m.imapAccountId === undefined
+    )
+  }
 }
 
 export function isStoredCode(obj: unknown): obj is StoredCode {
@@ -193,7 +264,11 @@ export function isStoredCode(obj: unknown): obj is StoredCode {
     c.source.length > 0 &&
     (c.siteMatch === undefined || typeof c.siteMatch === "string") &&
     typeof c.used === "boolean" &&
-    (c.mailboxId === undefined || typeof c.mailboxId === "string")
+    (c.mailboxId === undefined || typeof c.mailboxId === "string") &&
+    (c.senderETLD === undefined || typeof c.senderETLD === "string") &&
+    (c.receivedAt === undefined ||
+      (typeof c.receivedAt === "number" && isValidTimestamp(c.receivedAt))) &&
+    (c.domainAffinity === undefined || typeof c.domainAffinity === "number")
   )
 }
 
@@ -209,7 +284,9 @@ export function isSettings(obj: unknown): obj is Settings {
     s.allowedDomains.every((d) => typeof d === "string") &&
     Array.isArray(s.deniedDomains) &&
     s.deniedDomains.every((d) => typeof d === "string") &&
-    typeof s.notificationsEnabled === "boolean"
+    typeof s.notificationsEnabled === "boolean" &&
+    (s.watchSessionV2Enabled === undefined || typeof s.watchSessionV2Enabled === "boolean") &&
+    (s.debugScoringEnabled === undefined || typeof s.debugScoringEnabled === "boolean")
   )
 }
 

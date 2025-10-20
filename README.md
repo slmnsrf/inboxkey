@@ -27,20 +27,23 @@ InboxKey automatically detects verification codes and magic login links in your 
 ```bash
 # Clone repository
 git clone https://github.com/inboxkey/inboxkey.git
-cd inboxkey/extension
+cd inboxkey
 
-# Install dependencies
-pnpm install
+# Install dependencies (monorepo)
+npm install
 
-# Build extension
-pnpm build
+# Build main extension
+cd extension
+npm run build
 
 # Load in Chrome
 1. Open chrome://extensions
 2. Enable "Developer mode"
 3. Click "Load unpacked"
-4. Select the build/ directory
+4. Select extension/build/chrome-mv3-prod/ directory
 ```
+
+**Note**: This is a monorepo with multiple packages. See [Development](#development) section for full structure.
 
 ## Quick Start
 
@@ -177,23 +180,49 @@ InboxKey requires the following permissions:
 
 ## Development
 
-### Project Structure
+### Project Structure (Monorepo)
+
+This project uses npm workspaces to share code between the main extension and developer tools:
 
 ```
-extension/
-├── src/
-│   ├── background/       # Service worker
-│   ├── contents/         # Content scripts
-│   ├── lib/              # Core libraries (crypto, storage)
-│   ├── providers/        # Email providers (Gmail, Outlook)
-│   ├── ui/               # React components (popup, options)
-│   └── styles/           # Design tokens and CSS
-├── tests/
-│   ├── unit/             # Vitest unit tests
-│   ├── integration/      # Integration tests
-│   └── e2e/              # Playwright E2E tests
-└── docs/                 # Documentation
+/home/dev/work/inboxkey/
+├── extension/                    # Main InboxKey extension (production)
+│   ├── src/
+│   │   ├── background/           # Service worker
+│   │   ├── contents/             # Content scripts
+│   │   ├── lib/                  # Core libraries (crypto, storage)
+│   │   ├── providers/            # Email providers (Gmail, Outlook)
+│   │   ├── ui/                   # React components (popup, options)
+│   │   └── styles/               # Design tokens and CSS
+│   ├── tests/                    # Unit, integration, E2E tests
+│   └── build/chrome-mv3-prod/    # Build output
+│
+├── packages/
+│   └── extraction-core/          # Shared extraction logic
+│       ├── src/
+│       │   ├── extractor.ts      # Main extraction entry point
+│       │   ├── otp-extractor.ts  # OTP detection
+│       │   └── link-extractor.ts # Magic link detection
+│       └── package.json          # @inboxkey/extraction-core
+│
+└── apps/
+    └── reviewer/                 # InboxKey Reviewer (dev tool)
+        ├── src/                  # Review UI and batch processing
+        ├── build/                # Build output
+        └── README.md             # Reviewer usage guide
 ```
+
+**Key Architecture:**
+- `@inboxkey/extraction-core` is a shared package with pure extraction logic (OTP/magic-link detection)
+- Both main extension and Reviewer import from `@inboxkey/extraction-core` to ensure zero code drift
+- Extraction core has NO Chrome API dependencies (pure TypeScript)
+- See [architecture.md](architecture.md) for full system architecture
+
+**Developer Tool:**
+- **InboxKey Reviewer** (`apps/reviewer/`) - Internal dev tool for manual email labeling
+- Used to generate labeled datasets for improving extraction algorithms
+- Separate extension with unique ID (doesn't conflict with main extension)
+- See `apps/reviewer/README.md` for usage
 
 ### Tech Stack
 

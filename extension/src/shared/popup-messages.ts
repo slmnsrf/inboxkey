@@ -88,6 +88,13 @@ export interface PopupCacheCode {
   from?: string // Parsed sender email/name
   to?: string // Intended recipient (mailbox email)
   subject?: string // Parsed subject line
+  // Scoring metadata (V2+)
+  senderETLD?: string // eTLD+1 of sender email (e.g., "example.com" from "noreply@example.com")
+  domainAffinity?: number // 0-1.0 domain match score
+  recencyScore?: number // 0-1.0 recency score
+  sessionBoost?: number // 0 or 0.15 session boost
+  shapeScore?: number // -0.12 to +0.28 shape alignment
+  totalScore?: number // final priority score (for sorting)
 }
 
 /**
@@ -127,7 +134,8 @@ export interface MailboxInfo {
   email: string
   addedAt: number
   lastSyncedAt: number
-  tokenExpiresAt: number
+  /** OAuth token expiry (undefined for IMAP providers) */
+  tokenExpiresAt?: number
 }
 
 /**

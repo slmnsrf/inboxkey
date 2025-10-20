@@ -6,6 +6,7 @@
 
 import type { EmailMessage } from '../provider-interface'
 import type { GmailMessage, GmailMessagePart } from './gmail-api'
+import { extractETLD } from '@/lib/matching/domain-affinity'
 
 export class GmailParser {
   /**
@@ -13,13 +14,15 @@ export class GmailParser {
    */
   parseMessage(gmailMsg: GmailMessage): EmailMessage {
     const headers = this.parseHeaders(gmailMsg.payload.headers)
+    const senderEmail = this.extractEmail(headers.from || '')
 
     return {
       id: gmailMsg.id,
       from: {
-        email: this.extractEmail(headers.from || ''),
+        email: senderEmail,
         name: this.extractName(headers.from || ''),
       },
+      senderETLD: this.extractSenderETLD(senderEmail),
       subject: headers.subject || '(No subject)',
       date: new Date(Number.parseInt(gmailMsg.internalDate, 10)),
       bodyText: this.extractTextBody(gmailMsg.payload),
@@ -80,6 +83,31 @@ export class GmailParser {
     }
 
     return undefined
+  }
+
+  /**
+   * Extract eTLD+1 from sender email address
+   *
+   * Extracts the domain from an email address and returns the effective
+   * top-level domain (eTLD+1) for domain affinity matching.
+   *
+   * @param email - The sender's email address
+   * @returns The eTLD+1 domain (e.g., "example.com")
+   *
+   * @example
+   * extractSenderETLD("user@mail.example.com") // returns "example.com"
+   * extractSenderETLD("noreply@example.com") // returns "example.com"
+   * extractSenderETLD("invalid") // returns ""
+   */
+  private extractSenderETLD(email: string): string {
+    if (!email) return ''
+
+    // Extract domain from email (part after @)
+    const atIndex = email.lastIndexOf('@')
+    if (atIndex === -1) return ''
+
+    const domain = email.slice(atIndex + 1)
+    return extractETLD(domain)
   }
 
   /**

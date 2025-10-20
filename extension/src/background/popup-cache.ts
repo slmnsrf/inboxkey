@@ -31,12 +31,14 @@ import type {
 } from '@/shared/popup-messages'
 import { filterPopupItems, separateItems } from '@/lib/popup/popup-filters'
 import { dedupeByKey } from '@/lib/popup/popup-dedup'
-import { sortByPriority } from '@/lib/popup/popup-priority'
+import { sortByPriority, computePriority } from '@/lib/popup/popup-priority'
 import {
   MAX_CODES,
   MAX_LINKS,
   POPUP_CACHE_STALE_MS,
 } from '@/lib/popup/popup-config'
+import { extractETLD, domainAffinity as computeDomainAffinity } from '@/lib/matching/domain-affinity'
+import { recencyBoost } from '@/lib/matching/recency-scorer'
 
 const POPUP_CACHE_KEY = 'inboxkey.popup_cache'
 
@@ -133,7 +135,7 @@ export class PopupCacheManager {
     const topLinks = linkItems.slice(0, MAX_LINKS)
 
     // Step 6: Convert to legacy format for backward compatibility
-    const legacyCodes = topCodes.map((item) => this.convertPopupItemToLegacyCode(item))
+    const legacyCodes = topCodes.map((item) => this.convertPopupItemToLegacyCode(item, now, currentTabDomain))
     const legacyLinks = topLinks.map((item) => this.convertPopupItemToLegacyLink(item))
 
     // Build cache with both V2 and V1 fields
@@ -277,11 +279,41 @@ export class PopupCacheManager {
 
   /**
    * Convert CodeItem to legacy PopupCacheCode (V2 → V1)
+   * Now includes scoring metadata for debug/display purposes
    */
-  private convertPopupItemToLegacyCode(item: CodeItem): PopupCacheCode {
+  private convertPopupItemToLegacyCode(item: CodeItem, now: number, currentTabDomain?: string): PopupCacheCode {
     const { from, subject } = this.parseSource(item.source)
     const to = this.getMailboxEmail(item.id)
     const providerName = this.getProviderName(item.providerId)
+
+    // Extract sender eTLD from the from email address
+    let senderETLD: string | undefined
+    if (from) {
+      const emailMatch = from.match(/([^@]+@)?([^@]+\.[^@>\s]+)/i)
+      if (emailMatch && emailMatch[2]) {
+        senderETLD = extractETLD(emailMatch[2])
+      }
+    }
+
+    // Compute scoring metadata for display/debug
+    const currentTabETLD = currentTabDomain ? extractETLD(currentTabDomain) : undefined
+    const domainAffinity = senderETLD && currentTabETLD
+      ? computeDomainAffinity(currentTabETLD, senderETLD, subject)
+      : 0
+
+    const ageSeconds = (now - item.receivedAt) / 1000
+    const recencyScore = recencyBoost(ageSeconds)
+
+    // Session boost is not applicable in popup context (no session start time)
+    // Could be added if we track tab navigation start time
+    const sessionBoost = 0
+
+    // Shape score would require expected shape from current site
+    // Skip for now as we don't have that context in popup-cache
+    const shapeScore = 0
+
+    // Compute total priority score
+    const totalScore = computePriority(item, now, currentTabDomain)
 
     return {
       code: item.code,
@@ -293,6 +325,13 @@ export class PopupCacheManager {
       from,
       to,
       subject,
+      // Scoring metadata
+      senderETLD,
+      domainAffinity,
+      recencyScore,
+      sessionBoost,
+      shapeScore,
+      totalScore,
     }
   }
 

@@ -24,6 +24,8 @@ import {
   CODE_KEYWORDS,
 } from './extraction-types'
 
+import { shapeScore, type ExpectedShape } from '../matching/shape-matcher'
+
 /** Character set for OTP */
 export type OtpCharset = 'digits' | 'alnum'
 
@@ -54,6 +56,9 @@ export interface OTPExtractOptions {
   expectedLength?: number
   expectedCharset?: OtpCharset
 
+  // Expected shape for shape bias scoring (alternative to individual expectedLength/expectedCharset)
+  expectedShape?: ExpectedShape
+
   // If provided, increases score when keywords found in subject
   subject?: string
 
@@ -77,14 +82,17 @@ export function extractOTPs(input: string, opts: OTPExtractOptions = {}): OTPCan
   const maxResults = Math.max(1, Math.min(10, opts.maxResults ?? 3))
 
   // Normalize to plain text; remove HTML noise early to reduce spurious matches
-  const { text, isHtml } = toPlainText(input)
+  const { text } = toPlainText(input)
 
   // If there are no keywords at all in the whole message, short-circuit (fast fail)
   const kwRegex = buildKeywordRegex(CODE_KEYWORDS)
-  if (!kwRegex.test(text)) {
+  const hasKeywords = kwRegex.test(text)
+  if (!hasKeywords) {
     // Edge allowance: Some brands send bare codes without keyword; try only if expectedLength is set.
-    if (!opts.expectedLength) return []
+    if (!opts.expectedLength && !opts.expectedShape) return []
   }
+  // Reset lastIndex after test
+  kwRegex.lastIndex = 0
 
   // Build search windows around keywords to avoid scanning footers/long IDs
   const windows = collectWindows(text, kwRegex, windowRadius)
@@ -107,13 +115,16 @@ export function extractOTPs(input: string, opts: OTPExtractOptions = {}): OTPCan
     const base = baseScore(c, opts)
     const near = nearestKeywordSignal(text, c, kwRegex)
     const footer = footerPenalty(text, c)
-    const subjectBoost = subject.includes('code') || subject.includes('otp') ? 0.06 : 0
+    const subjectBoost = subject.includes('code') || subject.includes('otp') || subject.includes('verification') ? 0.08 : 0
 
     let confidence = base + near.score + subjectBoost
     if (footer.applies) confidence -= 0.2
 
     // Clamp and attach context
     confidence = clamp(confidence, 0, 1)
+
+    // Store raw shape bias for tiebreaking (before clamping)
+    const shapeBias = getShapeBias(c, opts)
 
     return {
       code: c.code,
@@ -129,6 +140,8 @@ export function extractOTPs(input: string, opts: OTPExtractOptions = {}): OTPCan
         keywordDistance: near.distance,
         footerPenalty: footer.applies,
       },
+      // @ts-expect-error - Internal field for sorting
+      _shapeBias: shapeBias,
     }
   })
 
@@ -142,16 +155,33 @@ export function extractOTPs(input: string, opts: OTPExtractOptions = {}): OTPCan
   // Dedupe by code (keep highest confidence & shortest distance to keyword)
   const deduped = dedupeByCode(precise)
 
-  // Sort by confidence desc, then by closeness to keyword (if present), then by shorter length
+  // Sort by confidence desc, then by shape bias (if expectedShape provided),
+  // then by closeness to keyword, then by shorter length
+  const hasExpectedShape = !!(opts.expectedShape || opts.expectedLength || opts.expectedCharset)
   const sorted = deduped.sort((a, b) => {
     if (b.confidence !== a.confidence) return b.confidence - a.confidence
+
+    // When confidences are equal and we have shape expectations, prefer better shape match
+    if (hasExpectedShape) {
+      const aShape = (a as any)._shapeBias ?? 0
+      const bShape = (b as any)._shapeBias ?? 0
+      if (bShape !== aShape) return bShape - aShape
+    }
+
+    // Then sort by keyword proximity
     const ad = a.context?.keywordDistance ?? Number.MAX_SAFE_INTEGER
     const bd = b.context?.keywordDistance ?? Number.MAX_SAFE_INTEGER
     if (ad !== bd) return ad - bd
+
     return a.length - b.length
   })
 
-  return sorted.slice(0, maxResults)
+  // Clean up internal field before returning
+  return sorted.slice(0, maxResults).map(c => {
+    const clean = { ...c }
+    delete (clean as any)._shapeBias
+    return clean
+  })
 }
 
 export default extractOTPs
@@ -290,7 +320,8 @@ function findCandidatesInRanges(
         } else {
           if (!cfg.allowAlnum) continue
           if (len < 4 || len > 10) continue
-          if (!/[0-9]/.test(norm)) continue // ensure at least one digit for alnum
+          // Ensure at least one digit for alnum (relaxed: allow mixed case)
+          if (!/[0-9]/.test(norm) && norm.length > 6) continue
         }
 
         // Ignore obviously embedded in larger number-ish tokens (order IDs, long tracking #)
@@ -328,25 +359,69 @@ function normalizeCode(raw: string): string | null {
   return cleaned
 }
 
-/** Compute base score from expectations (length/charset alignment) */
+/**
+ * Extract raw shape bias score for tiebreaking in sort
+ *
+ * @param c - Internal candidate
+ * @param opts - Extraction options
+ * @returns Raw shape bias score (can be negative for penalties)
+ */
+function getShapeBias(c: InternalCandidate, opts: OTPExtractOptions): number {
+  // Priority 1: Use expectedShape if provided
+  if (opts.expectedShape) {
+    return shapeScore(c.code, opts.expectedShape)
+  }
+  // Priority 2: Construct shape from individual fields
+  else if (opts.expectedLength || opts.expectedCharset) {
+    const expectedShape: ExpectedShape = {
+      len: opts.expectedLength,
+      charset: opts.expectedCharset
+    }
+    return shapeScore(c.code, expectedShape)
+  }
+  // No shape expectations
+  return 0
+}
+
+/**
+ * Compute base score from expectations (length/charset alignment)
+ *
+ * This function applies shape bias scoring when expected OTP characteristics
+ * are provided. Shape bias uses the shapeScore function from shape-matcher
+ * to evaluate how well a candidate matches the expected length and charset.
+ *
+ * When expectedShape is provided, the shape score is calculated and directly
+ * added to the base score. Otherwise, falls back to individual expectedLength
+ * and expectedCharset fields for backward compatibility.
+ *
+ * @param c - Internal candidate to score
+ * @param opts - Extraction options containing expected shape characteristics
+ * @returns Base confidence score (0..1 range after clamping)
+ */
 function baseScore(c: InternalCandidate, opts: OTPExtractOptions): number {
   let s = 0.5 // base prior
 
-  // Expected length alignment is a strong signal
-  if (opts.expectedLength) {
-    if (c.length === opts.expectedLength) s += 0.2
-    else if (Math.abs(c.length - opts.expectedLength) === 1) s += 0.06
-    else s -= 0.12
-  } else {
-    // Without expectation, prefer typical lengths
-    if (c.charset === 'digits' && (c.length === 6 || c.length === 4 || c.length === 8)) s += 0.08
-    if (c.charset === 'alnum' && (c.length >= 6 && c.length <= 8)) s += 0.05
+  // Priority 1: Use expectedShape if provided (preferred approach)
+  if (opts.expectedShape) {
+    const shapeBias = shapeScore(c.code, opts.expectedShape)
+    s += shapeBias // Shape score is in 0..1 scale (e.g., 0.20 for exact length match)
   }
-
-  // Charset alignment
-  if (opts.expectedCharset) {
-    if (opts.expectedCharset === c.charset) s += 0.08
-    else s -= 0.08
+  // Priority 2: Construct shape from individual fields (backward compatibility)
+  else if (opts.expectedLength || opts.expectedCharset) {
+    const expectedShape: ExpectedShape = {
+      len: opts.expectedLength,
+      charset: opts.expectedCharset
+    }
+    const shapeBias = shapeScore(c.code, expectedShape)
+    s += shapeBias
+  }
+  // Priority 3: Fallback heuristics when no expectations provided
+  else {
+    if (c.charset === 'digits') {
+      if (c.length === 6 || c.length === 8) s += 0.08
+      else if (c.length === 4) s += 0.0 // No bonus for 4-digit to keep confidence lower
+    }
+    if (c.charset === 'alnum' && (c.length >= 6 && c.length <= 8)) s += 0.05
   }
 
   return s
@@ -373,8 +448,9 @@ function nearestKeywordSignal(text: string, c: InternalCandidate, kw: RegExp): {
     return { score: -0.05, distance: bestDist }
   }
 
-  // Map distance to a 0..0.3 boost (inverse); within 20 chars ≈ 0.3, 120 chars ≈ 0.05
-  const boost = Math.max(0.05, 0.3 * Math.exp(-bestDist / 45))
+  // Map distance to a 0..0.42 boost (inverse); within 20 chars ≈ 0.42, 120 chars ≈ 0.08
+  // Increased from 0.3 max to make keyword proximity more impactful
+  const boost = Math.max(0.08, 0.42 * Math.exp(-bestDist / 45))
   return { score: boost, distance: bestDist, keyword: sanitizeKw(bestKw) }
 }
 

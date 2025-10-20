@@ -90,8 +90,8 @@ function PopupContent() {
       await refresh()
       const mailboxCount = data?.mailboxCount ?? 0
       const message = mailboxCount > 0
-        ? `🔄 Synced ${mailboxCount} ${mailboxCount === 1 ? 'account' : 'accounts'}`
-        : '🔄 Synced successfully'
+        ? `Synced ${mailboxCount} ${mailboxCount === 1 ? 'account' : 'accounts'}`
+        : 'Synced successfully'
       showToast(message, 'success', 3000)
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : 'Sync failed'

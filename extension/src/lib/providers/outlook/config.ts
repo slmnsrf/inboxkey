@@ -17,6 +17,7 @@ export const OUTLOOK_CONFIG = {
     : 'https://placeholder.chromiumapp.org/oauth2',
   scopes: [
     'https://graph.microsoft.com/Mail.Read',
+    'https://graph.microsoft.com/User.Read', // Required for profile (/me endpoint)
     'offline_access', // Required for refresh token
   ],
 }

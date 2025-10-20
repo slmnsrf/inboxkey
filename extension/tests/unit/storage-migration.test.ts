@@ -549,6 +549,120 @@ describe("Storage Migration", () => {
   })
 
   // ============================================================================
+  // Backward Compatibility - StoredCode Migration
+  // ============================================================================
+
+  describe("Backward Compatibility - StoredCode Migration", () => {
+    it("should migrate old format codes without new fields", async () => {
+      const oldCode = {
+        code: "123456",
+        timestamp: Date.now(),
+        from: "test@example.com",
+        subject: "Verification code",
+      }
+
+      mockLocalStorage[PLAINTEXT_KEYS.MAILBOXES_PLAIN] = []
+      mockLocalStorage[PLAINTEXT_KEYS.RECENT_CODES_PLAIN] = [oldCode]
+
+      const result = await migrateToEncrypted(TEST_PASSWORD)
+
+      expect(result.success).toBe(true)
+      expect(result.codesMigrated).toBe(1)
+
+      const migratedCode = mockLocalStorage[STORAGE_KEYS.RECENT_CODES][0]
+      expect(migratedCode).toBeDefined()
+      expect(migratedCode.senderETLD).toBeUndefined()
+      expect(migratedCode.receivedAt).toBeUndefined()
+      expect(migratedCode.domainAffinity).toBeUndefined()
+    })
+
+    it("should migrate new format codes with all fields", async () => {
+      const newCode = {
+        code: "654321",
+        timestamp: Date.now(),
+        from: "noreply@example.com",
+        subject: "Your code",
+        senderETLD: "example.com",
+        receivedAt: Date.now() - 1000,
+        domainAffinity: 0.85,
+      }
+
+      mockLocalStorage[PLAINTEXT_KEYS.MAILBOXES_PLAIN] = []
+      mockLocalStorage[PLAINTEXT_KEYS.RECENT_CODES_PLAIN] = [newCode]
+
+      const result = await migrateToEncrypted(TEST_PASSWORD)
+
+      expect(result.success).toBe(true)
+
+      const migratedCode = mockLocalStorage[STORAGE_KEYS.RECENT_CODES][0]
+      expect(migratedCode.senderETLD).toBe("example.com")
+      expect(migratedCode.receivedAt).toBeDefined()
+      expect(migratedCode.domainAffinity).toBe(0.85)
+    })
+
+    it("should migrate mixed format codes preserving all data", async () => {
+      const oldCode = {
+        code: "111111",
+        timestamp: Date.now() - 2000,
+        from: "old@example.com",
+        subject: "Old format",
+      }
+
+      const newCode = {
+        code: "222222",
+        timestamp: Date.now(),
+        from: "new@example.com",
+        subject: "New format",
+        senderETLD: "example.com",
+        receivedAt: Date.now() - 500,
+        domainAffinity: 0.9,
+      }
+
+      mockLocalStorage[PLAINTEXT_KEYS.MAILBOXES_PLAIN] = []
+      mockLocalStorage[PLAINTEXT_KEYS.RECENT_CODES_PLAIN] = [oldCode, newCode]
+
+      const result = await migrateToEncrypted(TEST_PASSWORD)
+
+      expect(result.success).toBe(true)
+      expect(result.codesMigrated).toBe(2)
+
+      const migratedCodes = mockLocalStorage[STORAGE_KEYS.RECENT_CODES]
+      expect(migratedCodes).toHaveLength(2)
+
+      const migratedOld = migratedCodes.find((c: any) => c.timestamp === oldCode.timestamp)
+      const migratedNew = migratedCodes.find((c: any) => c.timestamp === newCode.timestamp)
+
+      expect(migratedOld?.senderETLD).toBeUndefined()
+      expect(migratedNew?.senderETLD).toBe("example.com")
+      expect(migratedNew?.domainAffinity).toBe(0.9)
+    })
+
+    it("should decrypt and preserve new fields when migrating to plaintext", async () => {
+      const encryptedCode = {
+        code: createEncryptedData("123456"),
+        timestamp: Date.now(),
+        from: "test@example.com",
+        subject: "Code",
+        senderETLD: "example.com",
+        receivedAt: Date.now() - 1000,
+        domainAffinity: 0.75,
+      }
+
+      mockLocalStorage[STORAGE_KEYS.MAILBOXES] = []
+      mockLocalStorage[STORAGE_KEYS.RECENT_CODES] = [encryptedCode]
+
+      const result = await migrateToPlaintext(TEST_PASSWORD)
+
+      expect(result.success).toBe(true)
+
+      const decryptedCode = mockLocalStorage[PLAINTEXT_KEYS.RECENT_CODES_PLAIN][0]
+      expect(decryptedCode.senderETLD).toBe("example.com")
+      expect(decryptedCode.receivedAt).toBeDefined()
+      expect(decryptedCode.domainAffinity).toBe(0.75)
+    })
+  })
+
+  // ============================================================================
   // Rollback Scenarios
   // ============================================================================
 

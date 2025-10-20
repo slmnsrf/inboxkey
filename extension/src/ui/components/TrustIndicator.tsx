@@ -31,7 +31,7 @@ export function TrustIndicator() {
         <strong className="trust-indicator__title">{t('trust_indicator_title')}</strong>
         <ul className="trust-indicator__list">
           <li>{t('trust_indicator_readonly')}</li>
-          <li>{t('trust_indicator_encrypted')}</li>
+          <li>{t('trust_indicator_local_storage')}</li>
           <li>{t('trust_indicator_local')}</li>
         </ul>
       </div>

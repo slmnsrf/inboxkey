@@ -9,6 +9,7 @@
 
 import type { DetectionResult } from "@/lib/types"
 import { showNotification } from "./notification"
+import { showSessionChip, type ChipHandle } from "./session-chip"
 
 interface SessionCodeResult {
   code: string
@@ -39,6 +40,7 @@ export class WatchSession {
   private sessionId: string | null = null
   private keepAliveTimer: number | null = null
   private completed = false
+  private chipHandle: ChipHandle | null = null
 
   constructor(
     private readonly field: HTMLInputElement,
@@ -55,18 +57,40 @@ export class WatchSession {
       return
     }
 
-    this.port = chrome.runtime.connect({ name: "watch-session" })
+    try {
+      this.port = chrome.runtime.connect({ name: "watch-session" })
+    } catch (error) {
+      // Extension context invalidated (extension reloaded while content script still running)
+      console.error("[WatchSession] Failed to connect to background:", error)
+      console.error("[WatchSession] Extension context invalidated. Please refresh the page.")
+
+      // Show user notification
+      showNotification({
+        title: "Extension Updated",
+        message: "Please refresh the page to use InboxKey",
+        type: "info",
+        duration: 10000,
+      })
+
+      return
+    }
 
     this.port.onMessage.addListener(this.handlePortMessage)
     this.port.onDisconnect.addListener(this.handlePortDisconnect)
 
     const expected = deriveExpectedShape(this.field)
 
-    this.port.postMessage({
-      type: "START_SESSION",
-      url: window.location.href,
-      expected,
-    })
+    try {
+      this.port.postMessage({
+        type: "START_SESSION",
+        url: window.location.href,
+        expected,
+      })
+    } catch (error) {
+      console.error("[WatchSession] Failed to send START_SESSION:", error)
+      this.cleanup()
+      return
+    }
 
     this.keepAliveTimer = window.setInterval(() => {
       try {
@@ -124,6 +148,11 @@ export class WatchSession {
           session: { id: string }
         }
         this.sessionId = session.session.id
+
+        // V2: Show chip in "listening" state and set badge
+        this.chipHandle = showSessionChip(this.field)
+        this.updateBadge('listening')
+
         this.callbacks.onSessionStarted?.(session.session.id)
         break
       }
@@ -146,15 +175,22 @@ export class WatchSession {
 
         // Try to autofill if callback provided
         if (this.callbacks.onAutofill) {
-          this.handleCodeFoundWithAutofill(payload.code).catch((error) => {
-            console.error("[WatchSession] Autofill error:", error)
-          })
+          // FIXED: Chain cleanup after autofill completes (prevents race condition)
+          this.handleCodeFoundWithAutofill(payload.code)
+            .then(() => {
+              // Cleanup AFTER chip hide is triggered
+              this.cleanup()
+            })
+            .catch((error) => {
+              console.error("[WatchSession] Autofill error:", error)
+              this.cleanup()
+            })
         } else {
           // Legacy path: just call onCodeFound
           this.callbacks.onCodeFound(payload.code)
+          this.cleanup()
         }
 
-        this.cleanup()
         break
       }
 
@@ -162,6 +198,13 @@ export class WatchSession {
         if (this.completed) return
 
         this.completed = true
+
+        // V2: Update chip to timeout state and set badge to "no code"
+        if (this.chipHandle) {
+          this.chipHandle.update("timeout")
+        }
+        this.updateBadge('no-code')
+
         this.callbacks.onTimeout?.()
         this.cleanup()
         break
@@ -220,6 +263,12 @@ export class WatchSession {
       const success = await this.callbacks.onAutofill(codeResult, this.field)
       if (success) {
         console.log("[WatchSession] Autofill successful")
+
+        // V2: Hide chip immediately after successful autofill (user doesn't need it anymore)
+        if (this.chipHandle) {
+          this.chipHandle.hide()
+        }
+        this.updateBadge('success')
       } else {
         console.log("[WatchSession] Autofill failed or field not available")
       }
@@ -242,10 +291,15 @@ export class WatchSession {
       // Try to copy to clipboard
       await navigator.clipboard.writeText(codeResult.code)
 
+      // V2: Update chip to "copied" state
+      if (this.chipHandle) {
+        this.chipHandle.update("copied")
+      }
+
       // Show success notification with clipboard copy
       showNotification({
-        title: `Code ${codeResult.code} copied to clipboard`,
-        message: "No input field found - paste manually",
+        title: `Code ${codeResult.code} copied`,
+        message: "Paste into the field to continue",
         type: "success",
         duration: 5000,
       })
@@ -264,6 +318,18 @@ export class WatchSession {
     }
   }
 
+  /**
+   * Update badge state via background script
+   */
+  private updateBadge(state: 'listening' | 'success' | 'no-code' | 'clear'): void {
+    chrome.runtime.sendMessage({
+      type: 'UPDATE_BADGE',
+      state
+    }).catch((error) => {
+      console.warn('[WatchSession] Failed to update badge:', error)
+    })
+  }
+
   private cleanup(): void {
     if (this.keepAliveTimer !== null) {
       window.clearInterval(this.keepAliveTimer)
@@ -278,6 +344,18 @@ export class WatchSession {
         // Ignore disconnect errors (port may already be closed)
       }
     }
+
+    // V2: Clean up chip and badge
+    if (this.chipHandle) {
+      // Don't hide immediately if showing success/error states (let auto-dismiss handle it)
+      // Only explicitly hide for canceled/stopped sessions
+      if (!this.completed) {
+        this.chipHandle.hide()
+        this.updateBadge('clear') // Clear badge for canceled sessions
+      }
+      this.chipHandle = null
+    }
+    // Note: For completed sessions (filled/timeout), badge is left visible briefly to provide feedback
 
     this.port = null
     this.sessionId = null

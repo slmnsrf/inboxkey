@@ -10,6 +10,38 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { CodeCard } from '../CodeCard'
 import type { PopupCacheCode } from '@/shared/popup-messages'
 
+// Mock i18n functions
+vi.mock('@/lib/i18n', () => ({
+  t: (key: string, args?: any[]) => {
+    const translations: Record<string, string> = {
+      label_from: 'From',
+      label_to: 'To',
+      label_subject: 'Subject',
+      label_code: 'Code',
+      value_not_available: 'N/A',
+      button_copy: 'Copy',
+      button_copied: 'Copied',
+      aria_copy_code: args ? `Copy code ${args[0]} from ${args[1]}` : 'Copy code',
+      aria_received_time: args ? `Received ${args[0]}` : 'Received time'
+    }
+    return translations[key] || key
+  },
+  timeAgoShort: (timestamp: number) => {
+    const now = Date.now()
+    const diff = now - timestamp
+    const minutes = Math.floor(diff / (60 * 1000))
+
+    if (minutes <= 0) return 'now'
+    if (minutes < 60) return `${minutes}m ago`
+
+    const hours = Math.floor(minutes / 60)
+    if (hours < 24) return `${hours}h ago`
+
+    const days = Math.floor(hours / 24)
+    return `${days}d ago`
+  }
+}))
+
 const baseItem: PopupCacheCode = {
   code: '483921',
   source: 'noreply@example.com - Welcome to InboxKey',
@@ -84,11 +116,20 @@ describe('CodeCard', () => {
     mockOnCopy.mockResolvedValue(undefined)
     render(<CodeCard item={baseItem} onCopy={mockOnCopy} />)
 
-    const copyButton = screen.getByRole('button', { name: /^Copy$/i })
-    fireEvent.click(copyButton)
+    // Get the inline copy button (not the code pill)
+    const buttons = screen.getAllByRole('button', { name: /copy/i })
+    const copyButton = buttons.find(btn => btn.className.includes('copy-button'))
 
-    await waitFor(() => {
+    expect(copyButton).toBeDefined()
+    fireEvent.click(copyButton!)
+
+    await vi.waitFor(() => {
       expect(mockOnCopy).toHaveBeenCalledWith(baseItem.code)
+    })
+
+    vi.advanceTimersByTime(0)
+
+    await vi.waitFor(() => {
       expect(copyButton).toHaveTextContent(/copied/i)
     })
   })
@@ -102,7 +143,7 @@ describe('CodeCard', () => {
     })
     fireEvent.click(codePill)
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(mockOnCopy).toHaveBeenCalledTimes(1)
     })
   })
@@ -113,22 +154,29 @@ describe('CodeCard', () => {
     )
     render(<CodeCard item={baseItem} onCopy={mockOnCopy} />)
 
-    const copyButton = screen.getByRole('button', { name: /^Copy$/i })
-    fireEvent.click(copyButton)
+    // Get the inline copy button
+    const buttons = screen.getAllByRole('button', { name: /copy/i })
+    const copyButton = buttons.find(btn => btn.className.includes('copy-button'))
 
-    await waitFor(() => expect(copyButton).toBeDisabled())
+    expect(copyButton).toBeDefined()
+    fireEvent.click(copyButton!)
 
-    vi.advanceTimersByTime(2000)
+    await vi.waitFor(() => expect(copyButton).toBeDisabled())
 
-    await waitFor(() => expect(copyButton).not.toBeDisabled())
+    // Advance timers to complete the mockOnCopy promise and the setCopying timeout
+    await vi.runAllTimersAsync()
+
+    await vi.waitFor(() => expect(copyButton).not.toBeDisabled())
   })
 
-  it('provides descriptive aria-label for copy button', () => {
+  it('provides descriptive aria-label for code pill button', () => {
     render(<CodeCard item={baseItem} onCopy={mockOnCopy} />)
 
-    const copyButton = screen.getByRole('button', { name: /^Copy$/i })
-    expect(copyButton).toHaveAccessibleName()
-    expect(copyButton.getAttribute('aria-label')).toContain(baseItem.code)
-    expect(copyButton.getAttribute('aria-label')).toContain(baseItem.from!)
+    const codePill = screen.getByRole('button', {
+      name: new RegExp(`Copy code ${baseItem.code}`, 'i')
+    })
+    expect(codePill).toHaveAccessibleName()
+    expect(codePill.getAttribute('aria-label')).toContain(baseItem.code)
+    expect(codePill.getAttribute('aria-label')).toContain(baseItem.from!)
   })
 })

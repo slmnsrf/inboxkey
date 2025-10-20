@@ -28,6 +28,7 @@ import {
   isValidTimestamp,
   isValidUUID,
 } from "./schema"
+import { validateMailboxBeforeWrite } from "./validators"
 
 /**
  * Storage keys for plaintext mode
@@ -87,6 +88,7 @@ export class PlaintextStorage {
   // ============================================================================
 
   async addMailbox(mailbox: Mailbox): Promise<void> {
+    validateMailboxBeforeWrite(mailbox)
     this.validateMailbox(mailbox)
 
     await this.mutex.runExclusive(async () => {
@@ -156,6 +158,7 @@ export class PlaintextStorage {
       }
 
       const updated = { ...mailboxes[index], ...updates }
+      validateMailboxBeforeWrite(updated)
       this.validateMailbox(updated)
       mailboxes[index] = updated
 

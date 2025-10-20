@@ -1,0 +1,18 @@
+{
+  "name": "@inboxkey/extraction-core",
+  "version": "0.1.0",
+  "description": "Pure extraction logic for OTP codes and magic links",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest"
+  },
+  "keywords": ["otp", "extraction", "magic-link"],
+  "author": "InboxKey Team",
+  "license": "Apache-2.0",
+  "devDependencies": {
+    "typescript": "^5.5.3",
+    "vitest": "^1.6.0"
+  }
+}
