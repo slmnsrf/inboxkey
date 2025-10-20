@@ -20,6 +20,8 @@ import type { ProviderKey, ProviderSlotState, ImapAccountRow, RecentItem } from 
 import { ProviderSlotCard } from './accounts/ProviderSlotCard'
 import { ImapAccountsSection } from './accounts/ImapAccountsSection'
 import { RecentEmailsSection } from './accounts/RecentEmailsSection'
+import { AddImapAccountModal } from './accounts/AddImapAccountModal'
+import { getNativeClient } from '@/lib/providers/imap-bridge/native-client'
 
 import './accounts/AccountsPanel.css'
 
@@ -66,6 +68,15 @@ export function AccountsPanel() {
 
   const [recentItems, setRecentItems] = useState<RecentItem[]>([])
   const [recentLoading, setRecentLoading] = useState(false)
+
+  // IMAP modal state
+  const [showAddImapModal, setShowAddImapModal] = useState(false)
+  const [imapPrefillData, setImapPrefillData] = useState<{
+    email: string
+    server: string
+    port: number
+    label: string
+  } | undefined>(undefined)
 
   useEffect(() => {
     void loadMailboxes()
@@ -229,6 +240,89 @@ export function AccountsPanel() {
     }
   }
 
+  const handleAddImap = () => {
+    setImapPrefillData(undefined)
+    setShowAddImapModal(true)
+  }
+
+  const handleImapAdded = async (accountData: {
+    accountId: string
+    email: string
+    server: string
+    port: number
+    label: string
+  }) => {
+    try {
+      const response = await chrome.runtime.sendMessage({
+        type: 'STORE_IMAP_MAILBOX',
+        accountId: accountData.accountId,
+        email: accountData.email,
+        server: accountData.server,
+        port: accountData.port,
+        label: accountData.label,
+      })
+
+      if (response.success) {
+        showToast(t('toast_imap_added', accountData.email), 'success', 4000)
+        await loadMailboxes()
+        await loadRecentItems()
+        setShowAddImapModal(false)
+      } else {
+        showToast(response.error || t('toast_connect_failed'), 'error', 5000)
+      }
+    } catch (error) {
+      console.error('[AccountsPanel] Failed to add IMAP account:', error)
+      showToast(t('toast_connect_failed'), 'error', 5000)
+    }
+  }
+
+  const handleReconnectImap = async (mailboxId: string) => {
+    const mailbox = mailboxes.find((mb) => mb.id === mailboxId)
+    if (!mailbox) return
+
+    // Extract IMAP metadata from mailbox (we'll need to store this)
+    // For now, we'll open the modal with just the email prefilled
+    setImapPrefillData({
+      email: mailbox.email,
+      server: '', // TODO: Store server info in mailbox metadata
+      port: 993,
+      label: mailbox.email,
+    })
+    setShowAddImapModal(true)
+  }
+
+  const handleRemoveImap = async (mailboxId: string) => {
+    if (!confirm(t('accounts_remove_confirm'))) {
+      return
+    }
+
+    try {
+      const response = await chrome.runtime.sendMessage({
+        type: 'REMOVE_MAILBOX',
+        mailboxId,
+      })
+
+      if (response.success) {
+        showToast(t('toast_account_disconnected'), 'success', 4000)
+        await loadMailboxes()
+        await loadRecentItems()
+      } else {
+        showToast(t('toast_disconnect_failed'), 'error', 5000)
+      }
+    } catch (error) {
+      console.error('[AccountsPanel] Failed to remove IMAP account:', error)
+      showToast(t('toast_disconnect_failed'), 'error', 5000)
+    }
+
+    // Also try to remove from native app
+    try {
+      const client = getNativeClient()
+      await client.call('account.remove', { accountId: mailboxId })
+    } catch (error) {
+      console.warn('[AccountsPanel] Failed to remove from native app:', error)
+    }
+  }
+
   const providerSlots = useMemo<ProviderSlotState[]>(() => {
     return (['gmail', 'outlook'] as ProviderKey[]).map((provider) => {
       const display = PROVIDER_DISPLAY[provider]
@@ -339,8 +433,18 @@ export function AccountsPanel() {
 
       <ImapAccountsSection
         accounts={imapAccounts}
-        disabled
+        disabled={false}
         isLocked={false}
+        onAdd={handleAddImap}
+        onReconnect={handleReconnectImap}
+        onRemove={handleRemoveImap}
+      />
+
+      <AddImapAccountModal
+        isOpen={showAddImapModal}
+        onConfirm={handleImapAdded}
+        onCancel={() => setShowAddImapModal(false)}
+        prefillData={imapPrefillData}
       />
 
       <RecentEmailsSection

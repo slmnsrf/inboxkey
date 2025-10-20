@@ -663,6 +663,112 @@
     "message": "Host information not available",
     "description": "Fallback host message for IMAP row"
   },
+  "accounts_imap_add_title": {
+    "message": "Add IMAP Account",
+    "description": "Modal title for adding IMAP account"
+  },
+  "accounts_imap_reconnect_title": {
+    "message": "Reconnect IMAP Account",
+    "description": "Modal title for reconnecting IMAP account"
+  },
+  "accounts_imap_email_label": {
+    "message": "Email Address",
+    "description": "Label for IMAP email input"
+  },
+  "accounts_imap_server_label": {
+    "message": "IMAP Server",
+    "description": "Label for IMAP server input"
+  },
+  "accounts_imap_server_hint": {
+    "message": "Example: imap.gmail.com, imap.fastmail.com",
+    "description": "Hint text for IMAP server input"
+  },
+  "accounts_imap_port_label": {
+    "message": "Port",
+    "description": "Label for IMAP port input"
+  },
+  "accounts_imap_tls_label": {
+    "message": "Security",
+    "description": "Label for TLS checkbox"
+  },
+  "accounts_imap_tls_enabled": {
+    "message": "Use TLS/SSL (recommended)",
+    "description": "Label for TLS checkbox"
+  },
+  "accounts_imap_password_label": {
+    "message": "Password",
+    "description": "Label for IMAP password input"
+  },
+  "accounts_imap_password_hint": {
+    "message": "Stored securely in your system keychain via InboxBridge",
+    "description": "Hint text for IMAP password input"
+  },
+  "accounts_imap_label_label": {
+    "message": "Account Label (optional)",
+    "description": "Label for IMAP account label input"
+  },
+  "accounts_imap_label_hint": {
+    "message": "Friendly name to identify this account",
+    "description": "Hint text for IMAP account label"
+  },
+  "accounts_imap_test_connection": {
+    "message": "Test Connection",
+    "description": "Button label to test IMAP connection"
+  },
+  "accounts_imap_testing": {
+    "message": "Testing connection...",
+    "description": "Button label while testing IMAP connection"
+  },
+  "accounts_imap_test_success": {
+    "message": "Connection successful!",
+    "description": "Success message for IMAP connection test"
+  },
+  "accounts_imap_bridge_not_installed": {
+    "message": "InboxBridge not installed",
+    "description": "Error message when InboxBridge is not installed"
+  },
+  "accounts_imap_bridge_install_instructions": {
+    "message": "To use IMAP accounts, you need to install the InboxBridge native app. It handles IMAP connections securely and stores credentials in your system keychain.",
+    "description": "Instructions for installing InboxBridge"
+  },
+  "accounts_imap_install_bridge": {
+    "message": "Download InboxBridge",
+    "description": "Button label to download InboxBridge"
+  },
+  "accounts_imap_add_button": {
+    "message": "Add Account",
+    "description": "Button label to add IMAP account"
+  },
+  "accounts_imap_update": {
+    "message": "Update Account",
+    "description": "Button label to update IMAP account"
+  },
+  "accounts_imap_error_auth": {
+    "message": "Authentication failed. Please check your email and password.",
+    "description": "Error message for IMAP authentication failure"
+  },
+  "accounts_imap_error_timeout": {
+    "message": "Connection timeout. Please check your server and port settings.",
+    "description": "Error message for IMAP connection timeout"
+  },
+  "accounts_imap_error_keychain": {
+    "message": "Failed to store credentials in keychain. Please check your system permissions.",
+    "description": "Error message for keychain access failure"
+  },
+  "toast_imap_added": {
+    "message": "IMAP account $1 added",
+    "description": "Toast message when IMAP account is added",
+    "placeholders": {
+      "email": {
+        "content": "$1",
+        "example": "user@example.com"
+      }
+    }
+  },
+  "toast_imap_test_failed": {
+    "message": "Connection test failed",
+    "description": "Toast message when IMAP connection test fails"
+  },
   "accounts_recent_title": {
     "message": "Recent Emails",
     "description": "Section heading for recent emails list"
@@ -1074,5 +1180,85 @@
   "toast_clear_codes_failed": {
     "message": "Failed to clear codes",
     "description": "Error toast when clearing codes fails"
+  },
+
+  "settings_tab_settings": {
+    "message": "Settings",
+    "description": "Settings tab label"
+  },
+
+  "automation_heading": {
+    "message": "Automation Level",
+    "description": "Automation settings heading"
+  },
+  "automation_description": {
+    "message": "Control how InboxKey handles verification codes. Choose the level of automation that works best for you.",
+    "description": "Automation settings description"
+  },
+  "automation_hint": {
+    "message": "You can change this anytime. Refresh pages after changing for the new setting to take effect.",
+    "description": "Automation settings hint text"
+  },
+
+  "automation_manual_title": {
+    "message": "Manual",
+    "description": "Manual automation level title"
+  },
+  "automation_manual_description": {
+    "message": "Click the extension icon to detect and copy codes. No automatic detection.",
+    "description": "Manual automation level description"
+  },
+
+  "automation_clipboard_title": {
+    "message": "Clipboard Only",
+    "description": "Clipboard automation level title"
+  },
+  "automation_clipboard_description": {
+    "message": "Auto-detect codes and copy to clipboard. You paste them yourself.",
+    "description": "Clipboard automation level description"
+  },
+
+  "automation_autofill_title": {
+    "message": "Autofill (Recommended)",
+    "description": "Autofill automation level title"
+  },
+  "automation_autofill_description": {
+    "message": "Auto-detect codes and fill them into fields automatically. Current default behavior.",
+    "description": "Autofill automation level description"
+  },
+
+  "automation_full_title": {
+    "message": "Full Automation",
+    "description": "Full automation level title"
+  },
+  "automation_full_description": {
+    "message": "Auto-detect, autofill, and submit the form automatically. Use with caution.",
+    "description": "Full automation level description"
+  },
+
+  "automation_full_warning": {
+    "message": "Warning: Full automation will automatically click submit buttons after filling codes. This may trigger unintended actions on some sites.",
+    "description": "Warning for full automation mode"
+  },
+
+  "button_clear_cache": {
+    "message": "Clear Cache",
+    "description": "Button to clear popup cache"
+  },
+  "clear_cache_confirm": {
+    "message": "Clear popup cache? This will refresh cached data.",
+    "description": "Confirmation dialog for clearing cache"
+  },
+  "toast_cache_cleared": {
+    "message": "✓ Cache cleared",
+    "description": "Success toast after clearing cache"
+  },
+  "toast_clear_cache_failed": {
+    "message": "Failed to clear cache",
+    "description": "Error toast when clearing cache fails"
+  },
+  "toast_settings_failed": {
+    "message": "Failed to save settings",
+    "description": "Error toast when saving settings fails"
   }
 }
