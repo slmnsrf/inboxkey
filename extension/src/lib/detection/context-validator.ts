@@ -93,14 +93,14 @@ export const NEGATIVE_KEYWORDS = {
     de: ['anmelden', 'einloggen', 'login'],
     fr: ['se connecter', 'connexion', 'connecter'],
     ar: ['تسجيل الدخول', 'دخول'],
-    tr: ['giriş yap', 'oturum aç', 'giriş'], // Turkish
+    tr: ['giriş yap', 'oturum aç', 'giriş yapın', 'oturum açın'], // Turkish - removed standalone "giriş" to prevent "girin" false positive
     ko: ['로그인', '로그인하기'],
     it: ['accedi', 'accesso', 'login'],
     nl: ['inloggen', 'aanmelden'],
     pl: ['zaloguj się', 'logowanie'],
     hi: ['लॉगिन', 'साइन इन'],
     sv: ['logga in', 'inloggning'],
-    fi: ['kirjaudu', 'kirjautuminen'],
+    fi: ['kirjaudu sisään', 'kirjautuminen'], // Finnish - removed standalone "kirjaudu" (preventive)
     da: ['log ind', 'login'],
     no: ['logg inn', 'innlogging'],
     cs: ['přihlásit', 'přihlášení'],
@@ -139,6 +139,14 @@ export const ALLOW_PATTERNS = [
   // Login codes
   /\blogin\s+(code|otp|token)\b/i,
   /\bsign\s?in\s+(code|otp|token)\b/i,
+
+  // Turkish: "enter code" variations (OVERRIDES "giriş" negative keyword)
+  /\b(kod|kodu|doğrulama|kimlik)\s+(gir|girin|giriniz)\b/i,  // kod girin, kodu giriniz, doğrulama girin
+  /\bgir(in|iniz)?\s+(kod|kodu|doğrulama)\b/i,  // girin kodu, giriniz kod
+
+  // Finnish: "enter code" variations (preventive)
+  /\b(koodi|vahvistus)\s+(kirjoita|syötä)\b/i,  // koodi kirjoita, vahvistus syötä
+  /\b(kirjoita|syötä)\s+(koodi|vahvistus)\b/i,  // kirjoita koodi, syötä vahvistus
 ] as const
 
 /**
@@ -226,7 +234,23 @@ function findNegativeKeywords(
   const langHint = detectLanguageHint(originalText)
 
   // Priority order for Latin-based languages (most common first)
-  const langPriority = ['en', 'es', 'pt', 'de', 'fr', 'tr', 'it', 'nl', 'pl']
+  // Note: CJK (zh, ja, ko), Cyrillic (ru, uk), Arabic (ar), and Devanagari (hi) are checked separately via character hints
+  const langPriority = [
+    'en', // 60.4%
+    'es', // 4.5%
+    'pt', // 3.9%
+    'de', // 2.7%
+    'fr', // 2.6%
+    'tr', // 2.1%
+    'it', // 1.7%
+    'nl', // 1.4%
+    'pl', // 1.3%
+    'sv', // 1.1%
+    'fi', // 0.9%
+    'da', // 0.8%
+    'no', // 0.7%
+    'cs', // 0.6%
+  ]
 
   // Search password keywords
   for (const lang of langPriority) {
@@ -305,14 +329,25 @@ function findNegativeKeywords(
   }
 
   if (langHint === 'ru') {
+    // Create Ukrainian keyword set for language detection
+    const ukKeywords = new Set<string>([...NEGATIVE_KEYWORDS.password.uk, ...NEGATIVE_KEYWORDS.login.uk])
+    
+    // Combine Russian and Ukrainian keywords
     const keywords = [
       ...NEGATIVE_KEYWORDS.password.ru,
       ...NEGATIVE_KEYWORDS.login.ru,
+      ...NEGATIVE_KEYWORDS.password.uk,
+      ...NEGATIVE_KEYWORDS.login.uk,
     ]
     for (const keyword of keywords) {
       if (lowerOriginal.includes(keyword.toLowerCase())) {
         matched.add(keyword)
-        detectedLanguage = 'ru'
+        // Detect language more precisely
+        if (ukKeywords.has(keyword)) {
+          detectedLanguage = 'uk'
+        } else {
+          detectedLanguage = 'ru'
+        }
       }
     }
   }
