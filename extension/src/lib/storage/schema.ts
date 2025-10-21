@@ -104,9 +104,35 @@ export interface DomainPreferences {
 }
 
 /**
+ * Auto-submit failure telemetry entry
+ */
+export interface AutoSubmitFailure {
+  timestamp: number
+  urlDomain: string  // eTLD+1 only (privacy-preserving)
+  reason: 'no_buttons' | 'no_safe_buttons' | 'score_too_low' | 'click_failed'
+  buttonText?: string  // First 20 chars only, sanitized
+  buttonCount: number
+  topScore?: number
+}
+
+/**
  * Automation levels for verification code handling
  */
 export type AutomationLevel = 'manual' | 'clipboard' | 'autofill' | 'full-automation'
+
+/**
+ * Beta feature usage telemetry entry
+ */
+export interface BetaFeatureUsage {
+  timestamp: number
+  feature: 'pseudo_button_detected' | 'pseudo_button_clicked'
+  urlDomain: string
+  metadata: {
+    selector?: string
+    score?: number
+    tagName?: string
+  }
+}
 
 /**
  * User settings
@@ -144,6 +170,21 @@ export interface Settings {
    * @default true
    */
   domainsEnabledByDefault?: boolean
+  /**
+   * Auto-submit failure telemetry (privacy-preserving, last 10 only)
+   */
+  autoSubmitFailures?: AutoSubmitFailure[]
+  /**
+   * BETA: Enable extended button detection for pseudo-buttons (opt-in).
+   * When enabled, detects custom component buttons (e.g., <a>, [role="button"])
+   * used by modern SPA frameworks (Vue, React).
+   * @default false (opt-in)
+   */
+  extendedButtonDetection?: boolean
+  /**
+   * Beta feature usage telemetry (last 20 entries)
+   */
+  betaFeatureUsage?: BetaFeatureUsage[]
 }
 
 /**
@@ -319,7 +360,8 @@ export function isSettings(obj: unknown): obj is Settings {
     (s.watchSessionV2Enabled === undefined || typeof s.watchSessionV2Enabled === "boolean") &&
     (s.debugScoringEnabled === undefined || typeof s.debugScoringEnabled === "boolean") &&
     (s.automationLevel === undefined || ['manual', 'clipboard', 'autofill', 'full-automation'].includes(s.automationLevel)) &&
-    (s.domainsEnabledByDefault === undefined || typeof s.domainsEnabledByDefault === "boolean")
+    (s.domainsEnabledByDefault === undefined || typeof s.domainsEnabledByDefault === "boolean") &&
+    (s.extendedButtonDetection === undefined || typeof s.extendedButtonDetection === "boolean")
   )
 }
 

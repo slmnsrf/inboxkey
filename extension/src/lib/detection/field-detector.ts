@@ -1,373 +1,123 @@
 /**
- * Two-tier verification code field detection engine
+ * Two-tier verification code field detection engine (Refactored)
  *
- * Tier 1 (Fast): <1ms - Simple attribute checks for 70% coverage
- * Tier 2 (Deep): <50ms - Comprehensive DOM scan for 90%+ coverage
+ * NEW ARCHITECTURE (Phase 3, Task 6):
+ * - 4-Layer Defense-in-Depth (Cooldown → Password → Attribute/Autocomplete → Context)
+ * - Tier 1 (Fast): <0.15ms per field - detectTier1() from tier1-fast.ts
+ * - Tier 2 (Deep): <0.50ms per field - detectTier2() from tier2-deep.ts
+ *
+ * This module is now a thin orchestration layer that:
+ * 1. Manages cooldown registry singleton
+ * 2. Collects visible input fields
+ * 3. Delegates to tier1-fast → tier2-deep
+ * 4. Converts new result format to legacy DetectionResult for backward compatibility
+ *
+ * BACKWARD COMPATIBILITY:
+ * - Public API unchanged (detectVerificationField, detectAllFields, FieldDetector)
+ * - Return type unchanged (DetectionResult)
+ * - All existing call sites continue to work
  */
 
 import type { DetectionResult } from '../types'
-import {
-  ATTRIBUTE_PATTERNS,
-  AUTOCOMPLETE_VALUES,
-  NUMERIC_INPUT_MODES,
-  RELEVANT_INPUT_TYPES,
-  TYPICAL_CODE_LENGTHS,
-  HTML_PATTERN_DETECTION,
-  EXCLUSION_PATTERNS,
-  isExcluded,
-  getLabelMatchStrength,
-  getPlaceholderMatchStrength,
-} from './patterns'
+import { createCooldownRegistry, type CooldownRegistry } from './cooldown-registry'
+import { detectTier1, type Tier1Result } from './tier1-fast'
+import { detectTier2, type Tier2Result } from './tier2-deep'
+
+// ═══════════════════════════════════════════════════════════════
+// Cooldown Registry Singleton
+// ═══════════════════════════════════════════════════════════════
 
 /**
- * Tier 1: Fast detection using HTML attributes
- * Target: <1ms execution time
+ * Singleton cooldown registry instance for the page
+ *
+ * Initialized on first use and reused across all detection calls.
+ * This ensures fields are not re-checked within cooldown period.
  */
-function detectTier1(inputs: HTMLInputElement[]): DetectionResult | null {
-  const startTime = performance.now()
-  const candidates: Array<{
-    input: HTMLInputElement
-    confidence: number
-    signals: string[]
-  }> = []
+let _cooldownRegistry: CooldownRegistry | null = null
 
-  for (const input of inputs) {
-    const signals: string[] = []
-    let confidence = 0
+/**
+ * Get or create the cooldown registry singleton
+ *
+ * @returns Shared cooldown registry instance
+ */
+function getCooldownRegistry(): CooldownRegistry {
+  if (!_cooldownRegistry) {
+    _cooldownRegistry = createCooldownRegistry()
 
-    const name = input.name?.toLowerCase() || ''
-    const id = input.id?.toLowerCase() || ''
-    const identifier = name || id
-    const maxLength = input.maxLength
-
-    // Skip excluded patterns
-    if (identifier && isExcluded(identifier)) {
-      continue
-    }
-
-    // Skip zip codes explicitly
-    if (maxLength > 0 && maxLength <= 5 && /zip|postal/i.test(identifier)) {
-      continue
-    }
-
-    // Check autocomplete attribute (HTML standard) - highest confidence
-    const autocomplete = input.getAttribute('autocomplete')?.toLowerCase()
-    if (autocomplete && AUTOCOMPLETE_VALUES.includes(autocomplete as any)) {
-      signals.push(`autocomplete="${autocomplete}"`)
-      confidence = 100
-      candidates.push({ input, confidence, signals })
-      continue
-    }
-
-    // Check name/id attributes (before inputmode to prefer semantic naming)
-    if (identifier) {
-      // Check for specific exclusions in the ID (like cvv-code should be excluded despite containing "code")
-      const hasExclusionKeyword = Object.values(EXCLUSION_PATTERNS).some(pattern =>
-        pattern.test(identifier)
-      )
-
-      if (!hasExclusionKeyword) {
-        // Exact match
-        if (ATTRIBUTE_PATTERNS.exact.test(identifier)) {
-          signals.push(`name/id="${identifier}" (exact match)`)
-          confidence = 95
-          candidates.push({ input, confidence, signals })
-          continue
-        }
-
-        // Contains match
-        if (ATTRIBUTE_PATTERNS.contains.test(identifier)) {
-          signals.push(`name/id="${identifier}" (contains match)`)
-          confidence = 90
-          candidates.push({ input, confidence, signals })
-          continue
-        }
-      }
-    }
-
-    // Check inputmode + maxlength combination
-    const inputmode = input.getAttribute('inputmode')?.toLowerCase()
-    if (
-      inputmode &&
-      NUMERIC_INPUT_MODES.includes(inputmode as any) &&
-      maxLength >= TYPICAL_CODE_LENGTHS.min &&
-      maxLength <= TYPICAL_CODE_LENGTHS.max
-    ) {
-      signals.push(`inputmode="${inputmode}"`, `maxlength=${maxLength}`)
-      confidence = 85
-      candidates.push({ input, confidence, signals })
-      continue
-    }
+    // Periodic cleanup every 5 minutes to prevent memory growth
+    setInterval(() => {
+      _cooldownRegistry?.cleanup()
+    }, 5 * 60 * 1000)
   }
+  return _cooldownRegistry
+}
 
-  // Return highest confidence candidate
-  if (candidates.length > 0) {
-    candidates.sort((a, b) => b.confidence - a.confidence)
-    const best = candidates[0]
-    return {
-      field: best.input,
-      confidence: best.confidence,
-      tier: 1,
-      signals: best.signals,
-      executionTime: performance.now() - startTime,
-    }
+// ═══════════════════════════════════════════════════════════════
+// Result Format Conversion (New → Legacy)
+// ═══════════════════════════════════════════════════════════════
+
+/**
+ * Convert Tier1Result to legacy DetectionResult format
+ *
+ * Maps new result format (Tier1Result) to old format (DetectionResult)
+ * for backward compatibility with existing call sites.
+ *
+ * @param input - The input field that was detected
+ * @param result - Tier 1 detection result
+ * @param executionTime - Time taken for detection (ms)
+ * @returns Legacy DetectionResult format
+ */
+function tier1ToDetectionResult(
+  input: HTMLInputElement,
+  result: Tier1Result,
+  executionTime: number
+): DetectionResult {
+  return {
+    field: input,
+    confidence: Math.round(result.confidence * 100), // 0.0-1.0 → 0-100
+    tier: 1,
+    signals: [result.reason],
+    executionTime,
   }
-
-  return null
 }
 
 /**
- * Get associated label text for an input field
+ * Convert Tier2Result to legacy DetectionResult format
+ *
+ * Maps new result format (Tier2Result) to old format (DetectionResult)
+ * for backward compatibility with existing call sites.
+ *
+ * @param input - The input field that was detected
+ * @param result - Tier 2 detection result
+ * @param executionTime - Time taken for detection (ms)
+ * @returns Legacy DetectionResult format
  */
-function getLabelText(input: HTMLInputElement): string {
-  const labels: string[] = []
-
-  // Check for label element (by 'for' attribute)
-  const id = input.id
-  if (id) {
-    const label = input.ownerDocument?.querySelector(`label[for="${id}"]`)
-    if (label?.textContent) {
-      labels.push(label.textContent.trim())
-    }
+function tier2ToDetectionResult(
+  input: HTMLInputElement,
+  result: Tier2Result,
+  executionTime: number
+): DetectionResult {
+  return {
+    field: input,
+    confidence: Math.round(result.confidence * 100), // 0.0-1.0 → 0-100
+    tier: 2,
+    signals: [result.reason],
+    executionTime,
   }
-
-  // Check for parent label
-  let parent = input.parentElement
-  if (parent?.tagName === 'LABEL' && parent.textContent) {
-    labels.push(parent.textContent.trim())
-  }
-
-  // Check for aria-label
-  const ariaLabel = input.getAttribute('aria-label')
-  if (ariaLabel) {
-    labels.push(ariaLabel)
-  }
-
-  // Check for aria-labelledby
-  const ariaLabelledby = input.getAttribute('aria-labelledby')
-  if (ariaLabelledby) {
-    const labelElement = input.ownerDocument?.getElementById(ariaLabelledby)
-    if (labelElement?.textContent) {
-      labels.push(labelElement.textContent.trim())
-    }
-  }
-
-  return labels.join(' ')
 }
 
-/**
- * Get nearby text (within 2 parent levels)
- */
-function getNearbyText(input: HTMLInputElement): string {
-  const texts: string[] = []
-
-  let element: HTMLElement | null = input
-  let levels = 0
-
-  while (element && levels < 3) {
-    // Get all text from siblings
-    if (element.parentElement) {
-      const siblings: Element[] = Array.from(element.parentElement.children)
-      for (const sibling: Element of siblings) {
-        if (sibling !== element && sibling instanceof HTMLElement) {
-          const text = sibling.textContent?.trim()
-          if (text && text.length < 200) {
-            // Avoid huge blocks
-            texts.push(text)
-          }
-        }
-      }
-    }
-
-    element = element.parentElement
-    levels++
-  }
-
-  return texts.join(' ')
-}
-
-/**
- * Tier 2: Deep detection using DOM traversal and text analysis
- * Target: <50ms execution time
- */
-function detectTier2(inputs: HTMLInputElement[]): DetectionResult | null {
-  const startTime = performance.now()
-  const candidates: Array<{
-    input: HTMLInputElement
-    score: number
-    signals: string[]
-  }> = []
-
-  for (const input of inputs) {
-    let score = 0
-    const signals: string[] = []
-
-    // Skip if excluded by keywords
-    const name = input.name?.toLowerCase() || ''
-    const id = input.id?.toLowerCase() || ''
-    const identifier = name || id
-
-    if (identifier && isExcluded(identifier)) {
-      continue
-    }
-
-    // Skip zip codes (maxlength 5 or less)
-    const maxLength = input.maxLength
-    if (maxLength > 0 && maxLength <= 5 && /zip|postal/i.test(identifier)) {
-      continue
-    }
-
-    // Check input type (must be relevant)
-    const type = input.type?.toLowerCase() || 'text'
-    if (!RELEVANT_INPUT_TYPES.includes(type as any)) {
-      continue
-    }
-    signals.push(`type="${type}"`)
-    score += 5
-
-    // Check label text
-    const labelText = getLabelText(input)
-    if (labelText) {
-      const labelScore = getLabelMatchStrength(labelText)
-      if (labelScore > 0) {
-        signals.push(`label="${labelText.substring(0, 50)}" (+${labelScore})`)
-        score += labelScore
-      } else if (isExcluded(labelText)) {
-        // Excluded label, skip this field
-        continue
-      }
-    }
-
-    // Check placeholder
-    const placeholder = input.placeholder || ''
-    if (placeholder) {
-      const placeholderScore = getPlaceholderMatchStrength(placeholder)
-      if (placeholderScore > 0) {
-        signals.push(`placeholder="${placeholder}" (+${placeholderScore})`)
-        score += placeholderScore
-      }
-    }
-
-    // Check pattern attribute
-    const pattern = input.getAttribute('pattern')
-    if (pattern) {
-      const digitsMatch = HTML_PATTERN_DETECTION.digits.exec(pattern)
-      const rangeMatch = HTML_PATTERN_DETECTION.range.exec(pattern)
-
-      if (digitsMatch) {
-        const length = parseInt(digitsMatch[1], 10)
-        if (length >= TYPICAL_CODE_LENGTHS.min && length <= TYPICAL_CODE_LENGTHS.max) {
-          signals.push(`pattern="\\d{${length}}" (+15)`)
-          score += 15
-        }
-      } else if (rangeMatch) {
-        const min = parseInt(rangeMatch[1], 10)
-        const max = parseInt(rangeMatch[2], 10)
-        if (
-          min >= TYPICAL_CODE_LENGTHS.min &&
-          max <= TYPICAL_CODE_LENGTHS.max
-        ) {
-          signals.push(`pattern="\\d{${min},${max}}" (+15)`)
-          score += 15
-        }
-      }
-    }
-
-    // Check maxlength (already defined above)
-    if (maxLength > 0) {
-      if (
-        maxLength >= TYPICAL_CODE_LENGTHS.min &&
-        maxLength <= TYPICAL_CODE_LENGTHS.max
-      ) {
-        signals.push(`maxlength=${maxLength} (+10)`)
-        score += 10
-      }
-    }
-
-    // Check inputmode
-    const inputmode = input.getAttribute('inputmode')?.toLowerCase()
-    if (inputmode && NUMERIC_INPUT_MODES.includes(inputmode as any)) {
-      signals.push(`inputmode="${inputmode}" (+10)`)
-      score += 10
-    }
-
-    // Check nearby text
-    const nearbyText = getNearbyText(input)
-    if (nearbyText) {
-      const nearbyScore = getLabelMatchStrength(nearbyText)
-      if (nearbyScore > 0) {
-        signals.push(`nearby text (+${Math.floor(nearbyScore / 2)})`)
-        score += Math.floor(nearbyScore / 2) // Lower weight for nearby text
-      }
-    }
-
-    // Check if input has numeric constraints
-    if (input.getAttribute('type') === 'number' || input.getAttribute('inputmode')) {
-      score += 5
-      signals.push('numeric constraints (+5)')
-    }
-
-    // Check aria-describedby for additional context
-    const ariaDescribedby = input.getAttribute('aria-describedby')
-    if (ariaDescribedby) {
-      const descElement = input.ownerDocument?.getElementById(ariaDescribedby)
-      if (descElement?.textContent) {
-        const descScore = getLabelMatchStrength(descElement.textContent)
-        if (descScore > 0) {
-          signals.push(`aria-describedby (+${Math.floor(descScore / 2)})`)
-          score += Math.floor(descScore / 2)
-        }
-      }
-    }
-
-    // Check nearby button text
-    const buttonText = getNearbyButtonText(input)
-    if (buttonText) {
-      const buttonKeywords = ['continue', 'verify', 'submit', 'confirm', 'next']
-      const hasButtonKeyword = buttonKeywords.some(keyword =>
-        buttonText.toLowerCase().includes(keyword)
-      )
-      if (hasButtonKeyword) {
-        signals.push('nearby action button (+5)')
-        score += 5
-      }
-    }
-
-    // Check form action URL
-    const formScore = getFormActionScore(input)
-    if (formScore > 0) {
-      signals.push(`form action URL (+${formScore})`)
-      score += formScore
-    }
-
-    // Only consider if score meets threshold
-    if (score >= 70) {
-      candidates.push({ input, score, signals })
-    }
-  }
-
-  // Sort by score descending
-  candidates.sort((a, b) => b.score - a.score)
-
-  // Return highest scoring candidate
-  if (candidates.length > 0) {
-    const best = candidates[0]
-    return {
-      field: best.input,
-      confidence: Math.min(best.score, 100),
-      tier: 2,
-      signals: best.signals,
-      executionTime: performance.now() - startTime,
-    }
-  }
-
-  return null
-}
+// ═══════════════════════════════════════════════════════════════
+// Input Field Collection
+// ═══════════════════════════════════════════════════════════════
 
 /**
  * Get all potentially relevant input fields
+ *
+ * Filters out hidden, disabled, and zero-size fields.
+ *
  * @param strictVisibility - If true, filters out hidden/zero-size elements (for production)
  *                           If false, only checks basic visibility (for testing)
+ * @returns Array of visible input fields
  */
 function getInputFields(strictVisibility = true): HTMLInputElement[] {
   return Array.from(
@@ -408,77 +158,6 @@ function getInputFields(strictVisibility = true): HTMLInputElement[] {
 }
 
 /**
- * Main detection function - tries Tier 1 first, falls back to Tier 2
- * @param options - Detection options
- * @returns Detection result or null if no verification field found
- */
-export function detectVerificationField(options?: {
-  strictVisibility?: boolean
-}): DetectionResult | null {
-  // const startTime = performance.now()
-  const strictVisibility = options?.strictVisibility ?? true
-
-  // Get all visible input fields
-  const inputs = getInputFields(strictVisibility)
-
-  if (inputs.length === 0) {
-    return null
-  }
-
-  // Try Tier 1 first (fast)
-  const tier1Result = detectTier1(inputs)
-  if (tier1Result) {
-    return tier1Result
-  }
-
-  // Fall back to Tier 2 (deep scan)
-  const tier2Result = detectTier2(inputs)
-  if (tier2Result) {
-    return tier2Result
-  }
-
-  return null
-}
-
-/**
- * Detect all potential verification fields and return ranked list
- * Useful for debugging and testing
- */
-export function detectAllFields(options?: {
-  strictVisibility?: boolean
-}): DetectionResult[] {
-  const results: DetectionResult[] = []
-  const strictVisibility = options?.strictVisibility ?? true
-
-  // Get all visible input fields
-  const inputs = getInputFields(strictVisibility)
-
-  // Try Tier 1 on all inputs
-  for (const input of inputs) {
-    const tier1Result = detectTier1([input])
-    if (tier1Result) {
-      results.push(tier1Result)
-    }
-  }
-
-  // Try Tier 2 on remaining inputs
-  const tier2Inputs = inputs.filter(
-    input => !results.find(r => r.field === input)
-  )
-  for (const input of tier2Inputs) {
-    const tier2Result = detectTier2([input])
-    if (tier2Result) {
-      results.push(tier2Result)
-    }
-  }
-
-  // Sort by confidence descending
-  results.sort((a, b) => b.confidence - a.confidence)
-
-  return results
-}
-
-/**
  * Find input fields within shadow DOM recursively
  */
 function findInputsInShadowDOM(root: Document | ShadowRoot): HTMLInputElement[] {
@@ -508,12 +187,6 @@ function getAllInputFields(strictVisibility = true): HTMLInputElement[] {
   const inputs = findInputsInShadowDOM(document)
 
   return inputs.filter(input => {
-    // Must be visible
-    const style = window.getComputedStyle(input)
-    if (style.display === 'none' || style.visibility === 'hidden') {
-      return false
-    }
-
     // Must not be disabled
     if (input.disabled) {
       return false
@@ -524,14 +197,21 @@ function getAllInputFields(strictVisibility = true): HTMLInputElement[] {
       return false
     }
 
-    // Check for zero-size via inline styles (works in test env)
-    const inlineStyle = input.getAttribute('style') || ''
-    if (/width\s*:\s*0|height\s*:\s*0/.test(inlineStyle)) {
-      return false
-    }
-
-    // Check dimensions (skip in test environment where getBoundingClientRect may not work)
+    // Visibility checks - only when strictVisibility is enabled
     if (strictVisibility) {
+      // Check computed styles
+      const style = window.getComputedStyle(input)
+      if (style.display === 'none' || style.visibility === 'hidden') {
+        return false
+      }
+
+      // Check for zero-size via inline styles
+      const inlineStyle = input.getAttribute('style') || ''
+      if (/width\s*:\s*0|height\s*:\s*0/.test(inlineStyle)) {
+        return false
+      }
+
+      // Check dimensions
       const rect = input.getBoundingClientRect()
       if (rect.width === 0 || rect.height === 0) {
         return false
@@ -542,60 +222,143 @@ function getAllInputFields(strictVisibility = true): HTMLInputElement[] {
   })
 }
 
+// ═══════════════════════════════════════════════════════════════
+// Main Detection API (Public - Backward Compatible)
+// ═══════════════════════════════════════════════════════════════
+
 /**
- * Get nearby button text for improved detection
+ * Main detection function - tries Tier 1 first, falls back to Tier 2
+ *
+ * NEW IMPLEMENTATION (Phase 3, Task 6):
+ * - Uses 4-layer defense (cooldown → password → attribute/autocomplete → context)
+ * - Delegates to tier1-fast.ts and tier2-deep.ts
+ * - Converts new result format to legacy DetectionResult
+ *
+ * BACKWARD COMPATIBLE:
+ * - Same signature as old implementation
+ * - Same return type (DetectionResult | null)
+ * - All existing call sites continue to work
+ *
+ * @param options - Detection options
+ * @returns Detection result or null if no verification field found
  */
-function getNearbyButtonText(input: HTMLInputElement): string {
-  const texts: string[] = []
-  let element: HTMLElement | null = input
-  let levels = 0
+export function detectVerificationField(options?: {
+  strictVisibility?: boolean
+}): DetectionResult | null {
+  const startTime = performance.now()
+  const strictVisibility = options?.strictVisibility ?? true
+  const cooldown = getCooldownRegistry()
 
-  while (element && levels < 3) {
-    // Get all buttons from parent
-    if (element.parentElement) {
-      const buttons = element.parentElement.querySelectorAll('button, input[type="submit"], a.button')
-      for (const button of buttons) {
-        const text = button.textContent?.trim()
-        if (text && text.length < 50) {
-          texts.push(text)
-        }
-      }
-    }
+  // Get all visible input fields
+  const inputs = getInputFields(strictVisibility)
 
-    element = element.parentElement
-    levels++
+  if (inputs.length === 0) {
+    return null
   }
 
-  return texts.join(' ')
+  // Try Tier 1 first (fast) on each input
+  for (const input of inputs) {
+    const tier1Result = detectTier1(input, cooldown)
+
+    if (tier1Result.detected) {
+      const executionTime = performance.now() - startTime
+      return tier1ToDetectionResult(input, tier1Result, executionTime)
+    }
+
+    // If Tier 1 rejected with high confidence (layer: attribute or context),
+    // skip Tier 2 for this field (it's a password field or excluded pattern)
+    if (tier1Result.metadata?.layer === 'attribute' ||
+        tier1Result.metadata?.layer === 'context') {
+      continue
+    }
+  }
+
+  // Fall back to Tier 2 (deep scan) on remaining inputs
+  for (const input of inputs) {
+    const tier2Result = detectTier2(input, cooldown)
+
+    if (tier2Result.detected) {
+      const executionTime = performance.now() - startTime
+      return tier2ToDetectionResult(input, tier2Result, executionTime)
+    }
+  }
+
+  return null
 }
 
 /**
- * Check form action URL for verification patterns
+ * Detect all potential verification fields and return ranked list
+ *
+ * NEW IMPLEMENTATION (Phase 3, Task 6):
+ * - Uses new tier1-fast and tier2-deep modules
+ * - Converts results to legacy DetectionResult format
+ *
+ * BACKWARD COMPATIBLE:
+ * - Same signature as old implementation
+ * - Same return type (DetectionResult[])
+ *
+ * Useful for debugging and testing.
+ *
+ * @param options - Detection options
+ * @returns Array of detection results sorted by confidence (highest first)
  */
-function getFormActionScore(input: HTMLInputElement): number {
-  const form = input.closest('form')
-  if (!form) return 0
+export function detectAllFields(options?: {
+  strictVisibility?: boolean
+}): DetectionResult[] {
+  const results: DetectionResult[] = []
+  const strictVisibility = options?.strictVisibility ?? true
+  const cooldown = getCooldownRegistry()
 
-  const action = form.action?.toLowerCase() || ''
-  const verificationPatterns = [
-    /\/verify/i,
-    /\/2fa/i,
-    /\/otp/i,
-    /\/mfa/i,
-    /\/authenticate/i,
-  ]
+  // Get all visible input fields
+  const inputs = getInputFields(strictVisibility)
 
-  for (const pattern of verificationPatterns) {
-    if (pattern.test(action)) {
-      return 10
+  // Try Tier 1 on all inputs
+  for (const input of inputs) {
+    const startTime = performance.now()
+    const tier1Result = detectTier1(input, cooldown)
+
+    if (tier1Result.detected) {
+      const executionTime = performance.now() - startTime
+      results.push(tier1ToDetectionResult(input, tier1Result, executionTime))
     }
   }
 
-  return 0
+  // Try Tier 2 on remaining inputs (not yet detected)
+  const detectedFields = new Set(results.map(r => r.field))
+  const tier2Inputs = inputs.filter(input => !detectedFields.has(input))
+
+  for (const input of tier2Inputs) {
+    const startTime = performance.now()
+    const tier2Result = detectTier2(input, cooldown)
+
+    if (tier2Result.detected) {
+      const executionTime = performance.now() - startTime
+      results.push(tier2ToDetectionResult(input, tier2Result, executionTime))
+    }
+  }
+
+  // Sort by confidence descending
+  results.sort((a, b) => b.confidence - a.confidence)
+
+  return results
 }
+
+// ═══════════════════════════════════════════════════════════════
+// Production-Ready Field Detector Class (Public - Backward Compatible)
+// ═══════════════════════════════════════════════════════════════
 
 /**
  * Production-ready field detector with dynamic detection
+ *
+ * NEW IMPLEMENTATION (Phase 3, Task 6):
+ * - Uses new tier1-fast and tier2-deep modules
+ * - Maintains same public API for backward compatibility
+ *
+ * Features:
+ * - Detect existing fields on page load
+ * - Observe DOM mutations for dynamically injected fields
+ * - Debounced mutation processing for performance
+ * - Shadow DOM support
  */
 export class FieldDetector {
   private observer: MutationObserver | null = null
@@ -603,9 +366,27 @@ export class FieldDetector {
   private debounceTimer: number | null = null
   private pendingMutations: Set<HTMLInputElement> = new Set()
   private callback: ((field: HTMLInputElement) => void) | null = null
+  private cooldown: CooldownRegistry
+
+  constructor() {
+    // Create a new cooldown registry instance for this detector
+    // This ensures isolation between different detector instances (e.g., in tests)
+    this.cooldown = createCooldownRegistry()
+  }
 
   /**
    * Detect existing fields on page
+   *
+   * NOTE: This method intentionally does NOT use cooldown to allow
+   * repeated detection of the same fields. This is needed for:
+   * - Debugging and testing (detectExisting can be called multiple times)
+   * - Manual re-scans by developer tools
+   *
+   * The cooldown registry is only used in the MutationObserver path
+   * to prevent duplicate callbacks for dynamically added fields.
+   *
+   * @param options - Detection options
+   * @returns Array of detection results
    */
   detectExisting(options?: { strictVisibility?: boolean }): DetectionResult[] {
     const strictVisibility = options?.strictVisibility ?? true
@@ -615,25 +396,48 @@ export class FieldDetector {
       return []
     }
 
+    const results: DetectionResult[] = []
+
+    // Create a temporary cooldown registry for this scan
+    // This prevents detecting the same field multiple times within ONE scan,
+    // but allows re-detection across multiple detectExisting() calls
+    const scanCooldown = createCooldownRegistry()
+
     // Try Tier 1 first
-    const tier1Result = detectTier1(inputs)
-    if (tier1Result) {
-      this.detectedFields.add(tier1Result.field)
-      return [tier1Result]
+    for (const input of inputs) {
+      const startTime = performance.now()
+      const tier1Result = detectTier1(input, scanCooldown)
+
+      if (tier1Result.detected) {
+        const executionTime = performance.now() - startTime
+        const result = tier1ToDetectionResult(input, tier1Result, executionTime)
+        results.push(result)
+        this.detectedFields.add(input)
+      }
     }
 
-    // Fall back to Tier 2
-    const tier2Result = detectTier2(inputs)
-    if (tier2Result) {
-      this.detectedFields.add(tier2Result.field)
-      return [tier2Result]
+    // If Tier 1 found nothing, try Tier 2
+    if (results.length === 0) {
+      for (const input of inputs) {
+        const startTime = performance.now()
+        const tier2Result = detectTier2(input, scanCooldown)
+
+        if (tier2Result.detected) {
+          const executionTime = performance.now() - startTime
+          const result = tier2ToDetectionResult(input, tier2Result, executionTime)
+          results.push(result)
+          this.detectedFields.add(input)
+        }
+      }
     }
 
-    return []
+    return results
   }
 
   /**
    * Start observing for dynamically injected fields
+   *
+   * @param callback - Called when a new verification field is detected
    */
   startObserving(callback: (field: HTMLInputElement) => void): void {
     if (this.observer) {
@@ -738,17 +542,24 @@ export class FieldDetector {
     }
 
     // Try to detect verification fields
-    const tier1Result = detectTier1(visibleInputs)
-    if (tier1Result) {
-      this.detectedFields.add(tier1Result.field)
-      this.callback?.(tier1Result.field)
-      return
-    }
+    for (const input of visibleInputs) {
+      // Try Tier 1 first
+      const tier1Result = detectTier1(input, this.cooldown)
+      if (tier1Result.detected) {
+        this.detectedFields.add(input)
+        this.callback?.(input)
+        continue
+      }
 
-    const tier2Result = detectTier2(visibleInputs)
-    if (tier2Result) {
-      this.detectedFields.add(tier2Result.field)
-      this.callback?.(tier2Result.field)
+      // Try Tier 2 if Tier 1 didn't reject
+      if (tier1Result.metadata?.layer !== 'attribute' &&
+          tier1Result.metadata?.layer !== 'context') {
+        const tier2Result = detectTier2(input, this.cooldown)
+        if (tier2Result.detected) {
+          this.detectedFields.add(input)
+          this.callback?.(input)
+        }
+      }
     }
   }
 

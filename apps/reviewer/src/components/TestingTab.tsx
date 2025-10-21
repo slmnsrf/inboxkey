@@ -21,6 +21,7 @@ export default function TestingTab() {
   const [startDate, setStartDate] = useState('')
   const [endDate, setEndDate] = useState('')
   const [batchSize, setBatchSize] = useState(25)
+  const [maxPerDomain, setMaxPerDomain] = useState<number | undefined>(undefined)
   const [provider, setProvider] = useState<'gmail' | 'outlook'>('gmail')
 
   // Status state
@@ -205,6 +206,7 @@ export default function TestingTab() {
         startDate: startDate ? new Date(startDate) : undefined,
         endDate: endDate ? new Date(endDate) : undefined,
         maxResults: batchSize,
+        maxPerDomain: maxPerDomain && maxPerDomain > 0 ? maxPerDomain : undefined,
       }
 
       // Fetch messages
@@ -537,6 +539,26 @@ export default function TestingTab() {
               <option value={300}>300</option>
               <option value={500}>500</option>
             </select>
+          </div>
+
+          <div>
+            <label style={{ display: 'inline-block', width: '150px', fontWeight: 'bold' }}>
+              Max. mails per domain:
+            </label>
+            <input
+              type="number"
+              placeholder="0 = unlimited"
+              value={maxPerDomain ?? ''}
+              onChange={(e) => {
+                const val = e.target.value
+                setMaxPerDomain(val === '' ? undefined : Number(val))
+              }}
+              min="0"
+              style={{ padding: '5px', width: '200px' }}
+            />
+            <span style={{ marginLeft: '8px', fontSize: '12px', color: '#666' }}>
+              (blank or 0 = unlimited)
+            </span>
           </div>
         </div>
       </section>

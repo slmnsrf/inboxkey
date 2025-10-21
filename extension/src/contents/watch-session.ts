@@ -318,8 +318,16 @@ export class WatchSession {
    */
   private async tryAutoSubmit(): Promise<void> {
     try {
+      // Load extended detection setting
+      const result = await chrome.storage.local.get('settings')
+      const extendedDetection = result.settings?.extendedButtonDetection || false
+
+      if (extendedDetection) {
+        console.log('[WatchSession] [BETA] Extended button detection enabled')
+      }
+
       const { findAndClickSubmitButton } = await import('./autofill')
-      const clicked = await findAndClickSubmitButton(this.field)
+      const clicked = await findAndClickSubmitButton(this.field, extendedDetection)
 
       if (clicked) {
         console.log("[WatchSession] Auto-submit successful")

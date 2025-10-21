@@ -22,7 +22,7 @@ import './ui/components/security/SecurityInfo.css'
 
 function OptionsApp() {
   const [mailboxCount, setMailboxCount] = useState<number | null>(null)
-  const [activeTab, setActiveTab] = useState<Tab>('security')
+  const [activeTab, setActiveTab] = useState<Tab>('settings')
 
   // Fetch mailbox count
   useEffect(() => {
@@ -39,15 +39,15 @@ function OptionsApp() {
     fetchMailboxCount()
   }, [])
 
-  // Check URL params for tab override
+  // Check URL params for tab override, or set default based on account status
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
     const tabParam = params.get('tab') as Tab | null
     if (tabParam && ['accounts', 'security', 'settings', 'about'].includes(tabParam)) {
       setActiveTab(tabParam)
-    } else if (mailboxCount !== null && mailboxCount === 0) {
-      // Default to accounts tab if no mailboxes
-      setActiveTab('accounts')
+    } else if (mailboxCount !== null) {
+      // Default to accounts tab if no mailboxes, otherwise settings tab
+      setActiveTab(mailboxCount === 0 ? 'accounts' : 'settings')
     }
   }, [mailboxCount])
 
