@@ -79,13 +79,44 @@ export default function Preview({ msgId, message, preTag }: Props) {
       {preTag?.candidates && preTag.candidates.length > 0 && (
         <div className="candidates-list">
           <strong>Candidates:</strong>
-          {preTag.candidates.map((cand, idx) => (
-            <div key={idx} className="candidate-item">
-              <span className="cand-type">{cand.type}</span>
-              <span className="cand-value">{cand.value}</span>
-              <span className="cand-score">{(cand.score * 100).toFixed(0)}%</span>
-            </div>
-          ))}
+          {preTag.candidates.map((cand, idx) => {
+            // For MAGIC_LINK, use href. For OTP, use value
+            const displayValue = cand.type === 'MAGIC_LINK'
+              ? (cand.href || cand.value || '(no URL)')
+              : (cand.value || '(no value)')
+
+            // Check if this is the top candidate (highest score)
+            const isTopCandidate = idx === 0 // Candidates are sorted by score, first is highest
+
+            return (
+              <div key={idx} className="candidate-item" style={{
+                backgroundColor: isTopCandidate ? '#f0f8ff' : 'transparent',
+                borderLeft: isTopCandidate ? '3px solid #1976d2' : 'none',
+                paddingLeft: isTopCandidate ? '9px' : '12px'
+              }}>
+                <span className="cand-type">
+                  {cand.type}
+                  {isTopCandidate && (
+                    <span style={{
+                      marginLeft: '8px',
+                      padding: '2px 6px',
+                      backgroundColor: '#1976d2',
+                      color: 'white',
+                      fontSize: '10px',
+                      fontWeight: 'bold',
+                      borderRadius: '3px'
+                    }}>
+                      SELECTED
+                    </span>
+                  )}
+                </span>
+                <span className="cand-value" style={{ wordBreak: 'break-all', display: 'block', maxWidth: '100%', overflow: 'hidden' }}>
+                  {displayValue}
+                </span>
+                <span className="cand-score">{(cand.score * 100).toFixed(0)}%</span>
+              </div>
+            )
+          })}
         </div>
       )}
     </div>

@@ -31,7 +31,7 @@
  * These are now centralized in the matching module but re-exported here
  * for backward compatibility with existing code that imports from extraction-types.
  */
-export { DOMAIN_ALIASES, WATCH_SESSION_SCORING } from './matching/scoring-config'
+export { DOMAIN_ALIASES, WATCH_SESSION_SCORING } from '../matching/scoring-config'
 
 // ------------------------------
 // Types

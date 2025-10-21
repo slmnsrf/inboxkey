@@ -24,7 +24,7 @@ import {
   CODE_KEYWORDS,
 } from './extraction-types'
 
-import { shapeScore, type ExpectedShape } from './matching/shape-matcher'
+import { shapeScore, type ExpectedShape } from '../matching/shape-matcher'
 
 /** Character set for OTP */
 export type OtpCharset = 'digits' | 'alnum'
@@ -140,7 +140,6 @@ export function extractOTPs(input: string, opts: OTPExtractOptions = {}): OTPCan
         keywordDistance: near.distance,
         footerPenalty: footer.applies,
       },
-      // @ts-expect-error - Internal field for sorting
       _shapeBias: shapeBias,
     }
   })

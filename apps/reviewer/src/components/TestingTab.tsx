@@ -6,8 +6,10 @@
 import React, { useState, useEffect } from 'react'
 import { BatchFetcher } from '../lib/batch/fetcher'
 import { db, Message, PreTag } from '../lib/storage/schema'
-import { exportLabelsToJSONL } from '../lib/export/jsonl'
-import { getAllAccounts } from '../lib/providers/token-storage'
+import { exportLabelsToJSONL, exportLabelsToPrettyJSON } from '../lib/export/jsonl'
+import { getAllAccounts, saveAccount } from '../lib/providers/token-storage'
+import { GmailPKCEProvider } from '../lib/providers/gmail-pkce'
+import { OutlookPKCEProvider } from '../lib/providers/outlook-pkce'
 import EmailList from './EmailList'
 import Preview from './Preview'
 import LabelPanel from './LabelPanel'
@@ -18,14 +20,17 @@ export default function TestingTab() {
   const [contains, setContains] = useState('')
   const [startDate, setStartDate] = useState('')
   const [endDate, setEndDate] = useState('')
-  const [batchSize, setBatchSize] = useState(50)
+  const [batchSize, setBatchSize] = useState(25)
   const [provider, setProvider] = useState<'gmail' | 'outlook'>('gmail')
 
   // Status state
-  const [status, setStatus] = useState('Ready')
+  const [status, setStatus] = useState('Ready to prepare batch')
   const [messageCount, setMessageCount] = useState(0)
   const [preTaggedCount, setPreTaggedCount] = useState(0)
   const [loading, setLoading] = useState(false)
+  const [loadingMessage, setLoadingMessage] = useState('')
+  const [accountConnected, setAccountConnected] = useState(false)
+  const [errorMessage, setErrorMessage] = useState('')
 
   // Statistics
   const [stats, setStats] = useState<{
@@ -43,6 +48,42 @@ export default function TestingTab() {
   const [messages, setMessages] = useState<Message[]>([])
   const [preTags, setPreTags] = useState<Map<string, PreTag>>(new Map())
   const [labels, setLabels] = useState<Map<string, any>>(new Map())
+  const [showExportDropdown, setShowExportDropdown] = useState(false)
+
+  // Check account connection on mount and provider change
+  useEffect(() => {
+    checkAccountConnection()
+  }, [provider])
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = () => {
+      if (showExportDropdown) {
+        setShowExportDropdown(false)
+      }
+    }
+    document.addEventListener('click', handleClickOutside)
+    return () => document.removeEventListener('click', handleClickOutside)
+  }, [showExportDropdown])
+
+  /**
+   * Check if account is connected
+   */
+  const checkAccountConnection = async () => {
+    try {
+      const accounts = await getAllAccounts()
+      const account = accounts.find((acc) => acc.provider === provider)
+      setAccountConnected(!!account)
+      if (!account) {
+        setStatus(`No ${provider} account connected. Go to ACCOUNTS tab to connect.`)
+      } else {
+        setStatus('Ready to prepare batch')
+      }
+    } catch (error) {
+      console.error('Error checking account:', error)
+      setAccountConnected(false)
+    }
+  }
 
   /**
    * Load counts and stats from database
@@ -89,8 +130,24 @@ export default function TestingTab() {
    * Prepare batch - fetch messages from provider
    */
   const handlePrepareBatch = async () => {
+    // Validate date range
+    if (startDate && endDate && new Date(startDate) > new Date(endDate)) {
+      setErrorMessage('Start date must be before end date')
+      return
+    }
+
+    // Confirm if database has labeled data
+    const labelCount = await db.labels.count()
+    if (labelCount > 0) {
+      if (!confirm(`This will clear ${labelCount} existing label(s). Continue?`)) {
+        return
+      }
+    }
+
     setLoading(true)
-    setStatus('Clearing previous batch...')
+    setErrorMessage('')
+    setLoadingMessage('Clearing previous batch...')
+    setStatus('Preparing batch...')
 
     try {
       // Clear database before fetching new batch
@@ -98,18 +155,47 @@ export default function TestingTab() {
       await db.labels.clear()
       await db.preTags.clear()
 
-      setStatus('Fetching messages...')
+      setLoadingMessage('Refreshing access token...')
 
       // Get all accounts from storage
       const accounts = await getAllAccounts()
 
       const account = accounts.find((acc) => acc.provider === provider)
 
-      if (!account || !account.tokens.access_token) {
-        setStatus(`Error: No ${provider} account connected. Please connect in ACCOUNTS tab.`)
+      if (!account) {
+        setErrorMessage(`No ${provider} account connected. Go to ACCOUNTS tab to connect.`)
+        setStatus('Ready')
         setLoading(false)
         return
       }
+
+      // Refresh token to get a fresh one
+      let accessToken: string
+      try {
+        if (provider === 'gmail') {
+          const gmailProvider = new GmailPKCEProvider()
+          const tokens = await gmailProvider.refreshTokens('')
+          accessToken = tokens.access_token
+
+          // Update stored tokens
+          await saveAccount('gmail', account.email, tokens)
+        } else {
+          const outlookProvider = new OutlookPKCEProvider()
+          const tokens = await outlookProvider.refreshTokens(account.tokens.refresh_token || '')
+          accessToken = tokens.access_token
+
+          // Update stored tokens
+          await saveAccount('outlook', account.email, tokens)
+        }
+      } catch (error) {
+        console.error('Token refresh failed:', error)
+        setErrorMessage('Token refresh failed. Try reconnecting your account in ACCOUNTS tab.')
+        setStatus('Ready')
+        setLoading(false)
+        return
+      }
+
+      setLoadingMessage(`Fetching up to ${batchSize} messages from ${provider}...`)
 
       // Prepare filters
       const filters = {
@@ -126,23 +212,30 @@ export default function TestingTab() {
 
       let messages
       if (provider === 'gmail') {
-        messages = await fetcher.fetchGmail(account.tokens.access_token, filters)
+        messages = await fetcher.fetchGmail(accessToken, filters)
       } else {
-        messages = await fetcher.fetchOutlook(account.tokens.access_token, filters)
+        messages = await fetcher.fetchOutlook(accessToken, filters)
       }
 
       const count = await db.messages.count()
       setMessageCount(count)
-      setStatus(`Prepared ${messages.length} messages (${count} total in database)`)
+
+      if (count === 0) {
+        setStatus('No messages found matching filters. Try different filters or date range.')
+      } else {
+        setStatus(`✓ Prepared ${count} message${count !== 1 ? 's' : ''}. Click "Run Pre-Tag" to analyze.`)
+      }
 
       await loadStats()
       await loadMessages()
 
     } catch (error: any) {
       console.error('Prepare batch error:', error)
-      setStatus(`Error: ${error.message}`)
+      setErrorMessage(error.message || 'Failed to fetch messages')
+      setStatus('Ready')
     } finally {
       setLoading(false)
+      setLoadingMessage('')
     }
   }
 
@@ -151,7 +244,9 @@ export default function TestingTab() {
    */
   const handlePreTag = async () => {
     setLoading(true)
-    setStatus('Pre-tagging messages...')
+    setErrorMessage('')
+    setLoadingMessage('Analyzing messages with extraction algorithm...')
+    setStatus('Pre-tagging in progress...')
 
     try {
       // Send message to background script
@@ -160,32 +255,54 @@ export default function TestingTab() {
       })
 
       if (response.success) {
-        setStatus('Pre-tagging complete')
         await loadStats()
         await loadMessages()
+        const preTagCount = await db.preTags.count()
+        setStatus(`✓ Pre-tagged ${preTagCount} message${preTagCount !== 1 ? 's' : ''}. Start labeling or export.`)
+
+        // Auto-select first message if available
+        const msgs = await db.messages.toArray()
+        if (msgs.length > 0 && !selectedMsgId) {
+          setSelectedMsgId(msgs[0].msgIdHash)
+        }
       } else {
-        setStatus(`Error: ${response.error || 'Unknown error'}`)
+        setErrorMessage(response.error || 'Pre-tagging failed')
+        setStatus('Ready')
       }
 
     } catch (error: any) {
       console.error('Pre-tag error:', error)
-      setStatus(`Error: ${error.message}`)
+      setErrorMessage(error.message || 'Pre-tagging failed')
+      setStatus('Ready')
     } finally {
       setLoading(false)
+      setLoadingMessage('')
     }
   }
 
   /**
-   * Export JSONL
+   * Export labels
    */
-  const handleExport = async () => {
-    setStatus('Exporting JSONL...')
+  const handleExport = async (format: 'compressed' | 'uncompressed') => {
+    setShowExportDropdown(false)
+    setLoading(true)
+    setErrorMessage('')
+    setLoadingMessage(`Exporting ${format === 'compressed' ? 'JSONL' : 'JSON'}...`)
+
     try {
-      await exportLabelsToJSONL()
-      setStatus('Export complete! Check your Downloads folder.')
+      if (format === 'compressed') {
+        await exportLabelsToJSONL()
+      } else {
+        await exportLabelsToPrettyJSON()
+      }
+      setStatus('✓ Export complete! Check your Downloads folder.')
     } catch (error: any) {
       console.error('Export failed:', error)
-      setStatus(`Export failed: ${error.message}`)
+      setErrorMessage(error.message || 'Export failed')
+      setStatus('Ready')
+    } finally {
+      setLoading(false)
+      setLoadingMessage('')
     }
   }
 
@@ -193,12 +310,21 @@ export default function TestingTab() {
    * Clear database
    */
   const handleClearData = async () => {
-    if (!confirm('Clear all messages, labels, and pre-tags? This cannot be undone.')) {
+    const labelCount = await db.labels.count()
+    const msgCount = await db.messages.count()
+
+    let confirmMsg = `Clear all data from database? This cannot be undone.`
+    if (labelCount > 0) {
+      confirmMsg = `⚠️ This will delete ${labelCount} label(s) and ${msgCount} message(s).\n\nMake sure you've exported first! Continue?`
+    }
+
+    if (!confirm(confirmMsg)) {
       return
     }
 
     setLoading(true)
-    setStatus('Clearing data...')
+    setErrorMessage('')
+    setLoadingMessage('Clearing database...')
 
     try {
       await db.messages.clear()
@@ -210,14 +336,17 @@ export default function TestingTab() {
       setStats({ OTP: 0, MAGIC_LINK: 0, NONE: 0 })
       setMessages([])
       setPreTags(new Map())
+      setLabels(new Map())
       setSelectedMsgId(null)
-      setStatus('Data cleared')
+      setStatus('✓ Database cleared. Ready to prepare a new batch.')
 
     } catch (error: any) {
       console.error('Clear data error:', error)
-      setStatus(`Error: ${error.message}`)
+      setErrorMessage(error.message || 'Failed to clear data')
+      setStatus('Ready')
     } finally {
       setLoading(false)
+      setLoadingMessage('')
     }
   }
 
@@ -228,8 +357,100 @@ export default function TestingTab() {
   }, [])
 
   return (
-    <div style={{ padding: '20px', fontFamily: 'system-ui, sans-serif' }}>
+    <div style={{ padding: '20px', fontFamily: 'system-ui, sans-serif', maxWidth: '1400px', margin: '0 auto', position: 'relative' }}>
       <h1>Testing & Batch Processing</h1>
+
+      {/* Loading Overlay */}
+      {loading && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.5)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 9999,
+        }}>
+          <div style={{
+            backgroundColor: 'white',
+            padding: '30px 40px',
+            borderRadius: '8px',
+            boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
+            textAlign: 'center',
+          }}>
+            <div style={{
+              width: '40px',
+              height: '40px',
+              border: '4px solid #f3f3f3',
+              borderTop: '4px solid #007bff',
+              borderRadius: '50%',
+              animation: 'spin 1s linear infinite',
+              margin: '0 auto 15px',
+            }}></div>
+            <div style={{ fontSize: '16px', color: '#333' }}>{loadingMessage || 'Loading...'}</div>
+          </div>
+        </div>
+      )}
+
+      {/* Account Connection Banner */}
+      {!accountConnected && (
+        <div style={{
+          backgroundColor: '#fff3cd',
+          border: '1px solid #ffc107',
+          borderRadius: '8px',
+          padding: '15px 20px',
+          marginBottom: '20px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '10px',
+        }}>
+          <span style={{ fontSize: '24px' }}>⚠️</span>
+          <div>
+            <strong>No {provider} account connected</strong>
+            <br />
+            <span style={{ fontSize: '14px', color: '#856404' }}>
+              Go to ACCOUNTS tab to connect your {provider} account first.
+            </span>
+          </div>
+        </div>
+      )}
+
+      {/* Error Banner */}
+      {errorMessage && (
+        <div style={{
+          backgroundColor: '#f8d7da',
+          border: '1px solid #f5c6cb',
+          borderRadius: '8px',
+          padding: '15px 20px',
+          marginBottom: '20px',
+          display: 'flex',
+          alignItems: 'flex-start',
+          gap: '10px',
+        }}>
+          <span style={{ fontSize: '24px' }}>❌</span>
+          <div style={{ flex: 1 }}>
+            <strong style={{ color: '#721c24' }}>Error</strong>
+            <br />
+            <span style={{ fontSize: '14px', color: '#721c24' }}>{errorMessage}</span>
+          </div>
+          <button
+            onClick={() => setErrorMessage('')}
+            style={{
+              background: 'none',
+              border: 'none',
+              fontSize: '20px',
+              cursor: 'pointer',
+              padding: '0 5px',
+              color: '#721c24',
+            }}
+          >
+            ×
+          </button>
+        </div>
+      )}
 
       {/* Filters Section */}
       <section style={{ marginBottom: '30px', border: '1px solid #ddd', padding: '15px', borderRadius: '8px' }}>
@@ -309,6 +530,7 @@ export default function TestingTab() {
               onChange={(e) => setBatchSize(Number(e.target.value))}
               style={{ padding: '5px', width: '200px' }}
             >
+              <option value={25}>25</option>
               <option value={50}>50</option>
               <option value={100}>100</option>
               <option value={200}>200</option>
@@ -323,54 +545,128 @@ export default function TestingTab() {
       <section style={{ marginBottom: '30px', border: '1px solid #ddd', padding: '15px', borderRadius: '8px' }}>
         <h2 style={{ marginTop: 0 }}>Controls</h2>
 
-        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-          <button
-            onClick={handlePrepareBatch}
-            disabled={loading}
-            style={{
-              padding: '10px 20px',
-              backgroundColor: '#007bff',
-              color: 'white',
-              border: 'none',
-              borderRadius: '5px',
-              cursor: loading ? 'not-allowed' : 'pointer',
-              opacity: loading ? 0.6 : 1,
-            }}
-          >
-            Prepare Batch
-          </button>
+        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', alignItems: 'flex-start' }}>
+          <div>
+            <button
+              onClick={handlePrepareBatch}
+              disabled={!accountConnected || loading}
+              style={{
+                padding: '10px 20px',
+                backgroundColor: !accountConnected || loading ? '#ccc' : '#007bff',
+                color: 'white',
+                border: 'none',
+                borderRadius: '5px',
+                cursor: !accountConnected || loading ? 'not-allowed' : 'pointer',
+                opacity: !accountConnected || loading ? 0.6 : 1,
+              }}
+            >
+              Prepare Batch
+            </button>
+            {!accountConnected && (
+              <div style={{ fontSize: '11px', color: '#666', marginTop: '4px' }}>
+                Connect account first
+              </div>
+            )}
+          </div>
 
-          <button
-            onClick={handlePreTag}
-            disabled={messageCount === 0 || loading}
-            style={{
-              padding: '10px 20px',
-              backgroundColor: '#28a745',
-              color: 'white',
-              border: 'none',
-              borderRadius: '5px',
-              cursor: (messageCount === 0 || loading) ? 'not-allowed' : 'pointer',
-              opacity: (messageCount === 0 || loading) ? 0.6 : 1,
-            }}
-          >
-            Run Pre-Tag
-          </button>
+          <div>
+            <button
+              onClick={handlePreTag}
+              disabled={messageCount === 0 || loading}
+              style={{
+                padding: '10px 20px',
+                backgroundColor: messageCount === 0 || loading ? '#ccc' : '#28a745',
+                color: 'white',
+                border: 'none',
+                borderRadius: '5px',
+                cursor: (messageCount === 0 || loading) ? 'not-allowed' : 'pointer',
+                opacity: (messageCount === 0 || loading) ? 0.6 : 1,
+              }}
+            >
+              Run Pre-Tag
+            </button>
+            {messageCount === 0 && !loading && (
+              <div style={{ fontSize: '11px', color: '#666', marginTop: '4px' }}>
+                Prepare batch first
+              </div>
+            )}
+          </div>
 
-          <button
-            onClick={handleExport}
-            disabled={preTaggedCount === 0 || loading}
-            style={{
-              padding: '10px 20px',
-              backgroundColor: '#17a2b8',
-              color: 'white',
-              border: 'none',
-              borderRadius: '5px',
-              cursor: (preTaggedCount === 0 || loading) ? 'not-allowed' : 'pointer',
-              opacity: (preTaggedCount === 0 || loading) ? 0.6 : 1,
-            }}
-          >
-            Export JSONL
-          </button>
+          <div style={{ position: 'relative' }}>
+            <div>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation()
+                  setShowExportDropdown(!showExportDropdown)
+                }}
+                disabled={preTaggedCount === 0 || loading}
+                style={{
+                  padding: '10px 20px',
+                  backgroundColor: preTaggedCount === 0 || loading ? '#ccc' : '#17a2b8',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '5px',
+                  cursor: (preTaggedCount === 0 || loading) ? 'not-allowed' : 'pointer',
+                  opacity: (preTaggedCount === 0 || loading) ? 0.6 : 1,
+                }}
+              >
+                Export ▼
+              </button>
+              {preTaggedCount === 0 && !loading && (
+                <div style={{ fontSize: '11px', color: '#666', marginTop: '4px' }}>
+                  Pre-tag messages first
+                </div>
+              )}
+            </div>
+            {showExportDropdown && (
+              <div style={{
+                position: 'absolute',
+                top: '100%',
+                left: 0,
+                marginTop: '4px',
+                backgroundColor: 'white',
+                border: '1px solid #ccc',
+                borderRadius: '5px',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+                zIndex: 1000,
+                minWidth: '200px',
+              }}>
+                <button
+                  onClick={() => handleExport('uncompressed')}
+                  style={{
+                    display: 'block',
+                    width: '100%',
+                    padding: '10px 15px',
+                    backgroundColor: 'transparent',
+                    border: 'none',
+                    textAlign: 'left',
+                    cursor: 'pointer',
+                    borderBottom: '1px solid #eee',
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f5f5f5'}
+                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                >
+                  JSON (Uncompressed)
+                </button>
+                <button
+                  onClick={() => handleExport('compressed')}
+                  style={{
+                    display: 'block',
+                    width: '100%',
+                    padding: '10px 15px',
+                    backgroundColor: 'transparent',
+                    border: 'none',
+                    textAlign: 'left',
+                    cursor: 'pointer',
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f5f5f5'}
+                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                >
+                  JSON (Compressed)
+                </button>
+              </div>
+            )}
+          </div>
 
           <button
             onClick={handleClearData}
@@ -428,6 +724,10 @@ export default function TestingTab() {
             labels={labels}
             selectedId={selectedMsgId}
             onSelect={setSelectedMsgId}
+            onRemove={async () => {
+              await loadMessages()
+              await loadStats()
+            }}
           />
           <div className="preview-and-label">
             <Preview
@@ -454,17 +754,39 @@ export default function TestingTab() {
       )}
 
       <style>{`
+        @keyframes spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+
         .review-area { display: grid; grid-template-columns: 320px 1fr; gap: 16px; margin-top: 20px; }
         .email-list { border: 1px solid #ccc; border-radius: 8px; padding: 12px; max-height: 600px; overflow-y: auto; }
         .email-item { padding: 10px; border-bottom: 1px solid #eee; cursor: pointer; }
         .email-item:hover { background: #f5f5f5; }
         .email-item.selected { background: #e3f2fd; border-left: 3px solid #1976d2; }
+        .remove-btn {
+          position: absolute;
+          top: 8px;
+          right: 8px;
+          width: 20px;
+          height: 20px;
+          border: none;
+          background: #c3c3c3;
+          color: white;
+          border-radius: 50%;
+          cursor: pointer;
+          font-size: 14px;
+          line-height: 1;
+          padding: 0;
+          transition: background 0.2s;
+        }
+        .remove-btn:hover { background: #f44336; }
         .subject { font-weight: 600; margin-bottom: 4px; }
         .meta { font-size: 12px; color: #666; display: flex; gap: 12px; }
         .tags { display: flex; gap: 8px; margin-top: 6px; }
         .tag { padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; }
-        .tag-otp { background: #e1f5fe; color: #01579b; }
-        .tag-magic_link { background: #e8f5e9; color: #1b5e20; }
+        .tag-otp { background: #e1f5fe; color: #01579b; font-weight: 600; }
+        .tag-magic_link { background: #e8f5e9; color: #1b5e20; font-weight: 600; }
         .tag-none { background: #f5f5f5; color: #666; }
         .tag-label-true { background: #4caf50; color: white; }
         .tag-label-false { background: #f44336; color: white; }

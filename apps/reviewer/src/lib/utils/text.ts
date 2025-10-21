@@ -35,12 +35,18 @@ export function htmlToText(html: string): string {
 /**
  * Extract effective top-level domain from email address
  * e.g., "noreply@accounts.google.com" -> "google.com"
+ * Handles RFC 2822 format: "Display Name <email@domain.com>" -> "google.com"
  */
 export function extractETLD(email: string): string {
   if (!email) return ''
 
+  // First, extract email from angle brackets if present
+  // Handles: "Display Name <email@domain.com>" -> "email@domain.com"
+  const angleMatch = email.match(/<([^>]+)>/i)
+  const cleanEmail = angleMatch ? angleMatch[1] : email
+
   // Extract domain part after @
-  const match = email.match(/@([^@]+)$/i)
+  const match = cleanEmail.match(/@([^@\s>]+)/i)
   if (!match) return ''
 
   const domain = match[1].toLowerCase()

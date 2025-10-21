@@ -13,12 +13,12 @@
 //   - methods: pollOnce(ctx, cfg?), getLast(), clear(), addAdapter(), removeAdapter()
 //   - default export (EmailPollingService)
 //
-// This module depends on your local extractors:
-//   import { extractFromEmail } from '../extraction/extractor'
-// which in turn uses otp-extractor + magic-link logic.
+// This module depends on the extraction-core package:
+//   import { extractFromEmail } from '@inboxkey/extraction-core'
+// which provides OTP and magic-link extraction logic.
 // -----------------------------------------------------------------------------
 
-import { extractFromEmail } from '../extraction/extractor'
+import { extractFromEmail } from '@inboxkey/extraction-core'
 import { SCORE_POPUP } from '@/lib/popup/popup-config'
 
 // ---------------- Types ----------------

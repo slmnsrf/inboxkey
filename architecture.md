@@ -11,14 +11,22 @@ InboxKey is a Manifest V3 Chrome/Chromium extension that keeps verification-code
 ├── extension/                    # Main InboxKey extension (production)
 │   ├── src/                     # Source code
 │   ├── build/                   # Build output
+│   ├── .deprecated/             # Deprecated code (safe to delete after verification)
+│   │   └── extraction/          # Old extraction files (replaced by extraction-core)
 │   └── package.json
 ├── packages/
-│   └── extraction-core/          # Shared extraction logic
+│   └── extraction-core/          # Shared extraction logic (source of truth)
 │       ├── src/
-│       │   ├── extractor.ts     # Main extraction entry point
-│       │   ├── otp-extractor.ts # OTP detection
-│       │   ├── link-extractor.ts# Magic link detection
-│       │   └── extraction-types.ts
+│       │   ├── extraction/      # OTP and magic link extraction
+│       │   │   ├── extractor.ts     # Main extraction entry point
+│       │   │   ├── otp-extractor.ts # OTP detection (v2.3 algorithm)
+│       │   │   └── extraction-types.ts # Patterns, keywords, constants
+│       │   ├── matching/        # Matching utilities
+│       │   │   ├── shape-matcher.ts    # Expected shape bias
+│       │   │   ├── domain-affinity.ts  # Domain matching
+│       │   │   ├── recency-scorer.ts   # Time-based scoring
+│       │   │   └── scoring-config.ts   # Scoring configuration
+│       │   └── index.ts         # Public API exports
 │       └── package.json         # @inboxkey/extraction-core
 └── apps/
     └── reviewer/                 # InboxKey Reviewer dev tool
@@ -28,10 +36,13 @@ InboxKey is a Manifest V3 Chrome/Chromium extension that keeps verification-code
 ```
 
 **Key Architecture Decision:**
-- `extraction-core` is a shared package containing pure extraction logic (OTP/magic-link detection)
-- Both main extension and Reviewer import from `@inboxkey/extraction-core`
+- `extraction-core` is a shared package containing pure extraction logic (OTP/magic-link detection and matching utilities)
+- **Source of truth:** Main extension's production-tested extraction algorithm was migrated to extraction-core (2025-10-21)
+- Both main extension and Reviewer import from `@inboxkey/extraction-core` via npm workspace protocol
 - This ensures algorithm improvements benefit both tools with zero code drift
-- Extraction core has NO Chrome API dependencies (pure TypeScript)
+- Extraction core has NO Chrome API dependencies (pure TypeScript) and can be used in any context
+- Old extraction files moved to `/extension/.deprecated/` for reference (safe to delete after verification)
+- Note: `/extension/src/lib/matching/` remains in place as it contains extension-specific code (code-matcher.ts) still used by session-controller and popup-cache
 - Reviewer dev tool enables manual labeling of email batches to improve extraction accuracy
 
 ## Architecture Principles
@@ -70,8 +81,8 @@ InboxKey is a Manifest V3 Chrome/Chromium extension that keeps verification-code
 - Message routing uses Plasmo messaging channels with schema validation; all cross-context calls pass through application services to enforce business rules and auditing.
 
 ### Domain Layer
-- **Extraction Core (`@inboxkey/extraction-core`):** Pure TypeScript package with OTP/magic-link detection logic. Shared between main extension and Reviewer.
-- Detection (`lib/detection`, `lib/matching`) scores candidate fields and maps extraction results to the active domain.
+- **Extraction Core (`@inboxkey/extraction-core`):** Pure TypeScript package with OTP/magic-link detection logic and matching utilities (shape-matcher, domain-affinity, recency-scorer). Shared between main extension and Reviewer. Contains the v2.3 extraction algorithm migrated from production (2025-10-21).
+- Detection (`lib/detection`) scores candidate fields on the page. Matching (`lib/matching`) contains extension-specific code like code-matcher.ts used by session-controller and popup-cache.
 - Provider adapters (`lib/providers/gmail`, `lib/providers/outlook`, `lib/providers/imap-bridge`) normalize mail APIs into a single polling contract. InboxBridge (IMAP) is implemented and protocol-tested as of 2025-10-20.
 - The watch-session controller coordinates timing windows, cache hydration, confidence scoring, and manual fallback data.
 

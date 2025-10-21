@@ -84,11 +84,28 @@ export class BatchFetcher {
           let bodyText = ''
           let bodyHtml = ''
 
+          // Helper to decode base64url to UTF-8 string
+          const decodeBase64Url = (base64url: string): string => {
+            try {
+              // Convert base64url to base64
+              const base64 = base64url.replace(/-/g, '+').replace(/_/g, '/')
+              // Decode base64 to binary string
+              const binaryString = atob(base64)
+              // Convert binary string to Uint8Array
+              const bytes = Uint8Array.from(binaryString, char => char.charCodeAt(0))
+              // Decode UTF-8 bytes to string
+              return new TextDecoder('utf-8').decode(bytes)
+            } catch (error) {
+              console.error('Error decoding base64url:', error)
+              return ''
+            }
+          }
+
           const extractBody = (part: any) => {
             if (part.mimeType === 'text/plain' && part.body?.data) {
-              bodyText = atob(part.body.data.replace(/-/g, '+').replace(/_/g, '/'))
+              bodyText = decodeBase64Url(part.body.data)
             } else if (part.mimeType === 'text/html' && part.body?.data) {
-              bodyHtml = atob(part.body.data.replace(/-/g, '+').replace(/_/g, '/'))
+              bodyHtml = decodeBase64Url(part.body.data)
             } else if (part.parts) {
               part.parts.forEach(extractBody)
             }

@@ -174,19 +174,26 @@ This project uses npm workspaces to share code between the main extension and de
 │   ├── src/
 │   │   ├── background/           # Service worker
 │   │   ├── contents/             # Content scripts
-│   │   ├── lib/                  # Core libraries (crypto, storage)
+│   │   ├── lib/                  # Core libraries (crypto, storage, matching)
 │   │   ├── providers/            # Email providers (Gmail, Outlook)
 │   │   ├── ui/                   # React components (popup, options)
 │   │   └── styles/               # Design tokens and CSS
 │   ├── tests/                    # Unit, integration, E2E tests
-│   └── build/chrome-mv3-prod/    # Build output
+│   ├── build/chrome-mv3-prod/    # Build output
+│   └── .deprecated/              # Deprecated code (safe to delete after verification)
 │
 ├── packages/
 │   └── extraction-core/          # Shared extraction logic
 │       ├── src/
-│       │   ├── extractor.ts      # Main extraction entry point
-│       │   ├── otp-extractor.ts  # OTP detection
-│       │   └── link-extractor.ts # Magic link detection
+│       │   ├── extraction/       # OTP and magic link extraction
+│       │   │   ├── extractor.ts      # Main extraction entry point
+│       │   │   ├── otp-extractor.ts  # OTP detection (v2.3 algorithm)
+│       │   │   └── extraction-types.ts # Patterns, keywords, constants
+│       │   ├── matching/         # Matching utilities
+│       │   │   ├── shape-matcher.ts    # Expected shape bias
+│       │   │   ├── domain-affinity.ts  # Domain matching
+│       │   │   └── recency-scorer.ts   # Time-based scoring
+│       │   └── index.ts          # Public API exports
 │       └── package.json          # @inboxkey/extraction-core
 │
 └── apps/
@@ -197,9 +204,11 @@ This project uses npm workspaces to share code between the main extension and de
 ```
 
 **Key Architecture:**
-- `@inboxkey/extraction-core` is a shared package with pure extraction logic (OTP/magic-link detection)
-- Both main extension and Reviewer import from `@inboxkey/extraction-core` to ensure zero code drift
-- Extraction core has NO Chrome API dependencies (pure TypeScript)
+- `@inboxkey/extraction-core` is a shared package with pure extraction logic (OTP/magic-link detection and matching utilities)
+- **Source of truth:** Main extension's production-tested v2.3 extraction algorithm (migrated 2025-10-21)
+- Both main extension and Reviewer import from `@inboxkey/extraction-core` via npm workspace protocol to ensure zero code drift
+- Extraction core has NO Chrome API dependencies (pure TypeScript) and can be used in any context
+- Old extraction files moved to `/extension/.deprecated/` for reference (safe to delete after verification)
 - See [architecture.md](architecture.md) for full system architecture
 
 **Developer Tool:**

@@ -7,43 +7,25 @@ interface Props {
   onLabeled: () => void
 }
 
-const REASON_CHIPS = [
-  'BACKUP_CODES_LIST',
-  'NEWSLETTER',
-  'PASSWORD_RESET',
-  'ORDER_ID',
-  'PHONE_NUMBER',
-  'DATE_TIME',
-  'IMAGE_ONLY',
-  'LANGUAGE_MISMATCH',
-  'URL_PARAM',
-  'GROUPED_DIGITS',
-  'ALNUM_FORMAT',
-  'MULTIPLE_CANDIDATES',
-  'OTHER',
-]
-
 export default function LabelPanel({ msgId, preTag, onLabeled }: Props) {
   const [selectedCandidateIndex, setSelectedCandidateIndex] = useState(0)
   const [falseReason, setFalseReason] = useState<'NOT_OTP' | 'WRONG_VALUE'>('NOT_OTP')
   const [correctValue, setCorrectValue] = useState('')
-  const [selectedReasons, setSelectedReasons] = useState<string[]>([])
   const [note, setNote] = useState('')
   const [showFalseOptions, setShowFalseOptions] = useState(false)
   const [showMissedInput, setShowMissedInput] = useState(false)
+  const [isOtherCandidate, setIsOtherCandidate] = useState(false)
 
   useEffect(() => {
     // Load existing label if any
     if (msgId) {
       db.labels.get(msgId).then(label => {
         if (label) {
-          setSelectedReasons(label.reasons)
           setNote(label.note || '')
           if (label.falseReason) setFalseReason(label.falseReason)
           if (label.correctValue) setCorrectValue(label.correctValue)
         } else {
           // Reset for new message
-          setSelectedReasons([])
           setNote('')
           setCorrectValue('')
         }
@@ -51,6 +33,7 @@ export default function LabelPanel({ msgId, preTag, onLabeled }: Props) {
     }
     setShowFalseOptions(false)
     setShowMissedInput(false)
+    setIsOtherCandidate(false)
   }, [msgId])
 
   if (!msgId) {
@@ -58,11 +41,32 @@ export default function LabelPanel({ msgId, preTag, onLabeled }: Props) {
   }
 
   const handleLabel = async (labelType: 'TRUE' | 'FALSE' | 'MISSED') => {
+    // Validation: MISSED requires correctValue
+    if (labelType === 'MISSED') {
+      if (!correctValue || correctValue.trim() === '') {
+        alert('MISSED label requires you to enter the correct code or link that was missed')
+        return
+      }
+    }
+
+    // Validation: FALSE with WRONG_VALUE requires selecting a candidate or entering correctValue
+    if (labelType === 'FALSE' && falseReason === 'WRONG_VALUE') {
+      if (isOtherCandidate) {
+        if (!correctValue || correctValue.trim() === '') {
+          alert('Please enter the correct code or link, or select a candidate from the list')
+          return
+        }
+      } else if (!preTag?.candidates || preTag.candidates.length === 0) {
+        alert('No candidates available. Please enter the correct value manually.')
+        return
+      }
+    }
+
     const label: Label = {
       msgIdHash: msgId,
       label: labelType,
       selectedCandidateIndex,
-      reasons: selectedReasons,
+      reasons: [], // Empty array since we removed reason chips
       note,
       createdAt: Date.now(),
       updatedAt: Date.now(),
@@ -71,7 +75,16 @@ export default function LabelPanel({ msgId, preTag, onLabeled }: Props) {
     if (labelType === 'FALSE') {
       label.falseReason = falseReason
       if (falseReason === 'WRONG_VALUE') {
-        label.correctValue = correctValue
+        if (isOtherCandidate) {
+          // User manually entered the correct value
+          label.correctValue = correctValue
+        } else if (preTag?.candidates && preTag.candidates[selectedCandidateIndex]) {
+          // User selected a different candidate from the list
+          const selectedCandidate = preTag.candidates[selectedCandidateIndex]
+          label.correctValue = selectedCandidate.type === 'MAGIC_LINK'
+            ? (selectedCandidate.href || selectedCandidate.value || '')
+            : (selectedCandidate.value || '')
+        }
       }
     }
 
@@ -83,70 +96,105 @@ export default function LabelPanel({ msgId, preTag, onLabeled }: Props) {
     onLabeled()
   }
 
-  const toggleReason = (reason: string) => {
-    setSelectedReasons(prev =>
-      prev.includes(reason) ? prev.filter(r => r !== reason) : [...prev, reason]
-    )
-  }
+  // Determine which buttons to show based on preTag
+  const isNone = preTag?.preTag === 'NONE'
+  const hasDetection = preTag?.preTag === 'OTP' || preTag?.preTag === 'MAGIC_LINK'
 
   return (
     <div className="label-panel">
       <h3>Label This Email</h3>
 
-      {preTag?.candidates && preTag.candidates.length > 1 && (
-        <div className="candidate-picker">
-          <strong>Select candidate:</strong>
-          {preTag.candidates.map((cand, idx) => (
-            <label key={idx}>
-              <input
-                type="radio"
-                checked={selectedCandidateIndex === idx}
-                onChange={() => setSelectedCandidateIndex(idx)}
-              />
-              {cand.type}: {cand.value} ({(cand.score * 100).toFixed(0)}%)
-            </label>
-          ))}
-        </div>
-      )}
-
       <div className="label-buttons">
         <button className="btn btn-true" onClick={() => handleLabel('TRUE')}>
-          ✓ TRUE (Accept)
+          {isNone ? '✓ TRUE (No Code)' : '✓ TRUE (Correct)'}
         </button>
-        <button
-          className="btn btn-false"
-          onClick={() => {
-            setShowFalseOptions(!showFalseOptions)
-            setShowMissedInput(false)
-          }}
-        >
-          ✗ FALSE (Wrong)
-        </button>
-        <button
-          className="btn btn-missed"
-          onClick={() => {
-            setShowMissedInput(!showMissedInput)
-            setShowFalseOptions(false)
-          }}
-        >
-          ⚠ MISSED (Not Tagged)
-        </button>
+
+        {/* FALSE button: Only show for OTP/MAGIC_LINK (algorithm detected something) */}
+        {hasDetection && (
+          <button
+            className="btn btn-false"
+            onClick={() => {
+              setShowFalseOptions(!showFalseOptions)
+              setShowMissedInput(false)
+            }}
+          >
+            ✗ FALSE (Wrong)
+          </button>
+        )}
+
+        {/* MISSED button: Only show for NONE (algorithm detected nothing) */}
+        {isNone && (
+          <button
+            className="btn btn-missed"
+            onClick={() => {
+              setShowMissedInput(!showMissedInput)
+              setShowFalseOptions(false)
+            }}
+          >
+            ⚠ MISSED (Has Code)
+          </button>
+        )}
       </div>
 
       {showFalseOptions && (
         <div className="false-options">
           <select value={falseReason} onChange={(e) => setFalseReason(e.target.value as any)}>
             <option value="NOT_OTP">False Positive (Not OTP/Magic)</option>
-            <option value="WRONG_VALUE">OTP/Magic wrong value</option>
+            <option value="WRONG_VALUE">Wrong candidate selected</option>
           </select>
-          {falseReason === 'WRONG_VALUE' && (
+
+          {falseReason === 'WRONG_VALUE' && preTag?.candidates && preTag.candidates.length > 0 && (
+            <div className="candidate-picker" style={{ marginTop: '12px', marginBottom: '12px' }}>
+              <strong>Which candidate was correct?</strong>
+              {preTag.candidates.map((cand, idx) => {
+                // For MAGIC_LINK, use href. For OTP, use value
+                const displayValue = cand.type === 'MAGIC_LINK'
+                  ? (cand.href || cand.value || '(no URL)')
+                  : (cand.value || '(no value)')
+
+                return (
+                  <label key={idx} style={{ wordBreak: 'break-all', display: 'block', marginBottom: '8px' }}>
+                    <input
+                      type="radio"
+                      checked={!isOtherCandidate && selectedCandidateIndex === idx}
+                      onChange={() => {
+                        setSelectedCandidateIndex(idx)
+                        setIsOtherCandidate(false)
+                      }}
+                    />
+                    {cand.type}: {displayValue} ({(cand.score * 100).toFixed(0)}%)
+                  </label>
+                )
+              })}
+              <label style={{ wordBreak: 'break-all', display: 'block', marginBottom: '8px' }}>
+                <input
+                  type="radio"
+                  checked={isOtherCandidate}
+                  onChange={() => setIsOtherCandidate(true)}
+                />
+                Other (enter manually)
+              </label>
+            </div>
+          )}
+
+          {falseReason === 'WRONG_VALUE' && isOtherCandidate && (
             <input
               type="text"
               placeholder="Enter correct code or link"
               value={correctValue}
               onChange={(e) => setCorrectValue(e.target.value)}
+              style={{ marginTop: '8px' }}
             />
           )}
+          <div className="note-input" style={{ marginTop: '12px' }}>
+            <label><strong>Note (optional):</strong></label>
+            <input
+              type="text"
+              placeholder="e.g., Why this is FALSE"
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+            />
+          </div>
           <button onClick={() => handleLabel('FALSE')}>Submit FALSE</button>
         </div>
       )}
@@ -159,34 +207,18 @@ export default function LabelPanel({ msgId, preTag, onLabeled }: Props) {
             value={correctValue}
             onChange={(e) => setCorrectValue(e.target.value)}
           />
+          <div className="note-input" style={{ marginTop: '12px' }}>
+            <label><strong>Note (optional):</strong></label>
+            <input
+              type="text"
+              placeholder="e.g., Why this was MISSED"
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+            />
+          </div>
           <button onClick={() => handleLabel('MISSED')}>Submit MISSED</button>
         </div>
       )}
-
-      <div className="reason-chips">
-        <strong>Reasons (optional):</strong>
-        <div className="chips">
-          {REASON_CHIPS.map(reason => (
-            <button
-              key={reason}
-              className={`chip ${selectedReasons.includes(reason) ? 'selected' : ''}`}
-              onClick={() => toggleReason(reason)}
-            >
-              {reason}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <div className="note-input">
-        <label><strong>Note (optional):</strong></label>
-        <input
-          type="text"
-          placeholder="e.g., Ticket ID looked like a code"
-          value={note}
-          onChange={(e) => setNote(e.target.value)}
-        />
-      </div>
     </div>
   )
 }

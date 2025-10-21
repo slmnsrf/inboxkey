@@ -58,7 +58,7 @@ Watch Sessions V2 implementation shows strong performance characteristics across
 
 ### 2. Email Extraction (<50ms per email)
 
-**Implementation:** `/home/dev/work/inboxkey/extension/src/lib/extraction/otp-extractor.ts`
+**Implementation:** `@inboxkey/extraction-core` package (`/packages/extraction-core/src/extraction/otp-extractor.ts`)
 
 **Algorithm Complexity:**
 - Text normalization: O(n) where n = email body length
@@ -70,16 +70,16 @@ Watch Sessions V2 implementation shows strong performance characteristics across
 
 **Bottleneck Analysis:**
 ```typescript
-// Line 85-98: HTML to plaintext conversion - O(n)
+// HTML to plaintext conversion - O(n)
 const { text } = toPlainText(input)  // 5-10ms for 50KB email
 
-// Line 98: Keyword regex - O(n) single pass
+// Keyword regex - O(n) single pass
 const windows = collectWindows(text, kwRegex, windowRadius)  // 2-5ms
 
-// Line 104-108: Pattern matching in windows - O(w×p)
+// Pattern matching in windows - O(w×p)
 const rawCandidates = findCandidatesInRanges(text, ranges, {...})  // 5-15ms
 
-// Line 114-146: Scoring - O(c)
+// Scoring - O(c)
 const scored = rawCandidates.map(c => {...})  // <5ms
 ```
 
@@ -265,8 +265,8 @@ async startSession(params) {
    - **Issue:** Emails >200KB may exceed 50ms budget
    - **Likelihood:** Low (most OTP emails <50KB)
    - **Impact:** Medium (delayed polling iteration)
-   - **Mitigation:** 
-     - Early bailout if email size >500KB (line 85 in otp-extractor.ts)
+   - **Mitigation:**
+     - Early bailout if email size >500KB (in otp-extractor.ts toPlainText function)
      - Limit window radius to reduce scan area
      - Consider streaming/chunked parsing for future
 
@@ -348,7 +348,7 @@ None required - all budgets met or likely met.
 
 **Add performance instrumentation:**
 ```typescript
-// otp-extractor.ts
+// In email-polling-service.ts or other consumer of extraction-core
 const start = performance.now()
 const result = extractOTPs(input, opts)
 const duration = performance.now() - start
@@ -403,7 +403,7 @@ if (duration > 50) {
 
 // Test 1: Email Extraction
 async function benchmarkExtraction() {
-  const { extractOTPs } = await import('./src/lib/extraction/otp-extractor.ts')
+  const { extractOTPs } = await import('@inboxkey/extraction-core')
   
   const testEmails = [
     // Fetch 20 real emails from Gmail/Outlook
