@@ -9,7 +9,7 @@ import TestingTab from './components/TestingTab'
 import HowItWorksTab from './components/HowItWorksTab'
 
 export default function Settings() {
-  const [activeTab, setActiveTab] = useState<'accounts' | 'testing' | 'howto'>('accounts')
+  const [activeTab, setActiveTab] = useState<'accounts' | 'testing' | 'howto'>('testing')
 
   // Read URL hash on mount to set initial tab
   useEffect(() => {

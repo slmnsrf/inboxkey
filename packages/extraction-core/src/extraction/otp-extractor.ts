@@ -251,8 +251,10 @@ function buildKeywordRegex(words: readonly (string | RegExp)[]): RegExp {
     const esc = w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
     return esc.replace(/[-\s]/g, '[-\\s\\u00A0\\u2011\\u2013]?')
   })
-  // Word boundary-ish; allow matches in e.g., "verification code", "one time", etc.
-  return new RegExp(`(?:^|[^\\p{L}\\p{N}])(?:${parts.join('|')})(?=$|[^\\p{L}\\p{N}])`, 'gimu')
+  // Trailing boundary removed to support agglutinative (Turkish, Finnish, Japanese, Korean)
+  // and inflected (Russian, Polish, Hindi) languages where keywords appear with suffixes/particles.
+  // Leading boundary prevents false positives (e.g., "discount" won't match "count").
+  return new RegExp(`(?:^|[^\\p{L}\\p{N}])(?:${parts.join('|')})`, 'gimu')
 }
 
 /** Collect windows around keywords for targeted scanning */

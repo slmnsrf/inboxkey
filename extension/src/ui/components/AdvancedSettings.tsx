@@ -8,10 +8,13 @@ import React, { useState, useEffect } from 'react'
 import { StorageFactory } from '@/lib/storage/storage-factory'
 import { useToast } from '@/ui/contexts/ToastContext'
 import { t } from '@/lib/i18n'
+import type { AutomationLevel } from '@/lib/storage/schema'
 
 export function AdvancedSettings() {
   const { showToast } = useToast()
   const [domainsEnabledByDefault, setDomainsEnabledByDefault] = useState<boolean>(true)
+  const [extendedButtonDetection, setExtendedButtonDetection] = useState<boolean>(false)
+  const [automationLevel, setAutomationLevel] = useState<AutomationLevel>('autofill')
   const [loading, setLoading] = useState<boolean>(true)
   const [isExpanded, setIsExpanded] = useState<boolean>(false)
 
@@ -25,6 +28,8 @@ export function AdvancedSettings() {
       const storage = await StorageFactory.create()
       const settings = await storage.getSettings()
       setDomainsEnabledByDefault(settings.domainsEnabledByDefault ?? true)
+      setExtendedButtonDetection(settings.extendedButtonDetection ?? false)
+      setAutomationLevel(settings.automationLevel || 'autofill')
     } catch (error) {
       console.error('[AdvancedSettings] Failed to load settings:', error)
       showToast('Failed to load settings', 'error')
@@ -46,6 +51,36 @@ export function AdvancedSettings() {
       console.error('[AdvancedSettings] Failed to save setting:', error)
       // Revert on error
       setDomainsEnabledByDefault(!domainsEnabledByDefault)
+      showToast('Failed to save setting', 'error')
+    }
+  }
+
+  const handleExtendedButtonDetectionToggle = async () => {
+    try {
+      const newValue = !extendedButtonDetection
+      setExtendedButtonDetection(newValue) // Optimistic update
+
+      const storage = await StorageFactory.create()
+      await storage.updateSettings({ extendedButtonDetection: newValue })
+
+      // Update ARIA live region for screen readers
+      const statusEl = document.getElementById('extended-button-status')
+      if (statusEl) {
+        statusEl.textContent = `Extended button detection ${newValue ? 'enabled' : 'disabled'}`
+      }
+
+      showToast(t('toast_settings_saved'), 'success')
+    } catch (error) {
+      console.error('[AdvancedSettings] Failed to save extended button detection:', error)
+      // Revert on error
+      setExtendedButtonDetection(!extendedButtonDetection)
+
+      // Announce error to screen readers
+      const statusEl = document.getElementById('extended-button-status')
+      if (statusEl) {
+        statusEl.textContent = 'Failed to save extended button detection setting'
+      }
+
       showToast('Failed to save setting', 'error')
     }
   }
@@ -95,6 +130,70 @@ export function AdvancedSettings() {
           <p id="domains-enabled-help" className="advanced-settings-card__hint">
             When enabled, InboxKey will work on all domains by default. You can still disable it for specific domains using the toggle in the popup.
           </p>
+
+          {automationLevel === 'full-automation' && (
+            <>
+              <div className="setting-divider" />
+
+              <div className="setting-row setting-row--beta">
+                <div className="setting-row__info">
+                  <label htmlFor="extended-button-detection" className="setting-row__label">
+                    <span className="beta-badge">BETA</span>
+                    Extended Button Detection
+                  </label>
+                  <p className="setting-row__description">
+                    Detects custom button components (Vue.js, React) used by modern websites.
+                  </p>
+                  <div className="setting-row__warning">
+                    <span className="warning-icon" aria-hidden="true">⚠️</span>
+                    <span className="warning-text">
+                      <strong>Note:</strong> May occasionally interact with navigation elements.
+                      Only enable if your sites use custom button components.
+                    </span>
+                  </div>
+                </div>
+                <div className="setting-row__control">
+                  <label className="toggle">
+                    <input
+                      id="extended-button-detection"
+                      type="checkbox"
+                      checked={extendedButtonDetection}
+                      onChange={handleExtendedButtonDetectionToggle}
+                      disabled={loading}
+                      aria-describedby="extended-button-detection-help"
+                    />
+                    <span className="slider" />
+                  </label>
+                </div>
+              </div>
+              <span id="extended-button-status" className="sr-only" role="status" aria-live="polite" aria-atomic="true"></span>
+
+              <details className="setting-details">
+                <summary className="setting-details__summary">What does this detect?</summary>
+                <div className="setting-details__content">
+                  <div className="detection-types">
+                    <div className="detection-type">
+                      <strong className="detection-type__label">Standard (always enabled):</strong>
+                      <code className="detection-type__code">&lt;button&gt;</code>,
+                      <code className="detection-type__code">&lt;input type="submit"&gt;</code>
+                    </div>
+                    <div className="detection-type">
+                      <strong className="detection-type__label">Extended (when enabled):</strong>
+                      <code className="detection-type__code">&lt;a&gt;</code> tags,
+                      <code className="detection-type__code">role="button"</code> elements
+                    </div>
+                  </div>
+                  <p className="setting-details__note">
+                    <strong>Safety:</strong> Extended detection includes 11 protection layers to prevent clicking dangerous buttons.
+                  </p>
+                </div>
+              </details>
+
+              <p id="extended-button-detection-help" className="advanced-settings-card__hint">
+                This feature is in beta and may occasionally click unintended buttons. Monitor its behavior and disable if issues occur.
+              </p>
+            </>
+          )}
         </div>
       )}
     </div>

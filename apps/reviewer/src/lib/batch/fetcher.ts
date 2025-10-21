@@ -8,6 +8,7 @@ export interface BatchFilters {
   startDate?: Date
   endDate?: Date
   maxResults: number
+  maxPerDomain?: number
 }
 
 export class BatchFetcher {
@@ -16,6 +17,7 @@ export class BatchFetcher {
    */
   async fetchGmail(accessToken: string, filters: BatchFilters): Promise<Message[]> {
     const messages: Message[] = []
+    const domainCounts = new Map<string, number>()
 
     try {
       // Build Gmail query
@@ -120,12 +122,24 @@ export class BatchFetcher {
             bodyText = htmlToText(bodyHtml)
           }
 
+          const senderETLD = extractETLD(from)
+
+          // Check domain limit
+          if (filters.maxPerDomain && filters.maxPerDomain > 0) {
+            const currentCount = domainCounts.get(senderETLD) || 0
+            if (currentCount >= filters.maxPerDomain) {
+              console.log(`Skipping message from ${senderETLD} (limit: ${filters.maxPerDomain})`)
+              continue
+            }
+            domainCounts.set(senderETLD, currentCount + 1)
+          }
+
           const message: Message = {
             msgIdHash: hashId('gmail', msgRef.id),
             provider: 'gmail',
             messageId: msgRef.id,
             from,
-            senderETLD: extractETLD(from),
+            senderETLD,
             subject,
             receivedAt: date ? new Date(date).getTime() : msgData.internalDate ? parseInt(msgData.internalDate) : Date.now(),
             bodyText,
@@ -143,6 +157,9 @@ export class BatchFetcher {
       }
 
       console.log(`Fetched ${messages.length} Gmail messages`)
+      if (filters.maxPerDomain) {
+        console.log(`Domain distribution:`, Object.fromEntries(domainCounts))
+      }
       return messages
 
     } catch (error) {
@@ -156,6 +173,7 @@ export class BatchFetcher {
    */
   async fetchOutlook(accessToken: string, filters: BatchFilters): Promise<Message[]> {
     const messages: Message[] = []
+    const domainCounts = new Map<string, number>()
 
     try {
       // Build Graph API filter
@@ -205,6 +223,18 @@ export class BatchFetcher {
       for (const msgData of data.value) {
         try {
           const from = msgData.from?.emailAddress?.address || ''
+          const senderETLD = extractETLD(from)
+
+          // Check domain limit
+          if (filters.maxPerDomain && filters.maxPerDomain > 0) {
+            const currentCount = domainCounts.get(senderETLD) || 0
+            if (currentCount >= filters.maxPerDomain) {
+              console.log(`Skipping message from ${senderETLD} (limit: ${filters.maxPerDomain})`)
+              continue
+            }
+            domainCounts.set(senderETLD, currentCount + 1)
+          }
+
           const bodyText = msgData.body?.contentType === 'text'
             ? msgData.body.content
             : (msgData.bodyPreview || htmlToText(msgData.body?.content || ''))
@@ -216,7 +246,7 @@ export class BatchFetcher {
             provider: 'outlook',
             messageId: msgData.id,
             from,
-            senderETLD: extractETLD(from),
+            senderETLD,
             subject: msgData.subject || '',
             receivedAt: new Date(msgData.receivedDateTime).getTime(),
             bodyText,
@@ -234,6 +264,9 @@ export class BatchFetcher {
       }
 
       console.log(`Fetched ${messages.length} Outlook messages`)
+      if (filters.maxPerDomain) {
+        console.log(`Domain distribution:`, Object.fromEntries(domainCounts))
+      }
       return messages
 
     } catch (error) {

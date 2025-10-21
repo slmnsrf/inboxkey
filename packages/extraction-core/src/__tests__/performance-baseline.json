@@ -1,0 +1,37 @@
+{
+  "version": "1.0.0",
+  "timestamp": "2025-10-21T00:00:00.000Z",
+  "description": "Performance baselines for extraction-core. Degradation >5% triggers alert.",
+  "baselines": {
+    "shortText": {
+      "avgTimeMs": 2.0,
+      "description": "~200 chars, 1000 iterations",
+      "maxDegradation": 0.05
+    },
+    "mediumText": {
+      "avgTimeMs": 5.0,
+      "description": "~1000 chars, 500 iterations",
+      "maxDegradation": 0.05
+    },
+    "longText": {
+      "avgTimeMs": 20.0,
+      "description": "~5000 chars, 100 iterations",
+      "maxDegradation": 0.05
+    },
+    "throughput": {
+      "extractionsPerSec": 500,
+      "description": "Minimum extractions per second under load",
+      "maxDegradation": 0.05
+    },
+    "memory": {
+      "maxDeltaMB": 5.0,
+      "description": "Maximum memory delta during benchmark (leak detection)"
+    }
+  },
+  "notes": [
+    "Baselines established on 2025-10-21 with initial implementation",
+    "Run 'npm run test:perf' to validate against these baselines",
+    "Update baselines only after verified performance improvements",
+    "Max degradation of 5% allows for measurement variance"
+  ]
+}

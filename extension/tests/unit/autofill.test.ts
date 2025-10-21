@@ -10,6 +10,7 @@ import {
   isFieldFilledByInboxKey,
   getFieldFillTimestamp,
   clearAutofillTracking,
+  findAndClickSubmitButton,
 } from '../../src/contents/autofill'
 
 describe('Autofill', () => {
@@ -584,6 +585,174 @@ describe('Autofill', () => {
       })
 
       expect(field.value).toBe('测试123')
+    })
+  })
+
+  describe('findAndClickSubmitButton()', () => {
+    beforeEach(() => {
+      // Mock chrome.storage.local for telemetry
+      global.chrome = {
+        storage: {
+          local: {
+            get: vi.fn().mockResolvedValue({ settings: {} }),
+            set: vi.fn().mockResolvedValue(undefined),
+          },
+        },
+      } as any
+    })
+
+    it('should find and click submit button with English text', async () => {
+      const form = document.createElement('form')
+      const field = document.createElement('input')
+      field.type = 'text'
+      const button = document.createElement('button')
+      button.type = 'submit'
+      button.textContent = 'Verify'
+
+      form.appendChild(field)
+      form.appendChild(button)
+      document.body.appendChild(form)
+
+      const clickSpy = vi.spyOn(button, 'click')
+
+      const result = await findAndClickSubmitButton(field)
+
+      expect(result).toBe(true)
+      expect(clickSpy).toHaveBeenCalled()
+    })
+
+    it('should find and click submit button with Spanish text', async () => {
+      const form = document.createElement('form')
+      const field = document.createElement('input')
+      field.type = 'text'
+      const button = document.createElement('button')
+      button.textContent = 'Verificar'
+
+      form.appendChild(field)
+      form.appendChild(button)
+      document.body.appendChild(form)
+
+      const clickSpy = vi.spyOn(button, 'click')
+
+      const result = await findAndClickSubmitButton(field)
+
+      expect(result).toBe(true)
+      expect(clickSpy).toHaveBeenCalled()
+    })
+
+    it('should find and click submit button with Chinese text', async () => {
+      const div = document.createElement('div')
+      const field = document.createElement('input')
+      field.type = 'text'
+      const button = document.createElement('button')
+      button.textContent = '验证'
+
+      div.appendChild(field)
+      div.appendChild(button)
+      document.body.appendChild(div)
+
+      const clickSpy = vi.spyOn(button, 'click')
+
+      const result = await findAndClickSubmitButton(field)
+
+      expect(result).toBe(true)
+      expect(clickSpy).toHaveBeenCalled()
+    })
+
+    it('should return false when no safe button found', async () => {
+      const form = document.createElement('form')
+      const field = document.createElement('input')
+      field.type = 'text'
+      const button = document.createElement('button')
+      button.textContent = 'Delete' // Dangerous pattern
+
+      form.appendChild(field)
+      form.appendChild(button)
+      document.body.appendChild(form)
+
+      const result = await findAndClickSubmitButton(field)
+
+      expect(result).toBe(false)
+    })
+
+    it('should log telemetry on failure', async () => {
+      const form = document.createElement('form')
+      const field = document.createElement('input')
+      field.type = 'text'
+
+      form.appendChild(field)
+      document.body.appendChild(form)
+
+      const setSpy = vi.spyOn(chrome.storage.local, 'set')
+
+      const result = await findAndClickSubmitButton(field)
+
+      expect(result).toBe(false)
+      expect(setSpy).toHaveBeenCalled()
+    })
+
+    it('should work with SPA (no form tag)', async () => {
+      const div = document.createElement('div')
+      const field = document.createElement('input')
+      field.type = 'text'
+      const button = document.createElement('button')
+      button.textContent = 'Continue'
+
+      div.appendChild(field)
+      div.appendChild(button)
+      document.body.appendChild(div)
+
+      const clickSpy = vi.spyOn(button, 'click')
+
+      const result = await findAndClickSubmitButton(field)
+
+      expect(result).toBe(true)
+      expect(clickSpy).toHaveBeenCalled()
+    })
+
+    it('should handle button click errors gracefully', async () => {
+      const form = document.createElement('form')
+      const field = document.createElement('input')
+      field.type = 'text'
+      const button = document.createElement('button')
+      button.textContent = 'Submit'
+
+      form.appendChild(field)
+      form.appendChild(button)
+      document.body.appendChild(form)
+
+      // Mock click to throw error
+      vi.spyOn(button, 'click').mockImplementation(() => {
+        throw new Error('Click failed')
+      })
+
+      const result = await findAndClickSubmitButton(field)
+
+      expect(result).toBe(false)
+    })
+
+    it('should not click dangerous buttons', async () => {
+      const form = document.createElement('form')
+      const field = document.createElement('input')
+      field.type = 'text'
+      const logoutButton = document.createElement('button')
+      logoutButton.textContent = 'Logout'
+      const cancelButton = document.createElement('button')
+      cancelButton.textContent = 'Cancel'
+
+      form.appendChild(field)
+      form.appendChild(logoutButton)
+      form.appendChild(cancelButton)
+      document.body.appendChild(form)
+
+      const logoutSpy = vi.spyOn(logoutButton, 'click')
+      const cancelSpy = vi.spyOn(cancelButton, 'click')
+
+      const result = await findAndClickSubmitButton(field)
+
+      expect(result).toBe(false)
+      expect(logoutSpy).not.toHaveBeenCalled()
+      expect(cancelSpy).not.toHaveBeenCalled()
     })
   })
 })

@@ -22,6 +22,7 @@
     "typescript": "^5.5.3"
   },
   "manifest": {
+    "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAy0OX3egpJIcZjix8egGtGWdNvC5ERKPxJoKY8uB4lAUYl9+rcwEyF91tZWrVqDJIkMCZeqP7m6SJ/ZgwxfvadbnGgc8ZwwYv9UfoFLWD/J01gPIPhdUrbrKKDTYaqPzFI3BCNDjxGM0lIg1XKLuT5rPrUY7ZPfBQRGBSCm8zbIAsNPfFAVitsGuOIwefbGSPyZPvNMK19efjZleB0vhYW3p0GNjo/Cbk4CeuAvdKIbNdHcOB8KpuN4DtnARkf/QoWusI30XsavF9xEFbdxKqNYfnCVPO4fpdfGJROvUSiexFx04kOi3sjcTdM2/VeS+1PcvAHDaEseDgpZxrWI82lwIDAQAB",
     "permissions": ["identity", "storage", "downloads"],
     "host_permissions": [
       "https://www.googleapis.com/*",

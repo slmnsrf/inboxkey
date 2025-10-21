@@ -4,6 +4,8 @@
  */
 
 import { extractDomain, isDomainEnabled } from '@/lib/utils/domain'
+import { findSubmitButton } from './submit-button-finder'
+import { logAutoSubmitFailure } from '@/lib/storage/telemetry'
 
 export interface AutofillOptions {
   code: string
@@ -185,65 +187,45 @@ export function clearAutofillTracking(field: HTMLInputElement): void {
  * @returns true if a submit button was found and clicked
  */
 export async function findAndClickSubmitButton(
-  field: HTMLInputElement
+  field: HTMLInputElement,
+  extendedDetection: boolean = false  // NEW parameter
 ): Promise<boolean> {
   console.log('[Autofill] Attempting to find and click submit button')
+  console.log('[Autofill] Extended detection:', extendedDetection)
 
-  // Find nearest form
-  const form = field.closest('form')
-  if (!form) {
-    console.warn('[Autofill] No form found for field')
-    return false
-  }
+  const url = window.location.href
 
-  // Submit button selectors
-  const submitSelectors = [
-    'button[type="submit"]',
-    'input[type="submit"]',
-    'button:not([type="button"]):not([type="reset"])',
-  ]
+  try {
+    // Use new button finder
+    const button = await findSubmitButton({
+      field,
+      debugMode: false,
+      extendedDetection  // Pass to finder
+    })
 
-  const submitTextPatterns = /verify|submit|continue|confirm|next|send|sign in|log in/i
-  const dangerousPatterns = /delete|remove|cancel|logout|sign out|log out|clear/i
-
-  // Find candidates
-  const candidates: HTMLElement[] = []
-
-  for (const selector of submitSelectors) {
-    const buttons = form.querySelectorAll<HTMLElement>(selector)
-    candidates.push(...Array.from(buttons))
-  }
-
-  // Filter by text content for safety
-  const safeButtons = candidates.filter((button) => {
-    const text = button.textContent?.trim() || ''
-    const ariaLabel = button.getAttribute('aria-label') || ''
-    const combinedText = `${text} ${ariaLabel}`.toLowerCase()
-
-    // Safety check: skip dangerous buttons
-    if (dangerousPatterns.test(combinedText)) {
-      console.log('[Autofill] Skipping dangerous button:', text)
+    if (!button) {
+      console.log('[Autofill] No safe submit button found')
+      await logAutoSubmitFailure(url, 'no_safe_buttons', { buttonCount: 0 })
       return false
     }
 
-    // Prefer buttons with submit-related text
-    return submitTextPatterns.test(combinedText) || text === ''
-  })
+    // Found a safe button, try to click it
+    console.log('[Autofill] Clicking submit button:', button.textContent?.trim())
 
-  if (safeButtons.length === 0) {
-    console.log('[Autofill] No safe submit buttons found')
-    return false
-  }
-
-  // Click the first safe button
-  const button = safeButtons[0]
-  console.log('[Autofill] Clicking submit button:', button.textContent?.trim())
-
-  try {
-    button.click()
-    return true
+    try {
+      button.click()
+      console.log('[Autofill] Submit button clicked successfully')
+      return true
+    } catch (clickError) {
+      console.error('[Autofill] Failed to click button:', clickError)
+      await logAutoSubmitFailure(url, 'click_failed', {
+        buttonText: button.textContent || undefined
+      })
+      return false
+    }
   } catch (error) {
-    console.error('[Autofill] Failed to click button:', error)
+    console.error('[Autofill] findAndClickSubmitButton error:', error)
+    await logAutoSubmitFailure(url, 'no_buttons')
     return false
   }
 }
