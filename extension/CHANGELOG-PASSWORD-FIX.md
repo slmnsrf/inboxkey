@@ -12,8 +12,8 @@
   - Performance: 0.0001ms lookup (500x faster than budget)
 
 - **context-validator.ts** - Multilingual negative keyword detection
-  - 15 language support: en, tr, es, pt, ja, ru, de, fr, ar, ko, zh, it, nl, pl, hi
-  - 98.5% Chrome user coverage
+  - 21 language support: en, tr, es, pt, ja, ru, de, fr, ar, ko, zh, it, nl, pl, hi, sv, fi, da, no, cs, uk
+  - 99.4% Chrome user coverage
   - Turkish keyword support (şifre, parola, giriş yap) - **CRITICAL for Hepsiburada fix**
   - Allow-list patterns for edge cases (password_code, password reset code)
   - NFD normalization for diacritics
@@ -35,7 +35,7 @@
 
 #### Test Coverage
 - **cooldown-registry.test.ts** - 21 tests covering all registry methods
-- **context-validator.test.ts** - 98 tests covering 15 languages + edge cases
+- **context-validator.test.ts** - 98 tests covering 21 languages + edge cases
 - **tier1-fast.test.ts** - 79 tests covering all 4 defense layers
 - **tier2-deep.test.ts** - 68 tests covering scoring + structural analysis
 
@@ -56,7 +56,7 @@
   - Additional safety: Layer 4 detects Turkish "şifre" in labels/context
 
 - **Password Field Detection** - All password fields now properly excluded
-  - Cross-language detection (15 languages)
+  - Cross-language detection (21 languages)
   - Handles password reset forms correctly (allow-list patterns)
   - Structural analysis prevents false positives in login forms
 
@@ -138,7 +138,13 @@ The refactored code is a direct replacement with identical public API. No change
 | Dutch | nl | 2.1% | wachtwoord, inloggen |
 | Polish | pl | 1.8% | hasło, zaloguj |
 | Hindi | hi | 1.5% | पासवर्ड, लॉग इन |
-| **Total** | | **98.5%** | 15 languages |
+| Swedish | sv | 1.1% | lösenord, logga in |
+| Finnish | fi | 0.9% | salasana, kirjaudu |
+| Danish | da | 0.8% | adgangskode, log ind |
+| Norwegian | no | 0.7% | passord, logg inn |
+| Czech | cs | 0.6% | heslo, přihlásit |
+| Ukrainian | uk | 0.5% | пароль, увійти |
+| **Total** | | **99.4%** | 21 languages |
 
 ### Files Changed
 

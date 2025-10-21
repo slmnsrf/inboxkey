@@ -2,7 +2,7 @@
  * Comprehensive tests for context-validator.ts
  *
  * Test Coverage:
- * - All 15 languages (70+ test cases)
+ * - All 21 languages (80+ test cases)
  * - Turkish keywords (Hepsiburada fix)
  * - Allow-list patterns
  * - Diacritics normalization
@@ -771,9 +771,9 @@ describe('context-validator', () => {
   })
 
   describe('Keyword database structure', () => {
-    it('should have password keywords for all 15 languages', () => {
+    it('should have password keywords for all 21 languages', () => {
       const langs = Object.keys(NEGATIVE_KEYWORDS.password)
-      expect(langs).toHaveLength(15)
+      expect(langs).toHaveLength(21)
       expect(langs).toContain('en')
       expect(langs).toContain('tr') // Turkish - critical
       expect(langs).toContain('es')
@@ -789,11 +789,17 @@ describe('context-validator', () => {
       expect(langs).toContain('nl')
       expect(langs).toContain('pl')
       expect(langs).toContain('hi')
+      expect(langs).toContain('sv')
+      expect(langs).toContain('fi')
+      expect(langs).toContain('da')
+      expect(langs).toContain('no')
+      expect(langs).toContain('cs')
+      expect(langs).toContain('uk')
     })
 
-    it('should have login keywords for all 15 languages', () => {
+    it('should have login keywords for all 21 languages', () => {
       const langs = Object.keys(NEGATIVE_KEYWORDS.login)
-      expect(langs).toHaveLength(15)
+      expect(langs).toHaveLength(21)
     })
 
     it('should have non-empty keyword arrays', () => {
