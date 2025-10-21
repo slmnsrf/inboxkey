@@ -18,6 +18,7 @@ import {
 } from './watch-session'
 import { autofillCode, isFieldFilledByInboxKey } from './autofill'
 import type { DetectionResult } from '@/lib/types'
+import { extractDomain, isDomainEnabled } from '@/lib/utils/domain'
 
 console.log('[InboxKey] Content script loaded on', window.location.href)
 
@@ -79,8 +80,32 @@ function handleDetectedField(
 /**
  * Detect existing fields on page load
  */
-function detectExistingFields(): void {
+async function detectExistingFields(): Promise<void> {
   console.log('[InboxKey] Detecting existing verification fields...')
+
+  // Check if domain is enabled
+  const domain = extractDomain(window.location.href)
+  if (domain) {
+    const enabled = await isDomainEnabled(domain)
+    if (!enabled) {
+      console.log('[InboxKey] Domain is disabled, skipping detection')
+      return
+    }
+  }
+
+  // Check automation level setting
+  try {
+    const result = await chrome.storage.local.get('settings')
+    const automationLevel = result.settings?.automationLevel || 'autofill'
+
+    if (automationLevel === 'manual') {
+      console.log('[InboxKey] Manual mode enabled - skipping auto-detection')
+      return
+    }
+  } catch (error) {
+    console.error('[InboxKey] Failed to check automation level:', error)
+    // Continue with default behavior on error
+  }
 
   const results = detector.detectExisting({ strictVisibility: true })
 
@@ -101,11 +126,34 @@ function detectExistingFields(): void {
 function setupFocusListeners(): void {
   document.addEventListener(
     'focus',
-    (event) => {
+    async (event) => {
       const target = event.target as HTMLElement
 
       if (!(target instanceof HTMLInputElement)) {
         return
+      }
+
+      // Check if domain is enabled
+      const domain = extractDomain(window.location.href)
+      if (domain) {
+        const enabled = await isDomainEnabled(domain)
+        if (!enabled) {
+          return
+        }
+      }
+
+      // Check automation level setting
+      try {
+        const result = await chrome.storage.local.get('settings')
+        const automationLevel = result.settings?.automationLevel || 'autofill'
+
+        if (automationLevel === 'manual') {
+          console.log('[InboxKey] Manual mode enabled - skipping focus detection')
+          return
+        }
+      } catch (error) {
+        console.error('[InboxKey] Failed to check automation level:', error)
+        // Continue with default behavior on error
       }
 
       // Skip if already watching
@@ -150,8 +198,22 @@ function setupFocusListeners(): void {
 function startDynamicDetection(): void {
   console.log('[InboxKey] Starting dynamic field detection...')
 
-  detector.startObserving((field: HTMLInputElement) => {
+  detector.startObserving(async (field: HTMLInputElement) => {
     console.log('[InboxKey] Dynamically injected field detected:', field)
+
+    // Check automation level setting
+    try {
+      const result = await chrome.storage.local.get('settings')
+      const automationLevel = result.settings?.automationLevel || 'autofill'
+
+      if (automationLevel === 'manual') {
+        console.log('[InboxKey] Manual mode enabled - skipping dynamic detection')
+        return
+      }
+    } catch (error) {
+      console.error('[InboxKey] Failed to check automation level:', error)
+      // Continue with default behavior on error
+    }
 
     // Get detection result for this field
     const results = detector.detectExisting({ strictVisibility: true })

@@ -33,28 +33,41 @@ export class GmailPKCEProvider implements IReviewerProvider {
    * Authenticate with Gmail using Chrome's built-in OAuth
    */
   async authenticate(): Promise<OAuthTokens> {
-    try {
-      const token = await chrome.identity.getAuthToken({
-        interactive: true,
-        scopes: GMAIL_SCOPES
-      })
+    return new Promise((resolve, reject) => {
+      chrome.identity.getAuthToken(
+        { interactive: true },
+        (token) => {
+          if (chrome.runtime.lastError) {
+            const error = chrome.runtime.lastError.message || 'Unknown error'
 
-      if (!token) {
-        throw new Error('No token received from Gmail OAuth')
-      }
+            // Handle specific errors
+            if (error.includes('canceled') || error.includes('cancelled')) {
+              reject(new Error('OAuth cancelled by user'))
+            } else if (error.includes('not signed in')) {
+              reject(new Error('Please sign in to Chrome with your Google account'))
+            } else {
+              reject(new Error(`Gmail authentication failed: ${error}`))
+            }
+            return
+          }
 
-      // Chrome's getAuthToken returns just the access token
-      // We need to structure it as OAuthTokens
-      return {
-        access_token: token,
-        token_type: 'Bearer',
-        expires_in: 3600, // Default 1 hour
-        scope: GMAIL_SCOPES.join(' ')
-      }
-    } catch (error) {
-      console.error('Gmail auth error:', error)
-      throw new Error(`Gmail authentication failed: ${error instanceof Error ? error.message : 'Unknown error'}`)
-    }
+          if (!token) {
+            reject(new Error('No access token received'))
+            return
+          }
+
+          console.log('Gmail token received:', typeof token, token.substring(0, 20) + '...')
+
+          // Return in OAuthTokens format
+          resolve({
+            access_token: token,
+            token_type: 'Bearer',
+            expires_in: 3600, // Default 1 hour
+            scope: GMAIL_SCOPES.join(' ')
+          })
+        }
+      )
+    })
   }
 
   /**
@@ -94,7 +107,17 @@ export class GmailPKCEProvider implements IReviewerProvider {
       })
 
       if (!response.ok) {
-        throw new Error(`Failed to get user profile: ${response.statusText}`)
+        // Get detailed error message from API
+        let errorMessage = `HTTP ${response.status} ${response.statusText}`
+        try {
+          const errorData = await response.json()
+          if (errorData.error) {
+            errorMessage = `${errorMessage}: ${errorData.error.message || JSON.stringify(errorData.error)}`
+          }
+        } catch {
+          // Ignore JSON parsing error, use basic error message
+        }
+        throw new Error(`Failed to get user profile: ${errorMessage}`)
       }
 
       const data = await response.json()

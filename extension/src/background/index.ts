@@ -25,6 +25,7 @@ import {
   setBadgeNoCode,
   clearBadge,
 } from "@/contents/badge-manager"
+import { extractDomain, isDomainEnabled } from "@/lib/utils/domain"
 
 interface StartSessionMessage {
   type: "START_SESSION"
@@ -247,6 +248,26 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 
   if (msg.type === "CLEAR_ALL_CODES") {
     handleClearAllCodes(sendResponse)
+    return true
+  }
+
+  if (msg.type === "CLEAR_CACHE") {
+    handleClearCache(sendResponse)
+    return true
+  }
+
+  if (msg.type === "GET_AUTOMATION_LEVEL") {
+    handleGetAutomationLevel(sendResponse)
+    return true
+  }
+
+  if (msg.type === "SET_AUTOMATION_LEVEL") {
+    handleSetAutomationLevel(msg, sendResponse)
+    return true
+  }
+
+  if (msg.type === "SET_DOMAIN_PREFERENCE") {
+    handleSetDomainPreference(msg, sendResponse)
     return true
   }
 
@@ -617,5 +638,120 @@ function handleClearAllCodes(sendResponse: (response: any) => void) {
     }
   })().catch((error) => {
     console.error("[Background] handleClearAllCodes unhandled rejection:", error)
+  })
+}
+
+/**
+ * Handle CLEAR_CACHE requests.
+ */
+function handleClearCache(sendResponse: (response: any) => void) {
+  ;(async () => {
+    try {
+      // Clear session storage cache
+      await chrome.storage.session.remove('inboxkey.popup_cache')
+
+      // Optionally re-warm the cache
+      const storage = await StorageFactory.create()
+      const mailboxes = await storage.getMailboxes()
+      const recentCodes = await storage.getRecentCodes(10)
+      await popupCacheManager.updateWithNewCodes(recentCodes, mailboxes.length, mailboxes)
+
+      console.log("[Background] Popup cache cleared and refreshed")
+      sendResponse({ success: true })
+    } catch (error) {
+      console.error("[Background] Failed to clear cache:", error)
+      sendResponse({
+        success: false,
+        error: error instanceof Error ? error.message : String(error),
+      })
+    }
+  })().catch((error) => {
+    console.error("[Background] handleClearCache unhandled rejection:", error)
+  })
+}
+
+/**
+ * Handle GET_AUTOMATION_LEVEL requests.
+ */
+function handleGetAutomationLevel(sendResponse: (response: any) => void) {
+  ;(async () => {
+    try {
+      const result = await chrome.storage.local.get('settings')
+      const automationLevel = result.settings?.automationLevel || 'autofill'
+
+      sendResponse({ success: true, level: automationLevel })
+    } catch (error) {
+      console.error("[Background] Failed to get automation level:", error)
+      sendResponse({
+        success: false,
+        error: error instanceof Error ? error.message : String(error),
+      })
+    }
+  })().catch((error) => {
+    console.error("[Background] handleGetAutomationLevel unhandled rejection:", error)
+  })
+}
+
+/**
+ * Handle SET_AUTOMATION_LEVEL requests.
+ */
+function handleSetAutomationLevel(msg: any, sendResponse: (response: any) => void) {
+  ;(async () => {
+    try {
+      const storage = await StorageFactory.create()
+
+      // Get current settings
+      const settings = await storage.getSettings()
+
+      // Update automation level
+      settings.automationLevel = msg.level
+
+      // Save back to storage
+      await chrome.storage.local.set({ settings })
+
+      console.log(`[Background] Automation level updated to: ${msg.level}`)
+      sendResponse({ success: true })
+    } catch (error) {
+      console.error("[Background] Failed to set automation level:", error)
+      sendResponse({
+        success: false,
+        error: error instanceof Error ? error.message : String(error),
+      })
+    }
+  })().catch((error) => {
+    console.error("[Background] handleSetAutomationLevel unhandled rejection:", error)
+  })
+}
+
+/**
+ * Handle SET_DOMAIN_PREFERENCE requests.
+ */
+function handleSetDomainPreference(msg: any, sendResponse: (response: any) => void) {
+  ;(async () => {
+    try {
+      const storage = await StorageFactory.create()
+
+      // Validate inputs
+      if (!msg.domain || typeof msg.domain !== 'string') {
+        throw new Error('Invalid domain')
+      }
+      if (typeof msg.enabled !== 'boolean') {
+        throw new Error('Invalid enabled value')
+      }
+
+      // Set domain preference
+      await storage.setDomainPreference(msg.domain, msg.enabled)
+
+      console.log(`[Background] Domain preference updated: ${msg.domain} -> ${msg.enabled}`)
+      sendResponse({ success: true })
+    } catch (error) {
+      console.error("[Background] Failed to set domain preference:", error)
+      sendResponse({
+        success: false,
+        error: error instanceof Error ? error.message : String(error),
+      })
+    }
+  })().catch((error) => {
+    console.error("[Background] handleSetDomainPreference unhandled rejection:", error)
   })
 }

@@ -48,7 +48,7 @@ InboxKey is a Manifest V3 Chrome/Chromium extension that keeps verification-code
 │ Presentation (React/Plasmo pages)  │ Popup • Settings • Mailboxes
 ├────────────────────────────────────┤
 │ Application Services               │ PopupBridge • ClipboardService │
-│                                    │ LinkService • LockService      │
+│                                    │ LinkService                    │
 ├────────────────────────────────────┤
 │ Domain Logic                       │ FieldDetector • CodeMatcher    │
 │                                    │ @inboxkey/extraction-core      │
@@ -62,10 +62,11 @@ InboxKey is a Manifest V3 Chrome/Chromium extension that keeps verification-code
 ### Presentation Layer
 - Popup (default surface), Settings (options page), and Mailboxes (read-only view) share React hooks that subscribe to cached background state.
 - UI components live under `extension/src/popup`, `options`, and `tabs`. Design tokens and accessibility wrappers come from `ui-ux-principles.md`.
-- "Buy me a coffee", open-source license/source links, and lock indicators are always visible per guardrails.
+- "Buy me a coffee" and privacy status ("Local-only • No servers") are always visible per guardrails.
+- Popup footer includes per-domain toggle ("Active on this site: ON/OFF") with warning message when extension is disabled on current domain.
 
 ### Application Layer
-- Services under `extension/src/lib/services` expose typed commands to the UI and content scripts: `PopupBridge`, `ClipboardService`, `LinkService`, `EmailPollingService`, and `LockService`.
+- Services under `extension/src/lib/services` expose typed commands to the UI and content scripts: `PopupBridge`, `ClipboardService`, `LinkService`, and `EmailPollingService`.
 - Message routing uses Plasmo messaging channels with schema validation; all cross-context calls pass through application services to enforce business rules and auditing.
 
 ### Domain Layer
@@ -75,17 +76,18 @@ InboxKey is a Manifest V3 Chrome/Chromium extension that keeps verification-code
 - The watch-session controller coordinates timing windows, cache hydration, confidence scoring, and manual fallback data.
 
 ### Infrastructure Layer
-- Crypto (`lib/crypto`) manages master key lifecycle, AES-256-GCM encryption, PBKDF2 derivation, and lock state.
+- Crypto (`lib/crypto`) manages master key lifecycle, AES-256-GCM encryption, and PBKDF2 derivation.
 - Storage (`lib/storage`) wraps `chrome.storage.local/session` and `indexedDB` with migrations, retention windows (codes 24h, links 7d), and selective encryption for sensitive fields.
+- **Domain Preferences (`lib/storage/domain-preferences`):** Per-domain toggle allowing users to enable/disable InboxKey on specific sites. Uses eTLD+1 extraction for domain matching. Preferences stored in `chrome.storage.local` with a global default setting (`domainsEnabledByDefault`). Content scripts check domain state before executing autofill or watch session logic. UI toggle appears in popup footer with visual warning when disabled.
 - Shared utilities (`lib/utils`, `lib/cache`) provide memoized caches, logging, and delimited background tasks.
 
 ## Runtime Components
 
-- **Background service worker (`extension/src/background`).** Handles lifecycle orchestration, provider auth, polling scheduler (0s/5s/10s cadence), token vault, tiered cache (in-memory → session → local), and messaging gateway. Maintains a lock-safe in-memory snapshot for instant popup responses.
+- **Background service worker (`extension/src/background`).** Handles lifecycle orchestration, provider auth, polling scheduler (0s/5s/10s cadence), token vault, tiered cache (in-memory → session → local), and messaging gateway. Maintains an in-memory snapshot for instant popup responses.
 - **Content scripts (`extension/src/contents`).** Detect verification prompts, open Port connections for 15-second watch sessions, autofill codes, trigger link opens, render reduced-motion-friendly status chips, and recover gracefully if the worker restarts.
 - **Shared libraries (`extension/src/lib`).** Encapsulate detection heuristics, matching, and provider logic. All consumers import via `@/*` aliases to enforce layering.
 - **Extraction Core (`packages/extraction-core`).** Pure extraction logic imported by both main extension and Reviewer. No Chrome APIs.
-- **UI surfaces.** React components consume application services, show lock/open-source/support state, and provide manual actions ("Copy last code", "Open last magic link") as fallbacks.
+- **UI surfaces.** React components consume application services, show open-source/support state, and provide manual actions ("Copy last code", "Open last magic link") as fallbacks.
 
 ## Data & Control Flow
 
@@ -99,7 +101,6 @@ InboxKey is a Manifest V3 Chrome/Chromium extension that keeps verification-code
 
 - **Local-only data path.** No remote services; OAuth tokens and parsed content never leave the device.
 - **Encryption.** Sensitive records use AES-256-GCM with per-user master keys derived via PBKDF2-SHA256 (600k iterations). Non-sensitive metadata stays plaintext for quick lookups.
-- **Lock mode.** User-defined password gates any read/write operation; exponential backoff counters deter brute force. "Reset extension" wipes keys, tokens, and caches without recovery.
 - **Permissions.** Minimal manifest scopes: Gmail `gmail.readonly`, Outlook `Mail.Read`, `User.Read`, `offline_access`, identity, storage, and activeTab; all disclosed in Settings/About alongside license/source/support links.
 - **Safety blocks.** The extension never auto-launches password reset links, warns on risky actions, and preserves focus-visible keyboard navigation throughout.
 
@@ -124,7 +125,7 @@ InboxKey is a Manifest V3 Chrome/Chromium extension that keeps verification-code
 ## Testing & Validation
 
 - **Unit tests (Vitest + happy-dom).** Cover crypto primitives, detection heuristics, extraction pipelines, storage factories, and service orchestration.
-- **E2E tests (Playwright).** Validate watch sessions, popup workflows, lock/unlock, magic-link handling, and performance metrics (≤50 ms popup open, 0.3 ms field detection).
+- **E2E tests (Playwright).** Validate watch sessions, popup workflows, magic-link handling, and performance metrics (≤50 ms popup open, 0.3 ms field detection).
 - **QA-OPS policy.** Risk-based levels per `qa-ops.md`; security-sensitive changes trigger full regression plus threat review.
 
 ## Developer Tools

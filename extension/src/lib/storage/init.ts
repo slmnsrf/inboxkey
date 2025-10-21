@@ -216,6 +216,7 @@ export async function exportStorage(): Promise<StorageSchema> {
     mailboxes: result[STORAGE_KEYS.MAILBOXES] || [],
     recentCodes: result[STORAGE_KEYS.RECENT_CODES] || [],
     settings: result[STORAGE_KEYS.SETTINGS] || getDefaultSettings(),
+    domainPreferences: result[STORAGE_KEYS.DOMAIN_PREFERENCES] || { domains: {} },
   }
 }
 

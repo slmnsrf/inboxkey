@@ -10,6 +10,7 @@
 import type { DetectionResult } from "@/lib/types"
 import { showNotification } from "./notification"
 import { showSessionChip, type ChipHandle } from "./session-chip"
+import { extractDomain, isDomainEnabled } from "@/lib/utils/domain"
 
 interface SessionCodeResult {
   code: string
@@ -51,10 +52,20 @@ export class WatchSession {
   /**
    * Start the watch session and open a keep-alive Port to the background worker.
    */
-  start(): void {
+  async start(): Promise<void> {
     if (this.port) {
       console.warn("[WatchSession] Session already started")
       return
+    }
+
+    // Check if domain is enabled before starting session
+    const domain = extractDomain(window.location.href)
+    if (domain) {
+      const enabled = await isDomainEnabled(domain)
+      if (!enabled) {
+        console.log("[WatchSession] Domain is disabled, skipping watch session")
+        return
+      }
     }
 
     try {
@@ -241,11 +252,34 @@ export class WatchSession {
     // Always call onCodeFound callback first
     this.callbacks.onCodeFound(codeResult)
 
-    // Try to autofill
+    // Check automation level from settings
+    let automationLevel: string = 'autofill'
+    try {
+      const result = await chrome.storage.local.get('settings')
+      automationLevel = result.settings?.automationLevel || 'autofill'
+    } catch (error) {
+      console.error("[WatchSession] Failed to load automation level:", error)
+    }
+
+    console.log(`[WatchSession] Automation level: ${automationLevel}`)
+
+    // Handle based on automation level
+    if (automationLevel === 'clipboard') {
+      // Clipboard-only mode: skip autofill, go straight to clipboard
+      console.log("[WatchSession] Clipboard mode - skipping autofill")
+      await this.handleAutofillFailure(codeResult)
+      return
+    }
+
+    // Try to autofill (for 'autofill' and 'full-automation' modes)
     const autofilled = await this.tryAutofill(codeResult)
 
-    // If autofill failed, use fallback
-    if (!autofilled) {
+    if (autofilled && automationLevel === 'full-automation') {
+      // Full automation: try to click submit button
+      console.log("[WatchSession] Full automation - attempting auto-submit")
+      await this.tryAutoSubmit()
+    } else if (!autofilled) {
+      // If autofill failed, use fallback
       await this.handleAutofillFailure(codeResult)
     }
   }
@@ -276,6 +310,24 @@ export class WatchSession {
     } catch (error) {
       console.error("[WatchSession] Autofill error:", error)
       return false
+    }
+  }
+
+  /**
+   * Try to auto-submit the form after autofill
+   */
+  private async tryAutoSubmit(): Promise<void> {
+    try {
+      const { findAndClickSubmitButton } = await import('./autofill')
+      const clicked = await findAndClickSubmitButton(this.field)
+
+      if (clicked) {
+        console.log("[WatchSession] Auto-submit successful")
+      } else {
+        console.log("[WatchSession] No submit button found for auto-submit")
+      }
+    } catch (error) {
+      console.error("[WatchSession] Auto-submit failed:", error)
     }
   }
 

@@ -1,14 +1,14 @@
 import React from 'react'
 import { t } from '@/lib/i18n'
 
-export type Tab = 'accounts' | 'security' | 'advanced' | 'about'
+export type Tab = 'accounts' | 'security' | 'settings' | 'about'
 
 interface TabNavigationProps {
   activeTab: Tab
   onTabChange: (tab: Tab) => void
 }
 
-const TABS: Tab[] = ['accounts', 'security', 'advanced', 'about']
+const TABS: Tab[] = ['accounts', 'security', 'settings', 'about']
 
 export function TabNavigation({ activeTab, onTabChange }: TabNavigationProps) {
   /**
@@ -66,14 +66,14 @@ export function TabNavigation({ activeTab, onTabChange }: TabNavigationProps) {
 
       <button
         role="tab"
-        aria-selected={activeTab === 'advanced'}
-        aria-controls="advanced-panel"
-        id="advanced-tab"
-        tabIndex={activeTab === 'advanced' ? 0 : -1}
-        className={`tab-button ${activeTab === 'advanced' ? 'tab-button--active' : ''}`}
-        onClick={() => onTabChange('advanced')}
+        aria-selected={activeTab === 'settings'}
+        aria-controls="settings-panel"
+        id="settings-tab"
+        tabIndex={activeTab === 'settings' ? 0 : -1}
+        className={`tab-button ${activeTab === 'settings' ? 'tab-button--active' : ''}`}
+        onClick={() => onTabChange('settings')}
       >
-        {t('settings_tab_advanced')}
+        {t('settings_tab_settings')}
       </button>
 
       <button

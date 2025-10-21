@@ -6,7 +6,7 @@
  * - PlaintextStorage: Stores data in plaintext using Chrome Storage API
  */
 
-import type { Mailbox, SessionState, Settings, StoredCode } from "./schema"
+import type { Mailbox, SessionState, Settings, StoredCode, DomainPreferences } from "./schema"
 
 /**
  * Storage interface defining all storage operations
@@ -120,6 +120,30 @@ export interface IStorage {
    * @throws ValidationError if session state structure is invalid
    */
   updateSessionState(updates: Partial<SessionState>): Promise<void>
+
+  // ============================================================================
+  // Domain Preferences Operations
+  // ============================================================================
+
+  /**
+   * Get domain preferences
+   * @returns Domain preferences object (returns defaults if not set)
+   */
+  getDomainPreferences(): Promise<DomainPreferences>
+
+  /**
+   * Set preference for a specific domain
+   * @param domain - eTLD+1 domain
+   * @param enabled - Whether InboxKey is enabled for this domain
+   */
+  setDomainPreference(domain: string, enabled: boolean): Promise<void>
+
+  /**
+   * Get preference for a specific domain
+   * @param domain - eTLD+1 domain
+   * @returns true if enabled, false if disabled, undefined if no preference set
+   */
+  getDomainPreference(domain: string): Promise<boolean | undefined>
 
   // ============================================================================
   // Utility Operations

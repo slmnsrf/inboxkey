@@ -36,24 +36,6 @@
     "message": "Synced",
     "description": "Sync status label"
   },
-  "popup_synced_at": {
-    "message": "Synced $1",
-    "description": "Sync status with relative time",
-    "placeholders": {
-      "time": {
-        "content": "$1",
-        "example": "2m ago"
-      }
-    }
-  },
-  "popup_syncing": {
-    "message": "Syncing...",
-    "description": "Syncing status label"
-  },
-  "popup_quick_actions": {
-    "message": "Quick actions",
-    "description": "Aria label for quick action group"
-  },
   "time_just_now": {
     "message": "just now",
     "description": "Time: just now"
@@ -90,40 +72,6 @@
       }
     }
   },
-  "time_just_now_short": {
-    "message": "now",
-    "description": "Short time label: just now"
-  },
-  "time_minutes_short": {
-    "message": "$COUNT$m ago",
-    "description": "Short time label: minutes ago",
-    "placeholders": {
-      "count": {
-        "content": "$1",
-        "example": "5"
-      }
-    }
-  },
-  "time_hours_short": {
-    "message": "$COUNT$h ago",
-    "description": "Short time label: hours ago",
-    "placeholders": {
-      "count": {
-        "content": "$1",
-        "example": "3"
-      }
-    }
-  },
-  "time_days_short": {
-    "message": "$COUNT$d ago",
-    "description": "Short time label: days ago",
-    "placeholders": {
-      "count": {
-        "content": "$1",
-        "example": "2"
-      }
-    }
-  },
 
   "section_recent_codes": {
     "message": "Recent Codes",
@@ -132,26 +80,6 @@
   "section_magic_links": {
     "message": "Magic Links",
     "description": "Section heading for magic links"
-  },
-  "label_from": {
-    "message": "From",
-    "description": "Metadata label for sender"
-  },
-  "label_to": {
-    "message": "To",
-    "description": "Metadata label for recipient"
-  },
-  "label_subject": {
-    "message": "Subject",
-    "description": "Metadata label for email subject"
-  },
-  "label_code": {
-    "message": "Code",
-    "description": "Metadata label for verification code"
-  },
-  "value_not_available": {
-    "message": "N/A",
-    "description": "Placeholder when value is not available"
   },
 
   "button_copy": {
@@ -162,10 +90,6 @@
     "message": "✓ Copied",
     "description": "Copied confirmation"
   },
-  "button_paste_best": {
-    "message": "Paste best code",
-    "description": "Quick action to copy best code"
-  },
   "button_open": {
     "message": "Open",
     "description": "Open link button"
@@ -173,14 +97,6 @@
   "button_opened": {
     "message": "✓ Opened",
     "description": "Opened confirmation"
-  },
-  "button_open_last": {
-    "message": "Open last link",
-    "description": "Quick action to open last magic link"
-  },
-  "button_opening": {
-    "message": "Opening...",
-    "description": "Button label while opening a link"
   },
   "button_cancel": {
     "message": "Cancel",
@@ -235,26 +151,6 @@
       }
     }
   },
-  "aria_open_link_simple": {
-    "message": "Open $ITEM$",
-    "description": "ARIA label for open link button with subject or sender",
-    "placeholders": {
-      "item": {
-        "content": "$1",
-        "example": "GitHub sign-in link"
-      }
-    }
-  },
-  "aria_received_time": {
-    "message": "Received $TIME$",
-    "description": "ARIA label for received time pill",
-    "placeholders": {
-      "time": {
-        "content": "$1",
-        "example": "2m ago"
-      }
-    }
-  },
   "aria_mailbox_count": {
     "message": "$COUNT$ connected mailboxes",
     "description": "ARIA label for mailbox count",
@@ -265,14 +161,6 @@
       }
     }
   },
-  "aria_manual_sync": {
-    "message": "Sync now",
-    "description": "ARIA label for manual sync button"
-  },
-  "aria_open_settings": {
-    "message": "Open settings",
-    "description": "ARIA label for settings button"
-  },
   "aria_sync_time": {
     "message": "Last synced $TIME$",
     "description": "ARIA label for sync time",
@@ -280,28 +168,6 @@
       "time": {
         "content": "$1",
         "example": "5 minutes ago"
-      }
-    }
-  },
-  "aria_settings_button": {
-    "message": "Open settings",
-    "description": "ARIA label for settings gear icon"
-  },
-  "aria_connect_gmail": {
-    "message": "Connect Gmail account for code autofill",
-    "description": "ARIA label for Gmail connect button"
-  },
-  "aria_connect_outlook": {
-    "message": "Connect Outlook account for code autofill",
-    "description": "ARIA label for Outlook connect button"
-  },
-  "aria_remove_account": {
-    "message": "Disconnect $EMAIL$",
-    "description": "ARIA label for remove account button",
-    "placeholders": {
-      "email": {
-        "content": "$1",
-        "example": "user@gmail.com"
       }
     }
   },
@@ -355,6 +221,49 @@
     "description": "Empty state: error message"
   },
 
+  "security_banner_setup": {
+    "message": "Set a password to protect your codes",
+    "description": "Security banner prompt"
+  },
+  "security_banner_not_now": {
+    "message": "Not now",
+    "description": "Security banner dismiss"
+  },
+  "security_banner_setup_password": {
+    "message": "Setup",
+    "description": "Security banner setup button"
+  },
+
+  "lock_screen_title": {
+    "message": "InboxKey is Locked",
+    "description": "Lock screen title"
+  },
+  "lock_screen_prompt": {
+    "message": "Enter your password to unlock",
+    "description": "Lock screen prompt"
+  },
+  "lock_screen_unlock": {
+    "message": "Unlock",
+    "description": "Unlock button"
+  },
+  "lock_screen_forgot": {
+    "message": "Forgot password?",
+    "description": "Forgot password link"
+  },
+  "lock_screen_wrong_password": {
+    "message": "Wrong password. Try again.",
+    "description": "Wrong password error"
+  },
+  "lock_screen_rate_limited": {
+    "message": "Too many attempts. Please wait $SECONDS$ seconds.",
+    "description": "Rate limit error",
+    "placeholders": {
+      "seconds": {
+        "content": "$1",
+        "example": "30"
+      }
+    }
+  },
 
   "settings_title": {
     "message": "InboxKey Settings",
@@ -368,438 +277,43 @@
     "message": "Advanced",
     "description": "Advanced tab"
   },
-  "settings_tab_accounts": {
-    "message": "Accounts",
-    "description": "Accounts tab in settings"
-  },
   "settings_tab_about": {
     "message": "About",
     "description": "About tab"
   },
-  "settings_advanced_coming_soon": {
-    "message": "Advanced settings coming soon. Site overrides and other features will be added in a future update.",
-    "description": "Placeholder message for advanced settings tab"
-  },
-  "settings_appearance_heading": {
-    "message": "Appearance",
-    "description": "Heading for appearance settings card"
-  },
-  "settings_appearance_description": {
-    "message": "Choose a theme that feels right. Light keeps things bright, Dark is easier on the eyes at night, and System follows your device.",
-    "description": "Description copy for theme selector"
-  },
-  "settings_appearance_hint": {
-    "message": "Theme updates instantly and applies everywhere you use InboxKey.",
-    "description": "Helper text under the theme selector"
-  },
-  "settings_theme_light": {
-    "message": "Light",
-    "description": "Light theme label"
-  },
-  "settings_theme_dark": {
-    "message": "Dark",
-    "description": "Dark theme label"
-  },
-  "settings_theme_system": {
-    "message": "System (Auto)",
-    "description": "System/automatic theme label"
-  },
-  "settings_theme_selected": {
-    "message": "$1 theme selected",
-    "description": "Status text when a specific theme is chosen"
-  },
-  "settings_theme_system_status": {
-    "message": "Following system theme ($1)",
-    "description": "Status text when system theme is active"
-  },
-  "settings_view_source": {
-    "message": "View Source",
-    "description": "Button label to open the project repository"
-  },
-  "settings_view_source_aria": {
-    "message": "View InboxKey source on GitHub",
-    "description": "Aria label for View Source button"
-  },
-  "settings_trust_region_label": {
-    "message": "Trust and Transparency",
-    "description": "Accessible label for trust banner"
-  },
-  "settings_trust_open_source": {
-    "message": "Open-source • Apache-2.0",
-    "description": "Trust chip highlighting open-source license"
-  },
-  "settings_trust_local_only": {
-    "message": "Local-only • Read-only",
-    "description": "Trust chip highlighting local-only, read-only access"
-  },
-  "settings_trust_safe": {
-    "message": "Safe by default",
-    "description": "Trust chip highlighting safety posture"
-  },
-  "settings_trust_summary": {
-    "message": "You can connect 1 Gmail, 1 Outlook, and up to 10 IMAP accounts.",
-    "description": "Summary note for trust banner"
-  },
 
-  "accounts_panel_heading": {
-    "message": "Connected Accounts",
-    "description": "Heading for accounts panel"
+  "security_setup_title": {
+    "message": "Set up password protection",
+    "description": "Password setup title"
   },
-  "accounts_panel_summary": {
-    "message": "Gmail and Outlook are single-slot. IMAP supports multiple accounts.",
-    "description": "Summary text explaining provider limits"
+  "security_setup_description": {
+    "message": "Protect your verification codes with a password. You'll need to enter it each time you open InboxKey.",
+    "description": "Password setup description"
   },
-  "accounts_panel_empty": {
-    "message": "Connect your email to start receiving verification codes",
-    "description": "Empty state message when no accounts connected"
+  "security_no_recovery_title": {
+    "message": "⚠️ No recovery possible",
+    "description": "No recovery warning title"
   },
-  "accounts_add_heading": {
-    "message": "Add Account",
-    "description": "Heading for add account section"
+  "security_no_recovery_message": {
+    "message": "If you forget your password, you'll lose access to all your codes. There is no way to recover your data.",
+    "description": "No recovery warning message"
   },
-  "accounts_connect_gmail": {
-    "message": "Connect Gmail",
-    "description": "Button to connect Gmail account"
+  "security_password_tips": {
+    "message": "Choose a strong password:",
+    "description": "Password tips heading"
   },
-  "accounts_connect_outlook": {
-    "message": "Connect Outlook",
-    "description": "Button to connect Outlook account"
+  "security_tip_memorable": {
+    "message": "Make it memorable (you can't reset it)",
+    "description": "Password tip: memorable"
   },
-  "accounts_provider_gmail": {
-    "message": "Gmail",
-    "description": "Provider name: Gmail"
+  "security_tip_unique": {
+    "message": "Use a unique password",
+    "description": "Password tip: unique"
   },
-  "accounts_provider_outlook": {
-    "message": "Outlook",
-    "description": "Provider name: Outlook"
+  "security_tip_strength": {
+    "message": "At least 8 characters",
+    "description": "Password tip: strength"
   },
-  "accounts_connecting": {
-    "message": "Connecting...",
-    "description": "Loading state for OAuth connection"
-  },
-  "accounts_authenticating": {
-    "message": "Authenticating...",
-    "description": "OAuth authentication in progress"
-  },
-  "accounts_loading_profile": {
-    "message": "Loading profile...",
-    "description": "Loading user profile after OAuth"
-  },
-  "accounts_saving": {
-    "message": "Saving...",
-    "description": "Saving account to storage"
-  },
-  "accounts_status_connected": {
-    "message": "Connected",
-    "description": "Status badge when provider has connected accounts"
-  },
-  "accounts_status_not_connected": {
-    "message": "Not connected",
-    "description": "Status badge when provider has no accounts yet"
-  },
-  "accounts_reconnect": {
-    "message": "Reconnect",
-    "description": "Button label to reconnect an email provider"
-  },
-  "accounts_disconnect": {
-    "message": "Disconnect",
-    "description": "Button label to disconnect an email provider"
-  },
-  "modal_disconnect_title": {
-    "message": "Disconnect $PROVIDER$?",
-    "description": "Modal title for disconnect confirmation",
-    "placeholders": {
-      "provider": {
-        "content": "$1",
-        "example": "Gmail"
-      }
-    }
-  },
-  "modal_disconnect_intro": {
-    "message": "You're about to disconnect this account. Here's what will happen:",
-    "description": "Modal intro text explaining disconnect consequences"
-  },
-  "modal_disconnect_stop_monitoring": {
-    "message": "Stop monitoring",
-    "description": "Modal: stop monitoring consequence"
-  },
-  "modal_disconnect_remove_data": {
-    "message": "Remove all tokens and authentication data",
-    "description": "Modal: remove data consequence"
-  },
-  "modal_disconnect_clear_emails": {
-    "message": "Clear verification codes and magic links from this account",
-    "description": "Modal: clear emails consequence"
-  },
-  "modal_disconnect_reassurance": {
-    "message": "You can reconnect this account anytime. Your email data remains untouched.",
-    "description": "Modal: reassurance message"
-  },
-  "modal_cancel": {
-    "message": "Cancel",
-    "description": "Modal cancel button"
-  },
-  "modal_disconnect_confirm": {
-    "message": "Yes, disconnect",
-    "description": "Modal confirmation button for disconnect"
-  },
-  "aria_disconnect_gmail": {
-    "message": "Disconnect Gmail account",
-    "description": "ARIA label for Gmail disconnect button"
-  },
-  "aria_disconnect_outlook": {
-    "message": "Disconnect Outlook account",
-    "description": "ARIA label for Outlook disconnect button"
-  },
-  "accounts_microcopy_gmail": {
-    "message": "Only one Gmail account can be connected.",
-    "description": "Microcopy reminder for Gmail single-slot"
-  },
-  "accounts_microcopy_outlook": {
-    "message": "Only one Outlook account can be connected.",
-    "description": "Microcopy reminder for Outlook single-slot"
-  },
-  "accounts_empty_gmail": {
-    "message": "Connect your Google account to detect codes and magic links in Gmail.",
-    "description": "Onboarding text for Gmail slot"
-  },
-  "accounts_empty_outlook": {
-    "message": "Connect your Microsoft account to detect codes and magic links in Outlook.",
-    "description": "Onboarding text for Outlook slot"
-  },
-  "accounts_empty_provider": {
-    "message": "No $PROVIDER$ accounts connected yet.",
-    "description": "Empty state message per provider",
-    "placeholders": {
-      "provider": {
-        "content": "$1",
-        "example": "Gmail"
-      }
-    }
-  },
-  "accounts_trust_message": {
-    "message": "🔒 Read-only access · Stored locally",
-    "description": "Trust indicator for account connection (legacy)"
-  },
-  "trust_indicator_title": {
-    "message": "Your privacy is protected",
-    "description": "Trust indicator heading"
-  },
-  "trust_indicator_readonly": {
-    "message": "Read-only access (we can't send emails)",
-    "description": "Trust indicator: read-only access"
-  },
-  "trust_indicator_local_storage": {
-    "message": "Stored securely on your device",
-    "description": "Trust indicator: local storage"
-  },
-  "trust_indicator_local": {
-    "message": "Never uploaded to our servers",
-    "description": "Trust indicator: local storage"
-  },
-  "accounts_remove_button": {
-    "message": "Remove",
-    "description": "Button to remove/disconnect account"
-  },
-  "accounts_remove_confirm": {
-    "message": "Disconnect this account? Codes from this account will no longer sync.",
-    "description": "Confirmation dialog for removing account"
-  },
-  "accounts_last_synced": {
-    "message": "Last synced: $TIME$",
-    "description": "Last sync time for account",
-    "placeholders": {
-      "time": {
-        "content": "$1",
-        "example": "5m ago"
-      }
-    }
-  },
-  "accounts_imap_title": {
-    "message": "IMAP Accounts",
-    "description": "Section heading for IMAP accounts"
-  },
-  "accounts_imap_description": {
-    "message": "Add up to 10 IMAP mailboxes via the InboxKey bridge. Support coming soon.",
-    "description": "Description text for IMAP section"
-  },
-  "accounts_imap_add": {
-    "message": "Add IMAP",
-    "description": "Button label to add an IMAP account"
-  },
-  "accounts_imap_counter": {
-    "message": "$USED$ / $TOTAL$ used",
-    "description": "Usage counter for IMAP slots",
-    "placeholders": {
-      "used": {
-        "content": "$1",
-        "example": "3"
-      },
-      "total": {
-        "content": "$2",
-        "example": "10"
-      }
-    }
-  },
-  "accounts_imap_placeholder": {
-    "message": "IMAP support is being wired up. Check back soon!",
-    "description": "Placeholder message when IMAP is disabled"
-  },
-  "accounts_imap_empty": {
-    "message": "No IMAP accounts connected. Click “Add IMAP” to connect one.",
-    "description": "Empty state message for IMAP list"
-  },
-  "accounts_imap_host": {
-    "message": "Host: $1",
-    "description": "Host label for IMAP row",
-    "placeholders": {
-      "host": {
-        "content": "$1",
-        "example": "imap.fastmail.com"
-      }
-    }
-  },
-  "accounts_imap_generic_host": {
-    "message": "Host information not available",
-    "description": "Fallback host message for IMAP row"
-  },
-  "accounts_imap_add_title": {
-    "message": "Add IMAP Account",
-    "description": "Modal title for adding IMAP account"
-  },
-  "accounts_imap_reconnect_title": {
-    "message": "Reconnect IMAP Account",
-    "description": "Modal title for reconnecting IMAP account"
-  },
-  "accounts_imap_email_label": {
-    "message": "Email Address",
-    "description": "Label for IMAP email input"
-  },
-  "accounts_imap_server_label": {
-    "message": "IMAP Server",
-    "description": "Label for IMAP server input"
-  },
-  "accounts_imap_server_hint": {
-    "message": "Example: imap.gmail.com, imap.fastmail.com",
-    "description": "Hint text for IMAP server input"
-  },
-  "accounts_imap_port_label": {
-    "message": "Port",
-    "description": "Label for IMAP port input"
-  },
-  "accounts_imap_tls_label": {
-    "message": "Security",
-    "description": "Label for TLS checkbox"
-  },
-  "accounts_imap_tls_enabled": {
-    "message": "Use TLS/SSL (recommended)",
-    "description": "Label for TLS checkbox"
-  },
-  "accounts_imap_password_label": {
-    "message": "Password",
-    "description": "Label for IMAP password input"
-  },
-  "accounts_imap_password_hint": {
-    "message": "Stored securely in your system keychain via InboxBridge",
-    "description": "Hint text for IMAP password input"
-  },
-  "accounts_imap_label_label": {
-    "message": "Account Label (optional)",
-    "description": "Label for IMAP account label input"
-  },
-  "accounts_imap_label_hint": {
-    "message": "Friendly name to identify this account",
-    "description": "Hint text for IMAP account label"
-  },
-  "accounts_imap_test_connection": {
-    "message": "Test Connection",
-    "description": "Button label to test IMAP connection"
-  },
-  "accounts_imap_testing": {
-    "message": "Testing connection...",
-    "description": "Button label while testing IMAP connection"
-  },
-  "accounts_imap_test_success": {
-    "message": "Connection successful!",
-    "description": "Success message for IMAP connection test"
-  },
-  "accounts_imap_bridge_not_installed": {
-    "message": "InboxBridge not installed",
-    "description": "Error message when InboxBridge is not installed"
-  },
-  "accounts_imap_bridge_install_instructions": {
-    "message": "To use IMAP accounts, you need to install the InboxBridge native app. It handles IMAP connections securely and stores credentials in your system keychain.",
-    "description": "Instructions for installing InboxBridge"
-  },
-  "accounts_imap_install_bridge": {
-    "message": "Download InboxBridge",
-    "description": "Button label to download InboxBridge"
-  },
-  "accounts_imap_add_button": {
-    "message": "Add Account",
-    "description": "Button label to add IMAP account"
-  },
-  "accounts_imap_update": {
-    "message": "Update Account",
-    "description": "Button label to update IMAP account"
-  },
-  "accounts_imap_error_auth": {
-    "message": "Authentication failed. Please check your email and password.",
-    "description": "Error message for IMAP authentication failure"
-  },
-  "accounts_imap_error_timeout": {
-    "message": "Connection timeout. Please check your server and port settings.",
-    "description": "Error message for IMAP connection timeout"
-  },
-  "accounts_imap_error_keychain": {
-    "message": "Failed to store credentials in keychain. Please check your system permissions.",
-    "description": "Error message for keychain access failure"
-  },
-  "toast_imap_added": {
-    "message": "IMAP account $1 added",
-    "description": "Toast message when IMAP account is added",
-    "placeholders": {
-      "email": {
-        "content": "$1",
-        "example": "user@example.com"
-      }
-    }
-  },
-  "toast_imap_test_failed": {
-    "message": "Connection test failed",
-    "description": "Toast message when IMAP connection test fails"
-  },
-  "accounts_recent_title": {
-    "message": "Recent Emails",
-    "description": "Section heading for recent emails list"
-  },
-  "accounts_recent_description": {
-    "message": "InboxKey only surfaces emails that contain verification codes or safe magic links.",
-    "description": "Description text for recent emails section"
-  },
-  "accounts_recent_toggle": {
-    "message": "Show recent emails",
-    "description": "Accessible label for recent emails toggle"
-  },
-  "accounts_recent_limit": {
-    "message": "Show $1",
-    "description": "Toggle label for number of recent emails to display",
-    "placeholders": {
-      "count": {
-        "content": "$1",
-        "example": "3"
-      }
-    }
-  },
-  "accounts_recent_loading": {
-    "message": "Loading recent emails…",
-    "description": "Loading message while fetching recent emails"
-  },
-  "accounts_recent_empty": {
-    "message": "No recent verification emails yet.",
-    "description": "Empty state message for recent emails list"
-  },
-
 
   "security_danger_zone": {
     "message": "Danger Zone",
@@ -834,11 +348,11 @@
     "description": "Danger button label"
   },
   "security_danger_confirm_message": {
-    "message": "Enter your PIN to confirm",
+    "message": "Enter your password to confirm",
     "description": "Danger confirm message"
   },
   "security_danger_confirm_label": {
-    "message": "Your PIN",
+    "message": "Your password",
     "description": "Danger confirm label"
   },
   "security_danger_confirm_button": {
@@ -886,9 +400,9 @@
     "message": "No telemetry by default",
     "description": "About: no telemetry"
   },
-  "about_privacy_local_storage": {
-    "message": "All data stored locally in your browser",
-    "description": "About: local storage"
+  "about_privacy_encrypted_storage": {
+    "message": "All data encrypted in browser storage",
+    "description": "About: encrypted storage"
   },
   "about_privacy_read_only_email": {
     "message": "Read-only access to email (can't send)",
@@ -899,12 +413,8 @@
     "description": "About: support title"
   },
   "about_support_message": {
-    "message": "If InboxKey saves you time, a coffee keeps it going. Thank you.",
+    "message": "If InboxKey saves you time, consider buying me a coffee. It helps keep the project going.",
     "description": "About: support message"
-  },
-  "about_support_cta_aria": {
-    "message": "Support InboxKey development (opens in a new tab)",
-    "description": "ARIA label for Buy me a coffee call-to-action"
   },
   "about_buy_coffee": {
     "message": "Buy me a coffee",
@@ -922,51 +432,9 @@
     "message": "Build",
     "description": "About: build label"
   },
-  "about_version_line": {
-    "message": "$VERSION$ • Build $BUILD$",
-    "description": "Combined version/build display",
-    "placeholders": {
-      "version": {
-        "content": "$1",
-        "example": "v0.1.0"
-      },
-      "build": {
-        "content": "$2",
-        "example": "abc123"
-      }
-    }
-  },
   "about_verify_build": {
     "message": "Verify build",
     "description": "About: verify build link"
-  },
-  "about_trust_title": {
-    "message": "Open-source & Transparency",
-    "description": "About section title"
-  },
-  "about_trust_pill_open_source": {
-    "message": "Open-source • Apache-2.0",
-    "description": "About pill: open-source"
-  },
-  "about_trust_pill_verified": {
-    "message": "Verified Publisher",
-    "description": "About pill: verified publisher"
-  },
-  "about_trust_pill_builds": {
-    "message": "Reproducible Builds",
-    "description": "About pill: reproducible builds"
-  },
-  "about_source_label": {
-    "message": "Source & Verification",
-    "description": "About row label for source information"
-  },
-  "about_source_description": {
-    "message": "Review the code and verify builds to ensure privacy is verifiable.",
-    "description": "About row description for source information"
-  },
-  "about_support_label": {
-    "message": "Support",
-    "description": "About row label for support"
   },
 
   "footer_local_only": {
@@ -977,96 +445,30 @@
     "message": "Buy me a coffee",
     "description": "Footer: support link"
   },
-  "footer_buy_coffee_link": {
-    "message": "Buy me a coffee",
-    "description": "Support link label styled as pill"
-  },
-  "trust_open_source": {
-    "message": "Open-source",
-    "description": "Trust tag: open-source transparency"
-  },
-  "trust_local_only": {
-    "message": "Local-only",
-    "description": "Trust tag: local-only processing"
-  },
-  "trust_read_only": {
-    "message": "Read-only",
-    "description": "Trust tag: read-only access"
-  },
 
   "toast_code_copied": {
-    "message": "📋 Code copied: $CODE$",
-    "description": "Toast: code copied",
-    "placeholders": {
-      "code": {
-        "content": "$1",
-        "example": "123456"
-      }
-    }
+    "message": "✓ Code copied to clipboard",
+    "description": "Toast: code copied"
   },
   "toast_link_opened": {
-    "message": "🔗 Link opened",
+    "message": "✓ Link opened",
     "description": "Toast: link opened"
   },
   "toast_settings_saved": {
-    "message": "✅ Settings saved",
+    "message": "✓ Settings saved",
     "description": "Toast: settings saved"
   },
   "toast_error_copy": {
-    "message": "⚠️ Failed to copy code",
+    "message": "Failed to copy code",
     "description": "Toast: copy error"
   },
   "toast_error_link": {
-    "message": "⚠️ Failed to open link",
+    "message": "Failed to open link",
     "description": "Toast: link error"
   },
   "toast_rate_limited": {
-    "message": "⚠️ Too many link opens. Wait...",
+    "message": "Too many link opens. Please wait.",
     "description": "Toast: rate limited"
-  },
-  "toast_gmail_connected": {
-    "message": "✅ Gmail connected",
-    "description": "Success toast for Gmail connection"
-  },
-  "toast_outlook_connected": {
-    "message": "✅ Outlook connected",
-    "description": "Success toast for Outlook connection"
-  },
-  "toast_account_disconnected": {
-    "message": "✅ Account disconnected",
-    "description": "Success toast for account removal"
-  },
-  "toast_oauth_cancelled": {
-    "message": "⚠️ OAuth cancelled",
-    "description": "Toast when user cancels OAuth"
-  },
-  "toast_connect_failed": {
-    "message": "⚠️ Failed to connect account",
-    "description": "Error toast for connection failure"
-  },
-  "toast_connect_network_error": {
-    "message": "⚠️ Network error. Check your connection.",
-    "description": "Error toast for network issues during OAuth"
-  },
-  "toast_connect_invalid_credentials": {
-    "message": "⚠️ OAuth configuration error",
-    "description": "Error toast for invalid OAuth credentials"
-  },
-  "toast_connect_profile_failed": {
-    "message": "⚠️ Connected but failed to fetch profile",
-    "description": "Error toast for profile fetch failure"
-  },
-  "toast_connect_duplicate": {
-    "message": "⚠️ Account already connected",
-    "description": "Error toast for duplicate account"
-  },
-  "toast_connect_popup_blocked": {
-    "message": "⚠️ Popup blocked. Allow popups and retry.",
-    "description": "Error toast for blocked popup"
-  },
-  "toast_disconnect_failed": {
-    "message": "⚠️ Failed to disconnect account",
-    "description": "Error toast for disconnection failure"
   },
 
   "error_token_expired_title": {
@@ -1157,108 +559,340 @@
     "description": "Site overrides: modes title"
   },
 
+  "domain_toggle_label": {
+    "message": "Active on this site:",
+    "description": "Domain toggle label in popup"
+  },
+  "domain_toggle_on": {
+    "message": "ON",
+    "description": "Domain toggle ON state"
+  },
+  "domain_toggle_off": {
+    "message": "OFF",
+    "description": "Domain toggle OFF state"
+  },
+  "settings_advanced_section": {
+    "message": "Advanced",
+    "description": "Advanced settings section heading"
+  },
+  "settings_advanced_default_enabled": {
+    "message": "New domains enabled by default",
+    "description": "Advanced setting: default domain state"
+  },
+  "settings_advanced_default_enabled_desc": {
+    "message": "Control whether InboxKey is active on new domains by default",
+    "description": "Advanced setting: default domain state description"
+  },
+  "error_domain_load": {
+    "message": "Failed to load domain state",
+    "description": "Error: domain state load failed"
+  },
+  "error_domain_update": {
+    "message": "Failed to update preference",
+    "description": "Error: domain preference update failed"
+  },
+  "status_loading": {
+    "message": "Loading...",
+    "description": "Generic loading status"
+  },
+  "error_generic": {
+    "message": "Unable to load settings",
+    "description": "Generic error message"
+  },
+  "popup_quick_actions": {
+    "message": "Quick actions",
+    "description": "Label for quick actions group in popup"
+  },
+  "button_paste_best": {
+    "message": "Paste best code",
+    "description": "Button to paste the most recent verification code"
+  },
+  "button_open_last": {
+    "message": "Open last link",
+    "description": "Button to open the most recent magic link"
+  },
+  "popup_synced_at": {
+    "message": "Synced $1",
+    "description": "Last sync time display in popup header"
+  },
+  "popup_syncing": {
+    "message": "Syncing...",
+    "description": "Syncing status message in popup header"
+  },
+  "aria_manual_sync": {
+    "message": "Manually sync all mailboxes",
+    "description": "ARIA label for manual sync button"
+  },
+  "aria_open_settings": {
+    "message": "Open settings page",
+    "description": "ARIA label for settings button"
+  },
+  "accounts_imap_counter": {
+    "message": "$1 IMAP accounts",
+    "description": "IMAP accounts count"
+  },
+  "accounts_imap_title": {
+    "message": "IMAP Accounts",
+    "description": "IMAP accounts section title"
+  },
+  "accounts_imap_add": {
+    "message": "Add IMAP account",
+    "description": "Button to add IMAP account"
+  },
+  "accounts_imap_description": {
+    "message": "Connect via InboxBridge native app for Yahoo, ProtonMail, and other IMAP providers",
+    "description": "IMAP accounts description"
+  },
+  "accounts_imap_empty": {
+    "message": "No IMAP accounts connected",
+    "description": "Empty state for IMAP accounts"
+  },
+  "accounts_recent_title": {
+    "message": "Recent Activity",
+    "description": "Recent activity section title"
+  },
+  "accounts_recent_description": {
+    "message": "Recently synced mailboxes",
+    "description": "Recent activity description"
+  },
+  "accounts_recent_empty": {
+    "message": "No recent activity",
+    "description": "Empty state for recent activity"
+  },
+  "accounts_recent_loading": {
+    "message": "Loading recent activity...",
+    "description": "Loading state for recent activity"
+  },
+  "trust_indicator_title": {
+    "message": "Privacy & Trust",
+    "description": "Trust indicator section title"
+  },
+  "trust_indicator_readonly": {
+    "message": "Read-only access",
+    "description": "Trust indicator: read-only"
+  },
+  "trust_indicator_local_storage": {
+    "message": "Local storage only",
+    "description": "Trust indicator: local storage"
+  },
+  "trust_indicator_local": {
+    "message": "Local-only processing",
+    "description": "Trust indicator: local processing"
+  },
+  "accounts_loading_profile": {
+    "message": "Loading profile...",
+    "description": "Loading profile status"
+  },
+  "settings_appearance_heading": {
+    "message": "Appearance",
+    "description": "Appearance settings heading"
+  },
+  "settings_appearance_description": {
+    "message": "Customize the look and feel",
+    "description": "Appearance settings description"
+  },
+  "settings_theme_dark": {
+    "message": "Dark",
+    "description": "Dark theme option"
+  },
+  "settings_theme_light": {
+    "message": "Light",
+    "description": "Light theme option"
+  },
+  "settings_theme_system": {
+    "message": "System",
+    "description": "System theme option"
+  },
+  "settings_theme_system_status": {
+    "message": "Follows your system settings",
+    "description": "System theme status description"
+  },
+  "settings_appearance_hint": {
+    "message": "Theme changes apply immediately",
+    "description": "Appearance settings hint"
+  },
   "data_management_heading": {
     "message": "Data Management",
-    "description": "Data management section heading"
+    "description": "Data management heading"
   },
   "data_management_description": {
-    "message": "Clear verification codes and magic links from storage. Your connected accounts will remain intact.",
-    "description": "Data management section description"
+    "message": "Manage stored codes and cache",
+    "description": "Data management description"
   },
   "button_clear_all_codes": {
-    "message": "Clear All Codes",
-    "description": "Button to clear all stored codes"
+    "message": "Clear all codes",
+    "description": "Button to clear all verification codes"
   },
-  "clear_codes_confirm": {
-    "message": "Clear all verification codes and magic links? This cannot be undone.",
-    "description": "Confirmation dialog for clearing all codes"
+  "button_clear_cache": {
+    "message": "Clear cache",
+    "description": "Button to clear cache"
   },
-  "toast_codes_cleared": {
-    "message": "✓ All codes cleared",
-    "description": "Success toast after clearing codes"
+  "about_version_line": {
+    "message": "Version $1",
+    "description": "Version display in about section"
   },
-  "toast_clear_codes_failed": {
-    "message": "Failed to clear codes",
-    "description": "Error toast when clearing codes fails"
+  "about_trust_title": {
+    "message": "Why trust InboxKey?",
+    "description": "Trust section title"
   },
-
+  "about_trust_pill_open_source": {
+    "message": "Open Source",
+    "description": "Trust pill: open source"
+  },
+  "about_trust_pill_verified": {
+    "message": "Verified Publisher",
+    "description": "Trust pill: verified publisher"
+  },
+  "about_trust_pill_builds": {
+    "message": "Reproducible Builds",
+    "description": "Trust pill: reproducible builds"
+  },
+  "about_source_label": {
+    "message": "View Source Code",
+    "description": "Label for view source link"
+  },
+  "about_source_description": {
+    "message": "Available on GitHub under Apache 2.0 license",
+    "description": "Source code description"
+  },
+  "about_support_label": {
+    "message": "Support InboxKey",
+    "description": "Label for support section"
+  },
+  "about_support_cta_aria": {
+    "message": "Support InboxKey development",
+    "description": "ARIA label for support CTA"
+  },
+  "settings_view_source_aria": {
+    "message": "View source code on GitHub",
+    "description": "ARIA label for view source button"
+  },
+  "settings_view_source": {
+    "message": "View Source",
+    "description": "View source button text"
+  },
+  "settings_trust_region_label": {
+    "message": "Privacy & Trust",
+    "description": "Trust region label in settings"
+  },
+  "settings_trust_open_source": {
+    "message": "Open source and auditable",
+    "description": "Trust indicator: open source"
+  },
+  "settings_trust_local_only": {
+    "message": "Local-only, no servers",
+    "description": "Trust indicator: local only"
+  },
+  "settings_trust_safe": {
+    "message": "Safe and private by design",
+    "description": "Trust indicator: safe"
+  },
+  "settings_trust_summary": {
+    "message": "InboxKey runs entirely on your device. No data is sent to external servers.",
+    "description": "Trust summary text"
+  },
+  "settings_tab_accounts": {
+    "message": "Accounts",
+    "description": "Accounts tab label"
+  },
   "settings_tab_settings": {
     "message": "Settings",
     "description": "Settings tab label"
   },
-
+  "accounts_panel_heading": {
+    "message": "Connected Accounts",
+    "description": "Accounts panel heading"
+  },
+  "accounts_panel_summary": {
+    "message": "Manage your email accounts",
+    "description": "Accounts panel summary"
+  },
+  "accounts_status_connected": {
+    "message": "Connected",
+    "description": "Account connected status"
+  },
+  "accounts_status_not_connected": {
+    "message": "Not connected",
+    "description": "Account not connected status"
+  },
+  "accounts_last_synced": {
+    "message": "Last synced: $1",
+    "description": "Last synced time display"
+  },
+  "aria_connect_gmail": {
+    "message": "Connect Gmail account",
+    "description": "ARIA label for connect Gmail button"
+  },
+  "accounts_connect_gmail": {
+    "message": "Connect Gmail",
+    "description": "Connect Gmail button text"
+  },
+  "aria_disconnect_gmail": {
+    "message": "Disconnect Gmail account",
+    "description": "ARIA label for disconnect Gmail button"
+  },
+  "aria_connect_outlook": {
+    "message": "Connect Outlook account",
+    "description": "ARIA label for connect Outlook button"
+  },
+  "accounts_connect_outlook": {
+    "message": "Connect Outlook",
+    "description": "Connect Outlook button text"
+  },
+  "aria_disconnect_outlook": {
+    "message": "Disconnect Outlook account",
+    "description": "ARIA label for disconnect Outlook button"
+  },
+  "accounts_disconnect": {
+    "message": "Disconnect",
+    "description": "Disconnect button text"
+  },
   "automation_heading": {
-    "message": "Automation Level",
+    "message": "Automation",
     "description": "Automation settings heading"
   },
   "automation_description": {
-    "message": "Control how InboxKey handles verification codes. Choose the level of automation that works best for you.",
+    "message": "Control how InboxKey handles verification codes",
     "description": "Automation settings description"
   },
-  "automation_hint": {
-    "message": "You can change this anytime. Refresh pages after changing for the new setting to take effect.",
-    "description": "Automation settings hint text"
-  },
-
   "automation_manual_title": {
     "message": "Manual",
     "description": "Manual automation level title"
   },
   "automation_manual_description": {
-    "message": "Click the extension icon to detect and copy codes. No automatic detection.",
-    "description": "Manual automation level description"
+    "message": "Click icon to detect codes (no auto-detection)",
+    "description": "Manual automation description"
   },
-
   "automation_clipboard_title": {
-    "message": "Clipboard Only",
+    "message": "Clipboard",
     "description": "Clipboard automation level title"
   },
   "automation_clipboard_description": {
-    "message": "Auto-detect codes and copy to clipboard. You paste them yourself.",
-    "description": "Clipboard automation level description"
+    "message": "Auto-detect and copy to clipboard (no autofill)",
+    "description": "Clipboard automation description"
   },
-
   "automation_autofill_title": {
-    "message": "Autofill (Recommended)",
+    "message": "Autofill",
     "description": "Autofill automation level title"
   },
   "automation_autofill_description": {
-    "message": "Auto-detect codes and fill them into fields automatically. Current default behavior.",
-    "description": "Autofill automation level description"
+    "message": "Auto-detect and autofill (default)",
+    "description": "Autofill automation description"
   },
-
   "automation_full_title": {
     "message": "Full Automation",
     "description": "Full automation level title"
   },
   "automation_full_description": {
-    "message": "Auto-detect, autofill, and submit the form automatically. Use with caution.",
-    "description": "Full automation level description"
+    "message": "Auto-detect, autofill, and auto-submit",
+    "description": "Full automation description"
   },
-
   "automation_full_warning": {
-    "message": "Warning: Full automation will automatically click submit buttons after filling codes. This may trigger unintended actions on some sites.",
-    "description": "Warning for full automation mode"
+    "message": "⚠️ Auto-submit may be risky on untrusted sites",
+    "description": "Warning for full automation"
   },
-
-  "button_clear_cache": {
-    "message": "Clear Cache",
-    "description": "Button to clear popup cache"
-  },
-  "clear_cache_confirm": {
-    "message": "Clear popup cache? This will refresh cached data.",
-    "description": "Confirmation dialog for clearing cache"
-  },
-  "toast_cache_cleared": {
-    "message": "✓ Cache cleared",
-    "description": "Success toast after clearing cache"
-  },
-  "toast_clear_cache_failed": {
-    "message": "Failed to clear cache",
-    "description": "Error toast when clearing cache fails"
-  },
-  "toast_settings_failed": {
-    "message": "Failed to save settings",
-    "description": "Error toast when saving settings fails"
+  "automation_hint": {
+    "message": "Changes apply to new codes only",
+    "description": "Automation settings hint"
   }
 }

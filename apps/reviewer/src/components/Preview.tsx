@@ -16,14 +16,34 @@ export default function Preview({ msgId, message, preTag }: Props) {
 
   // Sanitize and highlight candidates
   let displayText = message.bodyText || ''
+
+  // Escape HTML entities first
+  const escapeHtml = (text: string) => {
+    return text
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;')
+  }
+
+  displayText = escapeHtml(displayText)
+
+  // Highlight candidates (only if value is substantial)
   if (preTag?.candidates) {
     preTag.candidates.forEach(cand => {
       const value = cand.value
-      // Simple highlight (wrap in <mark>)
-      displayText = displayText.replace(
-        new RegExp(value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'),
-        `<mark>${value}</mark>`
-      )
+      // Only highlight if value is at least 3 characters
+      if (value && value.length >= 3) {
+        // Escape special regex characters
+        const escapedValue = value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+        // Also escape HTML in the value for display
+        const escapedHtmlValue = escapeHtml(value)
+        displayText = displayText.replace(
+          new RegExp(escapedValue, 'gi'),
+          `<mark>${escapedHtmlValue}</mark>`
+        )
+      }
     })
   }
 

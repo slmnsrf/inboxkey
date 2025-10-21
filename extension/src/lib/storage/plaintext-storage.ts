@@ -17,6 +17,7 @@ import type {
   Settings,
   StorageSchema,
   StoredCode,
+  DomainPreferences,
 } from "./schema"
 import {
   isMailbox,
@@ -27,6 +28,7 @@ import {
   isValidProviderId,
   isValidTimestamp,
   isValidUUID,
+  isDomainPreferences,
 } from "./schema"
 import { validateMailboxBeforeWrite } from "./validators"
 
@@ -38,6 +40,7 @@ const PLAINTEXT_STORAGE_KEYS = {
   RECENT_CODES: "recent_codes_plain",
   SETTINGS: "settings",
   SESSION_STATE: "session_state",
+  DOMAIN_PREFERENCES: "domain_preferences",
 } as const
 
 /**
@@ -439,6 +442,7 @@ export class PlaintextStorage {
         PLAINTEXT_STORAGE_KEYS.MAILBOXES,
         PLAINTEXT_STORAGE_KEYS.RECENT_CODES,
         PLAINTEXT_STORAGE_KEYS.SETTINGS,
+        PLAINTEXT_STORAGE_KEYS.DOMAIN_PREFERENCES,
       ])
       await chrome.storage.session.clear()
       await this.notifyChange("clear")
@@ -452,10 +456,79 @@ export class PlaintextStorage {
         PLAINTEXT_STORAGE_KEYS.MAILBOXES,
         PLAINTEXT_STORAGE_KEYS.RECENT_CODES,
         PLAINTEXT_STORAGE_KEYS.SETTINGS,
+        PLAINTEXT_STORAGE_KEYS.DOMAIN_PREFERENCES,
       ])
       return result
     } catch (error) {
       throw new StorageError("Failed to get storage size", error)
+    }
+  }
+
+  // ============================================================================
+  // Domain Preferences Operations
+  // ============================================================================
+
+  async getDomainPreferences(): Promise<DomainPreferences> {
+    try {
+      const result = await chrome.storage.local.get(
+        PLAINTEXT_STORAGE_KEYS.DOMAIN_PREFERENCES
+      )
+      const prefs = result[PLAINTEXT_STORAGE_KEYS.DOMAIN_PREFERENCES]
+
+      if (!prefs) {
+        return { domains: {} }
+      }
+
+      if (!isDomainPreferences(prefs)) {
+        throw new ValidationError("Invalid domain preferences structure")
+      }
+
+      return prefs
+    } catch (error) {
+      if (error instanceof ValidationError) throw error
+      throw new StorageError("Failed to get domain preferences", error)
+    }
+  }
+
+  async setDomainPreference(domain: string, enabled: boolean): Promise<void> {
+    if (!domain || typeof domain !== "string") {
+      throw new ValidationError("Invalid domain")
+    }
+
+    if (typeof enabled !== "boolean") {
+      throw new ValidationError("Invalid enabled value")
+    }
+
+    await this.mutex.runExclusive(async () => {
+      try {
+        // Get current preferences
+        const prefs = await this.getDomainPreferences()
+
+        // Update preference
+        prefs.domains[domain] = enabled
+
+        // Save back
+        await chrome.storage.local.set({
+          [PLAINTEXT_STORAGE_KEYS.DOMAIN_PREFERENCES]: prefs,
+        })
+
+        await this.notifyChange("domain_preferences")
+      } catch (error) {
+        throw new StorageError("Failed to set domain preference", error)
+      }
+    })
+  }
+
+  async getDomainPreference(domain: string): Promise<boolean | undefined> {
+    if (!domain || typeof domain !== "string") {
+      throw new ValidationError("Invalid domain")
+    }
+
+    try {
+      const prefs = await this.getDomainPreferences()
+      return prefs.domains[domain]
+    } catch (error) {
+      throw new StorageError("Failed to get domain preference", error)
     }
   }
 

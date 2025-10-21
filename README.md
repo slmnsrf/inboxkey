@@ -10,7 +10,6 @@ InboxKey automatically detects verification codes and magic login links in your 
 - ✅ **Magic link detection** - Identifies and opens login links safely
 - ✅ **Auto-fill** - Fills codes on websites within 15 seconds of arrival
 - ✅ **Manual copy** - Popup shows last 5 codes for manual use
-- ✅ **Password protection** - Optional lock mode with AES-256 encryption
 - ✅ **Privacy-first** - All processing local-only, no servers, no tracking
 - ✅ **Multi-provider** - Supports Gmail and Outlook (IMAP coming soon)
 
@@ -53,7 +52,6 @@ When you first open InboxKey, you'll see a setup wizard:
 
 1. **Connect email** - Click "Connect Gmail" or "Connect Outlook"
 2. **Grant permissions** - Allow read-only access to email
-3. **Set password (optional)** - Protect your codes with a password
 
 ### 2. Using Auto-fill
 
@@ -86,14 +84,7 @@ When you first open InboxKey, you'll see a setup wizard:
 ### Encryption
 
 - **AES-256-GCM** - All codes encrypted before storage
-- **PBKDF2** - Password-based key derivation (600,000+ iterations)
 - **Browser storage** - Data stays in chrome.storage.local (encrypted)
-
-### Password Protection
-
-- **Optional lock mode** - Protect codes with a password
-- **No recovery** - If you forget your password, codes are permanently lost
-- **Auto-lock** - Automatically locks after inactivity (configurable)
 
 ## Permissions Explained
 
@@ -164,13 +155,6 @@ InboxKey requires the following permissions:
 2. Check that the field type is `text`, `tel`, or `number`
 3. Try clicking the field before the code arrives
 4. Verify the site isn't blocking the extension
-
-### Extension is locked
-
-1. Enter your password to unlock
-2. If you forgot your password, you must reset InboxKey
-3. Go to Settings → Security → Danger Zone → Reset
-4. **Warning**: This deletes all your codes permanently
 
 ### Need more help?
 

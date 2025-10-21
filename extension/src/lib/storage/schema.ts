@@ -20,6 +20,7 @@ export const STORAGE_KEYS = {
   RECENT_CODES: "recent_codes",
   SETTINGS: "settings",
   SESSION_STATE: "session_state", // chrome.storage.session only
+  DOMAIN_PREFERENCES: "domain_preferences",
 } as const
 
 /**
@@ -30,6 +31,7 @@ export interface StorageSchema {
   mailboxes: Mailbox[]
   recentCodes: StoredCode[]
   settings: Settings
+  domainPreferences: DomainPreferences
 }
 
 /**
@@ -94,6 +96,19 @@ export interface StoredCode {
 }
 
 /**
+ * Per-domain preferences for enabling/disabling InboxKey
+ */
+export interface DomainPreferences {
+  /** Map of domain (eTLD+1) to enabled state */
+  domains: Record<string, boolean>
+}
+
+/**
+ * Automation levels for verification code handling
+ */
+export type AutomationLevel = 'manual' | 'clipboard' | 'autofill' | 'full-automation'
+
+/**
  * User settings
  */
 export interface Settings {
@@ -115,6 +130,20 @@ export interface Settings {
    * @default false
    */
   debugScoringEnabled?: boolean
+  /**
+   * Automation level for code detection and filling.
+   * - 'manual': User must click icon to detect codes (no auto-detection)
+   * - 'clipboard': Auto-detect and copy to clipboard (no autofill)
+   * - 'autofill': Auto-detect and autofill (current default behavior)
+   * - 'full-automation': Auto-detect, autofill, and auto-submit
+   * @default 'autofill'
+   */
+  automationLevel?: AutomationLevel
+  /**
+   * Whether new domains are enabled by default (when no explicit preference exists).
+   * @default true
+   */
+  domainsEnabledByDefault?: boolean
 }
 
 /**
@@ -150,6 +179,8 @@ export const DEFAULT_SETTINGS: Settings = {
   notificationsEnabled: true,
   watchSessionV2Enabled: false, // Conservative default: disabled for gradual rollout
   debugScoringEnabled: false,
+  automationLevel: 'autofill', // Default: auto-detect and autofill (current behavior)
+  domainsEnabledByDefault: true, // Default: enable on all domains
 }
 
 /**
@@ -286,7 +317,9 @@ export function isSettings(obj: unknown): obj is Settings {
     s.deniedDomains.every((d) => typeof d === "string") &&
     typeof s.notificationsEnabled === "boolean" &&
     (s.watchSessionV2Enabled === undefined || typeof s.watchSessionV2Enabled === "boolean") &&
-    (s.debugScoringEnabled === undefined || typeof s.debugScoringEnabled === "boolean")
+    (s.debugScoringEnabled === undefined || typeof s.debugScoringEnabled === "boolean") &&
+    (s.automationLevel === undefined || ['manual', 'clipboard', 'autofill', 'full-automation'].includes(s.automationLevel)) &&
+    (s.domainsEnabledByDefault === undefined || typeof s.domainsEnabledByDefault === "boolean")
   )
 }
 
@@ -317,4 +350,12 @@ export function isWatchSession(obj: unknown): obj is WatchSession {
     typeof w.pollsRemaining === "number" &&
     w.pollsRemaining >= 0
   )
+}
+
+export function isDomainPreferences(obj: unknown): obj is DomainPreferences {
+  if (typeof obj !== "object" || obj === null) return false
+  const d = obj as Partial<DomainPreferences>
+  if (typeof d.domains !== "object" || d.domains === null) return false
+  // Validate all values are boolean
+  return Object.values(d.domains).every((v) => typeof v === "boolean")
 }

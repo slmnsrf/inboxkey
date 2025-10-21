@@ -3,6 +3,8 @@
  * Handles safe autofilling of verification codes with visual feedback
  */
 
+import { extractDomain, isDomainEnabled } from '@/lib/utils/domain'
+
 export interface AutofillOptions {
   code: string
   field: HTMLInputElement
@@ -15,6 +17,16 @@ export interface AutofillOptions {
  */
 export async function autofillCode(options: AutofillOptions): Promise<boolean> {
   const { code, field, showFeedback = true } = options
+
+  // Check if domain is enabled
+  const domain = extractDomain(window.location.href)
+  if (domain) {
+    const enabled = await isDomainEnabled(domain)
+    if (!enabled) {
+      console.log('[Autofill] Domain is disabled, skipping autofill')
+      return false
+    }
+  }
 
   // Validation checks
   if (!code || code.length === 0) {
@@ -166,4 +178,72 @@ export function getFieldFillTimestamp(field: HTMLInputElement): number | null {
 export function clearAutofillTracking(field: HTMLInputElement): void {
   field.removeAttribute('data-inboxkey-filled')
   field.removeAttribute('data-inboxkey-timestamp')
+}
+
+/**
+ * Find and click a submit button near the given field
+ * @returns true if a submit button was found and clicked
+ */
+export async function findAndClickSubmitButton(
+  field: HTMLInputElement
+): Promise<boolean> {
+  console.log('[Autofill] Attempting to find and click submit button')
+
+  // Find nearest form
+  const form = field.closest('form')
+  if (!form) {
+    console.warn('[Autofill] No form found for field')
+    return false
+  }
+
+  // Submit button selectors
+  const submitSelectors = [
+    'button[type="submit"]',
+    'input[type="submit"]',
+    'button:not([type="button"]):not([type="reset"])',
+  ]
+
+  const submitTextPatterns = /verify|submit|continue|confirm|next|send|sign in|log in/i
+  const dangerousPatterns = /delete|remove|cancel|logout|sign out|log out|clear/i
+
+  // Find candidates
+  const candidates: HTMLElement[] = []
+
+  for (const selector of submitSelectors) {
+    const buttons = form.querySelectorAll<HTMLElement>(selector)
+    candidates.push(...Array.from(buttons))
+  }
+
+  // Filter by text content for safety
+  const safeButtons = candidates.filter((button) => {
+    const text = button.textContent?.trim() || ''
+    const ariaLabel = button.getAttribute('aria-label') || ''
+    const combinedText = `${text} ${ariaLabel}`.toLowerCase()
+
+    // Safety check: skip dangerous buttons
+    if (dangerousPatterns.test(combinedText)) {
+      console.log('[Autofill] Skipping dangerous button:', text)
+      return false
+    }
+
+    // Prefer buttons with submit-related text
+    return submitTextPatterns.test(combinedText) || text === ''
+  })
+
+  if (safeButtons.length === 0) {
+    console.log('[Autofill] No safe submit buttons found')
+    return false
+  }
+
+  // Click the first safe button
+  const button = safeButtons[0]
+  console.log('[Autofill] Clicking submit button:', button.textContent?.trim())
+
+  try {
+    button.click()
+    return true
+  } catch (error) {
+    console.error('[Autofill] Failed to click button:', error)
+    return false
+  }
 }

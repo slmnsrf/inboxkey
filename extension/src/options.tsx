@@ -12,7 +12,9 @@ import { TabNavigation, type Tab } from './ui/components/TabNavigation'
 import { AboutSection } from './ui/components/AboutSection'
 import { AccountsPanel } from './ui/components/AccountsPanel'
 import { AppearanceSettings } from './ui/components/AppearanceSettings'
+import { AutomationSettings } from './ui/components/AutomationSettings'
 import { DataManagement } from './ui/components/DataManagement'
+import { AdvancedSettings } from './ui/components/AdvancedSettings'
 import { BuyMeACoffeeButton } from './ui/components/BuyMeACoffeeButton'
 import { t } from './lib/i18n'
 import './options.css'
@@ -41,7 +43,7 @@ function OptionsApp() {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
     const tabParam = params.get('tab') as Tab | null
-    if (tabParam && ['accounts', 'security', 'advanced', 'about'].includes(tabParam)) {
+    if (tabParam && ['accounts', 'security', 'settings', 'about'].includes(tabParam)) {
       setActiveTab(tabParam)
     } else if (mailboxCount !== null && mailboxCount === 0) {
       // Default to accounts tab if no mailboxes
@@ -127,21 +129,17 @@ function OptionsApp() {
                 </div>
 
                 <div
-                  id="advanced-panel"
+                  id="settings-panel"
                   role="tabpanel"
-                  aria-labelledby="advanced-tab"
-                  hidden={activeTab !== 'advanced'}
+                  aria-labelledby="settings-tab"
+                  hidden={activeTab !== 'settings'}
                   className="tab-panel"
                 >
-                  <section className="section advanced-section">
-                    <header className="advanced-section__header">
-                      <h2>{t('settings_tab_advanced')}</h2>
-                      <p className="advanced-section__description">
-                        {t('settings_advanced_coming_soon')}
-                      </p>
-                    </header>
+                  <section className="section settings-section">
+                    <AutomationSettings />
                     <AppearanceSettings />
                     <DataManagement />
+                    <AdvancedSettings />
                   </section>
                 </div>
 

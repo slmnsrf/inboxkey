@@ -557,5 +557,342 @@
   "site_overrides_modes_title": {
     "message": "How it works",
     "description": "Site overrides: modes title"
+  },
+
+  "domain_toggle_label": {
+    "message": "Active on this site:",
+    "description": "Domain toggle label in popup"
+  },
+  "domain_toggle_on": {
+    "message": "ON",
+    "description": "Domain toggle ON state"
+  },
+  "domain_toggle_off": {
+    "message": "OFF",
+    "description": "Domain toggle OFF state"
+  },
+  "settings_advanced_section": {
+    "message": "Advanced",
+    "description": "Advanced settings section heading"
+  },
+  "settings_advanced_default_enabled": {
+    "message": "New domains enabled by default",
+    "description": "Advanced setting: default domain state"
+  },
+  "settings_advanced_default_enabled_desc": {
+    "message": "Control whether InboxKey is active on new domains by default",
+    "description": "Advanced setting: default domain state description"
+  },
+  "error_domain_load": {
+    "message": "Failed to load domain state",
+    "description": "Error: domain state load failed"
+  },
+  "error_domain_update": {
+    "message": "Failed to update preference",
+    "description": "Error: domain preference update failed"
+  },
+  "status_loading": {
+    "message": "Loading...",
+    "description": "Generic loading status"
+  },
+  "error_generic": {
+    "message": "Unable to load settings",
+    "description": "Generic error message"
+  },
+  "popup_quick_actions": {
+    "message": "Quick actions",
+    "description": "Label for quick actions group in popup"
+  },
+  "button_paste_best": {
+    "message": "Paste best code",
+    "description": "Button to paste the most recent verification code"
+  },
+  "button_open_last": {
+    "message": "Open last link",
+    "description": "Button to open the most recent magic link"
+  },
+  "popup_synced_at": {
+    "message": "Synced $1",
+    "description": "Last sync time display in popup header"
+  },
+  "popup_syncing": {
+    "message": "Syncing...",
+    "description": "Syncing status message in popup header"
+  },
+  "aria_manual_sync": {
+    "message": "Manually sync all mailboxes",
+    "description": "ARIA label for manual sync button"
+  },
+  "aria_open_settings": {
+    "message": "Open settings page",
+    "description": "ARIA label for settings button"
+  },
+  "accounts_imap_counter": {
+    "message": "$1 IMAP accounts",
+    "description": "IMAP accounts count"
+  },
+  "accounts_imap_title": {
+    "message": "IMAP Accounts",
+    "description": "IMAP accounts section title"
+  },
+  "accounts_imap_add": {
+    "message": "Add IMAP account",
+    "description": "Button to add IMAP account"
+  },
+  "accounts_imap_description": {
+    "message": "Connect via InboxBridge native app for Yahoo, ProtonMail, and other IMAP providers",
+    "description": "IMAP accounts description"
+  },
+  "accounts_imap_empty": {
+    "message": "No IMAP accounts connected",
+    "description": "Empty state for IMAP accounts"
+  },
+  "accounts_recent_title": {
+    "message": "Recent Activity",
+    "description": "Recent activity section title"
+  },
+  "accounts_recent_description": {
+    "message": "Recently synced mailboxes",
+    "description": "Recent activity description"
+  },
+  "accounts_recent_empty": {
+    "message": "No recent activity",
+    "description": "Empty state for recent activity"
+  },
+  "accounts_recent_loading": {
+    "message": "Loading recent activity...",
+    "description": "Loading state for recent activity"
+  },
+  "trust_indicator_title": {
+    "message": "Privacy & Trust",
+    "description": "Trust indicator section title"
+  },
+  "trust_indicator_readonly": {
+    "message": "Read-only access",
+    "description": "Trust indicator: read-only"
+  },
+  "trust_indicator_local_storage": {
+    "message": "Local storage only",
+    "description": "Trust indicator: local storage"
+  },
+  "trust_indicator_local": {
+    "message": "Local-only processing",
+    "description": "Trust indicator: local processing"
+  },
+  "accounts_loading_profile": {
+    "message": "Loading profile...",
+    "description": "Loading profile status"
+  },
+  "settings_appearance_heading": {
+    "message": "Appearance",
+    "description": "Appearance settings heading"
+  },
+  "settings_appearance_description": {
+    "message": "Customize the look and feel",
+    "description": "Appearance settings description"
+  },
+  "settings_theme_dark": {
+    "message": "Dark",
+    "description": "Dark theme option"
+  },
+  "settings_theme_light": {
+    "message": "Light",
+    "description": "Light theme option"
+  },
+  "settings_theme_system": {
+    "message": "System",
+    "description": "System theme option"
+  },
+  "settings_theme_system_status": {
+    "message": "Follows your system settings",
+    "description": "System theme status description"
+  },
+  "settings_appearance_hint": {
+    "message": "Theme changes apply immediately",
+    "description": "Appearance settings hint"
+  },
+  "data_management_heading": {
+    "message": "Data Management",
+    "description": "Data management heading"
+  },
+  "data_management_description": {
+    "message": "Manage stored codes and cache",
+    "description": "Data management description"
+  },
+  "button_clear_all_codes": {
+    "message": "Clear all codes",
+    "description": "Button to clear all verification codes"
+  },
+  "button_clear_cache": {
+    "message": "Clear cache",
+    "description": "Button to clear cache"
+  },
+  "about_version_line": {
+    "message": "Version $1",
+    "description": "Version display in about section"
+  },
+  "about_trust_title": {
+    "message": "Why trust InboxKey?",
+    "description": "Trust section title"
+  },
+  "about_trust_pill_open_source": {
+    "message": "Open Source",
+    "description": "Trust pill: open source"
+  },
+  "about_trust_pill_verified": {
+    "message": "Verified Publisher",
+    "description": "Trust pill: verified publisher"
+  },
+  "about_trust_pill_builds": {
+    "message": "Reproducible Builds",
+    "description": "Trust pill: reproducible builds"
+  },
+  "about_source_label": {
+    "message": "View Source Code",
+    "description": "Label for view source link"
+  },
+  "about_source_description": {
+    "message": "Available on GitHub under Apache 2.0 license",
+    "description": "Source code description"
+  },
+  "about_support_label": {
+    "message": "Support InboxKey",
+    "description": "Label for support section"
+  },
+  "about_support_cta_aria": {
+    "message": "Support InboxKey development",
+    "description": "ARIA label for support CTA"
+  },
+  "settings_view_source_aria": {
+    "message": "View source code on GitHub",
+    "description": "ARIA label for view source button"
+  },
+  "settings_view_source": {
+    "message": "View Source",
+    "description": "View source button text"
+  },
+  "settings_trust_region_label": {
+    "message": "Privacy & Trust",
+    "description": "Trust region label in settings"
+  },
+  "settings_trust_open_source": {
+    "message": "Open source and auditable",
+    "description": "Trust indicator: open source"
+  },
+  "settings_trust_local_only": {
+    "message": "Local-only, no servers",
+    "description": "Trust indicator: local only"
+  },
+  "settings_trust_safe": {
+    "message": "Safe and private by design",
+    "description": "Trust indicator: safe"
+  },
+  "settings_trust_summary": {
+    "message": "InboxKey runs entirely on your device. No data is sent to external servers.",
+    "description": "Trust summary text"
+  },
+  "settings_tab_accounts": {
+    "message": "Accounts",
+    "description": "Accounts tab label"
+  },
+  "settings_tab_settings": {
+    "message": "Settings",
+    "description": "Settings tab label"
+  },
+  "accounts_panel_heading": {
+    "message": "Connected Accounts",
+    "description": "Accounts panel heading"
+  },
+  "accounts_panel_summary": {
+    "message": "Manage your email accounts",
+    "description": "Accounts panel summary"
+  },
+  "accounts_status_connected": {
+    "message": "Connected",
+    "description": "Account connected status"
+  },
+  "accounts_status_not_connected": {
+    "message": "Not connected",
+    "description": "Account not connected status"
+  },
+  "accounts_last_synced": {
+    "message": "Last synced: $1",
+    "description": "Last synced time display"
+  },
+  "aria_connect_gmail": {
+    "message": "Connect Gmail account",
+    "description": "ARIA label for connect Gmail button"
+  },
+  "accounts_connect_gmail": {
+    "message": "Connect Gmail",
+    "description": "Connect Gmail button text"
+  },
+  "aria_disconnect_gmail": {
+    "message": "Disconnect Gmail account",
+    "description": "ARIA label for disconnect Gmail button"
+  },
+  "aria_connect_outlook": {
+    "message": "Connect Outlook account",
+    "description": "ARIA label for connect Outlook button"
+  },
+  "accounts_connect_outlook": {
+    "message": "Connect Outlook",
+    "description": "Connect Outlook button text"
+  },
+  "aria_disconnect_outlook": {
+    "message": "Disconnect Outlook account",
+    "description": "ARIA label for disconnect Outlook button"
+  },
+  "accounts_disconnect": {
+    "message": "Disconnect",
+    "description": "Disconnect button text"
+  },
+  "automation_heading": {
+    "message": "Automation",
+    "description": "Automation settings heading"
+  },
+  "automation_description": {
+    "message": "Control how InboxKey handles verification codes",
+    "description": "Automation settings description"
+  },
+  "automation_manual_title": {
+    "message": "Manual",
+    "description": "Manual automation level title"
+  },
+  "automation_manual_description": {
+    "message": "Click icon to detect codes (no auto-detection)",
+    "description": "Manual automation description"
+  },
+  "automation_clipboard_title": {
+    "message": "Clipboard",
+    "description": "Clipboard automation level title"
+  },
+  "automation_clipboard_description": {
+    "message": "Auto-detect and copy to clipboard (no autofill)",
+    "description": "Clipboard automation description"
+  },
+  "automation_autofill_title": {
+    "message": "Autofill",
+    "description": "Autofill automation level title"
+  },
+  "automation_autofill_description": {
+    "message": "Auto-detect and autofill (default)",
+    "description": "Autofill automation description"
+  },
+  "automation_full_title": {
+    "message": "Full Automation",
+    "description": "Full automation level title"
+  },
+  "automation_full_description": {
+    "message": "Auto-detect, autofill, and auto-submit",
+    "description": "Full automation description"
+  },
+  "automation_full_warning": {
+    "message": "⚠️ Auto-submit may be risky on untrusted sites",
+    "description": "Warning for full automation"
+  },
+  "automation_hint": {
+    "message": "Changes apply to new codes only",
+    "description": "Automation settings hint"
   }
 }

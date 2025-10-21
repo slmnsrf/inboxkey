@@ -7,6 +7,7 @@ import React, { useState, useEffect } from 'react'
 import { BatchFetcher } from '../lib/batch/fetcher'
 import { db, Message, PreTag } from '../lib/storage/schema'
 import { exportLabelsToJSONL } from '../lib/export/jsonl'
+import { getAllAccounts } from '../lib/providers/token-storage'
 import EmailList from './EmailList'
 import Preview from './Preview'
 import LabelPanel from './LabelPanel'
@@ -17,7 +18,7 @@ export default function TestingTab() {
   const [contains, setContains] = useState('')
   const [startDate, setStartDate] = useState('')
   const [endDate, setEndDate] = useState('')
-  const [batchSize, setBatchSize] = useState(300)
+  const [batchSize, setBatchSize] = useState(50)
   const [provider, setProvider] = useState<'gmail' | 'outlook'>('gmail')
 
   // Status state
@@ -41,6 +42,7 @@ export default function TestingTab() {
   const [selectedMsgId, setSelectedMsgId] = useState<string | null>(null)
   const [messages, setMessages] = useState<Message[]>([])
   const [preTags, setPreTags] = useState<Map<string, PreTag>>(new Map())
+  const [labels, setLabels] = useState<Map<string, any>>(new Map())
 
   /**
    * Load counts and stats from database
@@ -74,8 +76,10 @@ export default function TestingTab() {
     try {
       const msgs = await db.messages.toArray()
       const tags = await db.preTags.toArray()
+      const lbls = await db.labels.toArray()
       setMessages(msgs)
       setPreTags(new Map(tags.map(t => [t.msgIdHash, t])))
+      setLabels(new Map(lbls.map(l => [l.msgIdHash, l])))
     } catch (error) {
       console.error('Error loading messages:', error)
     }
@@ -86,16 +90,22 @@ export default function TestingTab() {
    */
   const handlePrepareBatch = async () => {
     setLoading(true)
-    setStatus('Fetching messages...')
+    setStatus('Clearing previous batch...')
 
     try {
-      // Get access token from storage (assuming Day 2 team provides this)
-      const storage = await chrome.storage.local.get(['accounts'])
-      const accounts = storage.accounts || []
+      // Clear database before fetching new batch
+      await db.messages.clear()
+      await db.labels.clear()
+      await db.preTags.clear()
 
-      const account = accounts.find((acc: any) => acc.provider === provider)
+      setStatus('Fetching messages...')
 
-      if (!account || !account.accessToken) {
+      // Get all accounts from storage
+      const accounts = await getAllAccounts()
+
+      const account = accounts.find((acc) => acc.provider === provider)
+
+      if (!account || !account.tokens.access_token) {
         setStatus(`Error: No ${provider} account connected. Please connect in ACCOUNTS tab.`)
         setLoading(false)
         return
@@ -116,9 +126,9 @@ export default function TestingTab() {
 
       let messages
       if (provider === 'gmail') {
-        messages = await fetcher.fetchGmail(account.accessToken, filters)
+        messages = await fetcher.fetchGmail(account.tokens.access_token, filters)
       } else {
-        messages = await fetcher.fetchOutlook(account.accessToken, filters)
+        messages = await fetcher.fetchOutlook(account.tokens.access_token, filters)
       }
 
       const count = await db.messages.count()
@@ -415,6 +425,7 @@ export default function TestingTab() {
           <EmailList
             messages={messages}
             preTags={preTags}
+            labels={labels}
             selectedId={selectedMsgId}
             onSelect={setSelectedMsgId}
           />
@@ -427,7 +438,10 @@ export default function TestingTab() {
             <LabelPanel
               msgId={selectedMsgId}
               preTag={preTags.get(selectedMsgId || '')}
-              onLabeled={() => {
+              onLabeled={async () => {
+                // Reload labels to show the new one
+                await loadMessages()
+
                 // Auto-advance to next message
                 const currentIndex = messages.findIndex(m => m.msgIdHash === selectedMsgId)
                 if (currentIndex < messages.length - 1) {
@@ -452,6 +466,9 @@ export default function TestingTab() {
         .tag-otp { background: #e1f5fe; color: #01579b; }
         .tag-magic_link { background: #e8f5e9; color: #1b5e20; }
         .tag-none { background: #f5f5f5; color: #666; }
+        .tag-label-true { background: #4caf50; color: white; }
+        .tag-label-false { background: #f44336; color: white; }
+        .tag-label-missed { background: #ff9800; color: white; }
         .score { font-family: monospace; font-size: 12px; color: #666; }
         .preview-and-label { display: flex; flex-direction: column; gap: 16px; }
 

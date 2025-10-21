@@ -56,6 +56,43 @@ export class PopupBridge {
   }
 
   /**
+   * Get the current tab's domain (eTLD+1).
+   */
+  async getCurrentTabDomain(): Promise<string> {
+    const tabs = await chrome.tabs.query({ active: true, currentWindow: true })
+    if (!tabs[0]?.url) {
+      throw new Error('No active tab found')
+    }
+
+    // Import domain utility
+    const { extractDomain } = await import('@/lib/utils/domain')
+    return extractDomain(tabs[0].url)
+  }
+
+  /**
+   * Get domain preference for a specific domain.
+   */
+  async getDomainPreference(domain: string): Promise<boolean> {
+    const { isDomainEnabled } = await import('@/lib/utils/domain')
+    return isDomainEnabled(domain)
+  }
+
+  /**
+   * Set domain preference for a specific domain.
+   */
+  async setDomainPreference(domain: string, enabled: boolean): Promise<void> {
+    const response = await chrome.runtime.sendMessage({
+      type: 'SET_DOMAIN_PREFERENCE',
+      domain,
+      enabled
+    })
+
+    if (!response.success) {
+      throw new Error(response.error || 'Failed to set domain preference')
+    }
+  }
+
+  /**
    * Trigger manual email sync.
    * @returns New popup data with updated codes
    */
