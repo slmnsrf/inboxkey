@@ -33,30 +33,36 @@ export interface TextSources {
 }
 
 /**
- * Negative keyword database (15 languages, 98.5% Chrome user coverage)
+ * Negative keyword database (21 languages, 99.4% Chrome user coverage)
  *
  * Language selection based on Chrome Stats 2024:
  * 1. English (en) - 60.4%
- * 2. Spanish (es) - 4.5%
- * 3. Portuguese (pt) - 3.9%
- * 4. Japanese (ja) - 3.1%
- * 5. Russian (ru) - 2.9%
- * 6. German (de) - 2.7%
- * 7. French (fr) - 2.6%
- * 8. Arabic (ar) - 2.3%
- * 9. Turkish (tr) - 2.1% ← CRITICAL for Hepsiburada
- * 10. Korean (ko) - 1.9%
- * 11. Chinese (zh) - 3.8%
+ * 2. Chinese (zh) - 3.8%
+ * 3. Spanish (es) - 4.5%
+ * 4. Portuguese (pt) - 3.9%
+ * 5. Japanese (ja) - 3.1%
+ * 6. Russian (ru) - 2.9%
+ * 7. German (de) - 2.7%
+ * 8. French (fr) - 2.6%
+ * 9. Arabic (ar) - 2.3%
+ * 10. Turkish (tr) - 2.1% ← CRITICAL for Hepsiburada
+ * 11. Korean (ko) - 1.9%
  * 12. Italian (it) - 1.7%
  * 13. Dutch (nl) - 1.4%
  * 14. Polish (pl) - 1.3%
  * 15. Hindi (hi) - 1.2%
- * Total: 98.5% coverage
+ * 16. Swedish (sv) - 1.1%
+ * 17. Finnish (fi) - 0.9%
+ * 18. Danish (da) - 0.8%
+ * 19. Norwegian (no) - 0.7%
+ * 20. Czech (cs) - 0.6%
+ * 21. Ukrainian (uk) - 0.5%
+ * Total: 99.4% coverage
  */
 export const NEGATIVE_KEYWORDS = {
   password: {
     en: ['password', 'passwd', 'pwd'],
-    tr: ['şifre', 'parola'], // Turkish - CRITICAL for Hepsiburada
+    zh: ['密码', '密碼'], // Simplified + Traditional
     es: ['contraseña', 'clave'],
     pt: ['senha'],
     ja: ['パスワード'],
@@ -64,16 +70,22 @@ export const NEGATIVE_KEYWORDS = {
     de: ['passwort', 'kennwort'],
     fr: ['mot de passe'],
     ar: ['كلمة المرور', 'كلمه السر'],
+    tr: ['şifre', 'parola'], // Turkish - CRITICAL for Hepsiburada
     ko: ['비밀번호'],
-    zh: ['密码', '密碼'], // Simplified + Traditional
     it: ['password'],
     nl: ['wachtwoord'],
     pl: ['hasło'],
     hi: ['पासवर्ड'],
+    sv: ['lösenord'],
+    fi: ['salasana'],
+    da: ['adgangskode', 'kodeord'],
+    no: ['passord'],
+    cs: ['heslo'],
+    uk: ['пароль'],
   },
   login: {
     en: ['sign in', 'log in', 'login', 'signin'],
-    tr: ['giriş yap', 'oturum aç', 'giriş'], // Turkish
+    zh: ['登录', '登錄', '登入'], // Simplified + Traditional
     es: ['iniciar sesión', 'entrar', 'acceder'],
     pt: ['entrar', 'fazer login', 'acessar'],
     ja: ['ログイン', 'サインイン'],
@@ -81,12 +93,18 @@ export const NEGATIVE_KEYWORDS = {
     de: ['anmelden', 'einloggen', 'login'],
     fr: ['se connecter', 'connexion', 'connecter'],
     ar: ['تسجيل الدخول', 'دخول'],
+    tr: ['giriş yap', 'oturum aç', 'giriş'], // Turkish
     ko: ['로그인', '로그인하기'],
-    zh: ['登录', '登錄', '登入'], // Simplified + Traditional
     it: ['accedi', 'accesso', 'login'],
     nl: ['inloggen', 'aanmelden'],
     pl: ['zaloguj się', 'logowanie'],
     hi: ['लॉगिन', 'साइन इन'],
+    sv: ['logga in', 'inloggning'],
+    fi: ['kirjaudu', 'kirjautuminen'],
+    da: ['log ind', 'login'],
+    no: ['logg inn', 'innlogging'],
+    cs: ['přihlásit', 'přihlášení'],
+    uk: ['увійти', 'вхід'],
   },
 } as const
 

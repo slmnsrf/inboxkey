@@ -255,7 +255,7 @@ We welcome contributions! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 - [x] Keyboard navigation
 - [x] ARIA labels and screen reader support
 - [x] WCAG AA contrast ratios
-- [x] i18n infrastructure (15 languages planned)
+- [x] i18n infrastructure (21 languages supported)
 
 ### Phase 10: MVP Polish 🚧 (In Progress)
 - [x] Performance budgets (<200ms popup load)
