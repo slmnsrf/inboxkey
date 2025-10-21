@@ -1,16 +1,18 @@
 /**
  * Multilingual Keyword Matching Test Suite
  *
- * Validates that OTP keyword extraction works correctly across all 15+ required languages,
+ * Validates that OTP keyword extraction works correctly across all 21 required languages,
  * including support for agglutinative suffixes, grammatical particles, and case endings.
  *
  * Root cause fixed: Removed trailing word boundary to allow keywords with grammatical suffixes.
  *
- * Languages tested:
+ * Languages tested (21 total, 99.4% Chrome coverage):
  * - Agglutinative: Turkish, Finnish, Japanese, Korean
- * - Inflected: Russian, Polish, Hindi, Spanish, German
+ * - Inflected: Russian, Polish, Hindi, Spanish, German, Swedish, Danish, Norwegian, Czech, Ukrainian
  * - Analytic: English, Chinese
- * - Semitic: Arabic, Hebrew
+ * - Semitic: Arabic
+ * - Romance: French, Portuguese, Italian
+ * - Germanic: Dutch
  */
 
 import { describe, it, expect } from 'vitest'
@@ -117,14 +119,6 @@ describe('Multilingual OTP Keyword Matching', () => {
       expect(result).toHaveLength(1)
       expect(result[0].code).toBe('987654')
     })
-
-    it('Hebrew: should match "קוד" with definite article "הקוד"', () => {
-      const text = 'הזן את הקוד: 135246'
-      // Translation: "Enter the code: 135246"
-      const result = extractOTPs(text)
-      expect(result).toHaveLength(1)
-      expect(result[0].code).toBe('135246')
-    })
   })
 
   describe('Analytic Languages - No Inflection', () => {
@@ -168,7 +162,7 @@ describe('Multilingual OTP Keyword Matching', () => {
     })
   })
 
-  describe('All 15 Required Languages - Smoke Tests', () => {
+  describe('All 21 Required Languages - Smoke Tests', () => {
     const testCases = [
       { lang: 'English', text: 'Your code is 111111', expected: '111111' },
       { lang: 'Turkish', text: 'Kodunuz: 222222', expected: '222222' },
@@ -185,6 +179,12 @@ describe('Multilingual OTP Keyword Matching', () => {
       { lang: 'Polish', text: 'Kod 141414', expected: '141414' },
       { lang: 'Dutch', text: 'Code 151515', expected: '151515' },
       { lang: 'Italian', text: 'Codice 161616', expected: '161616' },
+      { lang: 'Swedish', text: 'Kod 171717', expected: '171717' },
+      { lang: 'Finnish', text: 'Koodi 181818', expected: '181818' },
+      { lang: 'Danish', text: 'Kode 191919', expected: '191919' },
+      { lang: 'Norwegian', text: 'Kode 202020', expected: '202020' },
+      { lang: 'Czech', text: 'Kód 212121', expected: '212121' },
+      { lang: 'Ukrainian', text: 'Код 232323', expected: '232323' },
     ]
 
     testCases.forEach(({ lang, text, expected }) => {
