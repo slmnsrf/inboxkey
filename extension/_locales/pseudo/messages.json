@@ -200,8 +200,14 @@
   "accounts_disconnect": {
     "message": "[Ðîsåññëçt one two three]"
   },
+  "accounts_provider_gmail": {
+    "message": "[Ğmåîl one two]"
+  },
   "accounts_microcopy_gmail": {
     "message": "[Õñlý õñë Ğmåîl åççõûñt çåñ bë çõññëçtëð. one two three]"
+  },
+  "accounts_provider_outlook": {
+    "message": "[Õûtløõƙ one two]"
   },
   "accounts_microcopy_outlook": {
     "message": "[Õñlý õñë Õûtløõƙ åççõûñt çåñ bë çõññëçtëð. one two three]"

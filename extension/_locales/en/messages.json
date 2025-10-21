@@ -647,6 +647,30 @@
     "message": "No IMAP accounts connected",
     "description": "Empty state for IMAP accounts"
   },
+  "accounts_provider_gmail": {
+    "message": "Gmail",
+    "description": "Gmail provider name"
+  },
+  "accounts_microcopy_gmail": {
+    "message": "Connect your Google account to receive verification codes from Gmail",
+    "description": "Gmail provider description"
+  },
+  "accounts_empty_gmail": {
+    "message": "No Gmail accounts connected",
+    "description": "Empty state for Gmail accounts"
+  },
+  "accounts_provider_outlook": {
+    "message": "Outlook",
+    "description": "Outlook provider name"
+  },
+  "accounts_microcopy_outlook": {
+    "message": "Connect your Microsoft account to receive verification codes from Outlook",
+    "description": "Outlook provider description"
+  },
+  "accounts_empty_outlook": {
+    "message": "No Outlook accounts connected",
+    "description": "Empty state for Outlook accounts"
+  },
   "accounts_recent_title": {
     "message": "Recent Activity",
     "description": "Recent activity section title"

@@ -8,6 +8,29 @@
  */
 
 /* ===========================
+   GLOBAL RESET (removes white frame)
+   =========================== */
+
+:root {
+  color-scheme: dark;
+}
+
+html,
+body,
+#__plasmo {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  background: #0b1220;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+/* ===========================
    BASE & LAYOUT
    =========================== */
 
@@ -2069,7 +2092,7 @@ textarea.input {
 /* Setting Row */
 .setting-row {
   display: flex;
-  align-items: center;
+  align-items: flex-start; /* Align toggle with heading, not center of block */
   justify-content: space-between;
   gap: var(--space-6);
   padding: var(--space-3) 0;
@@ -2098,6 +2121,7 @@ textarea.input {
 
 .setting-row__control {
   flex-shrink: 0;
+  padding-top: 2px; /* Fine-tune alignment with heading text baseline */
 }
 
 /* ===========================
