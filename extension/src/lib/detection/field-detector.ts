@@ -265,8 +265,10 @@ export function detectVerificationField(options?: {
       return tier1ToDetectionResult(input, tier1Result, executionTime)
     }
 
-    // If Tier 1 rejected with high confidence (layer: attribute or context),
-    // skip Tier 2 for this field (it's a password field or excluded pattern)
+    // Skip Tier 2 if Tier 1 made a DEFINITIVE REJECTION (not just "no match")
+    // - layer='attribute': rejected due to password type, excluded patterns, custom attributes
+    // - layer='context': rejected due to negative keywords (21 languages)
+    // - NO metadata: Tier1 found nothing → defer to Tier2 for deep scan
     if (tier1Result.metadata?.layer === 'attribute' ||
         tier1Result.metadata?.layer === 'context') {
       continue
@@ -485,12 +487,20 @@ export class FieldDetector {
       return
     }
 
+    console.log('[FieldDetector] handleMutations called with', mutations.length, 'mutation(s)')
+
     // Collect new input fields
     for (const mutation of mutations) {
       for (const node of mutation.addedNodes) {
         if (node instanceof HTMLInputElement) {
           if (!this.detectedFields.has(node)) {
             this.pendingMutations.add(node)
+            console.log('[FieldDetector] Collected input:', {
+              element: node,
+              maxLength: node.maxLength,
+              type: node.type,
+              role: node.getAttribute('role')
+            })
           }
         } else if (node instanceof HTMLElement) {
           // Check descendants
@@ -498,11 +508,19 @@ export class FieldDetector {
           for (const input of inputs) {
             if (!this.detectedFields.has(input)) {
               this.pendingMutations.add(input)
+              console.log('[FieldDetector] Collected input (descendant):', {
+                element: input,
+                maxLength: input.maxLength,
+                type: input.type,
+                role: input.getAttribute('role')
+              })
             }
           }
         }
       }
     }
+
+    console.log('[FieldDetector] Total pending mutations:', this.pendingMutations.size)
 
     // Debounce processing
     if (this.debounceTimer !== null) {
@@ -519,6 +537,7 @@ export class FieldDetector {
    */
   private processPendingMutations(): void {
     if (this.pendingMutations.size === 0) {
+      console.log('[FieldDetector] processPendingMutations: no pending mutations')
       return
     }
 
@@ -526,41 +545,104 @@ export class FieldDetector {
     const inputs = Array.from(this.pendingMutations).slice(0, 10)
     this.pendingMutations.clear()
 
-    // Filter visible inputs
+    console.log(`[FieldDetector] processPendingMutations: processing ${inputs.length} input(s)`)
+
+    // Filter visible inputs WITH detailed logging
     const visibleInputs = inputs.filter(input => {
       const style = window.getComputedStyle(input)
-      return (
+      const isVisible = (
         style.display !== 'none' &&
         style.visibility !== 'hidden' &&
         input.type !== 'hidden' &&
         !input.disabled
       )
+
+      if (!isVisible) {
+        console.log('[FieldDetector] Filtered out (not visible):', {
+          element: input,
+          display: style.display,
+          visibility: style.visibility,
+          type: input.type,
+          disabled: input.disabled,
+          maxLength: input.maxLength,
+          role: input.getAttribute('role')
+        })
+      } else {
+        console.log('[FieldDetector] Passed visibility check:', {
+          element: input,
+          maxLength: input.maxLength,
+          type: input.type,
+          role: input.getAttribute('role')
+        })
+      }
+
+      return isVisible
     })
 
+    console.log(`[FieldDetector] After visibility filter: ${visibleInputs.length}/${inputs.length} inputs visible`)
+
     if (visibleInputs.length === 0) {
+      console.log('[FieldDetector] No visible inputs - aborting detection')
       return
     }
 
     // Try to detect verification fields
     for (const input of visibleInputs) {
+      console.log('[FieldDetector] Attempting detection on input:', {
+        maxLength: input.maxLength,
+        type: input.type,
+        name: input.name,
+        id: input.id,
+        role: input.getAttribute('role')
+      })
+
       // Try Tier 1 first
       const tier1Result = detectTier1(input, this.cooldown)
+      console.log('[FieldDetector] Tier1 result:', {
+        detected: tier1Result.detected,
+        confidence: tier1Result.confidence,
+        reason: tier1Result.reason,
+        layer: tier1Result.metadata?.layer
+      })
+
       if (tier1Result.detected) {
         this.detectedFields.add(input)
         this.callback?.(input)
+        console.log('[FieldDetector] Field detected via Tier1, callback invoked')
         continue
       }
 
       // Try Tier 2 if Tier 1 didn't reject
-      if (tier1Result.metadata?.layer !== 'attribute' &&
-          tier1Result.metadata?.layer !== 'context') {
+      const shouldTryTier2 = (
+        tier1Result.metadata?.layer !== 'attribute' &&
+        tier1Result.metadata?.layer !== 'context'
+      )
+
+      console.log('[FieldDetector] Should try Tier2?', shouldTryTier2,
+        '(rejection layer:', tier1Result.metadata?.layer, ')')
+
+      if (shouldTryTier2) {
         const tier2Result = detectTier2(input, this.cooldown)
+        console.log('[FieldDetector] Tier2 result:', {
+          detected: tier2Result.detected,
+          confidence: tier2Result.confidence,
+          score: tier2Result.score,
+          reason: tier2Result.reason
+        })
+
         if (tier2Result.detected) {
           this.detectedFields.add(input)
           this.callback?.(input)
+          console.log('[FieldDetector] Field detected via Tier2, callback invoked')
+        } else {
+          console.log('[FieldDetector] Tier2 failed - field rejected')
         }
+      } else {
+        console.log('[FieldDetector] Tier2 skipped - Tier1 rejected with layer:', tier1Result.metadata?.layer)
       }
     }
+
+    console.log('[FieldDetector] processPendingMutations complete')
   }
 
   /**
