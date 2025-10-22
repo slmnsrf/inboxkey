@@ -8,7 +8,6 @@
  * - Handle extension lifecycle events
  */
 
-import { needsMigration } from "@/lib/storage/migration-to-plaintext"
 import {
   SessionController,
   type SessionCompletion,
@@ -23,6 +22,8 @@ import {
   setBadgeListening,
   setBadgeSuccess,
   setBadgeNoCode,
+  setBadgeCount,
+  setBadgeSyncError,
   clearBadge,
 } from "@/contents/badge-manager"
 import { extractDomain, isDomainEnabled } from "@/lib/utils/domain"
@@ -57,6 +58,7 @@ const tabContexts = new Map<number, WatchPortContext>()
 const sessionContexts = new Map<string, WatchPortContext>()
 
 // Create popup cache manager and handler
+// Note: Sync error tracking is now handled in popup-handler.ts
 const popupCacheManager = new PopupCacheManager()
 const popupMessageHandler = new PopupMessageHandler(
   popupCacheManager
@@ -95,6 +97,13 @@ sessionController
       const recentCodes = await storage.getRecentCodes(10)
       await popupCacheManager.updateWithNewCodes(recentCodes, mailboxes.length, mailboxes)
       console.log(`[InboxKey] PopupCache warmed with ${mailboxes.length} mailboxes, ${recentCodes.length} codes`)
+
+      // Update count badge with unseen codes
+      const cache = await popupCacheManager.getCache()
+      const unseenCount = cache.codes.filter((c) => !c.seenAt && !c.usedAt).length
+      if (unseenCount > 0) {
+        setBadgeCount(unseenCount)
+      }
     } catch (error) {
       console.warn("[InboxKey] Failed to warm popup cache:", error)
     }
@@ -125,46 +134,23 @@ chrome.runtime.onInstalled.addListener(async (details) => {
     })
   }
 
-  // Check for migration needs on update
-  if (details.reason === 'update') {
-    const migrationNeeded = await needsMigration()
-    if (migrationNeeded) {
-      console.log('[InboxKey] Migration needed - setting badge')
-      chrome.action.setBadgeText({ text: '!' })
-      chrome.action.setBadgeBackgroundColor({ color: '#FF6B6B' })
-
-      const notificationsApi = chrome.notifications
-
-      // Show notification if API is available; otherwise log for diagnostics
-      if (
-        notificationsApi &&
-        typeof notificationsApi.create === 'function'
-      ) {
-        notificationsApi.create('migration-needed', {
-          type: 'basic',
-          iconUrl: notificationIconUrl,
-          title: 'InboxKey Update',
-          message: 'Action required: Click extension icon to migrate your data',
-          priority: 2
-        })
-      } else {
-        console.warn('[InboxKey] Notifications API unavailable - badge will indicate migration requirement')
-      }
-    }
-  }
+  // Clean up legacy migration-related storage keys on any install/update
+  // (Harmless if keys don't exist)
+  await chrome.storage.local.remove([
+    'masterKeySalt',
+    'keyVerification',
+    'lockState',
+    'lastUnlockedAt',
+    'autoLockTimeout',
+    'migration_backup'
+  ])
+  await chrome.storage.sync.remove(['lockEnabled', 'lockTimeoutMinutes'])
+  console.log('[InboxKey] Cleaned up legacy migration keys')
 })
 
 chrome.runtime.onStartup.addListener(async () => {
   console.log("[InboxKey] SW onStartup fired at:", new Date().toISOString())
   startupTimestamp = Date.now()
-
-  // Check for migration needs on startup
-  const migrationNeeded = await needsMigration()
-  if (migrationNeeded) {
-    console.log('[InboxKey] Migration needed - setting badge')
-    chrome.action.setBadgeText({ text: '!' })
-    chrome.action.setBadgeBackgroundColor({ color: '#FF6B6B' })
-  }
 })
 
 // V2: SessionPoller handles alarms internally via its own listener
@@ -220,7 +206,9 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     msg.type === "GET_POPUP_DATA" ||
     msg.type === "TRIGGER_SYNC" ||
     msg.type === "MARK_CODE_USED" ||
+    msg.type === "MARK_CODES_SEEN" ||
     msg.type === "MARK_LINK_OPENED" ||
+    msg.type === "GET_SYNC_ERROR" ||
     msg.type === "GET_MAILBOXES"
   ) {
     popupMessageHandler
@@ -755,3 +743,8 @@ function handleSetDomainPreference(msg: any, sendResponse: (response: any) => vo
     console.error("[Background] handleSetDomainPreference unhandled rejection:", error)
   })
 }
+
+/**
+ * Handle MARK_CODES_SEEN requests.
+ */
+// Removed handleMarkCodesSeen - now handled in popup-handler.ts

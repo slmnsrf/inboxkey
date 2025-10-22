@@ -5,7 +5,7 @@
  * Includes fallback to direct storage reads if SW is dead.
  */
 
-import type { PopupCache, PopupRequest, PopupResponse } from '@/shared/popup-messages'
+import type { PopupCache, PopupRequest, PopupResponse, SyncErrorInfo } from '@/shared/popup-messages'
 
 /**
  * Lock status interface
@@ -56,6 +56,13 @@ export class PopupBridge {
   }
 
   /**
+   * Mark all codes as seen (called when popup opens).
+   */
+  async markCodesSeen(): Promise<void> {
+    return this.sendMessage({ type: 'MARK_CODES_SEEN' })
+  }
+
+  /**
    * Get the current tab's domain (eTLD+1).
    */
   async getCurrentTabDomain(): Promise<string> {
@@ -102,6 +109,18 @@ export class PopupBridge {
       throw new Error(response.error)
     }
     return response.data
+  }
+
+  /**
+   * Get current sync error state from background.
+   * @returns Sync error info or null if no error
+   */
+  async getSyncError(): Promise<SyncErrorInfo | null> {
+    const response = await chrome.runtime.sendMessage({ type: 'GET_SYNC_ERROR' })
+    if (!response.success) {
+      throw new Error(response.error)
+    }
+    return response.error || null
   }
 
   private async sendMessage<T>(
