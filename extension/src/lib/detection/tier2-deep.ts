@@ -15,6 +15,17 @@ import {
   HTML_PATTERN_DETECTION,
   TYPICAL_CODE_LENGTHS,
 } from './patterns'
+import { classifyDeliveryChannel } from './signal-classifier'
+
+/**
+ * Feature flag: Enable Layer 2.5 Delivery Channel Classification
+ *
+ * Set to `false` to disable email/SMS/authenticator detection for quick rollback.
+ * No code changes needed for rollback - just flip this flag and redeploy.
+ *
+ * Default: true (feature enabled)
+ */
+const ENABLE_CHANNEL_CLASSIFICATION = true
 
 /**
  * P2: High-confidence keywords for nearby text boosting (21 languages, 99.4% coverage)
@@ -441,17 +452,19 @@ function getLabelText(input: HTMLInputElement): string {
 }
 
 /**
- * Get nearby text (within 3 parent levels)
+ * Get nearby text (within 5 parent levels)
  *
- * Searches up to 3 parent levels for sibling text content
+ * Searches up to 5 parent levels for sibling text content
  * Used for scoring and context validation
  *
  * @param input - Input field to extract nearby text from
+ * @param isSplitInput - If true, allows longer text (250 chars) for split-input instructions
  * @returns Combined nearby text
  */
-function getNearbyText(input: HTMLInputElement): string {
+function getNearbyText(input: HTMLInputElement, isSplitInput: boolean = false): string {
   const texts: string[] = []
   let element: HTMLElement | null = input
+  const maxLength = isSplitInput ? 250 : 150  // Increased limit for split-input contexts
   let levels = 0
 
   while (element && levels < 5) {
@@ -461,8 +474,7 @@ function getNearbyText(input: HTMLInputElement): string {
       siblings.forEach((sibling) => {
         if (sibling !== element && sibling instanceof HTMLElement) {
           const text = sibling.textContent?.trim()
-          if (text && text.length < 150) {
-            // Avoid huge blocks (stricter limit for performance)
+          if (text && text.length > 0 && text.length < maxLength) {
             texts.push(text)
           }
         }
@@ -537,9 +549,10 @@ export function detectTier2(
   const scoreBreakdown: string[] = []
 
   // P3: Check for split input pattern (Steam, banks, enterprise SSO)
+  // Increased from 60 to 75 to ensure detection even with authenticator penalty (-10)
   if (detectSplitInputPattern(input)) {
-    score += 60  // High confidence, but requires additional context
-    scoreBreakdown.push('split-input:60')
+    score += 75  // High confidence, sufficient to meet threshold (70)
+    scoreBreakdown.push('split-input:75')
   }
 
   // Extract label text
@@ -567,25 +580,30 @@ export function detectTier2(
   }
 
   // Extract nearby text (siblings, parent text)
-  const nearbyText = getNearbyText(input)
+  const isSplitInput = detectSplitInputPattern(input)
+  const nearbyText = getNearbyText(input, isSplitInput)
   if (nearbyText) {
-    const nearbyScore = getLabelMatchStrength(nearbyText)
-    if (nearbyScore > 0) {
-      // P2: Boost/penalize based on keyword confidence
-      const hasHighConfidence = HIGH_CONFIDENCE_KEYWORDS.test(nearbyText)
-      const hasNegativeSignal = NEGATIVE_SIGNALS.test(nearbyText)
+    // Primary check: Multilingual high-confidence keywords (21 languages)
+    // This fixes Turkish/Spanish/German/etc text scoring that was blocked by English-only filter
+    const hasHighConfidence = HIGH_CONFIDENCE_KEYWORDS.test(nearbyText)
+    const hasNegativeSignal = NEGATIVE_SIGNALS.test(nearbyText)
 
-      let cappedScore: number
-      if (hasNegativeSignal) {
-        cappedScore = Math.min(nearbyScore / 2, 5)   // Penalty: max 5 points
-      } else if (hasHighConfidence) {
-        cappedScore = Math.min(nearbyScore, 20)      // Boost: max 20 points
-      } else {
-        cappedScore = Math.min(nearbyScore / 2, 10)  // Default: max 10 points
+    if (hasNegativeSignal) {
+      // Penalty: Contains password/email/username keywords
+      score += 5
+      scoreBreakdown.push('nearby:5 (negative-signal)')
+    } else if (hasHighConfidence) {
+      // High confidence: Contains verification/code keywords in 21 languages
+      score += 20
+      scoreBreakdown.push('nearby:20 (high-confidence)')
+    } else {
+      // Fallback: Check English LABEL_PATTERNS for backward compatibility
+      const nearbyScore = getLabelMatchStrength(nearbyText)
+      if (nearbyScore > 0) {
+        const cappedScore = Math.min(nearbyScore / 2, 10)
+        score += cappedScore
+        scoreBreakdown.push(`nearby:${Math.floor(cappedScore)} (label-pattern)`)
       }
-
-      score += cappedScore
-      scoreBreakdown.push(`nearby:${Math.floor(cappedScore)}`)
     }
   }
 
@@ -597,6 +615,92 @@ export function detectTier2(
     if (length >= TYPICAL_CODE_LENGTHS.min && length <= TYPICAL_CODE_LENGTHS.max) {
       score += 15
       scoreBreakdown.push('pattern:15')
+    }
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  // Layer 2.5: Delivery Channel Signal Classification
+  // ═══════════════════════════════════════════════════════════════
+  // Distinguish email-based codes (InboxKey can help) from
+  // authenticator/SMS codes (InboxKey cannot help)
+  //
+  // Performance: <0.05ms per field
+  // Priority: Authenticator > (SMS AND NOT Email) > Email
+  //
+  // ROLLBACK: Set ENABLE_CHANNEL_CLASSIFICATION = false to disable
+  if (ENABLE_CHANNEL_CLASSIFICATION) {
+    try {
+      const channelClassification = classifyDeliveryChannel({
+        label: labelText,
+        placeholder: input.placeholder || '',
+        nearbyText,
+        ariaLabel: input.getAttribute('aria-label') || '',
+      })
+
+      // REJECT: Authenticator app codes (InboxKey cannot help)
+      // EXCEPTION: Allow split-input fields (Steam Guard, banking sites)
+      // Rationale: These services often support BOTH email AND app delivery.
+      // - If user configured email delivery → InboxKey helps (good!)
+      // - If user uses app delivery → No code in email, session times out (harmless)
+      if (channelClassification.channel === 'authenticator') {
+        const isSplitInput = detectSplitInputPattern(input)
+
+        if (!isSplitInput) {
+          // Not split-input → Reject as before
+          cooldown.markRejected(input)
+          return {
+            detected: false,
+            confidence: 0,
+            score,
+            reason: `Authenticator app detected: ${channelClassification.matchedKeywords.join(', ')}`,
+            metadata: {
+              layer: 'channel-classifier',
+              channel: 'authenticator',
+              keywords: channelClassification.matchedKeywords,
+            },
+          }
+        }
+
+        // Split-input + authenticator → Allow detection (don't reject)
+        // Add small penalty to lower confidence slightly
+        score -= 10
+        scoreBreakdown.push('authenticator-penalty:-10')
+      }
+
+      // REJECT: SMS codes (InboxKey cannot help)
+      if (channelClassification.channel === 'sms') {
+        cooldown.markRejected(input)
+        return {
+          detected: false,
+          confidence: 0,
+          score,
+          reason: `SMS delivery detected: ${channelClassification.matchedKeywords.join(', ')}`,
+          metadata: {
+            layer: 'channel-classifier',
+            channel: 'sms',
+            keywords: channelClassification.matchedKeywords,
+          },
+        }
+      }
+
+      // BOOST: Email codes (InboxKey CAN help!)
+      if (channelClassification.channel === 'email') {
+        score += 20
+        scoreBreakdown.push(`email-channel:20 (${channelClassification.matchedKeywords[0]})`)
+
+        // Additional boost for split-input + email combination
+        // Rationale: High-confidence scenario (modern UI + email delivery)
+        // Ensures detection even if nearby text is absent/generic
+        if (isSplitInput) {
+          score += 5
+          scoreBreakdown.push('split-input+email:5')
+        }
+      }
+    } catch (error) {
+      // Treat classification errors as 'unknown' channel (no impact on score)
+      // This prevents crashes from malformed input or Unicode edge cases
+      console.warn('[tier2-deep] Channel classification error:', error)
+      // Continue to threshold check without channel boost/rejection
     }
   }
 

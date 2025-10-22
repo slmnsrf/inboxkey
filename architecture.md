@@ -1,5 +1,7 @@
 # InboxKey Architecture
 
+-- Changes made to this file must always be concise! Max. 350 LOC.
+
 ## Overview
 
 InboxKey is a Manifest V3 Chrome/Chromium extension that keeps verification-code and magic-link flows fast, private, and local-only. All parsing, storage, and decision making happens in the browser. The extension exposes three user surfaces—Popup, Settings, and Mailboxes—and orchestrates watch sessions between content scripts and a background service worker to deliver 15-second autofill targets without ever contacting a remote server.
@@ -30,9 +32,12 @@ InboxKey is a Manifest V3 Chrome/Chromium extension that keeps verification-code
 │   │   │   │   ├── field-detector.ts    # Dual-tier orchestration (572 LOC)
 │   │   │   │   ├── tier1-fast.ts        # Fast attribute matching (~0.15ms)
 │   │   │   │   ├── tier2-deep.ts        # Deep context analysis (~0.50ms)
+│   │   │   │   ├── signal-classifier.ts # Layer 2.5: Delivery channel detection (639 LOC)
 │   │   │   │   ├── patterns.ts          # Detection patterns & keywords
 │   │   │   │   ├── context-validator.ts # Multilingual validation (21 langs)
-│   │   │   │   └── cooldown-registry.ts # Field cooldown tracking
+│   │   │   │   ├── types.ts             # Shared type definitions (TextSources, ChannelClassification)
+│   │   │   │   ├── cooldown-registry.ts # Field cooldown tracking
+│   │   │   │   └── split-input-detector.ts # Split-input group detection (183 LOC)
 │   │   │   ├── matching/        # Code matching (v2 algorithm)
 │   │   │   │   ├── code-matcher.ts      # Best match selection (458-pt scoring)
 │   │   │   │   ├── domain-affinity.ts   # Domain scoring (0-100 pts)
@@ -151,13 +156,14 @@ InboxKey is a Manifest V3 Chrome/Chromium extension that keeps verification-code
 **Dual-Tier Detection Engine** (`extension/src/lib/detection/`)
 
 - **Tier 1 (Fast ~0.15ms):** Cooldown registry, password field rejection, HTML5 autocomplete (`one-time-code`), attribute matching (`name/id` patterns: `code|otp|token|pin|mfa`), numeric input modes
-- **Tier 2 (Deep ~0.50ms):** Label analysis (4 sources), placeholder text, nearby sibling text, form context, multilingual keyword boosting (21 languages), negative signal penalization
+- **Tier 2 (Deep ~0.50ms):** Label analysis (4 sources), placeholder text, nearby text with 21-language primary matching (Turkish "kod", Spanish "código", etc.), form context, negative signal penalization
 
 **Trigger Strategy** (`extension/src/contents/index.ts`)
 
 1. Page load detection (`DOMContentLoaded`)
-2. Dynamic detection (`MutationObserver` for SPAs, 100ms debounce)
-3. Focus-based fallback (detects fields on user interaction)
+2. Dynamic detection (`MutationObserver` for SPAs, 50ms debounce for rapid injections)
+
+**Split-Input Group Detection:** Identifies when multiple separate inputs form a single logical field (e.g., Steam's 5 maxlength=1 fields). Groups are collapsed to a representative field (first input) to start ONE session per group instead of one per input.
 
 **Domain Control:** Per-domain toggle via eTLD+1 extraction (`lib/utils/domain.ts`)
 
@@ -189,12 +195,23 @@ Minimum threshold: 100 points
 
 **Pre-fill Validation** (`contents/autofill.ts`):
 - Domain enabled check, field in DOM, not readonly/disabled, visible, non-zero dimensions
-- Dispatches `input`, `change`, `blur` events for framework reactivity
+- Dispatches `input`, `change`, `keydown`, `keyup` events for framework reactivity
 - Optional auto-submit with password-reset link protection
+
+**Split-Input Distribution:** Detects split-input groups (e.g., 5 separate maxlength=1 fields) and distributes codes character-by-character ("12345" → "1" "2" "3" "4" "5"). Focuses last filled input and applies visual feedback to each input. Handles edge cases: code shorter/longer than input count.
+
+### Layer 2.5: Delivery Channel Signal Classifier
+
+Integrated within Tier 2 (~0.05ms), distinguishes email-based codes (InboxKey can help) from authenticator/SMS codes:
+
+- **21-language keyword detection:** EMAIL_PATTERNS, SMS_PATTERNS, AUTHENTICATOR_PATTERNS covering Latin, Cyrillic, Arabic, Devanagari, CJK character sets
+- **Priority logic:** Authenticator → reject (except split-input -10pt penalty), SMS only → reject, Email+SMS → prefer email, Email → boost +20pts (+5pts if split-input)
+- **Feature flag:** ENABLE_CHANNEL_CLASSIFICATION for rollback capability
+- **Location:** `signal-classifier.ts:classifyDeliveryChannel()` called from `tier2-deep.ts:626-631`
 
 ## Data & Control Flow
 
-1. **Detection.** Content script scans DOM using dual-tier detection (see Detection & Triggering System above).
+1. **Detection.** Content script scans DOM using dual-tier detection. Layer 2.5 classifies delivery channel and rejects authenticator/SMS-only fields.
 2. **Watch session.** Opens long-lived Port, background polls email providers at 0/5/10s, 8s keep-alive prevents worker termination.
 3. **Extraction & matching.** Emails parsed by `extraction-core`, scored by V2 matcher (458-pt max), minimum 100pts threshold.
 4. **Action.** Best match autofills after validation, or manual popup actions surface cached results with metadata.
@@ -253,31 +270,6 @@ A companion dev tool extension for improving extraction accuracy through manual 
 4. Manual review UI (list → preview → label as TRUE/FALSE/MISSED)
 5. Export JSONL with pre-tags + manual labels + reasons + notes
 
-**Data Structure (JSONL export):**
-```json
-{
-  "msgIdHash": "h123456",
-  "provider": "gmail",
-  "senderETLD": "dropbox.com",
-  "receivedAt": 1729000000000,
-  "subject": "Your verification code",
-  "preTag": "OTP",
-  "candidates": [{"type":"OTP","value":"123456","score":0.85}],
-  "label": "TRUE",
-  "falseReason": null,
-  "correctValue": null,
-  "reasons": [],
-  "note": ""
-}
-```
-
-**Key Benefit:** Enables data-driven algorithm improvements without modifying production extension. Claude AI analyzes JSONL exports to identify:
-- False positives (preTag=OTP but label=FALSE) → Adjust deny patterns
-- False negatives (preTag=NONE but label=MISSED) → Improve detection
-- Scoring issues (correct preTag but low confidence) → Calibrate weights
-- Common failure patterns → Add edge case handling
-
-**Distribution:** Manual CRX sharing with selected testers. Requires OAuth setup per `apps/reviewer/OAUTH_SETUP.md`.
 
 ## Risks & Future Work
 
