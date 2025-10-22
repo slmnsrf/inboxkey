@@ -57,3 +57,7 @@ test-results/
 
 # Demo/prototype files
 *demo*.html
+
+# Parcel cache
+apps/reviewer/.plasmo/cache/
+**/plasmo/cache/
