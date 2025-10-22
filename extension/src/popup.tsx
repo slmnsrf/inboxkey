@@ -9,19 +9,18 @@ import React, { useEffect, useMemo, useState } from 'react'
 import { ThemeProvider } from './ui/contexts/ThemeContext'
 import { ToastProvider, useToast } from './ui/contexts/ToastContext'
 import { ToastContainer } from './ui/components/ToastContainer'
+import { ErrorBanner } from './ui/components/ErrorBanner'
 import { PopupFooter } from './ui/components/PopupFooter'
 import { Header } from './ui/components/Header'
 import { CodeListSection } from './ui/components/CodeListSection'
 import { MagicLinkSection } from './ui/components/MagicLinkSection'
 import { LoadingSkeleton } from './ui/components/LoadingSkeleton'
 import { usePopupData } from './ui/hooks/usePopupData'
+import { useSyncErrors } from './ui/hooks/useSyncErrors'
 import { PopupBridge } from './ui/services/popup-bridge'
 import { ClipboardService } from './ui/services/clipboard-service'
 import { LinkService } from './ui/services/link-service'
-import { needsMigration } from '@/lib/storage/migration-to-plaintext'
-import { MigrationDialog } from './ui/components/migration/MigrationDialog'
 import './popup.css'
-import './ui/components/migration/MigrationDialog.css'
 import type { PopupCacheMagicLink } from '@/shared/popup-messages'
 import { t } from '@/lib/i18n'
 
@@ -31,25 +30,30 @@ const linkService = new LinkService()
 function PopupContent() {
   const { data, loading, error, refresh } = usePopupData()
   const { showToast } = useToast()
+  const { syncError, dismissSyncError } = useSyncErrors()
   const [isSyncing, setIsSyncing] = useState(false)
-  const [showMigration, setShowMigration] = useState(false)
-  const [checkingMigration, setCheckingMigration] = useState(true)
+  const [currentTabDomain, setCurrentTabDomain] = useState<string | null>(null)
 
-  // Check for migration needs on mount
+  // Get current tab domain for link matching
   useEffect(() => {
-    checkMigrationStatus()
+    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+      if (tabs[0]?.url) {
+        try {
+          const url = new URL(tabs[0].url)
+          setCurrentTabDomain(url.hostname)
+        } catch (e) {
+          console.warn('[Popup] Failed to parse tab URL:', e)
+        }
+      }
+    })
   }, [])
 
-  async function checkMigrationStatus() {
-    try {
-      const needed = await needsMigration()
-      setShowMigration(needed)
-    } catch (error) {
-      console.error('[Popup] Failed to check migration status:', error)
-    } finally {
-      setCheckingMigration(false)
-    }
-  }
+  // Mark codes as seen when popup opens
+  useEffect(() => {
+    bridge.markCodesSeen().catch((err) => {
+      console.warn('[Popup] Failed to mark codes as seen:', err)
+    })
+  }, [])
 
   const hasCodes = useMemo(() => (data?.codes?.length ?? 0) > 0, [data])
   const hasLinks = useMemo(() => (data?.magicLinks?.length ?? 0) > 0, [data])
@@ -102,31 +106,9 @@ function PopupContent() {
     }
   }
 
-  // Show loading skeleton while checking migration or loading data
-  if (checkingMigration || loading) {
+  // Show loading skeleton while loading data
+  if (loading) {
     return <LoadingSkeleton />
-  }
-
-  // Show migration dialog if migration needed (highest priority)
-  if (showMigration) {
-    return (
-      <MigrationDialog
-        onComplete={async () => {
-          setShowMigration(false)
-          // Clear badge
-          chrome.action.setBadgeText({ text: '' })
-          // Refresh data after migration
-          await refresh()
-        }}
-        onSkip={async () => {
-          setShowMigration(false)
-          // Clear badge
-          chrome.action.setBadgeText({ text: '' })
-          // Refresh data after skip
-          await refresh()
-        }}
-      />
-    )
   }
 
   if (error) {
@@ -142,8 +124,54 @@ function PopupContent() {
     return <LoadingSkeleton />
   }
 
-  const bestCode = hasCodes ? data.codes[0] : null
-  const latestLink = hasLinks ? data.magicLinks[0] : null
+  /**
+   * Get best code with domain-first logic:
+   * - If 2+ codes: prefer domain-matched (domainAffinity > 0), else most recent
+   * - If 1 code: just return it
+   */
+  const getBestCode = () => {
+    if (!hasCodes || !data.codes.length) return null
+    if (data.codes.length === 1) return data.codes[0]
+
+    // Find domain-matched code (domainAffinity > 0 means matches current tab)
+    const domainMatchedCode = data.codes.find((c) => c.domainAffinity && c.domainAffinity > 0)
+    return domainMatchedCode || data.codes[0]
+  }
+
+  /**
+   * Get best link with domain-first logic:
+   * - If 2+ links: prefer current-domain link, else most recent
+   * - If 1 link: just return it
+   */
+  const getBestLink = () => {
+    if (!hasLinks || !data.magicLinks.length) return null
+    if (data.magicLinks.length === 1) return data.magicLinks[0]
+
+    // Find link matching current tab domain
+    if (currentTabDomain) {
+      const domainMatchedLink = data.magicLinks.find((link) => {
+        try {
+          const linkUrl = new URL(link.url)
+          const linkHostname = linkUrl.hostname
+          // Exact match or subdomain match
+          return (
+            linkHostname === currentTabDomain ||
+            linkHostname.endsWith('.' + currentTabDomain) ||
+            currentTabDomain.endsWith('.' + linkHostname)
+          )
+        } catch (e) {
+          return false
+        }
+      })
+      if (domainMatchedLink) return domainMatchedLink
+    }
+
+    // No domain match: return most recent
+    return data.magicLinks[0]
+  }
+
+  const bestCode = getBestCode()
+  const latestLink = getBestLink()
 
   return (
     <div className="popup-container" aria-label={t('popup_title')}>
@@ -153,6 +181,16 @@ function PopupContent() {
         onSync={handleSync}
         isSyncing={isSyncing}
       />
+      {syncError && (
+        <ErrorBanner
+          variant={syncError.variant}
+          type={syncError.type}
+          message={syncError.message}
+          actionLabel={syncError.actionLabel}
+          onAction={syncError.onAction}
+          onDismiss={() => dismissSyncError(syncError.type)}
+        />
+      )}
       <main className="popup-main" aria-live="polite">
         <div className="popup-quick-actions" role="group" aria-label={t('popup_quick_actions')}>
           <button

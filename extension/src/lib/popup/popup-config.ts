@@ -15,7 +15,7 @@
 /**
  * Maximum number of verification codes shown in popup
  */
-export const MAX_CODES = 5
+export const MAX_CODES = 3
 
 /**
  * Maximum number of magic links shown in popup
@@ -51,6 +51,14 @@ export const LINK_UI_FILTER_MS = 60 * 60 * 1000 // 60 minutes
  * Once a code/link is used, it's de-prioritized and hidden after 10min
  */
 export const USED_ITEM_HIDE_MS = 10 * 60 * 1000 // 10 minutes
+
+/**
+ * Badge expiry time
+ * Unseen codes older than this are not shown in badge count
+ * Rationale: Codes typically expire in 5-10 minutes; showing a badge for
+ * expired codes doesn't make sense
+ */
+export const BADGE_EXPIRY_MS = 10 * 60 * 1000 // 10 minutes
 
 // =============================================================================
 // CONFIDENCE THRESHOLDS
