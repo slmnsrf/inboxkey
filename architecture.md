@@ -9,10 +9,55 @@ InboxKey is a Manifest V3 Chrome/Chromium extension that keeps verification-code
 ```
 /home/dev/work/inboxkey/
 ├── extension/                    # Main InboxKey extension (production)
-│   ├── src/                     # Source code
+│   ├── src/
+│   │   ├── contents/            # Content scripts (injected into web pages)
+│   │   │   ├── index.ts             # Detection orchestration & initialization
+│   │   │   ├── watch-session.ts     # Session lifecycle & Port communication
+│   │   │   ├── autofill.ts          # Safe code injection & validation
+│   │   │   ├── code-fetcher.ts      # Code retrieval coordination
+│   │   │   ├── badge-manager.ts     # Visual feedback badges
+│   │   │   ├── session-chip.ts      # Session status UI
+│   │   │   ├── notification.ts      # User notifications
+│   │   │   └── submit-button-finder.ts # Auto-submit logic
+│   │   ├── background/          # Service worker (MV3)
+│   │   │   ├── index.ts             # Main worker, message routing
+│   │   │   ├── session-controller.ts # Watch session orchestration
+│   │   │   ├── session-poller.ts    # MV3-resilient alarm-based polling
+│   │   │   ├── popup-handler.ts     # Popup bridge
+│   │   │   └── popup-cache.ts       # In-memory cache for popup
+│   │   ├── lib/
+│   │   │   ├── detection/       # Field detection engine
+│   │   │   │   ├── field-detector.ts    # Dual-tier orchestration (572 LOC)
+│   │   │   │   ├── tier1-fast.ts        # Fast attribute matching (~0.15ms)
+│   │   │   │   ├── tier2-deep.ts        # Deep context analysis (~0.50ms)
+│   │   │   │   ├── patterns.ts          # Detection patterns & keywords
+│   │   │   │   ├── context-validator.ts # Multilingual validation (21 langs)
+│   │   │   │   └── cooldown-registry.ts # Field cooldown tracking
+│   │   │   ├── matching/        # Code matching (v2 algorithm)
+│   │   │   │   ├── code-matcher.ts      # Best match selection (458-pt scoring)
+│   │   │   │   ├── domain-affinity.ts   # Domain scoring (0-100 pts)
+│   │   │   │   ├── recency-scorer.ts    # Time-based scoring (0-250 pts)
+│   │   │   │   ├── shape-matcher.ts     # Pattern matching (0-8 pts)
+│   │   │   │   └── scoring-config.ts    # Scoring thresholds
+│   │   │   ├── providers/       # Email provider adapters
+│   │   │   │   ├── provider-interface.ts
+│   │   │   │   ├── gmail/           # Gmail API + PKCE OAuth
+│   │   │   │   ├── outlook/         # Microsoft Graph + PKCE OAuth
+│   │   │   │   └── imap-bridge/     # IMAP Bridge (native messaging)
+│   │   │   ├── services/        # Application services
+│   │   │   │   ├── email-polling-service.ts
+│   │   │   │   ├── provider-adapter.ts
+│   │   │   │   └── ...
+│   │   │   ├── storage/         # Storage layer
+│   │   │   │   ├── schema.ts
+│   │   │   │   ├── domain-preferences.ts
+│   │   │   │   └── ...
+│   │   │   ├── crypto/          # Encryption (AES-256-GCM)
+│   │   │   └── utils/           # Shared utilities
+│   │   ├── popup/               # Popup UI (React)
+│   │   ├── options/             # Settings page (React)
+│   │   └── tabs/                # Mailboxes page (React)
 │   ├── build/                   # Build output
-│   ├── .deprecated/             # Deprecated code (safe to delete after verification)
-│   │   └── extraction/          # Old extraction files (replaced by extraction-core)
 │   └── package.json
 ├── packages/
 │   └── extraction-core/          # Shared extraction logic (source of truth)
@@ -21,7 +66,7 @@ InboxKey is a Manifest V3 Chrome/Chromium extension that keeps verification-code
 │       │   │   ├── extractor.ts     # Main extraction entry point
 │       │   │   ├── otp-extractor.ts # OTP detection (v2.3 algorithm)
 │       │   │   └── extraction-types.ts # Patterns, keywords, constants
-│       │   ├── matching/        # Matching utilities
+│       │   ├── matching/        # Matching utilities (copied from extension)
 │       │   │   ├── shape-matcher.ts    # Expected shape bias
 │       │   │   ├── domain-affinity.ts  # Domain matching
 │       │   │   ├── recency-scorer.ts   # Time-based scoring
@@ -41,7 +86,6 @@ InboxKey is a Manifest V3 Chrome/Chromium extension that keeps verification-code
 - Both main extension and Reviewer import from `@inboxkey/extraction-core` via npm workspace protocol
 - This ensures algorithm improvements benefit both tools with zero code drift
 - Extraction core has NO Chrome API dependencies (pure TypeScript) and can be used in any context
-- Old extraction files moved to `/extension/.deprecated/` for reference (safe to delete after verification)
 - Note: `/extension/src/lib/matching/` remains in place as it contains extension-specific code (code-matcher.ts) still used by session-controller and popup-cache
 - Reviewer dev tool enables manual labeling of email batches to improve extraction accuracy
 
@@ -100,13 +144,61 @@ InboxKey is a Manifest V3 Chrome/Chromium extension that keeps verification-code
 - **Extraction Core (`packages/extraction-core`).** Pure extraction logic imported by both main extension and Reviewer. No Chrome APIs.
 - **UI surfaces.** React components consume application services, show open-source/support state, and provide manual actions ("Copy last code", "Open last magic link") as fallbacks.
 
+## Detection & Triggering System
+
+### Field Detection
+
+**Dual-Tier Detection Engine** (`extension/src/lib/detection/`)
+
+- **Tier 1 (Fast ~0.15ms):** Cooldown registry, password field rejection, HTML5 autocomplete (`one-time-code`), attribute matching (`name/id` patterns: `code|otp|token|pin|mfa`), numeric input modes
+- **Tier 2 (Deep ~0.50ms):** Label analysis (4 sources), placeholder text, nearby sibling text, form context, multilingual keyword boosting (21 languages), negative signal penalization
+
+**Trigger Strategy** (`extension/src/contents/index.ts`)
+
+1. Page load detection (`DOMContentLoaded`)
+2. Dynamic detection (`MutationObserver` for SPAs, 100ms debounce)
+3. Focus-based fallback (detects fields on user interaction)
+
+**Domain Control:** Per-domain toggle via eTLD+1 extraction (`lib/utils/domain.ts`)
+
+### Watch Session Flow
+
+```
+Field Detected → Port Connection (keep-alive 8s) → START_SESSION →
+Background Polling (0s, 5s, 10s) → extraction-core → V2 Matcher →
+SESSION_CODE_FOUND → Autofill (validated) → Complete
+```
+
+**Key Files:**
+- `contents/watch-session.ts` - Session lifecycle & Port communication
+- `background/session-controller.ts` - Orchestration & state management
+- `background/session-poller.ts` - MV3-resilient alarm-based polling
+
+### V2 Code Matching
+
+**Scoring System** (`lib/matching/code-matcher.ts`) - 458-point maximum:
+
+- **Domain Affinity (0-100):** Exact match 100, alias 75, subdomain 50, token 25
+- **Recency (0-250):** Exponential decay `250 * e^(-age/120s)`, favors <5min
+- **Session Boost (0-100):** 100pts if email arrived within 10s of session start
+- **Shape Match (0-8):** Length/charset tiebreaker
+
+Minimum threshold: 100 points
+
+### Autofill Safety
+
+**Pre-fill Validation** (`contents/autofill.ts`):
+- Domain enabled check, field in DOM, not readonly/disabled, visible, non-zero dimensions
+- Dispatches `input`, `change`, `blur` events for framework reactivity
+- Optional auto-submit with password-reset link protection
+
 ## Data & Control Flow
 
-1. **Detection.** Content script scans the DOM for OTP/magic-link signals using weighted heuristics and exclusion rules (e.g., avoid TOTP prompts).
-2. **Watch session.** Upon a match, the script opens a long-lived Port, the background worker starts polling (Gmail/Outlook adapters or InboxBridge IMAP) at 0/5/10 seconds, and both sides exchange incremental cache updates.
-3. **Extraction & matching.** Candidate emails from the last 10 minutes are filtered by sender/domain affinity, parsed (plain text preferred, HTML sanitized), and scored by `@inboxkey/extraction-core` for relevance to the active site.
-4. **Action.** Highest-confidence result autofills the field or opens the magic link (same-tab by default, configurable). Manual popup actions surface the cached result with sender and timestamp metadata.
-5. **Cleanup.** Sessions expire at 15 seconds, interim state persists for manual use, and retention policies enforce automated purges (codes 24 h, links 7 d).
+1. **Detection.** Content script scans DOM using dual-tier detection (see Detection & Triggering System above).
+2. **Watch session.** Opens long-lived Port, background polls email providers at 0/5/10s, 8s keep-alive prevents worker termination.
+3. **Extraction & matching.** Emails parsed by `extraction-core`, scored by V2 matcher (458-pt max), minimum 100pts threshold.
+4. **Action.** Best match autofills after validation, or manual popup actions surface cached results with metadata.
+5. **Cleanup.** 15s session expiry, retention: codes 24h, links 7d.
 
 ## Security & Privacy
 
