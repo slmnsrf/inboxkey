@@ -21,6 +21,7 @@ const PLAINTEXT_STORAGE_KEYS = {
   RECENT_CODES: "recent_codes_plain",
   SETTINGS: "settings",
   SESSION_STATE: "session_state",
+  DOMAIN_PREFERENCES: "domain_preferences",
 }
 
 // Helper to create test mailbox
@@ -1004,6 +1005,7 @@ describe("PlaintextStorage", () => {
         PLAINTEXT_STORAGE_KEYS.MAILBOXES,
         PLAINTEXT_STORAGE_KEYS.RECENT_CODES,
         PLAINTEXT_STORAGE_KEYS.SETTINGS,
+        PLAINTEXT_STORAGE_KEYS.DOMAIN_PREFERENCES,
       ])
     })
   })

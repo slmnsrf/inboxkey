@@ -583,6 +583,14 @@
     "message": "Control whether InboxKey is active on new domains by default",
     "description": "Advanced setting: default domain state description"
   },
+  "settings_advanced_banking_blocklist": {
+    "message": "Disable on banking sites",
+    "description": "Advanced setting: banking blocklist toggle"
+  },
+  "settings_advanced_banking_blocklist_desc": {
+    "message": "Automatically disable InboxKey on major banking sites.",
+    "description": "Advanced setting: banking blocklist description"
+  },
   "error_domain_load": {
     "message": "Failed to load domain state",
     "description": "Error: domain state load failed"
@@ -647,30 +655,6 @@
     "message": "No IMAP accounts connected",
     "description": "Empty state for IMAP accounts"
   },
-  "accounts_provider_gmail": {
-    "message": "Gmail",
-    "description": "Gmail provider name"
-  },
-  "accounts_microcopy_gmail": {
-    "message": "Connect your Google account to receive verification codes from Gmail",
-    "description": "Gmail provider description"
-  },
-  "accounts_empty_gmail": {
-    "message": "No Gmail accounts connected",
-    "description": "Empty state for Gmail accounts"
-  },
-  "accounts_provider_outlook": {
-    "message": "Outlook",
-    "description": "Outlook provider name"
-  },
-  "accounts_microcopy_outlook": {
-    "message": "Connect your Microsoft account to receive verification codes from Outlook",
-    "description": "Outlook provider description"
-  },
-  "accounts_empty_outlook": {
-    "message": "No Outlook accounts connected",
-    "description": "Empty state for Outlook accounts"
-  },
   "accounts_recent_title": {
     "message": "Recent Activity",
     "description": "Recent activity section title"
@@ -734,6 +718,26 @@
   "settings_appearance_hint": {
     "message": "Theme changes apply immediately",
     "description": "Appearance settings hint"
+  },
+  "settings_session_chips_heading": {
+    "message": "In-Page Status Notifications",
+    "description": "Session chip settings heading"
+  },
+  "settings_session_chips_description": {
+    "message": "Control visibility of status messages that appear on web pages.",
+    "description": "Session chip settings description"
+  },
+  "settings_session_chips_toggle_label": {
+    "message": "Show in-page notifications",
+    "description": "Session chip toggle label"
+  },
+  "settings_session_chips_toggle_description": {
+    "message": "Display floating status messages near verification fields when codes are detected.",
+    "description": "Session chip toggle description"
+  },
+  "settings_session_chips_hint": {
+    "message": "When disabled, codes are still detected and copied to clipboard. Only the on-page messages are hidden.",
+    "description": "Session chip settings hint"
   },
   "data_management_heading": {
     "message": "Data Management",
@@ -870,6 +874,30 @@
   "accounts_disconnect": {
     "message": "Disconnect",
     "description": "Disconnect button text"
+  },
+  "accounts_provider_gmail": {
+    "message": "Gmail",
+    "description": "Gmail provider name in accounts panel"
+  },
+  "accounts_microcopy_gmail": {
+    "message": "Only one Gmail account can be connected.",
+    "description": "Gmail single-account limitation notice"
+  },
+  "accounts_empty_gmail": {
+    "message": "Connect your Google account to detect codes and magic links in Gmail.",
+    "description": "Empty state prompt for Gmail connection"
+  },
+  "accounts_provider_outlook": {
+    "message": "Outlook",
+    "description": "Outlook provider name in accounts panel"
+  },
+  "accounts_microcopy_outlook": {
+    "message": "Only one Outlook account can be connected.",
+    "description": "Outlook single-account limitation notice"
+  },
+  "accounts_empty_outlook": {
+    "message": "Connect your Microsoft account to detect codes and magic links in Outlook.",
+    "description": "Empty state prompt for Outlook connection"
   },
   "automation_heading": {
     "message": "Automation",

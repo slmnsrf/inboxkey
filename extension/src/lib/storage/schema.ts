@@ -185,6 +185,19 @@ export interface Settings {
    * Beta feature usage telemetry (last 20 entries)
    */
   betaFeatureUsage?: BetaFeatureUsage[]
+  /**
+   * Show session status chips on web pages.
+   * When enabled, displays in-page notifications for code detection status.
+   * @default true
+   */
+  showSessionChips?: boolean
+  /**
+   * Disable InboxKey on known banking sites.
+   * When enabled, InboxKey will be automatically disabled on 150+ major banks worldwide.
+   * Users can still explicitly enable InboxKey for specific banks using per-domain toggle.
+   * @default false (opt-in for MVP)
+   */
+  disableOnBankingSites?: boolean
 }
 
 /**
@@ -222,6 +235,8 @@ export const DEFAULT_SETTINGS: Settings = {
   debugScoringEnabled: false,
   automationLevel: 'autofill', // Default: auto-detect and autofill (current behavior)
   domainsEnabledByDefault: true, // Default: enable on all domains
+  showSessionChips: true, // Default: show session status chips
+  disableOnBankingSites: false, // Opt-in: users must enable manually
 }
 
 /**
@@ -361,7 +376,9 @@ export function isSettings(obj: unknown): obj is Settings {
     (s.debugScoringEnabled === undefined || typeof s.debugScoringEnabled === "boolean") &&
     (s.automationLevel === undefined || ['manual', 'clipboard', 'autofill', 'full-automation'].includes(s.automationLevel)) &&
     (s.domainsEnabledByDefault === undefined || typeof s.domainsEnabledByDefault === "boolean") &&
-    (s.extendedButtonDetection === undefined || typeof s.extendedButtonDetection === "boolean")
+    (s.extendedButtonDetection === undefined || typeof s.extendedButtonDetection === "boolean") &&
+    (s.showSessionChips === undefined || typeof s.showSessionChips === "boolean") &&
+    (s.disableOnBankingSites === undefined || typeof s.disableOnBankingSites === "boolean")
   )
 }
 
