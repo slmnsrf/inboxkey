@@ -1,0 +1,152 @@
+/**
+ * ErrorBanner Styles
+ *
+ * Design tokens-based styling for persistent error banners.
+ * Supports 3 variants: error (red), warning (amber), info (blue)
+ */
+
+.error-banner {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3, 12px);
+  padding: var(--space-3, 12px) var(--space-4, 16px);
+  margin: 0 var(--space-3, 12px) var(--space-3, 12px);
+  border-radius: var(--radius-lg, 8px);
+  border-left: 4px solid;
+  font-size: var(--font-size-sm, 14px);
+  line-height: var(--line-height-normal, 1.5);
+  animation: slideInFromTop 300ms cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform, opacity;
+}
+
+/* Error variant (red) - WCAG AA compliant */
+.error-banner--error {
+  background: var(--color-error-bg, #FEE2E2); /* Light red */
+  color: var(--color-error-text, #7F1D1D); /* Dark red (4.6:1 contrast) */
+  border-left-color: var(--color-error, #EF4444);
+}
+
+/* Warning variant (amber) - WCAG AA compliant */
+.error-banner--warning {
+  background: var(--color-warning-bg, #FEF3C7); /* Light amber */
+  color: var(--color-warning-text, #78350F); /* Dark amber (7.8:1 contrast) */
+  border-left-color: var(--color-warning, #FF9800);
+}
+
+/* Info variant (blue) - WCAG AA compliant */
+.error-banner--info {
+  background: var(--color-info-bg, #DBEAFE); /* Light blue */
+  color: var(--color-info-text, #1E3A8A); /* Dark blue (8.2:1 contrast) */
+  border-left-color: var(--color-primary, #3B82F6);
+}
+
+/* Icon */
+.error-banner__icon {
+  flex-shrink: 0;
+  font-size: 16px;
+  line-height: 1;
+}
+
+/* Message */
+.error-banner__message {
+  flex: 1;
+  font-weight: var(--font-weight-medium, 500);
+}
+
+/* Action button */
+.error-banner__action {
+  flex-shrink: 0;
+  min-width: 70px;
+  min-height: var(--size-touch-min, 44px);
+  padding: 8px 12px;
+  border-radius: var(--radius-md, 6px);
+  border: 1px solid currentColor;
+  background: transparent;
+  color: inherit;
+  font-size: var(--font-size-sm, 14px);
+  font-weight: var(--font-weight-semibold, 600);
+  cursor: pointer;
+  transition: background var(--duration-fast, 150ms) ease-out,
+              transform var(--duration-fast, 150ms) ease-out;
+}
+
+.error-banner__action:hover:not(:disabled) {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.error-banner__action:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+.error-banner__action:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+}
+
+.error-banner__action:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Close button */
+.error-banner__close {
+  flex-shrink: 0;
+  width: var(--size-touch-min, 44px);
+  height: var(--size-touch-min, 44px);
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-md, 6px);
+  border: none;
+  background: transparent;
+  color: inherit;
+  font-size: 16px;
+  cursor: pointer;
+  opacity: 0.7;
+  transition: opacity var(--duration-fast, 150ms) ease-out,
+              background var(--duration-fast, 150ms) ease-out;
+}
+
+.error-banner__close:hover:not(:disabled) {
+  opacity: 1;
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.error-banner__close:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+  opacity: 1;
+}
+
+/* Animation */
+@keyframes slideInFromTop {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .error-banner {
+    animation: fadeIn 300ms ease-out;
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  .error-banner__action:active:not(:disabled) {
+    transform: none;
+  }
+}

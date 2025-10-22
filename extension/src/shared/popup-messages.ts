@@ -83,6 +83,7 @@ export interface PopupCacheCode {
   source: string // "gmail:user@example.com" or "from@example.com - Subject"
   receivedAt: number // Unix timestamp (ms)
   usedAt?: number // If autofilled
+  seenAt?: number // When user opened popup and saw this code (for unread count)
   providerId?: 'gmail' | 'outlook' // Provider ID
   providerName?: string // Display name (e.g., "Gmail", "Outlook")
   from?: string // Parsed sender email/name
@@ -145,8 +146,20 @@ export type PopupRequest =
   | { type: 'GET_POPUP_DATA' }
   | { type: 'TRIGGER_SYNC' }
   | { type: 'MARK_CODE_USED'; code: string }
+  | { type: 'MARK_CODES_SEEN' } // Mark all codes as seen when popup opens
   | { type: 'MARK_LINK_OPENED'; url: string }
   | { type: 'GET_MAILBOXES' }
+  | { type: 'GET_SYNC_ERROR' }
+
+/**
+ * Sync error info
+ */
+export interface SyncErrorInfo {
+  type: 'sync-failed' | 'auth-expired' | 'network-offline'
+  variant: 'error' | 'warning' | 'info'
+  message: string
+  timestamp: number
+}
 
 /**
  * Responses sent from background to popup
@@ -154,5 +167,6 @@ export type PopupRequest =
 export type PopupResponse =
   | { success: true; data: PopupCache }
   | { success: true; mailboxes: MailboxInfo[] }
+  | { success: true; error: SyncErrorInfo | null }
   | { success: true }
   | { success: false; error: string }
