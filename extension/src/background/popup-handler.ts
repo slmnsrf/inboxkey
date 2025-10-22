@@ -6,10 +6,17 @@
  */
 
 import { PopupCacheManager } from './popup-cache'
-import type { PopupRequest, PopupResponse } from '@/shared/popup-messages'
+import type { PopupRequest, PopupResponse, SyncErrorInfo } from '@/shared/popup-messages'
 import { EmailPollingService } from '@/lib/services/email-polling-service'
 import { createAdaptersFromMailboxes } from '@/lib/services/provider-adapter'
 import { StorageFactory } from '@/lib/storage/storage-factory'
+import { setBadgeCount, setBadgeSyncError, clearBadge } from '@/contents/badge-manager'
+import { BADGE_EXPIRY_MS } from '@/lib/popup/popup-config'
+
+// Sync error tracking
+let consecutiveSyncFailures = 0
+let lastSyncErrorTime: number | null = null
+let currentSyncError: SyncErrorInfo | null = null
 
 /**
  * Handles popup-related messages from the UI
@@ -134,12 +141,92 @@ export class PopupMessageHandler {
             // Return updated cache
             const cache = await this.cacheManager.getCache()
 
+            // Reset sync failure tracking on successful sync
+            consecutiveSyncFailures = 0
+            lastSyncErrorTime = null
+            currentSyncError = null
+
+            // Update badge with unseen code count (only fresh codes < 10 min old)
+            const unseenCount = cache.codes.filter((c) =>
+              !c.seenAt &&
+              !c.usedAt &&
+              (now - c.timestamp) < BADGE_EXPIRY_MS
+            ).length
+            if (unseenCount > 0) {
+              setBadgeCount(unseenCount)
+            } else {
+              clearBadge()
+            }
+
             return {
               success: true,
               data: cache,
             }
           } catch (error) {
             console.error('[PopupHandler] Manual sync failed:', error)
+
+            // Track sync failures for error badge
+            consecutiveSyncFailures++
+            lastSyncErrorTime = Date.now()
+
+            // Detect error type (auth vs sync failure)
+            const errorMsg = error instanceof Error ? error.message : String(error)
+            const isAuthError = errorMsg.toLowerCase().includes('401') ||
+                               errorMsg.toLowerCase().includes('auth') ||
+                               errorMsg.toLowerCase().includes('token') ||
+                               errorMsg.toLowerCase().includes('unauthorized')
+
+            // Set current error for popup banner
+            currentSyncError = {
+              type: isAuthError ? 'auth-expired' : 'sync-failed',
+              variant: isAuthError ? 'warning' : 'error',
+              message: isAuthError
+                ? 'Gmail access expired. Reconnect to resume sync.'
+                : 'Sync failed. Check your connection.',
+              timestamp: Date.now()
+            }
+
+            // Show error badge after 3 consecutive failures OR 15min of persistent errors
+            const persistentError = lastSyncErrorTime && (Date.now() - lastSyncErrorTime > 15 * 60 * 1000)
+            if (consecutiveSyncFailures >= 3 || persistentError) {
+              setBadgeSyncError()
+            }
+
+            return {
+              success: false,
+              error: errorMsg,
+            }
+          }
+        }
+
+        case 'GET_SYNC_ERROR': {
+          // Return current sync error state for error banner
+          return {
+            success: true,
+            error: currentSyncError
+          }
+        }
+
+        case 'MARK_CODES_SEEN': {
+          // Mark all codes as seen (set seenAt timestamp)
+          try {
+            const cache = await this.cacheManager.getCache()
+            if (cache.codes.length > 0) {
+              const now = Date.now()
+              cache.codes.forEach((code) => {
+                if (!code.seenAt) {
+                  code.seenAt = now
+                }
+              })
+              // Save updated cache
+              await chrome.storage.session.set({ 'inboxkey.popup_cache': cache })
+
+              // Clear badge since all codes are now seen
+              clearBadge()
+            }
+            return { success: true }
+          } catch (error) {
+            console.error('[PopupHandler] MARK_CODES_SEEN failed:', error)
             return {
               success: false,
               error: error instanceof Error ? error.message : String(error),
