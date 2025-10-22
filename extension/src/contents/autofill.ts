@@ -6,6 +6,7 @@
 import { extractDomain, isDomainEnabled } from '@/lib/utils/domain'
 import { findSubmitButton } from './submit-button-finder'
 import { logAutoSubmitFailure } from '@/lib/storage/telemetry'
+import { detectSplitInputGroup } from '@/lib/detection/split-input-detector'
 
 export interface AutofillOptions {
   code: string
@@ -66,7 +67,15 @@ export async function autofillCode(options: AutofillOptions): Promise<boolean> {
     return false
   }
 
-  // Perform autofill
+  // Check for split-input group
+  const group = detectSplitInputGroup(field)
+
+  if (group && group.inputs.length > 1) {
+    console.log(`[Autofill] Split-input group detected: ${group.inputs.length} inputs`)
+    return autofillSplitInputs(code, group.inputs, showFeedback)
+  }
+
+  // Perform autofill (single field)
   console.log('[Autofill] Autofilling code:', code)
 
   // Focus the field first
@@ -101,6 +110,60 @@ export async function autofillCode(options: AutofillOptions): Promise<boolean> {
   }
 
   console.log('[Autofill] Autofill completed successfully')
+  return true
+}
+
+/**
+ * Autofill code across multiple split inputs (e.g., Steam's 5-input code)
+ * Distributes code character-by-character: "12345" → "1" "2" "3" "4" "5"
+ *
+ * @param code - Verification code to fill
+ * @param inputs - Array of input fields in DOM order
+ * @param showFeedback - Whether to show visual feedback
+ * @returns true if successful
+ */
+async function autofillSplitInputs(
+  code: string,
+  inputs: HTMLInputElement[],
+  showFeedback: boolean
+): Promise<boolean> {
+  const chars = code.split('')
+
+  console.log(`[Autofill] Distributing ${chars.length} characters across ${inputs.length} inputs`)
+
+  // Fill each input with one character
+  for (let i = 0; i < Math.min(chars.length, inputs.length); i++) {
+    const input = inputs[i]
+
+    // Focus the input
+    input.focus()
+
+    // Set the value
+    input.value = chars[i]
+
+    // Dispatch events to trigger framework reactivity
+    input.dispatchEvent(new Event('input', { bubbles: true }))
+    input.dispatchEvent(new Event('change', { bubbles: true }))
+    input.dispatchEvent(new KeyboardEvent('keydown', { bubbles: true }))
+    input.dispatchEvent(new KeyboardEvent('keyup', { bubbles: true }))
+
+    // Mark as filled
+    input.setAttribute('data-inboxkey-filled', 'true')
+    input.setAttribute('data-inboxkey-timestamp', Date.now().toString())
+
+    // Visual feedback
+    if (showFeedback) {
+      showSuccessFeedback(input)
+    }
+  }
+
+  // Focus last filled input (matches user expectation)
+  const lastIndex = Math.min(chars.length, inputs.length) - 1
+  if (lastIndex >= 0) {
+    inputs[lastIndex].focus()
+  }
+
+  console.log('[Autofill] Split-input autofill completed successfully')
   return true
 }
 

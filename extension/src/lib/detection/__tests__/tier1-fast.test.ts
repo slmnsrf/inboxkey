@@ -1,11 +1,12 @@
 /**
- * Unit tests for Tier 1 fast-path detection with 4-layer defense
+ * Unit tests for Tier 1 fast-path detection with 5-layer defense
  *
  * Coverage:
  * - Layer 1: Cooldown integration
  * - Layer 2: Password type rejection (CRITICAL: Hepsiburada fix)
- * - Layer 3: Autocomplete + Attribute pattern matching
- * - Layer 4: Context validation (Turkish "şifre" rejection)
+ * - Layer 3: URL pattern validation (GitHub/Steam setup page rejection)
+ * - Layer 4: Autocomplete + Attribute pattern matching
+ * - Layer 5: Context validation (Turkish "şifre" rejection)
  * - Performance: <0.15ms target
  */
 
@@ -233,10 +234,77 @@ describe('Tier 1 Fast Detection', () => {
   })
 
   // ═══════════════════════════════════════════════════════════════
-  // Layer 3: Autocomplete + Attribute Pattern Matching
+  // Layer 3: URL Pattern Validation
   // ═══════════════════════════════════════════════════════════════
 
-  describe('Layer 3: Autocomplete Detection', () => {
+  describe('Layer 3: URL Pattern Validation (Setup Page Rejection)', () => {
+    const originalLocation = window.location
+
+    beforeEach(() => {
+      // Mock window.location
+      delete (window as any).location
+      ;(window as any).location = { href: 'https://example.com/login' }
+    })
+
+    afterEach(() => {
+      // Restore original location
+      ;(window as any).location = originalLocation
+    })
+
+    it('should reject GitHub 2FA setup page', () => {
+      ;(window as any).location.href =
+        'https://github.com/settings/two_factor_authentication/setup/intro'
+      const input = createInput({ autocomplete: 'one-time-code' })
+
+      const result = detectTier1(input, cooldown)
+
+      expect(result.detected).toBe(false)
+      expect(result.reason).toBe('Setup/configuration page detected (URL pattern)')
+      expect(result.metadata?.layer).toBe('url-pattern')
+      expect(result.metadata?.url).toBe(
+        'https://github.com/settings/two_factor_authentication/setup/intro'
+      )
+    })
+
+    it('should reject Steam Guard setup page', () => {
+      ;(window as any).location.href = 'https://store.steampowered.com/twofactor/setup'
+      const input = createInput({ name: 'authcode' })
+
+      const result = detectTier1(input, cooldown)
+
+      expect(result.detected).toBe(false)
+      expect(result.reason).toBe('Setup/configuration page detected (URL pattern)')
+      expect(result.metadata?.layer).toBe('url-pattern')
+    })
+
+    it('should allow login pages with "setup" in domain', () => {
+      ;(window as any).location.href = 'https://setup-example.com/login'
+      const input = createInput({ autocomplete: 'one-time-code' })
+
+      const result = detectTier1(input, cooldown)
+
+      // Should pass through URL validation and detect normally
+      expect(result.detected).toBe(true)
+      expect(result.confidence).toBe(1.0)
+    })
+
+    it('should allow verify pages (allowlist)', () => {
+      ;(window as any).location.href = 'https://example.com/auth/2fa/verify'
+      const input = createInput({ autocomplete: 'one-time-code' })
+
+      const result = detectTier1(input, cooldown)
+
+      // Should pass through URL validation and detect normally
+      expect(result.detected).toBe(true)
+      expect(result.confidence).toBe(1.0)
+    })
+  })
+
+  // ═══════════════════════════════════════════════════════════════
+  // Layer 4: Autocomplete + Attribute Pattern Matching
+  // ═══════════════════════════════════════════════════════════════
+
+  describe('Layer 4: Autocomplete Detection', () => {
     it('should detect autocomplete=one-time-code (100% confidence)', () => {
       const input = createInput({ autocomplete: 'one-time-code' })
 
@@ -278,7 +346,7 @@ describe('Tier 1 Fast Detection', () => {
     })
   })
 
-  describe('Layer 3: Name/ID Exact Match', () => {
+  describe('Layer 4: Name/ID Exact Match', () => {
     const exactMatches = ['code', 'otp', 'token', 'pin', 'mfa', '2fa', 'twofa', 'verify', 'verification']
 
     exactMatches.forEach((pattern) => {
@@ -314,7 +382,7 @@ describe('Tier 1 Fast Detection', () => {
     })
   })
 
-  describe('Layer 3: Name/ID Contains Match', () => {
+  describe('Layer 4: Name/ID Contains Match', () => {
     const containsPatterns = [
       'otp-input',
       'verification-code',
@@ -336,7 +404,7 @@ describe('Tier 1 Fast Detection', () => {
     })
   })
 
-  describe('Layer 3: Inputmode + Maxlength Combination', () => {
+  describe('Layer 4: Inputmode + Maxlength Combination', () => {
     const numericModes = ['numeric', 'tel', 'decimal']
     const validLengths = [4, 5, 6, 7, 8]
 
@@ -373,10 +441,10 @@ describe('Tier 1 Fast Detection', () => {
   })
 
   // ═══════════════════════════════════════════════════════════════
-  // Layer 4: Context Validation (Multilingual)
+  // Layer 5: Context Validation (Multilingual)
   // ═══════════════════════════════════════════════════════════════
 
-  describe('Layer 4: Context Validation - English', () => {
+  describe('Layer 5: Context Validation - English', () => {
     it('should reject field with "password" label', () => {
       const { input } = createLabeledInput('Password', {
         autocomplete: 'one-time-code',
@@ -385,7 +453,7 @@ describe('Tier 1 Fast Detection', () => {
       const result = detectTier1(input, cooldown)
 
       expect(result.detected).toBe(false)
-      expect(result.reason).toContain('Negative context')
+      expect(result.reason).toContain('Context validation failed')
       expect(result.reason).toContain('password')
       expect(result.metadata?.layer).toBe('context')
     })
@@ -412,11 +480,11 @@ describe('Tier 1 Fast Detection', () => {
       const result = detectTier1(input, cooldown)
 
       expect(result.detected).toBe(false)
-      expect(result.reason).toContain('Negative context')
+      expect(result.reason).toContain('Context validation failed')
     })
   })
 
-  describe('Layer 4: Context Validation - Turkish (Hepsiburada)', () => {
+  describe('Layer 5: Context Validation - Turkish (Hepsiburada)', () => {
     it('should reject Turkish password field (şifre)', () => {
       const { input } = createLabeledInput('Şifre', {
         autocomplete: 'one-time-code',
@@ -426,7 +494,7 @@ describe('Tier 1 Fast Detection', () => {
       const result = detectTier1(input, cooldown)
 
       expect(result.detected).toBe(false)
-      expect(result.reason).toContain('Negative context')
+      expect(result.reason).toContain('Context validation failed')
       expect(result.reason).toContain('şifre')
       expect(result.metadata?.layer).toBe('context')
     })
@@ -455,11 +523,11 @@ describe('Tier 1 Fast Detection', () => {
       const result = detectTier1(input, cooldown)
 
       expect(result.detected).toBe(false)
-      expect(result.reason).toContain('Negative context')
+      expect(result.reason).toContain('Context validation failed')
     })
   })
 
-  describe('Layer 4: Context Validation - Other Languages', () => {
+  describe('Layer 5: Context Validation - Other Languages', () => {
     const testCases = [
       { lang: 'Spanish', label: 'Contraseña', keyword: 'contraseña' },
       { lang: 'Portuguese', label: 'Senha', keyword: 'senha' },
@@ -474,7 +542,7 @@ describe('Tier 1 Fast Detection', () => {
         const result = detectTier1(input, cooldown)
 
         expect(result.detected).toBe(false)
-        expect(result.reason).toContain('Negative context')
+        expect(result.reason).toContain('Context validation failed')
       })
     })
   })

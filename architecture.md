@@ -29,10 +29,11 @@ InboxKey is a Manifest V3 Chrome/Chromium extension that keeps verification-code
 │   │   │   └── popup-cache.ts       # In-memory cache for popup
 │   │   ├── lib/
 │   │   │   ├── detection/       # Field detection engine
-│   │   │   │   ├── field-detector.ts    # Dual-tier orchestration (572 LOC)
-│   │   │   │   ├── tier1-fast.ts        # Fast attribute matching (~0.15ms)
-│   │   │   │   ├── tier2-deep.ts        # Deep context analysis (~0.50ms)
-│   │   │   │   ├── signal-classifier.ts # Layer 2.5: Delivery channel detection (639 LOC)
+│   │   │   │   ├── field-detector.ts    # Dual-tier orchestration (592 LOC)
+│   │   │   │   ├── tier1-fast.ts        # Fast attribute matching (~0.14ms)
+│   │   │   │   ├── tier2-deep.ts        # Deep context analysis (~0.45ms)
+│   │   │   │   ├── signal-classifier.ts # Layer 5 (Tier 1): Delivery channel detection (681 LOC)
+│   │   │   │   ├── url-pattern-validator.ts # Layer 3 (Tier 1): URL pattern validation
 │   │   │   │   ├── patterns.ts          # Detection patterns & keywords
 │   │   │   │   ├── context-validator.ts # Multilingual validation (21 langs)
 │   │   │   │   ├── types.ts             # Shared type definitions (TextSources, ChannelClassification)
@@ -155,8 +156,14 @@ InboxKey is a Manifest V3 Chrome/Chromium extension that keeps verification-code
 
 **Dual-Tier Detection Engine** (`extension/src/lib/detection/`)
 
-- **Tier 1 (Fast ~0.15ms):** Cooldown registry, password field rejection, HTML5 autocomplete (`one-time-code`), attribute matching (`name/id` patterns: `code|otp|token|pin|mfa`), numeric input modes
-- **Tier 2 (Deep ~0.50ms):** Label analysis (4 sources), placeholder text, nearby text with 21-language primary matching (Turkish "kod", Spanish "código", etc.), form context, negative signal penalization
+- **Tier 1 (Fast <0.14ms) - 6-Layer Defense-in-Depth:**
+  1. Cooldown registry (skip recently checked fields)
+  2. Password attribute validation (reject `type=password`, 21-language custom attributes)
+  3. URL pattern validation (reject setup/configuration pages via `SETUP_URL_PATTERNS`)
+  4. Autocomplete + attribute matching (`one-time-code`, `name/id` patterns: `code|otp|token|pin|mfa`)
+  5. Signal classifier (reject authenticator/SMS fields; Option 7 hybrid detection for email+authenticator scenarios)
+  6. Context validation (multilingual negative keywords: `SETUP_PAGE_PATTERNS`, password/login detection in 21 languages)
+- **Tier 2 (Deep ~0.45ms):** Label analysis (4 sources), placeholder text, nearby text with proximity scoring, form context, split-input group detection
 
 **Trigger Strategy** (`extension/src/contents/index.ts`)
 
@@ -200,18 +207,23 @@ Minimum threshold: 100 points
 
 **Split-Input Distribution:** Detects split-input groups (e.g., 5 separate maxlength=1 fields) and distributes codes character-by-character ("12345" → "1" "2" "3" "4" "5"). Focuses last filled input and applies visual feedback to each input. Handles edge cases: code shorter/longer than input count.
 
-### Layer 2.5: Delivery Channel Signal Classifier
+### Layer 5 (Tier 1): Delivery Channel Signal Classifier
 
-Integrated within Tier 2 (~0.05ms), distinguishes email-based codes (InboxKey can help) from authenticator/SMS codes:
+Integrated within Tier 1 (<0.05ms), distinguishes email-based codes (InboxKey can help) from authenticator/SMS codes:
 
 - **21-language keyword detection:** EMAIL_PATTERNS, SMS_PATTERNS, AUTHENTICATOR_PATTERNS covering Latin, Cyrillic, Arabic, Devanagari, CJK character sets
-- **Priority logic:** Authenticator → reject (except split-input -10pt penalty), SMS only → reject, Email+SMS → prefer email, Email → boost +20pts (+5pts if split-input)
-- **Feature flag:** ENABLE_CHANNEL_CLASSIFICATION for rollback capability
-- **Location:** `signal-classifier.ts:classifyDeliveryChannel()` called from `tier2-deep.ts:626-631`
+- **Option 7 - Hybrid Channel Detection:** Scans ALL patterns (no short-circuit) to build `allChannels` array and `channelConfidences` object
+  - Authenticator + Email → DETECT as 'email' (confidence 0.85) - allows InboxKey to help when email codes available
+  - Authenticator only → REJECT
+  - SMS + Email → DETECT as 'email' (confidence 0.85)
+  - SMS only → REJECT
+  - Email only → DETECT (confidence 0.95)
+- **Defense placement:** Runs AFTER attribute matching (Layer 4) but BEFORE context validation (Layer 6) to reject non-email channels early
+- **Location:** `signal-classifier.ts:classifyDeliveryChannel()` called from `tier1-fast.ts:362,453,548`
 
 ## Data & Control Flow
 
-1. **Detection.** Content script scans DOM using dual-tier detection. Layer 2.5 classifies delivery channel and rejects authenticator/SMS-only fields.
+1. **Detection.** Content script scans DOM using dual-tier detection (Tier 1: 6-layer defense with URL/context/signal validation; Tier 2: deep analysis for edge cases). Signal classifier (Layer 5) rejects authenticator/SMS-only fields; hybrid scenarios (email+authenticator) detect as email with lower confidence (0.85).
 2. **Watch session.** Opens long-lived Port, background polls email providers at 0/5/10s, 8s keep-alive prevents worker termination.
 3. **Extraction & matching.** Emails parsed by `extraction-core`, scored by V2 matcher (458-pt max), minimum 100pts threshold.
 4. **Action.** Best match autofills after validation, or manual popup actions surface cached results with metadata.

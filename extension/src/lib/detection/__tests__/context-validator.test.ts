@@ -15,8 +15,8 @@ import {
   validateContext,
   NEGATIVE_KEYWORDS,
   ALLOW_PATTERNS,
-  type TextSources,
 } from '../context-validator'
+import type { TextSources } from '../types'
 
 describe('context-validator', () => {
   // Helper to create text sources
@@ -24,12 +24,14 @@ describe('context-validator', () => {
     label = '',
     placeholder = '',
     nearbyText = '',
-    ariaLabel = ''
+    ariaLabel = '',
+    pageTitle = ''
   ): TextSources => ({
     label,
     placeholder,
     nearbyText,
     ariaLabel,
+    pageTitle,
   })
 
   describe('Allow-list patterns (highest priority)', () => {
@@ -188,10 +190,10 @@ describe('context-validator', () => {
       expect(result.matchedNegatives).toContain('oturum aç')
     })
 
-    it('should REJECT "Giriş" (login Turkish)', () => {
-      const result = validateContext(createSources('', '', 'Giriş'))
+    it('should REJECT "Giriş yapın" (sign in Turkish - phrase)', () => {
+      const result = validateContext(createSources('', '', 'Giriş yapın'))
       expect(result.pass).toBe(false)
-      expect(result.matchedNegatives).toContain('giriş')
+      expect(result.matchedNegatives).toContain('giriş yapın')
     })
 
     it('should normalize Turkish diacritics (Ş → S for matching)', () => {
@@ -275,7 +277,8 @@ describe('context-validator', () => {
       const result = validateContext(createSources('Пароль'))
       expect(result.pass).toBe(false)
       expect(result.matchedNegatives).toContain('пароль')
-      expect(result.language).toBe('ru')
+      // Note: "пароль" is the same in both Russian and Ukrainian
+      expect(['ru', 'uk']).toContain(result.language)
     })
 
     it('should REJECT "пароль" (lowercase)', () => {
@@ -811,6 +814,344 @@ describe('context-validator', () => {
 
     it('should have at least 7 allow-list patterns', () => {
       expect(ALLOW_PATTERNS.length).toBeGreaterThanOrEqual(7)
+    })
+  })
+
+  describe('Setup Page Detection (Phase 1 - False-Trigger Fix)', () => {
+    it('should REJECT GitHub 2FA setup page (English)', () => {
+      const result = validateContext(
+        createSources(
+          'Enter the six-digit code from the app',
+          'XXXXXX',
+          'Setup two-factor authentication',
+          '',
+          'Enable two-factor authentication - GitHub'
+        )
+      )
+      expect(result.pass).toBe(false)
+      expect(result.matchedNegatives).toContain('setup-page-detected')
+      expect(result.confidence).toBe(0)
+    })
+
+    it('should REJECT Steam Guard setup (English)', () => {
+      const result = validateContext(
+        createSources(
+          'Enter the code from your authenticator app',
+          '',
+          'Add authenticator',
+          '',
+          'Steam Guard Setup'
+        )
+      )
+      expect(result.pass).toBe(false)
+      expect(result.matchedNegatives).toContain('setup-page-detected')
+    })
+
+    it('should REJECT Microsoft Authenticator setup (English)', () => {
+      const result = validateContext(
+        createSources(
+          'Scan the QR code with your authenticator app',
+          '',
+          'Configure authenticator',
+          '',
+          'Microsoft Account - Authenticator Setup'
+        )
+      )
+      expect(result.pass).toBe(false)
+      expect(result.matchedNegatives).toContain('setup-page-detected')
+    })
+
+    it('should REJECT Google 2FA setup (English)', () => {
+      const result = validateContext(
+        createSources(
+          'Enter the code from Google Authenticator',
+          '',
+          'Enable 2-Step Verification',
+          '',
+          'Google Account - Security'
+        )
+      )
+      expect(result.pass).toBe(false)
+      expect(result.matchedNegatives).toContain('setup-page-detected')
+    })
+
+    it('should REJECT AWS MFA setup (English)', () => {
+      const result = validateContext(
+        createSources(
+          'Enter code from MFA device',
+          '',
+          'Activate MFA',
+          '',
+          'AWS Console - MFA Configuration'
+        )
+      )
+      expect(result.pass).toBe(false)
+      expect(result.matchedNegatives).toContain('setup-page-detected')
+    })
+
+    it('should REJECT Turkish 2FA setup page', () => {
+      const result = validateContext(
+        createSources(
+          'Doğrulayıcı uygulamasından kodu girin',
+          '',
+          'İki faktörlü kimlik doğrulamayı ayarla',
+          '',
+          'Güvenlik Ayarları'
+        )
+      )
+      expect(result.pass).toBe(false)
+      expect(result.matchedNegatives).toContain('setup-page-detected')
+    })
+
+    it('should REJECT German 2FA setup page', () => {
+      const result = validateContext(
+        createSources(
+          'Code eingeben',
+          '',
+          'Zwei-Faktor-Authentifizierung einrichten',
+          '',
+          'Sicherheitseinstellungen'
+        )
+      )
+      expect(result.pass).toBe(false)
+      expect(result.matchedNegatives).toContain('setup-page-detected')
+    })
+
+    it('should REJECT French 2FA setup page', () => {
+      const result = validateContext(
+        createSources(
+          'Entrez le code',
+          '',
+          'Configurer authentification à deux facteurs',
+          '',
+          'Paramètres de sécurité'
+        )
+      )
+      expect(result.pass).toBe(false)
+      expect(result.matchedNegatives).toContain('setup-page-detected')
+    })
+
+    it('should REJECT Spanish 2FA setup page', () => {
+      const result = validateContext(
+        createSources(
+          'Ingrese el código',
+          '',
+          'Configurar autenticación de dos factores',
+          '',
+          'Configuración de seguridad'
+        )
+      )
+      expect(result.pass).toBe(false)
+      expect(result.matchedNegatives).toContain('setup-page-detected')
+    })
+
+    it('should REJECT Portuguese 2FA setup page', () => {
+      const result = validateContext(
+        createSources(
+          'Digite o código',
+          '',
+          'Configurar autenticação de dois fatores',
+          '',
+          'Configurações de segurança'
+        )
+      )
+      expect(result.pass).toBe(false)
+      expect(result.matchedNegatives).toContain('setup-page-detected')
+    })
+
+    it('should REJECT Italian 2FA setup page', () => {
+      const result = validateContext(
+        createSources(
+          'Inserisci il codice',
+          '',
+          'Configura autenticazione a due fattori',
+          '',
+          'Impostazioni di sicurezza'
+        )
+      )
+      expect(result.pass).toBe(false)
+      expect(result.matchedNegatives).toContain('setup-page-detected')
+    })
+
+    it('should REJECT Dutch 2FA setup page', () => {
+      const result = validateContext(
+        createSources(
+          'Voer code in',
+          '',
+          'Twee-factor authenticatie instellen',
+          '',
+          'Beveiligingsinstellingen'
+        )
+      )
+      expect(result.pass).toBe(false)
+      expect(result.matchedNegatives).toContain('setup-page-detected')
+    })
+
+    it('should REJECT Japanese 2FA setup page', () => {
+      const result = validateContext(
+        createSources(
+          'コードを入力',
+          '',
+          '二要素認証を設定',
+          '',
+          'セキュリティ設定'
+        )
+      )
+      expect(result.pass).toBe(false)
+      expect(result.matchedNegatives).toContain('setup-page-detected')
+    })
+
+    it('should REJECT Korean 2FA setup page', () => {
+      const result = validateContext(
+        createSources(
+          '코드 입력',
+          '',
+          '이중 인증 설정',
+          '',
+          '보안 설정'
+        )
+      )
+      expect(result.pass).toBe(false)
+      expect(result.matchedNegatives).toContain('setup-page-detected')
+    })
+
+    it('should REJECT Chinese 2FA setup page (Simplified)', () => {
+      const result = validateContext(
+        createSources(
+          '输入代码',
+          '',
+          '设置双因素身份验证',
+          '',
+          '安全设置'
+        )
+      )
+      expect(result.pass).toBe(false)
+      expect(result.matchedNegatives).toContain('setup-page-detected')
+    })
+
+    it('should REJECT Russian 2FA setup page', () => {
+      const result = validateContext(
+        createSources(
+          'Введите код',
+          '',
+          'Настроить двухфакторную аутентификацию',
+          '',
+          'Настройки безопасности'
+        )
+      )
+      expect(result.pass).toBe(false)
+      expect(result.matchedNegatives).toContain('setup-page-detected')
+    })
+
+    it('should REJECT Polish 2FA setup page', () => {
+      const result = validateContext(
+        createSources(
+          'Wprowadź kod',
+          '',
+          'Konfiguruj uwierzytelnianie dwuczynnikowe',
+          '',
+          'Ustawienia bezpieczeństwa'
+        )
+      )
+      expect(result.pass).toBe(false)
+      expect(result.matchedNegatives).toContain('setup-page-detected')
+    })
+
+    // REGRESSION TESTS - Login pages should still PASS (no setup keywords)
+    it('should PASS GitHub 2FA login page (regression)', () => {
+      const result = validateContext(
+        createSources(
+          'Two-factor authentication code',
+          'XXXXXX',
+          'Verify your identity',
+          '',
+          'GitHub - Two-factor authentication'
+        )
+      )
+      expect(result.pass).toBe(true)
+      expect(result.confidence).toBe(1.0)
+    })
+
+    it('should PASS Steam Guard code entry page (regression)', () => {
+      const result = validateContext(
+        createSources(
+          'Steam Guard Code',
+          '',
+          'Enter the code from your mobile authenticator app',
+          '',
+          'Steam Guard'
+        )
+      )
+      expect(result.pass).toBe(true)
+      expect(result.confidence).toBe(1.0)
+    })
+
+    it('should PASS Microsoft verification code page (regression)', () => {
+      const result = validateContext(
+        createSources(
+          'Enter code',
+          '',
+          'Check your email for a verification code',
+          '',
+          'Microsoft Account Verification'
+        )
+      )
+      expect(result.pass).toBe(true)
+      expect(result.confidence).toBe(1.0)
+    })
+
+    it('should PASS Google 2-Step Verification page (regression)', () => {
+      const result = validateContext(
+        createSources(
+          'Enter the 6-digit code',
+          '',
+          '2-Step Verification',
+          '',
+          'Google Account - Verify'
+        )
+      )
+      expect(result.pass).toBe(true)
+      expect(result.confidence).toBe(1.0)
+    })
+
+    it('should PASS AWS MFA code entry page (regression)', () => {
+      const result = validateContext(
+        createSources(
+          'MFA code',
+          '',
+          'Enter your MFA code to continue',
+          '',
+          'AWS Console - MFA'
+        )
+      )
+      expect(result.pass).toBe(true)
+      expect(result.confidence).toBe(1.0)
+    })
+
+    it('should handle pageTitle in combined text', () => {
+      const result = validateContext(
+        createSources(
+          'Code',
+          '',
+          '',
+          '',
+          'Setup Authenticator - GitHub'
+        )
+      )
+      expect(result.pass).toBe(false)
+      expect(result.matchedNegatives).toContain('setup-page-detected')
+    })
+
+    it('should work without pageTitle (backward compatibility)', () => {
+      const result = validateContext(
+        createSources(
+          'Verification code',
+          '123456',
+          'Enter code'
+        )
+      )
+      expect(result.pass).toBe(true)
+      expect(result.confidence).toBe(1.0)
     })
   })
 })
