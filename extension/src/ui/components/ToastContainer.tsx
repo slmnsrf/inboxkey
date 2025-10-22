@@ -21,7 +21,7 @@ export function ToastContainer() {
   if (toasts.length === 0) return null
 
   return (
-    <div className="toast-container">
+    <div className="toast-container" data-testid="toast-container">
       {toasts.map(toast => {
         const icon = toast.variant === 'success' ? '✓' :
                      toast.variant === 'error' ? '❌' : 'ℹ️'
@@ -32,13 +32,15 @@ export function ToastContainer() {
             <LiveRegion message={toast.message} politeness={politeness} />
             <div
               className={`toast toast--${toast.variant}${visibleToasts.has(toast.id) ? ' show' : ''}`}
+              data-testid="toast"
             >
               <span className="toast__icon" aria-hidden="true">{icon}</span>
-              <span className="toast__message">{toast.message}</span>
+              <span className="toast__message" data-testid="toast-message">{toast.message}</span>
               <button
                 className="toast__close"
                 onClick={() => dismissToast(toast.id)}
                 aria-label="Close notification"
+                data-testid="toast-close"
               >
                 ✕
               </button>

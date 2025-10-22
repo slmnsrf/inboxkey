@@ -13,6 +13,7 @@ import { AboutSection } from './ui/components/AboutSection'
 import { AccountsPanel } from './ui/components/AccountsPanel'
 import { AppearanceSettings } from './ui/components/AppearanceSettings'
 import { AutomationSettings } from './ui/components/AutomationSettings'
+import { SessionChipSettings } from './ui/components/SessionChipSettings'
 import { DataManagement } from './ui/components/DataManagement'
 import { AdvancedSettings } from './ui/components/AdvancedSettings'
 import { BuyMeACoffeeButton } from './ui/components/BuyMeACoffeeButton'
@@ -136,6 +137,7 @@ function OptionsApp() {
                   className="tab-panel"
                 >
                   <section className="section settings-section">
+                    <SessionChipSettings />
                     <AutomationSettings />
                     <AppearanceSettings />
                     <DataManagement />

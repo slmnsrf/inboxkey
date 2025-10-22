@@ -8,6 +8,8 @@ import {
   setBadgeListening,
   setBadgeSuccess,
   setBadgeNoCode,
+  setBadgeCount,
+  setBadgeSyncError,
   clearBadge,
 } from '../../src/contents/badge-manager'
 
@@ -26,6 +28,12 @@ describe('badge-manager', () => {
         setBadgeBackgroundColor: mockSetBadgeBackgroundColor,
       },
     } as any
+
+    // Reset badge priority state by calling clearBadge
+    // This ensures each test starts with IDLE priority
+    clearBadge()
+    mockSetBadgeText.mockClear()
+    mockSetBadgeBackgroundColor.mockClear()
   })
 
   afterEach(() => {
@@ -41,7 +49,7 @@ describe('badge-manager', () => {
 
       // Should set initial badge
       expect(mockSetBadgeText).toHaveBeenCalledWith({ text: '·' })
-      expect(mockSetBadgeBackgroundColor).toHaveBeenCalledWith({ color: '#2196F3' })
+      expect(mockSetBadgeBackgroundColor).toHaveBeenCalledWith({ color: '#3B82F6' })
 
       vi.useRealTimers()
     })
@@ -54,16 +62,16 @@ describe('badge-manager', () => {
       // Initial state: ·
       expect(mockSetBadgeText).toHaveBeenCalledWith({ text: '·' })
 
-      // After 400ms: ··
-      vi.advanceTimersByTime(400)
+      // After 300ms: ··
+      vi.advanceTimersByTime(300)
       expect(mockSetBadgeText).toHaveBeenCalledWith({ text: '··' })
 
-      // After another 400ms: ···
-      vi.advanceTimersByTime(400)
+      // After another 300ms: ···
+      vi.advanceTimersByTime(300)
       expect(mockSetBadgeText).toHaveBeenCalledWith({ text: '···' })
 
-      // After another 400ms: back to ·
-      vi.advanceTimersByTime(400)
+      // After another 300ms: back to ·
+      vi.advanceTimersByTime(300)
       expect(mockSetBadgeText).toHaveBeenCalledWith({ text: '·' })
 
       vi.useRealTimers()
@@ -72,7 +80,7 @@ describe('badge-manager', () => {
     it('should use blue color for listening state', () => {
       setBadgeListening()
 
-      expect(mockSetBadgeBackgroundColor).toHaveBeenCalledWith({ color: '#2196F3' })
+      expect(mockSetBadgeBackgroundColor).toHaveBeenCalledWith({ color: '#3B82F6' })
     })
 
     it('should cancel previous listening animation when called again', () => {
@@ -98,6 +106,63 @@ describe('badge-manager', () => {
       // Should not throw
       expect(() => setBadgeListening()).not.toThrow()
     })
+
+    it('should show static badge when user prefers reduced motion', () => {
+      // Mock window.matchMedia for reduced-motion preference
+      const mockMatchMedia = vi.fn().mockImplementation((query) => ({
+        matches: query === '(prefers-reduced-motion: reduce)',
+        media: query,
+        onchange: null,
+        addListener: vi.fn(),
+        removeListener: vi.fn(),
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+        dispatchEvent: vi.fn(),
+      }))
+
+      Object.defineProperty(window, 'matchMedia', {
+        writable: true,
+        value: mockMatchMedia,
+      })
+
+      setBadgeListening()
+
+      // Should set static '···' badge instead of animating
+      expect(mockSetBadgeText).toHaveBeenCalledWith({ text: '···' })
+      expect(mockSetBadgeBackgroundColor).toHaveBeenCalledWith({ color: '#3B82F6' })
+    })
+
+    it('should animate badge when user does not prefer reduced motion', () => {
+      vi.useFakeTimers()
+
+      // Mock window.matchMedia for NO reduced-motion preference
+      const mockMatchMedia = vi.fn().mockImplementation((query) => ({
+        matches: false, // User does NOT prefer reduced motion
+        media: query,
+        onchange: null,
+        addListener: vi.fn(),
+        removeListener: vi.fn(),
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+        dispatchEvent: vi.fn(),
+      }))
+
+      Object.defineProperty(window, 'matchMedia', {
+        writable: true,
+        value: mockMatchMedia,
+      })
+
+      setBadgeListening()
+
+      // Should start animation (not static)
+      expect(mockSetBadgeText).toHaveBeenCalledWith({ text: '·' })
+
+      // After 300ms: should animate to ··
+      vi.advanceTimersByTime(300)
+      expect(mockSetBadgeText).toHaveBeenCalledWith({ text: '··' })
+
+      vi.useRealTimers()
+    })
   })
 
   describe('setBadgeSuccess', () => {
@@ -105,7 +170,7 @@ describe('badge-manager', () => {
       setBadgeSuccess()
 
       expect(mockSetBadgeText).toHaveBeenCalledWith({ text: '✓' })
-      expect(mockSetBadgeBackgroundColor).toHaveBeenCalledWith({ color: '#4CAF50' })
+      expect(mockSetBadgeBackgroundColor).toHaveBeenCalledWith({ color: '#10B981' })
     })
 
     it('should stop listening animation if active', () => {
@@ -137,7 +202,7 @@ describe('badge-manager', () => {
   })
 
   describe('setBadgeNoCode', () => {
-    it('should set badge to orange exclamation', () => {
+    it('should set badge to amber exclamation', () => {
       setBadgeNoCode()
 
       expect(mockSetBadgeText).toHaveBeenCalledWith({ text: '!' })
@@ -227,7 +292,7 @@ describe('badge-manager', () => {
       setBadgeSuccess()
 
       expect(mockSetBadgeText).toHaveBeenCalledWith({ text: '✓' })
-      expect(mockSetBadgeBackgroundColor).toHaveBeenCalledWith({ color: '#4CAF50' })
+      expect(mockSetBadgeBackgroundColor).toHaveBeenCalledWith({ color: '#10B981' })
 
       vi.useRealTimers()
     })
@@ -303,14 +368,15 @@ describe('badge-manager', () => {
     it('should cycle through dots correctly for extended periods', () => {
       vi.useFakeTimers()
 
-      setBadgeListening()
+      setBadgeListening() // Sets initial frame to '·'
 
-      const sequence = ['·', '··', '···', '·', '··', '···']
+      // After setBadgeListening() sets '·', the next frames will be:
+      const sequence = ['··', '···', '·', '··', '···', '·']
 
       mockSetBadgeText.mockClear()
 
       for (let i = 0; i < 6; i++) {
-        vi.advanceTimersByTime(400)
+        vi.advanceTimersByTime(300)
         const lastCall = mockSetBadgeText.mock.calls[mockSetBadgeText.mock.calls.length - 1]
         expect(lastCall[0].text).toBe(sequence[i])
       }
@@ -370,26 +436,42 @@ describe('badge-manager', () => {
   describe('Color values', () => {
     it('should use correct color codes', () => {
       setBadgeListening()
-      expect(mockSetBadgeBackgroundColor).toHaveBeenCalledWith({ color: '#2196F3' })
+      expect(mockSetBadgeBackgroundColor).toHaveBeenCalledWith({ color: '#3B82F6' })
+      mockSetBadgeBackgroundColor.mockClear()
 
+      clearBadge()
       setBadgeSuccess()
-      expect(mockSetBadgeBackgroundColor).toHaveBeenCalledWith({ color: '#4CAF50' })
+      expect(mockSetBadgeBackgroundColor).toHaveBeenCalledWith({ color: '#10B981' })
+      mockSetBadgeBackgroundColor.mockClear()
 
+      clearBadge()
       setBadgeNoCode()
       expect(mockSetBadgeBackgroundColor).toHaveBeenCalledWith({ color: '#FF9800' })
+      mockSetBadgeBackgroundColor.mockClear()
+
+      clearBadge()
+      setBadgeCount(5)
+      expect(mockSetBadgeBackgroundColor).toHaveBeenCalledWith({ color: '#3B82F6' })
+      mockSetBadgeBackgroundColor.mockClear()
+
+      clearBadge()
+      setBadgeSyncError()
+      expect(mockSetBadgeBackgroundColor).toHaveBeenCalledWith({ color: '#EF4444' })
     })
 
     it('should use accessible color contrast', () => {
       // All colors should be sufficiently different for accessibility
       const colors = {
-        listening: '#2196F3', // Blue
-        success: '#4CAF50',   // Green
-        noCode: '#FF9800',    // Orange
+        listening: '#3B82F6',  // Blue (COLOR_PRIMARY)
+        success: '#10B981',    // Green (COLOR_SUCCESS)
+        noCode: '#FF9800',     // Amber (COLOR_WARNING)
+        count: '#3B82F6',      // Blue (COLOR_PRIMARY)
+        syncError: '#EF4444',  // Red (COLOR_ERROR)
       }
 
-      // Basic sanity check - all colors are different
+      // Basic sanity check - all distinct colors are different
       const uniqueColors = new Set(Object.values(colors))
-      expect(uniqueColors.size).toBe(3)
+      expect(uniqueColors.size).toBe(4) // listening and count share same color
     })
   })
 
@@ -406,6 +488,148 @@ describe('badge-manager', () => {
 
       clearBadge()
       expect(mockSetBadgeText).toHaveBeenCalledWith({ text: '' })
+    })
+  })
+
+  describe('setBadgeCount', () => {
+    it('should set badge to numeric count', () => {
+      setBadgeCount(3)
+      expect(mockSetBadgeText).toHaveBeenCalledWith({ text: '3' })
+      expect(mockSetBadgeBackgroundColor).toHaveBeenCalledWith({ color: '#3B82F6' })
+    })
+
+    it('should clear badge when count is 0', () => {
+      setBadgeCount(5)
+      expect(mockSetBadgeText).toHaveBeenCalledWith({ text: '5' })
+
+      mockSetBadgeText.mockClear()
+      setBadgeCount(0)
+      expect(mockSetBadgeText).toHaveBeenCalledWith({ text: '' })
+    })
+
+    it('should handle large counts', () => {
+      setBadgeCount(99)
+      expect(mockSetBadgeText).toHaveBeenCalledWith({ text: '99' })
+    })
+
+    it('should work after clearing listening badge', () => {
+      vi.useFakeTimers()
+
+      setBadgeListening()
+      expect(mockSetBadgeText).toHaveBeenCalledWith({ text: '·' })
+
+      // Clear badge first to reset priority
+      clearBadge()
+      mockSetBadgeText.mockClear()
+
+      setBadgeCount(5)
+      expect(mockSetBadgeText).toHaveBeenCalledWith({ text: '5' })
+
+      vi.useRealTimers()
+    })
+
+    it('should handle chrome.action errors gracefully', () => {
+      mockSetBadgeText.mockImplementation(() => {
+        throw new Error('API error')
+      })
+
+      expect(() => setBadgeCount(5)).not.toThrow()
+    })
+  })
+
+  describe('setBadgeSyncError', () => {
+    it('should set badge to red X', () => {
+      setBadgeSyncError()
+      expect(mockSetBadgeText).toHaveBeenCalledWith({ text: '✗' })
+      expect(mockSetBadgeBackgroundColor).toHaveBeenCalledWith({ color: '#EF4444' })
+    })
+
+    it('should work after clearing listening badge', () => {
+      vi.useFakeTimers()
+
+      setBadgeListening()
+      expect(mockSetBadgeText).toHaveBeenCalledWith({ text: '·' })
+
+      // Clear badge first to reset priority
+      clearBadge()
+      mockSetBadgeText.mockClear()
+
+      setBadgeSyncError()
+      expect(mockSetBadgeText).toHaveBeenCalledWith({ text: '✗' })
+
+      vi.useRealTimers()
+    })
+
+    it('should handle chrome.action errors gracefully', () => {
+      mockSetBadgeText.mockImplementation(() => {
+        throw new Error('API error')
+      })
+
+      expect(() => setBadgeSyncError()).not.toThrow()
+    })
+  })
+
+  describe('Badge Priority', () => {
+    it('should not allow count badge to override listening badge', () => {
+      setBadgeListening()
+      const listeningCallCount = mockSetBadgeText.mock.calls.length
+      mockSetBadgeText.mockClear()
+
+      setBadgeCount(5)
+      expect(mockSetBadgeText).not.toHaveBeenCalled()
+    })
+
+    it('should allow listening badge to override count badge', () => {
+      setBadgeCount(5)
+      expect(mockSetBadgeText).toHaveBeenCalledWith({ text: '5' })
+      mockSetBadgeText.mockClear()
+
+      setBadgeListening()
+      expect(mockSetBadgeText).toHaveBeenCalledWith({ text: '·' })
+    })
+
+    it('should not allow count badge to override sync error badge', () => {
+      setBadgeSyncError()
+      expect(mockSetBadgeText).toHaveBeenCalledWith({ text: '✗' })
+      mockSetBadgeText.mockClear()
+
+      setBadgeCount(5)
+      expect(mockSetBadgeText).not.toHaveBeenCalled()
+    })
+
+    it('should allow sync error badge to override count badge', () => {
+      setBadgeCount(5)
+      expect(mockSetBadgeText).toHaveBeenCalledWith({ text: '5' })
+      mockSetBadgeText.mockClear()
+
+      setBadgeSyncError()
+      expect(mockSetBadgeText).toHaveBeenCalledWith({ text: '✗' })
+    })
+
+    it('should not allow sync error to override watch session states', () => {
+      setBadgeListening()
+      mockSetBadgeText.mockClear()
+
+      setBadgeSyncError()
+      expect(mockSetBadgeText).not.toHaveBeenCalled()
+    })
+
+    it('should allow watch session states to override sync error', () => {
+      setBadgeSyncError()
+      expect(mockSetBadgeText).toHaveBeenCalledWith({ text: '✗' })
+      mockSetBadgeText.mockClear()
+
+      setBadgeListening()
+      expect(mockSetBadgeText).toHaveBeenCalledWith({ text: '·' })
+    })
+
+    it('should allow clearBadge to reset priority', () => {
+      setBadgeListening()
+      clearBadge()
+
+      // After clear, count badge should work
+      setBadgeCount(5)
+      expect(mockSetBadgeText).toHaveBeenCalledWith({ text: '5' })
     })
   })
 })
