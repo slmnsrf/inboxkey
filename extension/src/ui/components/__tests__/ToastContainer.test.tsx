@@ -49,7 +49,7 @@ describe('ToastContainer', () => {
 
     fireEvent.click(screen.getByText('Show Success'))
 
-    expect(screen.getByText('Success message')).toBeInTheDocument()
+    expect(screen.getByTestId('toast-message')).toHaveTextContent('Success message')
   })
 
   it('applies correct variant class', () => {
@@ -62,7 +62,7 @@ describe('ToastContainer', () => {
 
     fireEvent.click(screen.getByText('Show Error'))
 
-    const toast = screen.getByText('Error message').closest('.toast')
+    const toast = screen.getByTestId('toast')
     expect(toast).toHaveClass('toast--error')
   })
 
@@ -75,12 +75,12 @@ describe('ToastContainer', () => {
     )
 
     fireEvent.click(screen.getByText('Show Success'))
-    expect(screen.getByText('Success message')).toBeInTheDocument()
+    expect(screen.getByTestId('toast-message')).toHaveTextContent('Success message')
 
-    const closeButton = screen.getByLabelText('Dismiss notification')
+    const closeButton = screen.getByTestId('toast-close')
     fireEvent.click(closeButton)
 
-    expect(screen.queryByText('Success message')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('toast-message')).not.toBeInTheDocument()
   })
 
   it('renders multiple toasts', () => {
@@ -94,8 +94,10 @@ describe('ToastContainer', () => {
     fireEvent.click(screen.getByText('Show Success'))
     fireEvent.click(screen.getByText('Show Error'))
 
-    expect(screen.getByText('Success message')).toBeInTheDocument()
-    expect(screen.getByText('Error message')).toBeInTheDocument()
+    const messages = screen.getAllByTestId('toast-message')
+    expect(messages).toHaveLength(2)
+    expect(messages[0]).toHaveTextContent('Success message')
+    expect(messages[1]).toHaveTextContent('Error message')
   })
 
   it('has aria-live region for accessibility', () => {
@@ -108,7 +110,11 @@ describe('ToastContainer', () => {
 
     fireEvent.click(screen.getByText('Show Success'))
 
-    const container = screen.getByText('Success message').closest('.toast-container')
-    expect(container).toHaveAttribute('aria-live', 'polite')
+    const container = screen.getByTestId('toast-container')
+    expect(container).toBeInTheDocument()
+
+    // The LiveRegion component has the aria-live attribute
+    const liveRegion = screen.getByRole('status')
+    expect(liveRegion).toHaveAttribute('aria-live', 'polite')
   })
 })

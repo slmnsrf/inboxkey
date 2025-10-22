@@ -3,11 +3,33 @@
  * Displays watch session status as an in-page chip near detected fields
  */
 
+import {
+  COLOR_PRIMARY,
+  COLOR_SUCCESS,
+  COLOR_ERROR,
+  SPACE_XS,
+  SPACE_SM,
+  SPACE_MD,
+  FONT_FAMILY_UI,
+  DURATION_FAST,
+  DURATION_NORMAL
+} from '../lib/design-tokens'
+
 export type ChipState = 'listening' | 'filled' | 'copied' | 'timeout'
 
 export interface ChipHandle {
   update(state: ChipState): void
   hide(): void
+}
+
+// No-op handle for when chips are disabled
+const NO_OP_CHIP_HANDLE: ChipHandle = {
+  update: (_state: ChipState) => {
+    // Silent no-op
+  },
+  hide: () => {
+    // Silent no-op
+  }
 }
 
 const STYLE_ID = 'inboxkey-session-chip-styles'
@@ -19,31 +41,45 @@ const AUTO_DISMISS_LISTENING_DELAY_MS = 45000 // Listening state safety net (45s
 // State configuration
 const STATE_CONFIG: Record<ChipState, { text: string; color: string; icon: string }> = {
   listening: {
-    text: 'Listening for code',
-    color: '#3B82F6', // Primary blue
-    icon: '👂'
+    text: 'Checking e-mails...',
+    color: COLOR_PRIMARY,
+    icon: ''
   },
   filled: {
-    text: 'Filled ✓',
-    color: '#10B981', // Success green
-    icon: '✓'
+    text: 'Filled',
+    color: COLOR_SUCCESS,
+    icon: ''
   },
   copied: {
     text: 'Code copied to clipboard',
-    color: '#10B981', // Success green
-    icon: '📋'
+    color: COLOR_SUCCESS,
+    icon: ''
   },
   timeout: {
-    text: 'No new code. Try resend or check popup.',
-    color: '#EF4444', // Error red
-    icon: '⏱'
+    text: 'No code received',
+    color: COLOR_ERROR,
+    icon: ''
   }
 }
 
 /**
  * Show a session status chip near the target field
  */
-export function showSessionChip(field: HTMLInputElement): ChipHandle {
+export async function showSessionChip(field: HTMLInputElement): Promise<ChipHandle> {
+  // Check if chips are enabled in settings
+  try {
+    const result = await chrome.storage.local.get('settings')
+    const showChips = result.settings?.showSessionChips ?? true // Default ON
+
+    if (!showChips) {
+      console.log('[SessionChip] Chips disabled in settings, returning no-op handle')
+      return NO_OP_CHIP_HANDLE
+    }
+  } catch (error) {
+    console.error('[SessionChip] Failed to check settings, showing chip anyway:', error)
+    // Fallback to showing chip on error (fail-safe)
+  }
+
   // Inject styles if not already present
   injectStyles()
 
@@ -100,9 +136,9 @@ export function showSessionChip(field: HTMLInputElement): ChipHandle {
         delay = AUTO_DISMISS_DELAY_MS // 5s for filled/copied
       }
 
-      autoDismissTimeout = window.setTimeout(() => {
+      autoDismissTimeout = setTimeout(() => {
         handle.hide()
-      }, delay)
+      }, delay) as unknown as number
     },
 
     hide() {
@@ -130,9 +166,6 @@ export function showSessionChip(field: HTMLInputElement): ChipHandle {
 function createChipElement(): HTMLDivElement {
   const chip = document.createElement('div')
   chip.className = 'inboxkey-chip'
-  chip.setAttribute('role', 'status')
-  chip.setAttribute('aria-live', 'polite')
-  chip.setAttribute('aria-atomic', 'true')
 
   const content = document.createElement('div')
   content.className = 'inboxkey-chip-content'
@@ -179,7 +212,13 @@ function updateChipState(
   const textEl = chip.querySelector('.inboxkey-chip-text') as HTMLSpanElement
 
   // Update content
-  iconEl.textContent = config.icon
+  if (config.icon) {
+    iconEl.textContent = config.icon
+    iconEl.style.display = ''
+  } else {
+    iconEl.textContent = ''
+    iconEl.style.display = 'none'
+  }
   textEl.textContent = config.text
 
   // Update background color
@@ -193,39 +232,67 @@ function updateChipState(
 }
 
 /**
- * Position chip near the target field
+ * Position chip near the target field with viewport boundary detection
  */
 function positionChipNearField(chip: HTMLDivElement, field: HTMLInputElement): void {
-  const rect = field.getBoundingClientRect()
-  const scrollX = window.pageXOffset || document.documentElement.scrollLeft
-  const scrollY = window.pageYOffset || document.documentElement.scrollTop
+  const positionChip = () => {
+    const rect = field.getBoundingClientRect()
+    const scrollX = window.pageXOffset || document.documentElement.scrollLeft
+    const scrollY = window.pageYOffset || document.documentElement.scrollTop
+    const viewportHeight = window.innerHeight
+    const viewportWidth = window.innerWidth
 
-  // Position below the field with some offset
-  const left = rect.left + scrollX
-  const top = rect.bottom + scrollY + 8 // 8px gap below field
+    // Estimate chip height (will be measured after first render)
+    const chipHeight = chip.offsetHeight || 60 // Fallback estimate
+    const gap = 8 // 8px gap from field
 
-  chip.style.left = `${left}px`
-  chip.style.top = `${top}px`
+    // Determine vertical position (above or below field)
+    let top: number
+    const spaceBelow = viewportHeight - rect.bottom
+    const spaceAbove = rect.top
 
-  // Reposition on scroll and resize
-  const updatePosition = () => {
-    const newRect = field.getBoundingClientRect()
-    const newScrollX = window.pageXOffset || document.documentElement.scrollLeft
-    const newScrollY = window.pageYOffset || document.documentElement.scrollTop
-    chip.style.left = `${newRect.left + newScrollX}px`
-    chip.style.top = `${newRect.bottom + newScrollY + 8}px`
+    if (spaceBelow < chipHeight + gap && spaceAbove > spaceBelow) {
+      // Position above field if not enough space below and more space above
+      top = rect.top + scrollY - chipHeight - gap
+    } else {
+      // Default: position below field
+      top = rect.bottom + scrollY + gap
+    }
+
+    // Determine horizontal position with viewport constraints
+    let left = rect.left + scrollX
+    const chipWidth = chip.offsetWidth || 320 // Fallback to max-width
+
+    // Ensure chip doesn't overflow viewport horizontally
+    if (left + chipWidth > scrollX + viewportWidth) {
+      left = scrollX + viewportWidth - chipWidth - 16 // 16px margin from edge
+    }
+    if (left < scrollX + 16) {
+      left = scrollX + 16 // 16px margin from left edge
+    }
+
+    // Set max-width based on available space (with margins)
+    const availableWidth = viewportWidth - 32 // 16px margins on each side
+    chip.style.maxWidth = `${Math.min(320, availableWidth)}px`
+
+    chip.style.left = `${left}px`
+    chip.style.top = `${top}px`
   }
 
-  window.addEventListener('scroll', updatePosition, { passive: true })
-  window.addEventListener('resize', updatePosition, { passive: true })
+  // Initial positioning
+  positionChip()
+
+  // Reposition on scroll and resize
+  window.addEventListener('scroll', positionChip, { passive: true })
+  window.addEventListener('resize', positionChip, { passive: true })
 
   // Cleanup on chip removal
   const observer = new MutationObserver((mutations) => {
     mutations.forEach((mutation) => {
       mutation.removedNodes.forEach((node) => {
         if (node === chip) {
-          window.removeEventListener('scroll', updatePosition)
-          window.removeEventListener('resize', updatePosition)
+          window.removeEventListener('scroll', positionChip)
+          window.removeEventListener('resize', positionChip)
           observer.disconnect()
         }
       })
@@ -273,30 +340,40 @@ function injectStyles(): void {
   style.textContent = `
     .inboxkey-chip {
       position: absolute;
-      background: #3B82F6;
+      background: ${COLOR_PRIMARY};
       color: white;
-      padding: 12px; /* Uniform internal spacing on 4px grid */
+      padding: ${SPACE_MD}; /* Uniform internal spacing on 4px grid */
       border-radius: 6px;
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
       z-index: 2147483647;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', sans-serif;
+      font-family: ${FONT_FAMILY_UI};
       font-size: 13px;
       line-height: 1.4;
       max-width: 320px;
-      animation: inboxkeyChipFadeIn 0.3s ease-out;
+      animation: inboxkeyChipFadeIn ${DURATION_NORMAL}ms ease-out;
       pointer-events: auto;
+    }
+
+    /* Pulsing animation for listening state */
+    .inboxkey-chip[data-state="listening"] {
+      animation: inboxkeyChipFadeIn ${DURATION_NORMAL}ms ease-out, inboxkeyChipPulse 2s ease-in-out infinite;
     }
 
     @media (prefers-reduced-motion: reduce) {
       .inboxkey-chip {
-        animation: inboxkeyChipFadeInReduced 0.3s ease-out; /* Match standard timing */
+        animation: inboxkeyChipFadeInReduced ${DURATION_NORMAL}ms ease-out;
+      }
+
+      /* Disable pulsing animation for reduced motion */
+      .inboxkey-chip[data-state="listening"] {
+        animation: inboxkeyChipFadeInReduced ${DURATION_NORMAL}ms ease-out;
       }
     }
 
     .inboxkey-chip-content {
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: ${SPACE_SM};
     }
 
     .inboxkey-chip-icon {
@@ -325,8 +402,8 @@ function injectStyles(): void {
       line-height: 1;
       cursor: pointer;
       padding: 0;
-      margin-left: 4px;
-      transition: background 0.2s ease;
+      margin-left: ${SPACE_XS};
+      transition: background ${DURATION_FAST}ms ease, transform ${DURATION_FAST}ms ease;
     }
 
     .inboxkey-chip-close:hover {
@@ -340,6 +417,7 @@ function injectStyles(): void {
 
     .inboxkey-chip-close:active {
       background: rgba(255, 255, 255, 0.4);
+      transform: scale(0.95);
     }
 
     .inboxkey-chip-sr-only {
@@ -357,7 +435,7 @@ function injectStyles(): void {
     @keyframes inboxkeyChipFadeIn {
       from {
         opacity: 0;
-        transform: translateY(-8px);
+        transform: translateY(-4px);
       }
       to {
         opacity: 1;
@@ -381,7 +459,16 @@ function injectStyles(): void {
       }
       to {
         opacity: 0;
-        transform: translateY(-8px);
+        transform: translateY(-4px);
+      }
+    }
+
+    @keyframes inboxkeyChipPulse {
+      0%, 100% {
+        opacity: 1;
+      }
+      50% {
+        opacity: 0.85;
       }
     }
   `

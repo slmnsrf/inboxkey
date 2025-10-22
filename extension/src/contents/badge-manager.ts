@@ -1,24 +1,59 @@
 /**
  * Badge Manager
  *
- * Manages extension icon badge states for visual feedback during watch sessions.
+ * Manages extension icon badge states for visual feedback.
+ *
+ * Badge Priority (highest to lowest):
+ * 1. Watch Session States (listening, success, no-code) - active user flow
+ * 2. Critical Errors (sync failure, auth expired) - requires immediate attention
+ * 3. Informational (code count) - ambient awareness
+ * 4. Idle (no badge) - default state
  *
  * States:
- * - idle: No badge (default state)
  * - listening: Animated dots (· → ·· → ···) indicating active polling
  * - success: Green checkmark (✓) indicating code found
- * - no_code: Orange exclamation (!) indicating timeout/no code found
+ * - no-code: Orange exclamation (!) indicating timeout
+ * - sync-error: Red X (✗) indicating persistent sync failure
+ * - count: Number (1, 2, 3...) indicating available codes
+ * - idle: No badge
  *
  * @module badge-manager
  */
+
+import {
+  COLOR_PRIMARY,
+  COLOR_SUCCESS,
+  COLOR_WARNING,
+  COLOR_ERROR,
+  DURATION_NORMAL,
+} from '@/lib/design-tokens'
+
+/**
+ * Badge priority levels (higher = more important)
+ */
+export enum BadgePriority {
+  IDLE = 0,
+  COUNT = 1,
+  SYNC_ERROR = 2,
+  NO_CODE = 3,
+  SUCCESS = 3,
+  LISTENING = 3,
+}
+
+/**
+ * Current badge state for priority management
+ */
+let currentBadgePriority: BadgePriority = BadgePriority.IDLE
 
 /**
  * Badge state colors
  */
 const COLORS = {
-  listening: '#2196F3', // Blue
-  success: '#4CAF50',   // Green
-  noCode: '#FF9800',    // Orange
+  listening: COLOR_PRIMARY, // Primary blue for progress indication
+  success: COLOR_SUCCESS,   // Success green for completion
+  noCode: COLOR_WARNING,    // Warning amber for timeout
+  syncError: COLOR_ERROR,   // Error red for critical failures
+  count: COLOR_PRIMARY,     // Primary blue for informational count
 } as const
 
 /**
@@ -26,7 +61,7 @@ const COLORS = {
  */
 const ANIMATION = {
   frames: ['·', '··', '···'],
-  intervalMs: 400,
+  intervalMs: DURATION_NORMAL, // 300ms for consistent timing with design system
 } as const
 
 /**
@@ -95,14 +130,29 @@ function setBadgeBackgroundColor(color: string): void {
 }
 
 /**
+ * Check if badge update is allowed based on priority
+ *
+ * @param requestedPriority - Priority of the badge being set
+ * @returns true if update is allowed, false if blocked by higher priority badge
+ */
+function canSetBadge(requestedPriority: BadgePriority): boolean {
+  return requestedPriority >= currentBadgePriority
+}
+
+/**
  * Set badge to listening state with animated dots
  *
- * Cycles through "·" → "··" → "···" every 400ms to indicate active polling.
+ * Cycles through "·" → "··" → "···" every 300ms to indicate active polling.
+ * Respects user's reduced-motion preference (WCAG 2.1 SC 2.3.3).
  * Stops any previous animation before starting new one.
  *
  * @public
  */
 export function setBadgeListening(): void {
+  if (!canSetBadge(BadgePriority.LISTENING)) {
+    return // Higher priority badge is active
+  }
+
   stopAnimation()
 
   if (!isActionApiAvailable()) {
@@ -110,9 +160,24 @@ export function setBadgeListening(): void {
     return
   }
 
-  // Set initial state
+  currentBadgePriority = BadgePriority.LISTENING
+
+  // Set color
   setBadgeBackgroundColor(COLORS.listening)
 
+  // Check reduced-motion preference for accessibility
+  const prefersReducedMotion =
+    typeof window !== 'undefined' &&
+    window.matchMedia &&
+    window.matchMedia('(prefers-reduced-motion: reduce)').matches
+
+  if (prefersReducedMotion) {
+    // Static badge for users who prefer reduced motion
+    setBadgeText('···')
+    return
+  }
+
+  // Animated badge for users without motion preference
   let frameIndex = 0
   setBadgeText(ANIMATION.frames[frameIndex])
 
@@ -132,12 +197,18 @@ export function setBadgeListening(): void {
  * @public
  */
 export function setBadgeSuccess(): void {
+  if (!canSetBadge(BadgePriority.SUCCESS)) {
+    return // Higher priority badge is active
+  }
+
   stopAnimation()
 
   if (!isActionApiAvailable()) {
     console.warn('[BadgeManager] chrome.action API not available for success badge')
     return
   }
+
+  currentBadgePriority = BadgePriority.SUCCESS
 
   setBadgeBackgroundColor(COLORS.success)
   setBadgeText('✓')
@@ -146,12 +217,16 @@ export function setBadgeSuccess(): void {
 /**
  * Set badge to no-code state
  *
- * Displays an orange exclamation mark (!) to indicate timeout or no code found.
+ * Displays an amber exclamation mark (!) to indicate timeout or no code found.
  * Stops any running animation.
  *
  * @public
  */
 export function setBadgeNoCode(): void {
+  if (!canSetBadge(BadgePriority.NO_CODE)) {
+    return // Higher priority badge is active
+  }
+
   stopAnimation()
 
   if (!isActionApiAvailable()) {
@@ -159,8 +234,71 @@ export function setBadgeNoCode(): void {
     return
   }
 
+  currentBadgePriority = BadgePriority.NO_CODE
+
   setBadgeBackgroundColor(COLORS.noCode)
   setBadgeText('!')
+}
+
+/**
+ * Set badge to code count
+ *
+ * Displays a numeric count (1, 2, 3...) indicating available unread codes.
+ * Lower priority than watch session states and errors.
+ *
+ * @param count - Number of unseen codes (0 clears badge)
+ * @public
+ */
+export function setBadgeCount(count: number): void {
+  if (count === 0) {
+    // If current badge is count badge, clear it
+    if (currentBadgePriority === BadgePriority.COUNT) {
+      clearBadge()
+    }
+    return
+  }
+
+  if (!canSetBadge(BadgePriority.COUNT)) {
+    return // Higher priority badge is active
+  }
+
+  stopAnimation()
+
+  if (!isActionApiAvailable()) {
+    console.warn('[BadgeManager] chrome.action API not available for count badge')
+    return
+  }
+
+  currentBadgePriority = BadgePriority.COUNT
+
+  setBadgeBackgroundColor(COLORS.count)
+  setBadgeText(count.toString())
+}
+
+/**
+ * Set badge to sync error state
+ *
+ * Displays a red X (✗) to indicate persistent sync failure.
+ * Higher priority than count badge, lower than watch session states.
+ *
+ * @public
+ */
+export function setBadgeSyncError(): void {
+  if (!canSetBadge(BadgePriority.SYNC_ERROR)) {
+    return // Higher priority badge is active (watch session)
+  }
+
+  stopAnimation()
+
+  if (!isActionApiAvailable()) {
+    console.warn('[BadgeManager] chrome.action API not available for sync error badge')
+    return
+  }
+
+  currentBadgePriority = BadgePriority.SYNC_ERROR
+
+  setBadgeBackgroundColor(COLORS.syncError)
+  setBadgeText('✗')
 }
 
 /**
@@ -168,11 +306,16 @@ export function setBadgeNoCode(): void {
  *
  * Removes badge text and stops any running animation.
  * Returns extension icon to default appearance.
+ * Resets priority to IDLE, allowing any badge to be set.
  *
  * @public
  */
 export function clearBadge(): void {
   stopAnimation()
+
+  // Always reset priority to IDLE, even if API unavailable
+  // This ensures tests can reset state properly
+  currentBadgePriority = BadgePriority.IDLE
 
   if (!isActionApiAvailable()) {
     console.warn('[BadgeManager] chrome.action API not available for clearing badge')

@@ -4,25 +4,21 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { AccountsPanel } from '../AccountsPanel'
 import { ToastProvider } from '../../contexts/ToastContext'
 
-const mockAuthenticateGmail = vi.fn()
-const mockAuthenticateOutlook = vi.fn()
-const mockFetchGmailProfile = vi.fn()
-const mockFetchOutlookProfile = vi.fn()
-
+// Mocks must be hoisted before any imports that use them
 vi.mock('@/lib/providers/gmail/chrome-auth', () => ({
-  authenticateGmail: mockAuthenticateGmail,
+  authenticateGmail: vi.fn(),
 }))
 
 vi.mock('@/lib/providers/outlook/chrome-auth', () => ({
-  authenticateOutlook: mockAuthenticateOutlook,
+  authenticateOutlook: vi.fn(),
 }))
 
 vi.mock('@/lib/providers/gmail/profile', () => ({
-  fetchGmailProfile: mockFetchGmailProfile,
+  fetchGmailProfile: vi.fn(),
 }))
 
 vi.mock('@/lib/providers/outlook/profile', () => ({
-  fetchOutlookProfile: mockFetchOutlookProfile,
+  fetchOutlookProfile: vi.fn(),
 }))
 
 vi.mock('@/lib/providers/gmail/config', () => ({
@@ -32,6 +28,12 @@ vi.mock('@/lib/providers/gmail/config', () => ({
 vi.mock('@/lib/providers/outlook/config', () => ({
   isOutlookConfigured: () => true,
 }))
+
+// Import the mocked functions after mocks are set up
+const { authenticateGmail: mockAuthenticateGmail } = await import('@/lib/providers/gmail/chrome-auth')
+const { authenticateOutlook: mockAuthenticateOutlook } = await import('@/lib/providers/outlook/chrome-auth')
+const { fetchGmailProfile: mockFetchGmailProfile } = await import('@/lib/providers/gmail/profile')
+const { fetchOutlookProfile: mockFetchOutlookProfile } = await import('@/lib/providers/outlook/profile')
 
 const renderWithProviders = (ui: React.ReactElement) => {
   return render(
@@ -72,7 +74,11 @@ describe('AccountsPanel (UI Rework)', () => {
     mockStorageGet.mockResolvedValue({})
     mockStorageSet.mockResolvedValue(void 0)
 
-    ;(global.navigator as any).clipboard = { writeText: mockClipboardWrite }
+    Object.defineProperty(global.navigator, 'clipboard', {
+      value: { writeText: mockClipboardWrite },
+      writable: true,
+      configurable: true,
+    })
 
     global.chrome = {
       runtime: {
@@ -86,6 +92,42 @@ describe('AccountsPanel (UI Rework)', () => {
           get: mockStorageGet,
           set: mockStorageSet,
         },
+      },
+      i18n: {
+        getMessage: (key: string, substitutions?: string | string[]) => {
+          const translations: Record<string, string> = {
+            accounts_panel_heading: "Connected Accounts",
+            accounts_panel_summary: "Manage your email accounts",
+            accounts_recent_title: "Recent Emails",
+            accounts_recent_description: "Your latest verification codes and magic links",
+            accounts_recent_empty: "No recent activity",
+            accounts_status_not_connected: "Not connected",
+            accounts_status_connected: "Connected",
+            accounts_status_error: "Error",
+            provider_gmail_connect: "Connect Gmail",
+            provider_outlook_connect: "Connect Outlook",
+            trust_indicator_title: "Privacy first",
+            trust_indicator_readonly: "Read-only access to your emails",
+            trust_indicator_local_storage: "Local storage only",
+            trust_indicator_local: "All processing happens locally",
+            label_from: "From",
+            label_to: "To",
+            label_subject: "Subject",
+            label_code: "Code",
+            button_copy: "Copy",
+            button_open: "Open",
+            time_just_now_short: "now",
+          }
+          let message = translations[key] || key
+          if (substitutions) {
+            const subs = Array.isArray(substitutions) ? substitutions : [substitutions]
+            subs.forEach((sub, index) => {
+              message = message.replace(`$${index + 1}`, sub)
+            })
+          }
+          return message
+        },
+        getUILanguage: () => "en",
       },
     } as unknown as typeof chrome
   })

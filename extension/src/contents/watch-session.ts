@@ -142,7 +142,7 @@ export class WatchSession {
     return this.detectionResult
   }
 
-  private handlePortMessage = (message: unknown): void => {
+  private handlePortMessage = async (message: unknown): Promise<void> => {
     if (
       typeof message !== "object" ||
       message === null ||
@@ -161,7 +161,7 @@ export class WatchSession {
         this.sessionId = session.session.id
 
         // V2: Show chip in "listening" state and set badge
-        this.chipHandle = showSessionChip(this.field)
+        this.chipHandle = await showSessionChip(this.field)
         this.updateBadge('listening')
 
         this.callbacks.onSessionStarted?.(session.session.id)

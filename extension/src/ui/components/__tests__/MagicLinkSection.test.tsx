@@ -36,8 +36,8 @@ describe('MagicLinkSection', () => {
   it('renders empty state when there are no links', () => {
     render(<MagicLinkSection links={[]} onOpen={mockOnOpen} />)
 
-    expect(screen.getByText(/Magic Links/i)).toBeInTheDocument()
-    expect(screen.getByText(/No magic links/i)).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: /Magic Links/i })).toBeInTheDocument()
+    expect(screen.getByText('No magic links')).toBeInTheDocument()
   })
 
   it('renders metadata rows for each link', () => {
@@ -70,14 +70,13 @@ describe('MagicLinkSection', () => {
 
     render(<MagicLinkSection links={[baseLink]} onOpen={mockOnOpen} />)
 
-    const button = screen.getByRole('button', { name: /^Open$/i })
+    const button = screen.getByRole('button', { name: /Open link/i })
     fireEvent.click(button)
 
-    await waitFor(() => {
-      expect(mockOnOpen).toHaveBeenCalledWith(baseLink)
-      expect(button).toBeDisabled()
-      expect(button).toHaveTextContent(/Opening/i)
-    })
+    // Immediately check that loading state is set
+    expect(mockOnOpen).toHaveBeenCalledWith(baseLink)
+    expect(button).toBeDisabled()
+    expect(button).toHaveTextContent(/Opening/i)
   })
 
   it('uses fallback text when metadata is missing', () => {
@@ -98,7 +97,7 @@ describe('MagicLinkSection', () => {
   it('provides descriptive aria-label on open button', () => {
     render(<MagicLinkSection links={[baseLink]} onOpen={mockOnOpen} />)
 
-    const button = screen.getByRole('button', { name: /^Open$/i })
+    const button = screen.getByRole('button', { name: /Open link/i })
     expect(button.getAttribute('aria-label')).toContain(baseLink.subject!)
   })
 })
