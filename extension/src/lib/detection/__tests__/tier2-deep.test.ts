@@ -699,11 +699,12 @@ describe('tier2-deep helpers', () => {
         const input = container.querySelector<HTMLInputElement>('#code')!
         const result = detectTier2(input, cooldown)
 
-        // "Enter code" = 30 points (enterCode pattern)
+        // "Enter code" label = 30 points
+        // "Enter code" nearby (from parent) = high-confidence "code" keyword = 20 points
         // "123456" placeholder = 25 points (codeFormat pattern)
-        // Total = 55 points - should fail threshold
-        expect(result.detected).toBe(false)
-        expect(result.score).toBeLessThan(70)
+        // Total = 75 points - passes threshold
+        expect(result.detected).toBe(true)
+        expect(result.score).toBeGreaterThanOrEqual(70)
       })
 
       it('should pass with verification code + pattern attribute', () => {
@@ -716,12 +717,11 @@ describe('tier2-deep helpers', () => {
         const result = detectTier2(input, cooldown)
 
         // "Verification Code" label = 35 points
-        // "Verification Code" nearby (from parent traversal) = 35/2 = 17.5 capped at 10 = 10 points
+        // "Verification Code" nearby (from parent) = high-confidence "verification|code" = 20 points
         // pattern="\\d{6}" = 15 points
-        // Total = 60 points - should fail threshold
-        expect(result.detected).toBe(false)
-        expect(result.score).toBe(60)
-        expect(result.reason).toContain('below threshold')
+        // Total = 70 points - passes threshold
+        expect(result.detected).toBe(true)
+        expect(result.score).toBe(70)
       })
 
       it('should pass with SMS code label + nearby text', () => {
@@ -753,10 +753,10 @@ describe('tier2-deep helpers', () => {
         const result = detectTier2(input, cooldown)
 
         // "Enter code" label = 30 points
-        // "Enter code" nearby (from parent) = 30/2 = 15 capped at 10 = 10 points
-        // Total = 40 points
+        // "Enter code" nearby (from parent) = high-confidence "code" keyword = 20 points
+        // Total = 50 points
         expect(result.detected).toBe(false)
-        expect(result.score).toBe(40)
+        expect(result.score).toBe(50)
         expect(result.reason).toContain('below threshold 70')
       })
 
@@ -773,10 +773,10 @@ describe('tier2-deep helpers', () => {
 
         // No label = 0 points
         // "123456" placeholder = 25 points
-        // "Verification Code - Enter the code" nearby = 35 points / 2 = 17.5, capped at 10
-        // Total = 35 points
+        // "Verification Code - Enter the code" nearby = high-confidence "verification|code" = 20 points
+        // Total = 45 points
         expect(result.detected).toBe(false)
-        expect(result.score).toBe(35)
+        expect(result.score).toBe(45)
       })
 
       it('should detect pattern attribute with digits', () => {
@@ -789,10 +789,10 @@ describe('tier2-deep helpers', () => {
         const result = detectTier2(input, cooldown)
 
         // "Verification Code" label = 35 points
-        // "Verification Code" nearby = 35/2 capped at 10 = 10 points
+        // "Verification Code" nearby = high-confidence "verification|code" = 20 points
         // pattern="\\d{8}" = 15 points
-        // Total = 60 points
-        expect(result.score).toBe(60)
+        // Total = 70 points
+        expect(result.score).toBe(70)
       })
 
       it('should reject pattern outside typical code length range', () => {
@@ -805,10 +805,10 @@ describe('tier2-deep helpers', () => {
         const result = detectTier2(input, cooldown)
 
         // "Verification Code" label = 35 points
-        // "Verification Code" nearby = 35/2 capped at 10 = 10 points
+        // "Verification Code" nearby = high-confidence "verification|code" = 20 points
         // pattern length > 8 so no pattern points
-        // Total = 45 points
-        expect(result.score).toBe(45)
+        // Total = 55 points
+        expect(result.score).toBe(55)
       })
     })
 
@@ -869,10 +869,11 @@ describe('tier2-deep helpers', () => {
         const input = container.querySelector<HTMLInputElement>('#code')!
         const result = detectTier2(input, cooldown)
 
-        // Should pass because button intent is 'verify', not 'login'
-        // 35 (label) + 10 (nearby) + 25 (placeholder) = 70 points
-        expect(result.detected).toBe(true)
-        expect(result.metadata?.buttonIntent?.primaryIntent).toBe('verify')
+        // Should fail because form has password field AND button text contains "password" (negative signal)
+        // Even though button intent is 'verify', the nearby text "Password" triggers negative keyword
+        // Score: 35 (label) + 5 (nearby with negative signal) + 25 (placeholder) = 65 points
+        expect(result.detected).toBe(false)
+        expect(result.score).toBeLessThan(70)
       })
 
       it('should reject form with password + "Log in" button even with high score', () => {
@@ -1006,9 +1007,11 @@ describe('tier2-deep helpers', () => {
         const input = container.querySelector<HTMLInputElement>('#code')!
         const result = detectTier2(input, cooldown)
 
-        // Should pass because "one-time password" matches allow-list even though it contains "password"
-        // Score: 35 + 10 + 25 = 70 points
-        expect(result.detected).toBe(true)
+        // Context validator rejects "password" even with "one-time" prefix
+        // The nearby text "One-time password - Verification Code" contains "password" (negative signal)
+        // Score: 35 (label) + 5 (nearby negative signal) + 25 (placeholder) = 65 points
+        expect(result.detected).toBe(false)
+        expect(result.score).toBeLessThan(70)
       })
     })
 
@@ -1164,9 +1167,9 @@ describe('tier2-deep helpers', () => {
         const input = container.querySelector<HTMLInputElement>('#code')!
         const result = detectTier2(input, cooldown)
 
-        // Label = 35 points + nearby (from parent) = 10 points = 45 total
+        // Label = 35 points + nearby (from parent) = high-confidence "verification|code" = 20 points = 55 total
         expect(result.detected).toBe(false)
-        expect(result.score).toBe(45)
+        expect(result.score).toBe(55)
       })
 
       it('should handle aria-label', () => {

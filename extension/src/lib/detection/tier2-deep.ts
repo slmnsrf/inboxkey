@@ -15,17 +15,7 @@ import {
   HTML_PATTERN_DETECTION,
   TYPICAL_CODE_LENGTHS,
 } from './patterns'
-import { classifyDeliveryChannel } from './signal-classifier'
 
-/**
- * Feature flag: Enable Layer 2.5 Delivery Channel Classification
- *
- * Set to `false` to disable email/SMS/authenticator detection for quick rollback.
- * No code changes needed for rollback - just flip this flag and redeploy.
- *
- * Default: true (feature enabled)
- */
-const ENABLE_CHANNEL_CLASSIFICATION = true
 
 /**
  * P2: High-confidence keywords for nearby text boosting (21 languages, 99.4% coverage)
@@ -615,92 +605,6 @@ export function detectTier2(
     if (length >= TYPICAL_CODE_LENGTHS.min && length <= TYPICAL_CODE_LENGTHS.max) {
       score += 15
       scoreBreakdown.push('pattern:15')
-    }
-  }
-
-  // ═══════════════════════════════════════════════════════════════
-  // Layer 2.5: Delivery Channel Signal Classification
-  // ═══════════════════════════════════════════════════════════════
-  // Distinguish email-based codes (InboxKey can help) from
-  // authenticator/SMS codes (InboxKey cannot help)
-  //
-  // Performance: <0.05ms per field
-  // Priority: Authenticator > (SMS AND NOT Email) > Email
-  //
-  // ROLLBACK: Set ENABLE_CHANNEL_CLASSIFICATION = false to disable
-  if (ENABLE_CHANNEL_CLASSIFICATION) {
-    try {
-      const channelClassification = classifyDeliveryChannel({
-        label: labelText,
-        placeholder: input.placeholder || '',
-        nearbyText,
-        ariaLabel: input.getAttribute('aria-label') || '',
-      })
-
-      // REJECT: Authenticator app codes (InboxKey cannot help)
-      // EXCEPTION: Allow split-input fields (Steam Guard, banking sites)
-      // Rationale: These services often support BOTH email AND app delivery.
-      // - If user configured email delivery → InboxKey helps (good!)
-      // - If user uses app delivery → No code in email, session times out (harmless)
-      if (channelClassification.channel === 'authenticator') {
-        const isSplitInput = detectSplitInputPattern(input)
-
-        if (!isSplitInput) {
-          // Not split-input → Reject as before
-          cooldown.markRejected(input)
-          return {
-            detected: false,
-            confidence: 0,
-            score,
-            reason: `Authenticator app detected: ${channelClassification.matchedKeywords.join(', ')}`,
-            metadata: {
-              layer: 'channel-classifier',
-              channel: 'authenticator',
-              keywords: channelClassification.matchedKeywords,
-            },
-          }
-        }
-
-        // Split-input + authenticator → Allow detection (don't reject)
-        // Add small penalty to lower confidence slightly
-        score -= 10
-        scoreBreakdown.push('authenticator-penalty:-10')
-      }
-
-      // REJECT: SMS codes (InboxKey cannot help)
-      if (channelClassification.channel === 'sms') {
-        cooldown.markRejected(input)
-        return {
-          detected: false,
-          confidence: 0,
-          score,
-          reason: `SMS delivery detected: ${channelClassification.matchedKeywords.join(', ')}`,
-          metadata: {
-            layer: 'channel-classifier',
-            channel: 'sms',
-            keywords: channelClassification.matchedKeywords,
-          },
-        }
-      }
-
-      // BOOST: Email codes (InboxKey CAN help!)
-      if (channelClassification.channel === 'email') {
-        score += 20
-        scoreBreakdown.push(`email-channel:20 (${channelClassification.matchedKeywords[0]})`)
-
-        // Additional boost for split-input + email combination
-        // Rationale: High-confidence scenario (modern UI + email delivery)
-        // Ensures detection even if nearby text is absent/generic
-        if (isSplitInput) {
-          score += 5
-          scoreBreakdown.push('split-input+email:5')
-        }
-      }
-    } catch (error) {
-      // Treat classification errors as 'unknown' channel (no impact on score)
-      // This prevents crashes from malformed input or Unicode edge cases
-      console.warn('[tier2-deep] Channel classification error:', error)
-      // Continue to threshold check without channel boost/rejection
     }
   }
 

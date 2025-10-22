@@ -16,9 +16,10 @@ import {
   isFieldWatched,
   stopActiveWatch,
 } from './watch-session'
-import { autofillCode, isFieldFilledByInboxKey } from './autofill'
+import { autofillCode } from './autofill'
 import type { DetectionResult } from '@/lib/types'
 import { extractDomain, isDomainEnabled } from '@/lib/utils/domain'
+import { detectSplitInputGroup } from '@/lib/detection/split-input-detector'
 
 console.log('[InboxKey] Content script loaded on', window.location.href)
 
@@ -34,22 +35,33 @@ function handleDetectedField(
 ): void {
   console.log('[InboxKey] ========================================')
   console.log('[InboxKey] Verification field detected')
-  console.log('[InboxKey] Field:', field)
+
+  // Check if field is part of split-input group
+  const group = detectSplitInputGroup(field)
+  const representativeField = group?.representative || field
+
+  if (group) {
+    console.log(`[InboxKey] Split-input group detected: ${group.inputs.length} inputs`)
+    console.log('[InboxKey] Pattern:', group.pattern)
+    console.log('[InboxKey] Using first input as representative')
+  }
+
+  console.log('[InboxKey] Field:', representativeField)
   console.log('[InboxKey] Confidence:', detectionResult.confidence)
   console.log('[InboxKey] Tier:', detectionResult.tier)
   console.log('[InboxKey] Signals:', detectionResult.signals)
   console.log('[InboxKey] Execution time:', `${detectionResult.executionTime.toFixed(2)}ms`)
   console.log('[InboxKey] ========================================')
 
-  // Check if already watching this field
-  if (isFieldWatched(field)) {
-    console.log('[InboxKey] Field already being watched, skipping')
+  // Check if already watching this field (or its group representative)
+  if (isFieldWatched(representativeField)) {
+    console.log('[InboxKey] Field (or group) already being watched, skipping')
     return
   }
 
-  // Start watch session
+  // Start watch session on representative field
   startWatch(
-    field,
+    representativeField,
     detectionResult,
     {
       onSessionStarted: (sessionId: string) => {
@@ -120,108 +132,65 @@ async function detectExistingFields(): Promise<void> {
 }
 
 /**
- * Set up focus event listeners for manual detection
- * (as backup for fields that weren't detected automatically)
- */
-function setupFocusListeners(): void {
-  document.addEventListener(
-    'focus',
-    async (event) => {
-      const target = event.target as HTMLElement
-
-      if (!(target instanceof HTMLInputElement)) {
-        return
-      }
-
-      // Check if domain is enabled
-      const domain = extractDomain(window.location.href)
-      if (domain) {
-        const enabled = await isDomainEnabled(domain)
-        if (!enabled) {
-          return
-        }
-      }
-
-      // Check automation level setting
-      try {
-        const result = await chrome.storage.local.get('settings')
-        const automationLevel = result.settings?.automationLevel || 'autofill'
-
-        if (automationLevel === 'manual') {
-          console.log('[InboxKey] Manual mode enabled - skipping focus detection')
-          return
-        }
-      } catch (error) {
-        console.error('[InboxKey] Failed to check automation level:', error)
-        // Continue with default behavior on error
-      }
-
-      // Skip if already watching
-      if (isFieldWatched(target)) {
-        return
-      }
-
-      // Skip if active watch exists (don't start multiple sessions)
-      if (getActiveWatch()) {
-        return
-      }
-
-      // FIXED: Skip if field already filled by InboxKey (prevents re-trigger)
-      if (isFieldFilledByInboxKey(target)) {
-        console.log('[InboxKey] Field already filled, skipping re-trigger')
-        return
-      }
-
-      // FIXED: Skip if field has any value (user filled or other source)
-      if (target.value && target.value.trim().length > 0) {
-        console.log('[InboxKey] Field has existing value, skipping')
-        return
-      }
-
-      // Try to detect if this is a verification field
-      // Use fast detection (Tier 1 only for focus events)
-      // const inputs = [target]
-      const tier1Results = detector.detectExisting({ strictVisibility: true })
-
-      if (tier1Results.length > 0 && tier1Results[0].field === target) {
-        console.log('[InboxKey] Verification field focused (manual detection)')
-        handleDetectedField(target, tier1Results[0])
-      }
-    },
-    true // Capture phase
-  )
-}
-
-/**
  * Start observing for dynamically injected fields
  */
 function startDynamicDetection(): void {
   console.log('[InboxKey] Starting dynamic field detection...')
 
+  let pendingFields = new Set<HTMLInputElement>()
+  let debounceTimer: number | null = null
+
   detector.startObserving(async (field: HTMLInputElement) => {
-    console.log('[InboxKey] Dynamically injected field detected:', field)
+    console.log('[InboxKey] ⚡ Dynamic detection callback fired for field:', {
+      element: field,
+      maxLength: field.maxLength,
+      type: field.type,
+      role: field.getAttribute('role')
+    })
 
-    // Check automation level setting
-    try {
-      const result = await chrome.storage.local.get('settings')
-      const automationLevel = result.settings?.automationLevel || 'autofill'
+    // Add to pending batch
+    pendingFields.add(field)
 
-      if (automationLevel === 'manual') {
-        console.log('[InboxKey] Manual mode enabled - skipping dynamic detection')
-        return
+    // Clear existing timer
+    if (debounceTimer !== null) {
+      clearTimeout(debounceTimer)
+    }
+
+    // Wait 50ms to batch rapid injections (e.g., 5 inputs injected together)
+    debounceTimer = window.setTimeout(async () => {
+      const fields = Array.from(pendingFields)
+      pendingFields.clear()
+
+      console.log(`[InboxKey] Processing ${fields.length} dynamically injected field(s)`)
+
+      // Check automation level
+      try {
+        const result = await chrome.storage.local.get('settings')
+        const automationLevel = result.settings?.automationLevel || 'autofill'
+
+        if (automationLevel === 'manual') {
+          console.log('[InboxKey] Manual mode enabled - skipping dynamic detection')
+          return
+        }
+      } catch (error) {
+        console.error('[InboxKey] Failed to check automation level:', error)
       }
-    } catch (error) {
-      console.error('[InboxKey] Failed to check automation level:', error)
-      // Continue with default behavior on error
-    }
 
-    // Get detection result for this field
-    const results = detector.detectExisting({ strictVisibility: true })
-    const result = results.find((r) => r.field === field)
+      // Detect all batched fields at once (call detectExisting ONCE, not per field)
+      const results = detector.detectExisting({ strictVisibility: true })
 
-    if (result) {
-      handleDetectedField(field, result)
-    }
+      // Process batched fields
+      for (const f of fields) {
+        console.log('[InboxKey] Dynamically injected field detected:', f)
+
+        // Find detection result for this field
+        const result = results.find((r) => r.field === f)
+
+        if (result) {
+          handleDetectedField(f, result)
+        }
+      }
+    }, 50)  // 50ms debounce window
   })
 
   console.log('[InboxKey] Dynamic detection active')
@@ -238,9 +207,6 @@ function initialize(): void {
 
   // Start observing for dynamic fields
   startDynamicDetection()
-
-  // Set up focus listeners as backup
-  setupFocusListeners()
 
   // Monitor for field removal
   const observer = new MutationObserver(() => {

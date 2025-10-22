@@ -1,22 +1,29 @@
 /**
- * Tier 1: Fast-Path Detection with 4-Layer Defense-in-Depth
+ * Tier 1: Fast-Path Detection with 6-Layer Defense-in-Depth
  *
  * Performance Budget: <0.15ms per field
  *
  * Defense Layers:
  * 1. Cooldown Registry (0.05ms) - Skip already-checked fields
  * 2. Password Attribute Validation (0.01ms) - Reject type=password
- * 3. Autocomplete + Attribute Matching (0.02ms) - High-confidence patterns
- * 4. Context Validation (0.05ms) - Multilingual negative keyword detection
+ * 3. URL Pattern Validation (0.01ms) - Reject setup/configuration pages
+ * 4. Autocomplete + Attribute Matching (0.02ms) - High-confidence patterns
+ * 5. Signal Classifier (0.05ms) - Reject authenticator/SMS fields
+ * 6. Context Validation (0.05ms) - Multilingual negative keyword detection
  *
  * Critical Fixes:
  * - Hepsiburada: Reject type=password even with autocomplete=one-time-code
  * - Turkish: Reject fields with "şifre", "parola" labels/context
- * - Cross-validation: All positive matches must pass context validation
+ * - Authenticator: Reject fields with authenticator app signals (moved from Tier 2)
+ * - SMS: Reject SMS-only fields (moved from Tier 2)
+ * - Cross-validation: All positive matches must pass signal classifier and context validation
  */
 
 import type { CooldownRegistry } from './cooldown-registry'
 import { validateContext } from './context-validator'
+import { validateURL } from './url-pattern-validator'
+import { classifyDeliveryChannel } from './signal-classifier'
+import type { TextSources } from './types'
 import {
   ATTRIBUTE_PATTERNS,
   AUTOCOMPLETE_VALUES,
@@ -40,7 +47,15 @@ export interface Tier1Result {
     /** Matched HTML attribute (name, id, autocomplete) */
     matchedAttribute?: string
     /** Defense layer that made the decision */
-    layer: 'cooldown' | 'attribute' | 'autocomplete' | 'context'
+    layer: 'cooldown' | 'attribute' | 'url-pattern' | 'autocomplete' | 'context' | 'signal-classifier-tier1'
+    /** URL when rejected by URL pattern validation */
+    url?: string
+    /** Delivery channel classification (for signal classifier) */
+    channel?: 'email' | 'sms' | 'authenticator'
+    /** Matched keywords (for signal classifier) */
+    matchedKeywords?: string[]
+    /** Detected language (for signal classifier) */
+    language?: string | null
   }
 }
 
@@ -132,20 +147,24 @@ function getNearbyText(input: HTMLInputElement): string {
 }
 
 /**
- * Tier 1: Fast-path detection with 4-layer defense
+ * Tier 1: Fast-path detection with 6-layer defense
  *
  * Defense layers applied in order:
  * 1. Cooldown check - Skip recently checked fields
  * 2. Password type check - CRITICAL: Reject type=password immediately
- * 3. Autocomplete + Attribute patterns - High-confidence matches
- * 4. Context validation - Multilingual negative keyword detection
+ * 3. URL pattern validation - Reject setup/configuration pages
+ * 4. Autocomplete + Attribute patterns - High-confidence matches
+ * 5. Signal classifier - Reject authenticator/SMS fields (moved from Tier 2)
+ * 6. Context validation - Multilingual negative keyword detection
  *
  * Performance: <0.15ms per field
  *
  * Critical Fixes:
  * - Hepsiburada: type=password rejected even with autocomplete=one-time-code
  * - Turkish context: "şifre", "parola" detected and rejected
- * - Cross-validation: All positive matches validated against context
+ * - Authenticator: Reject fields with authenticator app signals BEFORE attribute match returns DETECTED
+ * - SMS: Reject SMS-only fields BEFORE attribute match returns DETECTED
+ * - Cross-validation: All positive matches validated against signal classifier and context
  *
  * @param input - Input field to check
  * @param cooldown - Cooldown registry instance
@@ -267,18 +286,37 @@ export function detectTier1(
   }
 
   // ═══════════════════════════════════════════════════════════════
-  // Layer 3: Autocomplete + Attribute Pattern Matching (0.02ms)
+  // Layer 3: URL Pattern Validation (0.01ms)
+  // ═══════════════════════════════════════════════════════════════
+  // Reject setup/configuration pages before attribute matching
+  // Examples: GitHub 2FA setup, Steam Guard setup, Microsoft 2FA setup
+  if (!validateURL()) {
+    cooldown.markRejected(input)
+    return {
+      detected: false,
+      confidence: 0,
+      reason: 'Setup/configuration page detected (URL pattern)',
+      metadata: {
+        layer: 'url-pattern',
+        url: window.location.href,
+      },
+    }
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  // Layer 4: Autocomplete + Attribute Pattern Matching (0.02ms)
   // ═══════════════════════════════════════════════════════════════
 
   // Check autocomplete attribute (HTML standard) - highest confidence
   const autocomplete = input.getAttribute('autocomplete')?.toLowerCase()
   if (autocomplete && AUTOCOMPLETE_VALUES.includes(autocomplete as any)) {
-    // Layer 4: Context validation (check for password keywords)
+    // Layer 5: Context validation (check for password keywords and setup pages)
     const contextResult = validateContext({
       label: getLabelText(input),
       placeholder: input.placeholder || '',
       nearbyText: getNearbyText(input),
       ariaLabel: input.getAttribute('aria-label') || '',
+      pageTitle: document.title || '',
     })
 
     if (!contextResult.pass) {
@@ -286,7 +324,7 @@ export function detectTier1(
       return {
         detected: false,
         confidence: 0,
-        reason: `Negative context: ${contextResult.matchedNegatives?.join(', ')}`,
+        reason: `Context validation failed: ${contextResult.matchedNegatives?.join(', ')}`,
         metadata: { layer: 'context' },
       }
     }
@@ -305,12 +343,75 @@ export function detectTier1(
 
   // Check name/id attributes - exact match (95% confidence)
   if (identifier && ATTRIBUTE_PATTERNS.exact.test(identifier)) {
-    // Layer 4: Context validation
-    const contextResult = validateContext({
-      label: getLabelText(input),
+    // Extract text sources for signal classifier and context validation
+    const labelText = getLabelText(input)
+    const nearbyText = getNearbyText(input)
+
+    // ═══════════════════════════════════════════════════════════════
+    // Layer 5: Signal Classifier (Delivery Channel Detection)
+    // ═══════════════════════════════════════════════════════════════
+    // Reject authenticator/SMS fields BEFORE context validation
+    // This prevents false positives on fields that InboxKey cannot help with
+    const textSources: TextSources = {
+      label: labelText,
       placeholder: input.placeholder || '',
-      nearbyText: getNearbyText(input),
+      nearbyText,
       ariaLabel: input.getAttribute('aria-label') || '',
+    }
+
+    const signalClassification = classifyDeliveryChannel(textSources)
+
+    // Reject authenticator app fields (InboxKey cannot help)
+    // UNLESS email option is also available (hybrid scenario)
+    if (signalClassification.channel === 'authenticator') {
+      const hasEmailOption = signalClassification.allChannels?.includes('email')
+      if (!hasEmailOption) {
+        cooldown.markRejected(input)
+        return {
+          detected: false,
+          confidence: 0,
+          reason: 'Authenticator app detected (no email option)',
+          metadata: {
+            layer: 'signal-classifier-tier1',
+            channel: 'authenticator',
+            matchedKeywords: signalClassification.matchedKeywords,
+            language: signalClassification.language,
+          },
+        }
+      }
+      // Fall through if email available (hybrid scenario)
+    }
+
+    // Reject SMS-only fields (InboxKey cannot help)
+    // UNLESS email option is also available (hybrid scenario)
+    if (signalClassification.channel === 'sms') {
+      const hasEmailOption = signalClassification.allChannels?.includes('email')
+      if (!hasEmailOption) {
+        cooldown.markRejected(input)
+        return {
+          detected: false,
+          confidence: 0,
+          reason: 'SMS-only field detected (no email option)',
+          metadata: {
+            layer: 'signal-classifier-tier1',
+            channel: 'sms',
+            matchedKeywords: signalClassification.matchedKeywords,
+            language: signalClassification.language,
+          },
+        }
+      }
+      // Fall through if email available (hybrid scenario)
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // Layer 6: Context Validation
+    // ═══════════════════════════════════════════════════════════════
+    const contextResult = validateContext({
+      label: labelText,
+      placeholder: input.placeholder || '',
+      nearbyText,
+      ariaLabel: input.getAttribute('aria-label') || '',
+      pageTitle: document.title || '',
     })
 
     if (!contextResult.pass) {
@@ -318,7 +419,7 @@ export function detectTier1(
       return {
         detected: false,
         confidence: 0,
-        reason: `Negative context: ${contextResult.matchedNegatives?.join(', ')}`,
+        reason: `Context validation failed: ${contextResult.matchedNegatives?.join(', ')}`,
         metadata: { layer: 'context' },
       }
     }
@@ -337,12 +438,69 @@ export function detectTier1(
 
   // Check name/id attributes - contains match (90% confidence)
   if (identifier && ATTRIBUTE_PATTERNS.contains.test(identifier)) {
-    // Layer 4: Context validation
-    const contextResult = validateContext({
-      label: getLabelText(input),
+    // Extract text sources for signal classifier and context validation
+    const labelText = getLabelText(input)
+    const nearbyText = getNearbyText(input)
+
+    // Layer 5: Signal Classifier
+    const textSources: TextSources = {
+      label: labelText,
       placeholder: input.placeholder || '',
-      nearbyText: getNearbyText(input),
+      nearbyText,
       ariaLabel: input.getAttribute('aria-label') || '',
+    }
+
+    const signalClassification = classifyDeliveryChannel(textSources)
+
+    // Reject authenticator app fields
+    // UNLESS email option is also available (hybrid scenario)
+    if (signalClassification.channel === 'authenticator') {
+      const hasEmailOption = signalClassification.allChannels?.includes('email')
+      if (!hasEmailOption) {
+        cooldown.markRejected(input)
+        return {
+          detected: false,
+          confidence: 0,
+          reason: 'Authenticator app detected (no email option)',
+          metadata: {
+            layer: 'signal-classifier-tier1',
+            channel: 'authenticator',
+            matchedKeywords: signalClassification.matchedKeywords,
+            language: signalClassification.language,
+          },
+        }
+      }
+      // Fall through if email available (hybrid scenario)
+    }
+
+    // Reject SMS-only fields
+    // UNLESS email option is also available (hybrid scenario)
+    if (signalClassification.channel === 'sms') {
+      const hasEmailOption = signalClassification.allChannels?.includes('email')
+      if (!hasEmailOption) {
+        cooldown.markRejected(input)
+        return {
+          detected: false,
+          confidence: 0,
+          reason: 'SMS-only field detected (no email option)',
+          metadata: {
+            layer: 'signal-classifier-tier1',
+            channel: 'sms',
+            matchedKeywords: signalClassification.matchedKeywords,
+            language: signalClassification.language,
+          },
+        }
+      }
+      // Fall through if email available (hybrid scenario)
+    }
+
+    // Layer 6: Context validation
+    const contextResult = validateContext({
+      label: labelText,
+      placeholder: input.placeholder || '',
+      nearbyText,
+      ariaLabel: input.getAttribute('aria-label') || '',
+      pageTitle: document.title || '',
     })
 
     if (!contextResult.pass) {
@@ -350,7 +508,7 @@ export function detectTier1(
       return {
         detected: false,
         confidence: 0,
-        reason: `Negative context: ${contextResult.matchedNegatives?.join(', ')}`,
+        reason: `Context validation failed: ${contextResult.matchedNegatives?.join(', ')}`,
         metadata: { layer: 'context' },
       }
     }
@@ -375,12 +533,69 @@ export function detectTier1(
     maxLength >= TYPICAL_CODE_LENGTHS.min &&
     maxLength <= TYPICAL_CODE_LENGTHS.max
   ) {
-    // Layer 4: Context validation
-    const contextResult = validateContext({
-      label: getLabelText(input),
+    // Extract text sources for signal classifier and context validation
+    const labelText = getLabelText(input)
+    const nearbyText = getNearbyText(input)
+
+    // Layer 5: Signal Classifier
+    const textSources: TextSources = {
+      label: labelText,
       placeholder: input.placeholder || '',
-      nearbyText: getNearbyText(input),
+      nearbyText,
       ariaLabel: input.getAttribute('aria-label') || '',
+    }
+
+    const signalClassification = classifyDeliveryChannel(textSources)
+
+    // Reject authenticator app fields
+    // UNLESS email option is also available (hybrid scenario)
+    if (signalClassification.channel === 'authenticator') {
+      const hasEmailOption = signalClassification.allChannels?.includes('email')
+      if (!hasEmailOption) {
+        cooldown.markRejected(input)
+        return {
+          detected: false,
+          confidence: 0,
+          reason: 'Authenticator app detected (no email option)',
+          metadata: {
+            layer: 'signal-classifier-tier1',
+            channel: 'authenticator',
+            matchedKeywords: signalClassification.matchedKeywords,
+            language: signalClassification.language,
+          },
+        }
+      }
+      // Fall through if email available (hybrid scenario)
+    }
+
+    // Reject SMS-only fields
+    // UNLESS email option is also available (hybrid scenario)
+    if (signalClassification.channel === 'sms') {
+      const hasEmailOption = signalClassification.allChannels?.includes('email')
+      if (!hasEmailOption) {
+        cooldown.markRejected(input)
+        return {
+          detected: false,
+          confidence: 0,
+          reason: 'SMS-only field detected (no email option)',
+          metadata: {
+            layer: 'signal-classifier-tier1',
+            channel: 'sms',
+            matchedKeywords: signalClassification.matchedKeywords,
+            language: signalClassification.language,
+          },
+        }
+      }
+      // Fall through if email available (hybrid scenario)
+    }
+
+    // Layer 6: Context validation
+    const contextResult = validateContext({
+      label: labelText,
+      placeholder: input.placeholder || '',
+      nearbyText,
+      ariaLabel: input.getAttribute('aria-label') || '',
+      pageTitle: document.title || '',
     })
 
     if (!contextResult.pass) {
@@ -388,7 +603,7 @@ export function detectTier1(
       return {
         detected: false,
         confidence: 0,
-        reason: `Negative context: ${contextResult.matchedNegatives?.join(', ')}`,
+        reason: `Context validation failed: ${contextResult.matchedNegatives?.join(', ')}`,
         metadata: { layer: 'context' },
       }
     }
@@ -409,10 +624,13 @@ export function detectTier1(
   // No Tier 1 Match
   // ═══════════════════════════════════════════════════════════════
   // Do NOT mark rejected - let Tier 2 try
+  // IMPORTANT: Don't return metadata.layer='attribute' or 'context' here,
+  // as that would cause field-detector to skip Tier2 detection entirely.
+  // This would prevent split-input detection (Steam, etc.) from working.
   return {
     detected: false,
     confidence: 0,
     reason: 'No tier1 patterns matched',
-    metadata: { layer: 'attribute' },
+    // No metadata - allows Tier2 to run
   }
 }
