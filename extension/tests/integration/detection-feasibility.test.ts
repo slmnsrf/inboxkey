@@ -12,6 +12,7 @@ import { join } from 'path'
 import {
   detectVerificationField,
   detectAllFields,
+  resetCooldownRegistry,
 } from '../../src/lib/detection/field-detector'
 
 interface TestCase {
@@ -47,10 +48,10 @@ const TEST_CASES: TestCase[] = [
     name: 'Amazon OTP',
     filename: 'amazon-otp.html',
     expectedField: 'auth-mfa-otpcode',
-    expectedConfidence: { min: 85, max: 95 },
+    expectedConfidence: { min: 0, max: 0 },
     expectedTier: 1,
-    shouldDetect: true,
-    description: 'type="tel" + name contains "otp"',
+    shouldDetect: false, // SMS-only (sent to mobile number) - correctly rejected
+    description: 'SMS-only field - should be rejected (InboxKey only handles email codes)',
   },
   {
     name: 'Bank MFA',
@@ -125,6 +126,9 @@ describe('Detection Engine Feasibility', () => {
         let document: Document
 
         beforeEach(() => {
+          // Reset cooldown registry to prevent test interference
+          resetCooldownRegistry()
+
           // Load fixture HTML
           const fixtureDir = join(__dirname, '../fixtures/detection')
           const htmlContent = readFileSync(
@@ -301,6 +305,9 @@ describe('Detection Engine Feasibility', () => {
       const totalCases = shouldDetectCases.length
 
       shouldDetectCases.forEach((testCase) => {
+        // Reset cooldown registry for each test case
+        resetCooldownRegistry()
+
         const fixtureDir = join(__dirname, '../fixtures/detection')
         const htmlContent = readFileSync(
           join(fixtureDir, testCase.filename),
@@ -348,6 +355,8 @@ describe('Detection Engine Feasibility', () => {
     })
 
     it('should have zero false positives', () => {
+      resetCooldownRegistry()
+
       const edgeCaseTest = TEST_CASES.find((tc) => tc.filename === 'edge-case.html')
       expect(edgeCaseTest).toBeDefined()
 
@@ -371,6 +380,8 @@ describe('Detection Engine Feasibility', () => {
     })
 
     it('should correctly rank multiple candidates', () => {
+      resetCooldownRegistry()
+
       const multipleInputsTest = TEST_CASES.find(
         (tc) => tc.filename === 'multiple-inputs.html'
       )
@@ -421,6 +432,9 @@ describe('Detection Engine Feasibility', () => {
       const executionTimes: number[] = []
 
       tier1Cases.forEach((testCase) => {
+        // Reset cooldown registry for each test case
+        resetCooldownRegistry()
+
         const fixtureDir = join(__dirname, '../fixtures/detection')
         const htmlContent = readFileSync(
           join(fixtureDir, testCase.filename),
@@ -469,6 +483,9 @@ describe('Detection Engine Feasibility', () => {
       const executionTimes: number[] = []
 
       tier2Cases.forEach((testCase) => {
+        // Reset cooldown registry for each test case
+        resetCooldownRegistry()
+
         const fixtureDir = join(__dirname, '../fixtures/detection')
         const htmlContent = readFileSync(
           join(fixtureDir, testCase.filename),

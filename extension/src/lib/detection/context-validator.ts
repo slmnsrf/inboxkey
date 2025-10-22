@@ -8,6 +8,8 @@
  * Critical for: Hepsiburada Turkish password field fix (şifre, parola detection)
  */
 
+import type { TextSources } from './types'
+
 /**
  * Result of context validation with multilingual negative keyword detection
  */
@@ -20,16 +22,6 @@ export interface ContextValidationResult {
   language: string | null
   /** Confidence penalty: 1.0 if clean, 0.3 if negatives matched */
   confidence: number
-}
-
-/**
- * Input text sources for validation
- */
-export interface TextSources {
-  label: string
-  placeholder: string
-  nearbyText: string
-  ariaLabel?: string
 }
 
 /**
@@ -109,6 +101,99 @@ export const NEGATIVE_KEYWORDS = {
 } as const
 
 /**
+ * Setup/configuration page patterns (21 languages)
+ * HIGHEST PRIORITY - Rejects authenticator setup pages before any other checks
+ *
+ * Patterns detect:
+ * - "setup/configure/enable/activate" + "authenticator/2FA/two-factor"
+ * - "scan/enter" + "QR/code" + "app/authenticator"
+ *
+ * Used for: GitHub 2FA setup, Steam Guard setup, Microsoft Authenticator setup, etc.
+ */
+export const SETUP_PAGE_PATTERNS = [
+  // English
+  /\b(setup|configure|enable|activate|add)\s+(authenticator|2fa|two.?factor|mfa)/i,
+  /\b(scan|enter)\s+(qr|code)\s+.{0,20}(app|authenticator)/i,
+  /\b(authenticator|2fa|two.?factor)\s+(setup|configuration|enable)/i,
+
+  // Turkish (note: İ and i are different in Turkish)
+  /(kurulum|ayarla|ekle|etkinleştir|etkinlestir|yapılandır|yapilandir).{0,50}(doğrulayıcı|dogrulayici|2fa|[iİ]ki.?faktör|[iİ]ki.?faktor)/i,
+  /(doğrulayıcı|dogrulayici|2fa|[iİ]ki.?faktör|[iİ]ki.?faktor).{0,50}(kurulum|ayarla|ekle)/i,
+  /([iİ]ki.?faktör|[iİ]ki.?faktor).{0,80}(ayarla)/i, // "İki faktörlü kimlik doğrulamayı ayarla" - longer distance for Turkish grammar
+
+  // German
+  /(einrichten|konfigurieren|aktivieren|hinzufügen|hinzufugen).{0,50}(authenticator|2fa|zwei.?faktor)/i,
+  /(authenticator|2fa|zwei.?faktor).{0,50}(einrichtung|konfiguration|einrichten)/i,
+
+  // French
+  /(configurer|activer|ajouter|paramétrer|parametrer).{0,50}(authenticateur|authentificateur|2fa|deux.?facteurs)/i,
+  /(authenticateur|authentificateur|2fa|deux.?facteurs).{0,50}(configuration|activation)/i,
+
+  // Spanish
+  /(configurar|activar|agregar|añadir|anadir|habilitar).{0,50}(autenticador|2fa|dos.?factores)/i,
+  /(autenticador|2fa|dos.?factores).{0,50}(configuración|configuracion)/i,
+
+  // Portuguese
+  /(configurar|ativar|adicionar|habilitar).{0,50}(autenticador|2fa|dois.?fatores)/i,
+  /(autenticador|2fa|dois.?fatores).{0,50}(configuração|configuracao)/i,
+
+  // Italian
+  /(configura|attiva|aggiungi|abilita).{0,50}(autenticatore|2fa|due.?fattori)/i,
+  /(autenticatore|2fa|due.?fattori).{0,50}(configurazione)/i,
+
+  // Dutch
+  /(instellen|configureren|activeren|toevoegen).{0,50}(authenticator|2fa|twee.?factor)/i,
+  /(authenticator|2fa|twee.?factor).{0,50}(instelling|configuratie|instellen)/i,
+
+  // Swedish
+  /(konfigurera|aktivera|lägga|lagga).{0,50}(autentiserare|2fa|två.?faktor|tva.?faktor)/i,
+  /(autentiserare|2fa|två.?faktor|tva.?faktor).{0,50}(konfiguration)/i,
+
+  // Norwegian
+  /(konfigurer|aktiver|legg).{0,50}(autentisering|2fa|to.?faktor)/i,
+
+  // Danish
+  /(konfigurer|aktiver|tilføj|tilfoj).{0,50}(autentificering|2fa|to.?faktor)/i,
+
+  // Finnish
+  /(määrittää|maarittaa|ottaa|lisää|lisaa).{0,50}(todentaja|2fa|kaksi.?vaihe)/i,
+
+  // Polish
+  /(konfiguruj|włącz|wlacz|dodaj).{0,50}(uwierzytelniacz|uwierzytelnianie|2fa|dwa.?czynnik)/i,
+  /(uwierzytelniacz|uwierzytelnianie|2fa|dwa.?czynnik).{0,50}(konfiguruj)/i,
+
+  // Czech
+  /(nastavit|aktivovat|přidat|pridat).{0,50}(autentizátor|autentizator|2fa|dvoufaktor)/i,
+
+  // Russian
+  /(настроить|настройка|активировать|добавить).{0,50}(аутентификатор|2fa|двухфактор)/i,
+
+  // Ukrainian
+  /(налаштувати|налаштування|активувати|додати).{0,50}(автентифікатор|автентификатор|2fa|двофактор)/i,
+
+  // Arabic (no word boundaries for RTL script)
+  /(إعداد|تكوين|تفعيل|إضافة).{0,50}(مصادقة|تحقق|عاملين)/i,
+
+  // Hindi (no word boundaries for Devanagari)
+  /(सेटअप|कॉन्फ़िगर|सक्षम|जोड़).{0,50}(प्रमाणक|2fa|दो.?कारक)/i,
+
+  // Chinese (Simplified + Traditional) - no word boundaries for CJK
+  /(设置|設置|配置|启用|啟用|添加).{0,50}(身份验证|身份驗證|认证器|認證器|2fa|双因素|雙因素)/i,
+  /(身份验证|身份驗證|认证器|認證器|2fa|双因素|雙因素).{0,50}(设置|設置|配置)/i,
+
+  // Japanese - no word boundaries for CJK
+  /(設定|セットアップ|有効|追加).{0,50}(認証|オーセンティケーター|2fa|二要素|二段階)/i,
+  /(認証|オーセンティケーター|2fa|二要素|二段階).{0,50}(設定|セットアップ)/i,
+
+  // Korean - no word boundaries for Hangul
+  /(설정|구성|활성화|추가).{0,50}(인증|인증자|2fa|이중|두.?요소)/i,
+  /(인증|인증자|2fa|이중|두.?요소).{0,50}(설정|구성)/i,
+
+  // Indonesian
+  /(atur|konfigurasi|aktifkan|tambah).{0,50}(autentikator|2fa|dua.?faktor)/i,
+] as const
+
+/**
  * Allow-list patterns that OVERRIDE negative keywords
  * These patterns indicate the field IS a verification code field despite containing password/login keywords
  *
@@ -139,6 +224,16 @@ export const ALLOW_PATTERNS = [
   // Login codes
   /\blogin\s+(code|otp|token)\b/i,
   /\bsign\s?in\s+(code|otp|token)\b/i,
+
+  // 2FA/MFA contexts (OVERRIDES password/login for multi-step auth flows)
+  /\b(two[_\s-]?step|2[_\s-]?step|multi[_\s-]?factor|two[_\s-]?factor|2fa|mfa)\b/i,
+
+  // Verification/Security code indicators (strong OTP signals)
+  /\b(verification|security|authentication)\s+(code|token)\b/i,
+  /\bverify\s+(your\s+)?(account|identity|email)\b/i,
+  /\benter\s+(the\s+)?(verification|security|authentication|6[_\s-]?digit)\s+code\b/i,
+  /\bcode\s+(sent|delivered|emailed)\b/i,
+  /\bwe[''']ve\s+sent.*code\b/i,
 
   // Turkish: "enter code" variations (OVERRIDES "giriş" negative keyword)
   /\b(kod|kodu|doğrulama|kimlik)\s+(gir|girin|giriniz)\b/i,  // kod girin, kodu giriniz, doğrulama girin
@@ -375,24 +470,26 @@ function findNegativeKeywords(
  * Validate context against multilingual negative keywords
  *
  * Logic:
- * 1. Combine all text sources
- * 2. Check allow-list FIRST (overrides negatives)
- * 3. Normalize text (lowercase, remove diacritics)
- * 4. Search for negative keywords in detected language
- * 5. Return pass/fail + confidence penalty
+ * 1. Combine all text sources (including pageTitle)
+ * 2. Check setup page patterns FIRST (highest priority - rejects authenticator setup pages)
+ * 3. Check allow-list SECOND (overrides negatives)
+ * 4. Normalize text (lowercase, remove diacritics)
+ * 5. Search for negative keywords in detected language
+ * 6. Return pass/fail + confidence penalty
  *
- * Performance: <0.20ms for 500-char text
+ * Performance: <0.20ms for 500-char text (no increase from setup patterns)
  *
- * @param textSources - Label, placeholder, nearby text, aria-label
+ * @param textSources - Label, placeholder, nearby text, aria-label, pageTitle
  * @returns Validation result with pass/fail, matched keywords, language, confidence
  */
 export function validateContext(textSources: TextSources): ContextValidationResult {
-  // Combine all text sources
+  // Combine all text sources (including pageTitle for setup page detection)
   const combinedText = [
     textSources.label,
     textSources.placeholder,
     textSources.nearbyText,
     textSources.ariaLabel || '',
+    textSources.pageTitle || '',
   ]
     .filter(Boolean)
     .join(' ')
@@ -407,7 +504,18 @@ export function validateContext(textSources: TextSources): ContextValidationResu
     }
   }
 
-  // Check allow-list FIRST (overrides negative keywords)
+  // HIGHEST PRIORITY: Check setup page patterns (Phase 1 - False-trigger fix)
+  // Rejects GitHub 2FA setup, Steam Guard setup, Microsoft Authenticator setup, etc.
+  if (SETUP_PAGE_PATTERNS.some(pattern => pattern.test(combinedText))) {
+    return {
+      pass: false,
+      matchedNegatives: ['setup-page-detected'],
+      language: null,
+      confidence: 0, // Complete rejection
+    }
+  }
+
+  // Check allow-list SECOND (overrides negative keywords)
   if (matchesAllowList(combinedText)) {
     return {
       pass: true,
