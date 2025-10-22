@@ -15,6 +15,7 @@ export function AdvancedSettings() {
   const [domainsEnabledByDefault, setDomainsEnabledByDefault] = useState<boolean>(true)
   const [extendedButtonDetection, setExtendedButtonDetection] = useState<boolean>(false)
   const [automationLevel, setAutomationLevel] = useState<AutomationLevel>('autofill')
+  const [disableOnBankingSites, setDisableOnBankingSites] = useState<boolean>(false)
   const [loading, setLoading] = useState<boolean>(true)
   const [isExpanded, setIsExpanded] = useState<boolean>(false)
 
@@ -30,6 +31,7 @@ export function AdvancedSettings() {
       setDomainsEnabledByDefault(settings.domainsEnabledByDefault ?? true)
       setExtendedButtonDetection(settings.extendedButtonDetection ?? false)
       setAutomationLevel(settings.automationLevel || 'autofill')
+      setDisableOnBankingSites(settings.disableOnBankingSites ?? false)
     } catch (error) {
       console.error('[AdvancedSettings] Failed to load settings:', error)
       showToast('Failed to load settings', 'error')
@@ -85,6 +87,35 @@ export function AdvancedSettings() {
     }
   }
 
+  const handleBankingBlocklistToggle = async () => {
+    try {
+      const newValue = !disableOnBankingSites
+      setDisableOnBankingSites(newValue) // Optimistic update
+
+      const storage = await StorageFactory.create()
+      await storage.updateSettings({ disableOnBankingSites: newValue })
+
+      // Update ARIA live region for screen readers
+      const statusEl = document.getElementById('banking-blocklist-status')
+      if (statusEl) {
+        statusEl.textContent = `Banking site blocklist ${newValue ? 'enabled' : 'disabled'}`
+      }
+
+      showToast(t('toast_settings_saved'), 'success')
+    } catch (error) {
+      console.error('[AdvancedSettings] Failed to save banking blocklist setting:', error)
+      setDisableOnBankingSites(!disableOnBankingSites) // Revert on error
+
+      // Announce error to screen readers
+      const statusEl = document.getElementById('banking-blocklist-status')
+      if (statusEl) {
+        statusEl.textContent = 'Failed to save banking blocklist setting'
+      }
+
+      showToast('Failed to save setting', 'error')
+    }
+  }
+
   return (
     <div className="advanced-settings-card">
       <div className="advanced-settings-card__header">
@@ -130,6 +161,37 @@ export function AdvancedSettings() {
           <p id="domains-enabled-help" className="advanced-settings-card__hint">
             When enabled, InboxKey will work on all domains by default. You can still disable it for specific domains using the toggle in the popup.
           </p>
+
+          <div className="setting-divider" />
+
+          <div className="setting-row">
+            <div className="setting-row__info">
+              <label htmlFor="disable-on-banking-sites" className="setting-row__label">
+                {t('settings_advanced_banking_blocklist')}
+              </label>
+              <p className="setting-row__description">
+                {t('settings_advanced_banking_blocklist_desc')}
+              </p>
+            </div>
+            <div className="setting-row__control">
+              <label className="toggle">
+                <input
+                  id="disable-on-banking-sites"
+                  type="checkbox"
+                  checked={disableOnBankingSites}
+                  onChange={handleBankingBlocklistToggle}
+                  disabled={loading}
+                  aria-describedby="banking-blocklist-help"
+                />
+                <span className="slider" />
+              </label>
+            </div>
+          </div>
+
+          <p id="banking-blocklist-help" className="advanced-settings-card__hint">
+            Covers 150+ major banks worldwide. You can still enable InboxKey for specific banks using the toggle in the popup.
+          </p>
+          <span id="banking-blocklist-status" className="sr-only" role="status" aria-live="polite" aria-atomic="true"></span>
 
           {automationLevel === 'full-automation' && (
             <>

@@ -4,6 +4,7 @@
 
 import type { DomainPreferences } from '@/lib/storage/schema'
 import { STORAGE_KEYS } from '@/lib/storage/schema'
+import { isBankingDomain } from '@/lib/data/banking-blocklist'
 
 /**
  * Extract eTLD+1 (effective top-level domain + 1) from a URL
@@ -73,34 +74,40 @@ export function extractDomain(url: string): string {
  * Check if InboxKey is enabled for a given domain
  *
  * Logic:
- * 1. If domain has explicit preference, use it
- * 2. Otherwise, use domainsEnabledByDefault setting
+ * 1. If domain has explicit preference, use it (HIGHEST PRIORITY - allows override)
+ * 2. Check banking blocklist (if setting enabled)
+ * 3. Otherwise, use domainsEnabledByDefault setting
  *
  * @param domain - eTLD+1 domain to check
  * @returns true if enabled, false if disabled
  */
 export async function isDomainEnabled(domain: string): Promise<boolean> {
   try {
-    // Get domain preferences and settings
     const result = await chrome.storage.local.get([
       STORAGE_KEYS.DOMAIN_PREFERENCES,
       STORAGE_KEYS.SETTINGS
     ])
 
-    const domainPreferences: DomainPreferences = result[STORAGE_KEYS.DOMAIN_PREFERENCES] || { domains: {} }
+    const domainPreferences: DomainPreferences =
+      result[STORAGE_KEYS.DOMAIN_PREFERENCES] || { domains: {} }
     const settings = result[STORAGE_KEYS.SETTINGS] || {}
 
-    // Check explicit preference first
+    // 1. Check explicit user preference (HIGHEST PRIORITY - allows override)
     if (domain in domainPreferences.domains) {
       return domainPreferences.domains[domain]
     }
 
-    // Fall back to default setting
+    // 2. Check banking blocklist (if setting enabled)
+    const disableOnBankingSites = settings.disableOnBankingSites ?? false
+    if (disableOnBankingSites && isBankingDomain(domain)) {
+      return false
+    }
+
+    // 3. Fall back to default setting
     const domainsEnabledByDefault = settings.domainsEnabledByDefault ?? true
     return domainsEnabledByDefault
   } catch (error) {
     console.error('[Domain] Failed to check domain state:', error)
-    // Default to enabled on error
-    return true
+    return true // Default to enabled on error
   }
 }
