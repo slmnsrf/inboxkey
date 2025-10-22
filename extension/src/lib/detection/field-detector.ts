@@ -52,6 +52,19 @@ function getCooldownRegistry(): CooldownRegistry {
   return _cooldownRegistry
 }
 
+/**
+ * Reset the cooldown registry singleton (test-only)
+ *
+ * Forces creation of a new cooldown registry instance on next detection call.
+ * This is necessary in test environments where multiple test cases run with
+ * different DOM documents but the cooldown registry persists across tests.
+ *
+ * IMPORTANT: Only use this in test code, never in production.
+ */
+export function resetCooldownRegistry(): void {
+  _cooldownRegistry = null
+}
+
 // ═══════════════════════════════════════════════════════════════
 // Result Format Conversion (New → Legacy)
 // ═══════════════════════════════════════════════════════════════
@@ -115,20 +128,16 @@ function tier2ToDetectionResult(
  *
  * Filters out hidden, disabled, and zero-size fields.
  *
- * @param strictVisibility - If true, filters out hidden/zero-size elements (for production)
- *                           If false, only checks basic visibility (for testing)
+ * @param strictVisibility - Visibility checking mode
+ *   - TRUE (production): Full visibility checks via getComputedStyle() + getBoundingClientRect()
+ *   - FALSE (test mode): Basic checks only (disabled, type="hidden", inline styles)
+ *                        Skips DOM APIs that may not work in test environments
  * @returns Array of visible input fields
  */
 function getInputFields(strictVisibility = true): HTMLInputElement[] {
   return Array.from(
     document.querySelectorAll<HTMLInputElement>('input')
   ).filter(input => {
-    // Must be visible
-    const style = window.getComputedStyle(input)
-    if (style.display === 'none' || style.visibility === 'hidden') {
-      return false
-    }
-
     // Must not be disabled
     if (input.disabled) {
       return false
@@ -145,8 +154,21 @@ function getInputFields(strictVisibility = true): HTMLInputElement[] {
       return false
     }
 
-    // Check dimensions (skip in test environment where getBoundingClientRect may not work)
+    // Check for explicit hiding via inline styles (works in test env)
+    // Must check before strictVisibility guard to catch display:none/visibility:hidden
+    if (/display\s*:\s*none|visibility\s*:\s*hidden/.test(inlineStyle)) {
+      return false
+    }
+
+    // Visibility checks (skip in test environment where DOM APIs may not work)
     if (strictVisibility) {
+      // Check computed styles (browser-only)
+      const style = window.getComputedStyle(input)
+      if (style.display === 'none' || style.visibility === 'hidden') {
+        return false
+      }
+
+      // Check dimensions (browser-only)
       const rect = input.getBoundingClientRect()
       if (rect.width === 0 || rect.height === 0) {
         return false
