@@ -6,12 +6,12 @@ InboxKey automatically detects verification codes and magic login links in your 
 
 ## Features
 
-- ✅ **Automatic code detection** - Finds 4-8 digit codes in Gmail and Outlook
-- ✅ **Magic link detection** - Identifies and opens login links safely
-- ✅ **Auto-fill** - Fills codes on websites within 15 seconds of arrival
-- ✅ **Manual copy** - Popup shows last 5 codes for manual use
-- ✅ **Privacy-first** - All processing local-only, no servers, no tracking
-- ✅ **Multi-provider** - Supports Gmail and Outlook (IMAP coming soon)
+- ✅ **Automatic code detection** - Detects OTP codes (4-8 digits, alphanumeric)
+- ✅ **Magic link detection** - Safely identifies and opens login/verification links
+- ✅ **Auto-fill** - Automatically fills codes on web pages
+- ✅ **Privacy-first** - Local-only processing, no servers, no tracking
+- ✅ **Multi-provider** - Gmail, Outlook, and IMAP (via InboxBridge)
+- ✅ **Manual access** - Popup shows recent codes and links
 
 ## Installation
 
@@ -226,22 +226,9 @@ This project uses npm workspaces to share code between the main extension and de
 - **Testing**: Vitest, Playwright, MSW
 - **Build**: Parcel bundler
 
-### Running Tests
-
-```bash
-# Unit tests
-pnpm test
-
-# E2E tests
-pnpm test:e2e
-
-# Coverage report
-pnpm test:coverage
-```
-
 ### Contributing
 
-We welcome contributions! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+We welcome contributions!
 
 1. Fork the repository
 2. Create a feature branch (`git checkout -b feature/amazing-feature`)
@@ -271,14 +258,7 @@ If InboxKey saves you time, consider buying me a coffee:
 
 **Support is optional and never required.** InboxKey is free and open-source forever.
 
-## Acknowledgments
-
-- Built with [Plasmo](https://www.plasmo.com/)
-- Icons from [Lucide](https://lucide.dev/)
-- Inspired by [1Password](https://1password.com/) and [Bitwarden](https://bitwarden.com/)
-
----
 
 **Made with ❤️ by the InboxKey team**
 
-[GitHub](https://github.com/inboxkey/inboxkey) • [Discord](https://discord.gg/inboxkey) • [Twitter](https://twitter.com/inboxkey)
+[GitHub](https://github.com/inboxkey/inboxkey) • [Discord](https://discord.gg/inboxkey)
