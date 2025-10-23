@@ -249,31 +249,6 @@ We welcome contributions! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 4. Push to the branch (`git push origin feature/amazing-feature`)
 5. Open a Pull Request
 
-## Roadmap
-
-### Phase 9: Accessibility & i18n ✅ (Complete)
-- [x] Keyboard navigation
-- [x] ARIA labels and screen reader support
-- [x] WCAG AA contrast ratios
-- [x] i18n infrastructure (21 languages supported)
-
-### Phase 10: MVP Polish 🚧 (In Progress)
-- [x] Performance budgets (<200ms popup load)
-- [x] About & Trust section
-- [ ] Per-site overrides (auto-fill/prompt/off)
-- [ ] Error banners for token expiration
-- [ ] Final accessibility audit
-
-### Phase 11: Mailboxes UI 🔮 (Post-MVP)
-- [ ] Unified mailbox viewer (read-only)
-- [ ] Safe preview pane (no external images)
-- [ ] Provider filtering
-
-### Phase 12: IMAP Support 🔮 (Post-MVP)
-- [ ] InboxBridge native helper app
-- [ ] Yahoo, ProtonMail, custom servers
-- [ ] OS keychain integration
-
 ## Build Verification
 
 All releases are built via GitHub Actions with reproducible builds. Verify Chrome Web Store versions match source code:
