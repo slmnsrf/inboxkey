@@ -946,5 +946,105 @@
   "automation_hint": {
     "message": "Changes apply to new codes only",
     "description": "Automation settings hint"
+  },
+  "accounts_imap_add_title": {
+    "message": "Add IMAP Account",
+    "description": "Title for add IMAP account modal"
+  },
+  "accounts_imap_reconnect_title": {
+    "message": "Reconnect IMAP Account",
+    "description": "Title for reconnect IMAP account modal"
+  },
+  "accounts_imap_bridge_not_installed": {
+    "message": "InboxBridge not installed",
+    "description": "Error when InboxBridge native app is not installed"
+  },
+  "accounts_imap_bridge_install_instructions": {
+    "message": "InboxBridge is required to connect IMAP accounts. Download and install it to continue.",
+    "description": "Instructions for installing InboxBridge"
+  },
+  "accounts_imap_install_bridge": {
+    "message": "Download InboxBridge",
+    "description": "Button to download InboxBridge"
+  },
+  "accounts_imap_email_label": {
+    "message": "Email Address",
+    "description": "Label for IMAP email field"
+  },
+  "accounts_imap_server_label": {
+    "message": "IMAP Server",
+    "description": "Label for IMAP server field"
+  },
+  "accounts_imap_server_hint": {
+    "message": "Example: imap.gmail.com or imap.mail.yahoo.com",
+    "description": "Hint for IMAP server field"
+  },
+  "accounts_imap_port_label": {
+    "message": "Port",
+    "description": "Label for IMAP port field"
+  },
+  "accounts_imap_tls_label": {
+    "message": "TLS/SSL",
+    "description": "Label for TLS checkbox"
+  },
+  "accounts_imap_tls_enabled": {
+    "message": "Use TLS/SSL",
+    "description": "TLS checkbox label"
+  },
+  "accounts_imap_password_label": {
+    "message": "Password",
+    "description": "Label for IMAP password field"
+  },
+  "accounts_imap_password_hint": {
+    "message": "Your email password or app-specific password",
+    "description": "Hint for IMAP password field"
+  },
+  "accounts_imap_label_label": {
+    "message": "Account Label (Optional)",
+    "description": "Label for account label field"
+  },
+  "accounts_imap_label_hint": {
+    "message": "Custom name to identify this account",
+    "description": "Hint for account label field"
+  },
+  "accounts_imap_test_connection": {
+    "message": "Test Connection",
+    "description": "Button to test IMAP connection"
+  },
+  "accounts_imap_testing": {
+    "message": "Testing...",
+    "description": "Testing connection status"
+  },
+  "accounts_imap_test_success": {
+    "message": "Connection successful!",
+    "description": "Success message for IMAP connection test"
+  },
+  "accounts_imap_add_button": {
+    "message": "Add Account",
+    "description": "Button to add IMAP account"
+  },
+  "accounts_imap_update": {
+    "message": "Update Account",
+    "description": "Button to update IMAP account"
+  },
+  "modal_cancel": {
+    "message": "Cancel",
+    "description": "Cancel button in modals"
+  },
+  "toast_imap_test_failed": {
+    "message": "Connection test failed",
+    "description": "Error toast when IMAP test fails"
+  },
+  "accounts_imap_error_auth": {
+    "message": "Authentication failed. Check your email and password.",
+    "description": "IMAP authentication error"
+  },
+  "accounts_imap_error_timeout": {
+    "message": "Connection timeout. Check server address and port.",
+    "description": "IMAP timeout error"
+  },
+  "accounts_imap_error_keychain": {
+    "message": "Keychain access error. Grant InboxBridge keychain permissions.",
+    "description": "IMAP keychain error"
   }
 }
