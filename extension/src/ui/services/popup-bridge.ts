@@ -116,11 +116,7 @@ export class PopupBridge {
    * @returns Sync error info or null if no error
    */
   async getSyncError(): Promise<SyncErrorInfo | null> {
-    const response = await chrome.runtime.sendMessage({ type: 'GET_SYNC_ERROR' })
-    if (!response.success) {
-      throw new Error(response.error)
-    }
-    return response.error || null
+    return this.sendMessage<SyncErrorInfo | null>({ type: 'GET_SYNC_ERROR' })
   }
 
   private async sendMessage<T>(
@@ -136,7 +132,14 @@ export class PopupBridge {
         if ('data' in response) {
           return response.data as T
         }
-        throw new Error('Invalid response format')
+        if ('mailboxes' in response) {
+          return response.mailboxes as T
+        }
+        if ('error' in response) {
+          return response.error as T
+        }
+        // For { success: true } responses with no data (e.g., MARK_CODES_SEEN)
+        return undefined as T
       }),
       this.timeoutPromise(timeout)
     ]).catch(async (err) => {
