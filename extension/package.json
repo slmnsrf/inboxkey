@@ -8,7 +8,9 @@
   "scripts": {
     "dev": "plasmo dev",
     "build": "plasmo build && npm run copy-locales",
+    "build:verify": "npm run build && npm run checksums",
     "copy-locales": "cp -r _locales build/chrome-mv3-prod/",
+    "checksums": "bash scripts/generate-checksums.sh",
     "package": "plasmo package",
     "test": "vitest",
     "test:ui": "vitest --ui",
