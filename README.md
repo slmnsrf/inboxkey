@@ -274,6 +274,16 @@ We welcome contributions! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 - [ ] Yahoo, ProtonMail, custom servers
 - [ ] OS keychain integration
 
+## Build Verification
+
+All releases are built via GitHub Actions with reproducible builds. Verify Chrome Web Store versions match source code:
+
+1. **Download checksums** from [GitHub Releases](https://github.com/slmnsrf/inboxkey/releases)
+2. **Compare with installed extension** at `chrome://extensions`
+3. **Full guide**: See [`extension/.github/workflows/release.yml`](extension/.github/workflows/release.yml) and run `npm run build:verify`
+
+Each release includes SHA256SUMS, BUILD_INFO.txt, and public build logs.
+
 ## License
 
 Apache-2.0 License - see [LICENSE](LICENSE) for details.
