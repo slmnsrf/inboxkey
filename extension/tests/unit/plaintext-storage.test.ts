@@ -432,182 +432,10 @@ describe("PlaintextStorage", () => {
   })
 
   // ============================================================================
-  // Code Operations
+  // Code Operations (REMOVED - code storage functionality removed)
   // ============================================================================
-
-  describe("addCode", () => {
-    it("should add verification code", async () => {
-      const code = createTestCode()
-      await storage.addCode(code)
-
-      const codes = await storage.getRecentCodes()
-      expect(codes).toHaveLength(1)
-      expect(codes[0].code).toBe(code.code)
-    })
-
-    it("should store code in plaintext", async () => {
-      const code = createTestCode({ code: "123456" })
-      await storage.addCode(code)
-
-      const stored = mockLocalStorage[PLAINTEXT_STORAGE_KEYS.RECENT_CODES][0]
-      expect(stored.code).toBe("123456")
-    })
-
-    it("should add codes at beginning (newest first)", async () => {
-      const code1 = createTestCode({ code: "111111" })
-      const code2 = createTestCode({ code: "222222" })
-
-      await storage.addCode(code1)
-      await storage.addCode(code2)
-
-      const codes = await storage.getRecentCodes()
-      expect(codes[0].code).toBe("222222")
-      expect(codes[1].code).toBe("111111")
-    })
-
-    it("should validate code is not empty", async () => {
-      const invalidCode = createTestCode({ code: "" })
-      await expect(storage.addCode(invalidCode)).rejects.toThrow(ValidationError)
-    })
-
-    it("should validate timestamp", async () => {
-      const invalidCode = createTestCode({ timestamp: -1 })
-      await expect(storage.addCode(invalidCode)).rejects.toThrow(ValidationError)
-    })
-
-    it("should validate source", async () => {
-      const invalidCode = createTestCode({ source: "" })
-      await expect(storage.addCode(invalidCode)).rejects.toThrow(ValidationError)
-    })
-
-    it("should validate used field is boolean", async () => {
-      const invalidCode = createTestCode({ used: "true" as any })
-      await expect(storage.addCode(invalidCode)).rejects.toThrow(ValidationError)
-    })
-
-    it("should send change notification", async () => {
-      const code = createTestCode()
-      await storage.addCode(code)
-
-      expect(chrome.runtime.sendMessage).toHaveBeenCalledWith({
-        type: "storage-changed",
-        changeType: "codes",
-        timestamp: expect.any(Number),
-      })
-    })
-  })
-
-  describe("getRecentCodes", () => {
-    it("should return codes in reverse chronological order", async () => {
-      const code1 = createTestCode({ timestamp: Date.now() - 2000, code: "1" })
-      const code2 = createTestCode({ timestamp: Date.now() - 1000, code: "2" })
-      const code3 = createTestCode({ timestamp: Date.now(), code: "3" })
-
-      await storage.addCode(code1)
-      await storage.addCode(code2)
-      await storage.addCode(code3)
-
-      const codes = await storage.getRecentCodes()
-      expect(codes[0].timestamp).toBeGreaterThan(codes[1].timestamp)
-      expect(codes[1].timestamp).toBeGreaterThan(codes[2].timestamp)
-    })
-
-    it("should handle empty list", async () => {
-      const codes = await storage.getRecentCodes()
-      expect(codes).toEqual([])
-    })
-
-    it("should limit results when limit parameter provided", async () => {
-      for (let i = 0; i < 10; i++) {
-        await storage.addCode(createTestCode({ code: `${i}` }))
-      }
-
-      const codes = await storage.getRecentCodes(5)
-      expect(codes).toHaveLength(5)
-    })
-
-    it("should validate stored codes", async () => {
-      mockLocalStorage[PLAINTEXT_STORAGE_KEYS.RECENT_CODES] = [{ invalid: "data" }]
-
-      await expect(storage.getRecentCodes()).rejects.toThrow(ValidationError)
-    })
-
-    it("should throw StorageError on storage failure", async () => {
-      vi.mocked(chrome.storage.local.get).mockRejectedValueOnce(
-        new Error("Storage error")
-      )
-
-      await expect(storage.getRecentCodes()).rejects.toThrow(StorageError)
-    })
-  })
-
-  describe("markCodeUsed", () => {
-    it("should mark code as used", async () => {
-      const code = createTestCode({ code: "123456" })
-      await storage.addCode(code)
-
-      await storage.markCodeUsed("123456")
-
-      const codes = await storage.getRecentCodes()
-      expect(codes[0].used).toBe(true)
-    })
-
-    it("should throw error for non-existent code", async () => {
-      await expect(storage.markCodeUsed("999999")).rejects.toThrow(
-        ValidationError
-      )
-    })
-
-    it("should validate code parameter", async () => {
-      await expect(storage.markCodeUsed("")).rejects.toThrow(ValidationError)
-    })
-  })
-
-  describe("clearOldCodes", () => {
-    it("should remove codes older than threshold", async () => {
-      const oldCode = createTestCode({ timestamp: Date.now() - 10000 })
-      const recentCode = createTestCode({ timestamp: Date.now() })
-
-      await storage.addCode(oldCode)
-      await storage.addCode(recentCode)
-
-      await storage.clearOldCodes(5000)
-
-      const codes = await storage.getRecentCodes()
-      expect(codes).toHaveLength(1)
-      expect(codes[0].timestamp).toBe(recentCode.timestamp)
-    })
-
-    it("should preserve recent codes", async () => {
-      const code1 = createTestCode({ timestamp: Date.now() - 1000 })
-      const code2 = createTestCode({ timestamp: Date.now() - 500 })
-
-      await storage.addCode(code1)
-      await storage.addCode(code2)
-
-      await storage.clearOldCodes(2000)
-
-      const codes = await storage.getRecentCodes()
-      expect(codes).toHaveLength(2)
-    })
-
-    it("should validate olderThanMs parameter", async () => {
-      await expect(storage.clearOldCodes(0)).rejects.toThrow(ValidationError)
-      await expect(storage.clearOldCodes(-1000)).rejects.toThrow(ValidationError)
-    })
-  })
-
-  describe("clearAllCodes", () => {
-    it("should clear all codes", async () => {
-      await storage.addCode(createTestCode())
-      await storage.addCode(createTestCode())
-
-      await storage.clearAllCodes()
-
-      const codes = await storage.getRecentCodes()
-      expect(codes).toEqual([])
-    })
-  })
+  // Note: Code storage operations (addCode, getRecentCodes, markCodeUsed,
+  // clearOldCodes, clearAllCodes) have been removed as per architectural changes.
 
   // ============================================================================
   // AsyncMutex Behavior
@@ -636,17 +464,6 @@ describe("PlaintextStorage", () => {
       expect(mailboxes).toHaveLength(1)
     })
 
-    it("should handle concurrent code operations", async () => {
-      const codes = Array.from({ length: 10 }, (_, i) =>
-        createTestCode({ code: `${i}` })
-      )
-
-      await Promise.all(codes.map((c) => storage.addCode(c)))
-
-      const retrieved = await storage.getRecentCodes()
-      expect(retrieved).toHaveLength(10)
-    })
-
     it("should prevent race conditions during updates", async () => {
       const mailbox = createTestMailbox()
       await storage.addMailbox(mailbox)
@@ -663,129 +480,6 @@ describe("PlaintextStorage", () => {
       expect([now + 1000, now + 2000, now + 3000]).toContain(
         updated!.lastSyncedAt
       )
-    })
-  })
-
-  // ============================================================================
-  // Backward Compatibility Tests
-  // ============================================================================
-
-  describe("Backward Compatibility - StoredCode", () => {
-    it("should accept old format codes without new optional fields", async () => {
-      const oldFormatCode = createTestCode({
-        code: "123456",
-        timestamp: Date.now(),
-        source: "test@example.com",
-        used: false,
-      })
-
-      await storage.addCode(oldFormatCode)
-
-      const codes = await storage.getRecentCodes()
-      expect(codes).toHaveLength(1)
-      expect(codes[0].code).toBe("123456")
-      expect(codes[0].senderETLD).toBeUndefined()
-      expect(codes[0].receivedAt).toBeUndefined()
-      expect(codes[0].domainAffinity).toBeUndefined()
-    })
-
-    it("should accept new format codes with all optional fields", async () => {
-      const newFormatCode = createTestCode({
-        code: "654321",
-        timestamp: Date.now(),
-        source: "noreply@example.com",
-        used: false,
-        senderETLD: "example.com",
-        receivedAt: Date.now() - 1000,
-        domainAffinity: 0.95,
-      })
-
-      await storage.addCode(newFormatCode)
-
-      const codes = await storage.getRecentCodes()
-      expect(codes).toHaveLength(1)
-      expect(codes[0].code).toBe("654321")
-      expect(codes[0].senderETLD).toBe("example.com")
-      expect(codes[0].receivedAt).toBeDefined()
-      expect(codes[0].domainAffinity).toBe(0.95)
-    })
-
-    it("should handle mixed format codes in storage", async () => {
-      const oldCode = createTestCode({
-        code: "111111",
-        timestamp: Date.now() - 2000,
-        source: "old@example.com",
-        used: false,
-      })
-
-      const newCode = createTestCode({
-        code: "222222",
-        timestamp: Date.now(),
-        source: "new@example.com",
-        used: false,
-        senderETLD: "example.com",
-        receivedAt: Date.now() - 500,
-        domainAffinity: 0.8,
-      })
-
-      await storage.addCode(oldCode)
-      await storage.addCode(newCode)
-
-      const codes = await storage.getRecentCodes()
-      expect(codes).toHaveLength(2)
-
-      const retrievedNew = codes.find(c => c.code === "222222")
-      const retrievedOld = codes.find(c => c.code === "111111")
-
-      expect(retrievedNew?.senderETLD).toBe("example.com")
-      expect(retrievedNew?.domainAffinity).toBe(0.8)
-
-      expect(retrievedOld?.senderETLD).toBeUndefined()
-      expect(retrievedOld?.receivedAt).toBeUndefined()
-    })
-
-    it("should preserve all fields during retrieval including optional ones", async () => {
-      const codeWithAllFields = createTestCode({
-        code: "999999",
-        timestamp: Date.now(),
-        source: "complete@example.com",
-        siteMatch: "example.com",
-        used: false,
-        mailboxId: crypto.randomUUID(),
-        senderETLD: "example.com",
-        receivedAt: Date.now() - 2000,
-        domainAffinity: 0.75,
-      })
-
-      await storage.addCode(codeWithAllFields)
-
-      const codes = await storage.getRecentCodes()
-      expect(codes[0]).toMatchObject({
-        code: "999999",
-        source: "complete@example.com",
-        siteMatch: "example.com",
-        used: false,
-        mailboxId: codeWithAllFields.mailboxId,
-        senderETLD: "example.com",
-        receivedAt: codeWithAllFields.receivedAt,
-        domainAffinity: 0.75,
-      })
-    })
-
-    it("should store code with invalid receivedAt but fail on retrieval", async () => {
-      const invalidCode = createTestCode({
-        code: "123456",
-        timestamp: Date.now(),
-        source: "test@example.com",
-        used: false,
-        receivedAt: -1, // Invalid timestamp
-      })
-
-      // addCode only validates required fields, not optional ones
-      await storage.addCode(invalidCode)
-
-      // But retrieval validates with isStoredCode which checks receivedAt
-      await expect(storage.getRecentCodes()).rejects.toThrow(ValidationError)
     })
   })
 
@@ -974,7 +668,6 @@ describe("PlaintextStorage", () => {
   describe("Utility Operations", () => {
     it("should clear only plaintext storage keys", async () => {
       await storage.addMailbox(createTestMailbox())
-      await storage.addCode(createTestCode())
       await storage.updateSettings({ autoFillEnabled: false })
 
       // Add some encrypted storage data (should not be cleared)
@@ -983,7 +676,6 @@ describe("PlaintextStorage", () => {
       await storage.clear()
 
       expect(mockLocalStorage[PLAINTEXT_STORAGE_KEYS.MAILBOXES]).toBeUndefined()
-      expect(mockLocalStorage[PLAINTEXT_STORAGE_KEYS.RECENT_CODES]).toBeUndefined()
       expect(mockLocalStorage[PLAINTEXT_STORAGE_KEYS.SETTINGS]).toBeUndefined()
       expect(mockSessionStorage).toEqual({})
 
@@ -993,7 +685,6 @@ describe("PlaintextStorage", () => {
 
     it("should get storage size for plaintext keys only", async () => {
       await storage.addMailbox(createTestMailbox())
-      await storage.addCode(createTestCode())
 
       vi.mocked(chrome.storage.local as any).getBytesInUse = vi
         .fn()
@@ -1003,7 +694,6 @@ describe("PlaintextStorage", () => {
       expect(size).toBe(1024)
       expect(chrome.storage.local.getBytesInUse).toHaveBeenCalledWith([
         PLAINTEXT_STORAGE_KEYS.MAILBOXES,
-        PLAINTEXT_STORAGE_KEYS.RECENT_CODES,
         PLAINTEXT_STORAGE_KEYS.SETTINGS,
         PLAINTEXT_STORAGE_KEYS.DOMAIN_PREFERENCES,
       ])

@@ -561,6 +561,35 @@ describe('Tier 1 Fast Detection', () => {
       expect(result.reason).toBe('Zip/postal code detected')
     })
 
+    it('should reject zip code fields with hyphen separator', () => {
+      const input = createInput({ name: 'zip-code', maxLength: 10 })
+
+      const result = detectTier1(input, cooldown)
+
+      expect(result.detected).toBe(false)
+      expect(result.reason).toContain('Excluded pattern')
+      expect(result.reason).toContain('zip-code')
+    })
+
+    it('should reject zip code fields with underscore separator (Salesforce)', () => {
+      const input = createInput({ name: 'Zip_Code__c', maxLength: 18 })
+
+      const result = detectTier1(input, cooldown)
+
+      expect(result.detected).toBe(false)
+      expect(result.reason).toContain('Excluded pattern')
+      expect(result.reason).toContain('zip_code__c')
+    })
+
+    it('should reject zip code fields with space separator', () => {
+      const input = createInput({ name: 'zip code', maxLength: 10 })
+
+      const result = detectTier1(input, cooldown)
+
+      expect(result.detected).toBe(false)
+      expect(result.reason).toContain('Excluded pattern')
+    })
+
     it('should reject postal code fields', () => {
       const input = createInput({ name: 'postalcode', maxLength: 5 })
 
@@ -568,6 +597,56 @@ describe('Tier 1 Fast Detection', () => {
 
       expect(result.detected).toBe(false)
       expect(result.reason).toBe('Zip/postal code detected')
+    })
+
+    it('should reject user_name fields with underscore separator', () => {
+      const input = createInput({ name: 'user_name' })
+
+      const result = detectTier1(input, cooldown)
+
+      expect(result.detected).toBe(false)
+      expect(result.reason).toContain('Excluded pattern')
+      expect(result.reason).toContain('user_name')
+    })
+
+    it('should reject first_name fields with underscore separator', () => {
+      const input = createInput({ name: 'first_name' })
+
+      const result = detectTier1(input, cooldown)
+
+      expect(result.detected).toBe(false)
+      expect(result.reason).toContain('Excluded pattern')
+      expect(result.reason).toContain('first_name')
+    })
+
+    it('should reject last_name fields with underscore separator', () => {
+      const input = createInput({ name: 'last_name' })
+
+      const result = detectTier1(input, cooldown)
+
+      expect(result.detected).toBe(false)
+      expect(result.reason).toContain('Excluded pattern')
+      expect(result.reason).toContain('last_name')
+    })
+
+    it('should reject full_name fields with underscore separator', () => {
+      const input = createInput({ name: 'full_name' })
+
+      const result = detectTier1(input, cooldown)
+
+      expect(result.detected).toBe(false)
+      expect(result.reason).toContain('Excluded pattern')
+      expect(result.reason).toContain('full_name')
+    })
+
+    it('should reject e_mail fields with underscore separator', () => {
+      const input = createInput({ name: 'e_mail' })
+
+      const result = detectTier1(input, cooldown)
+
+      expect(result.detected).toBe(false)
+      expect(result.reason).toContain('Excluded pattern')
+      expect(result.reason).toContain('e_mail')
     })
 
     it('should reject excluded patterns (CVV)', () => {
@@ -585,6 +664,89 @@ describe('Tier 1 Fast Detection', () => {
       const result = detectTier1(input, cooldown)
 
       expect(result.detected).toBe(false)
+    })
+
+    // E-Commerce Exclusions
+    it('should reject discount_code fields', () => {
+      const input = createInput({ name: 'discount_code', maxlength: 10 })
+      const result = detectTier1(input, cooldown)
+      expect(result.detected).toBe(false)
+      expect(result.reason).toContain('Excluded pattern')
+    })
+
+    it('should reject promo_code and promotional_code fields', () => {
+      const input1 = createInput({ name: 'promo_code' })
+      const result1 = detectTier1(input1, cooldown)
+      expect(result1.detected).toBe(false)
+
+      const input2 = createInput({ name: 'promotional_code' })
+      const result2 = detectTier1(input2, cooldown)
+      expect(result2.detected).toBe(false)
+    })
+
+    it('should reject coupon_code fields', () => {
+      const input = createInput({ name: 'coupon_code', maxlength: 12 })
+      const result = detectTier1(input, cooldown)
+      expect(result.detected).toBe(false)
+      expect(result.reason).toContain('Excluded pattern')
+    })
+
+    it('should reject voucher_code fields', () => {
+      const input = createInput({ name: 'voucher_code' })
+      const result = detectTier1(input, cooldown)
+      expect(result.detected).toBe(false)
+    })
+
+    // API Exclusions
+    it('should reject api_key and api_secret fields', () => {
+      const input1 = createInput({ name: 'api_key', type: 'password' })
+      const result1 = detectTier1(input1, cooldown)
+      expect(result1.detected).toBe(false)
+
+      const input2 = createInput({ name: 'api_secret', type: 'password' })
+      const result2 = detectTier1(input2, cooldown)
+      expect(result2.detected).toBe(false)
+    })
+
+    it('should reject access_token fields', () => {
+      const input = createInput({ name: 'access_token', type: 'text' })
+      const result = detectTier1(input, cooldown)
+      expect(result.detected).toBe(false)
+      expect(result.reason).toContain('Excluded pattern')
+    })
+
+    it('should reject refresh_token fields', () => {
+      const input = createInput({ name: 'refresh_token', type: 'password' })
+      const result = detectTier1(input, cooldown)
+      expect(result.detected).toBe(false)
+    })
+
+    // Referral Exclusions
+    it('should reject referral_code and referral_link fields', () => {
+      const input1 = createInput({ name: 'referral_code', maxlength: 8 })
+      const result1 = detectTier1(input1, cooldown)
+      expect(result1.detected).toBe(false)
+
+      const input2 = createInput({ name: 'referral_link' })
+      const result2 = detectTier1(input2, cooldown)
+      expect(result2.detected).toBe(false)
+    })
+
+    it('should reject affiliate_code fields', () => {
+      const input = createInput({ name: 'affiliate_code' })
+      const result = detectTier1(input, cooldown)
+      expect(result.detected).toBe(false)
+      expect(result.reason).toContain('Excluded pattern')
+    })
+
+    it('should reject invite_code and invitation_code fields', () => {
+      const input1 = createInput({ name: 'invite_code', maxlength: 8 })
+      const result1 = detectTier1(input1, cooldown)
+      expect(result1.detected).toBe(false)
+
+      const input2 = createInput({ name: 'invitation_code' })
+      const result2 = detectTier1(input2, cooldown)
+      expect(result2.detected).toBe(false)
     })
   })
 

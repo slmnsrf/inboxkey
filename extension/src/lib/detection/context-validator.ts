@@ -194,6 +194,90 @@ export const SETUP_PAGE_PATTERNS = [
 ] as const
 
 /**
+ * Commercial field context keywords (Phase 1b - False Positive Prevention)
+ * Used to detect non-OTP commercial fields (e-commerce, API, referral)
+ *
+ * Architecture: Mirrors NEGATIVE_KEYWORDS structure (21 languages)
+ * Priority: Checked AFTER setup page patterns, BEFORE password/login negatives
+ * Language support: 21 languages (EN, ZH, ES, PT, JA, RU, DE, FR, AR, TR, KO, IT, NL, PL, HI, SV, FI, DA, NO, CS, UK)
+ * Coverage: 99.4% of Chrome users
+ * Performance: <0.05ms (simple string matching, no normalization, early-exit)
+ *
+ * @see NEGATIVE_KEYWORDS for implementation pattern reference
+ */
+export const COMMERCIAL_KEYWORDS = {
+  ecommerce: {
+    en: ['discount', 'promo', 'promotional', 'coupon', 'voucher', 'checkout', 'cart', 'shopping', 'purchase', 'order'],
+    zh: ['折扣', '优惠', '促销', '优惠券', '代金券', '结账', '购物车', '购物', '购买', '订单'],
+    es: ['descuento', 'promo', 'promocional', 'cupón', 'vale', 'caja', 'carrito', 'compras', 'compra', 'pedido'],
+    pt: ['desconto', 'promo', 'promocional', 'cupom', 'vale', 'caixa', 'carrinho', 'compras', 'compra', 'pedido'],
+    ja: ['割引', 'プロモ', 'プロモーション', 'クーポン', 'バウチャー', 'チェックアウト', 'カート', 'ショッピング', '購入', '注文'],
+    ru: ['скидка', 'промо', 'промоакция', 'купон', 'ваучер', 'оформление', 'корзина', 'покупки', 'покупка', 'заказ'],
+    de: ['rabatt', 'promo', 'aktion', 'gutschein', 'voucher', 'kasse', 'warenkorb', 'einkaufen', 'kauf', 'bestellung'],
+    fr: ['remise', 'promo', 'promotionnel', 'coupon', 'bon', 'caisse', 'panier', 'achats', 'achat', 'commande'],
+    ar: ['خصم', 'عرض', 'ترويجي', 'قسيمة', 'قسيمة شراء', 'الدفع', 'سلة', 'تسوق', 'شراء', 'طلب'],
+    tr: ['indirim', 'promosyon', 'kampanya', 'kupon', 'hediye çeki', 'ödeme', 'sepet', 'alışveriş', 'satın alma', 'sipariş'],
+    ko: ['할인', '프로모', '프로모션', '쿠폰', '바우처', '체크아웃', '장바구니', '쇼핑', '구매', '주문'],
+    it: ['sconto', 'promo', 'promozionale', 'coupon', 'voucher', 'cassa', 'carrello', 'acquisti', 'acquisto', 'ordine'],
+    nl: ['korting', 'promo', 'promotioneel', 'coupon', 'voucher', 'afrekenen', 'winkelwagen', 'winkelen', 'aankoop', 'bestelling'],
+    pl: ['zniżka', 'promocja', 'promocyjny', 'kupon', 'voucher', 'kasa', 'koszyk', 'zakupy', 'zakup', 'zamówienie'],
+    hi: ['छूट', 'प्रोमो', 'प्रचार', 'कूपन', 'वाउचर', 'चेकआउट', 'कार्ट', 'खरीदारी', 'खरीद', 'आदेश'],
+    sv: ['rabatt', 'promo', 'kampanj', 'kupong', 'voucher', 'kassa', 'varukorg', 'shopping', 'köp', 'beställning'],
+    fi: ['alennus', 'tarjous', 'kampanja', 'kuponki', 'lahjakortti', 'kassa', 'ostoskori', 'ostokset', 'osto', 'tilaus'],
+    da: ['rabat', 'tilbud', 'kampagne', 'kupon', 'voucher', 'kasse', 'kurv', 'shopping', 'køb', 'bestilling'],
+    no: ['rabatt', 'tilbud', 'kampanje', 'kupong', 'voucher', 'kasse', 'handlekurv', 'shopping', 'kjøp', 'bestilling'],
+    cs: ['sleva', 'akce', 'propagační', 'kupón', 'poukaz', 'pokladna', 'košík', 'nákupy', 'nákup', 'objednávka'],
+    uk: ['знижка', 'промо', 'акція', 'купон', 'ваучер', 'оформлення', 'кошик', 'покупки', 'купівля', 'замовлення'],
+  },
+  developer: {
+    en: ['api', 'developer', 'settings', 'credentials', 'webhook'],
+    zh: ['api', '开发者', '设置', '令牌', '凭证', 'webhook'],
+    es: ['api', 'desarrollador', 'configuración', 'credenciales', 'webhook'],
+    pt: ['api', 'desenvolvedor', 'configurações', 'credenciais', 'webhook'],
+    ja: ['api', '開発者', '設定', 'トークン', '認証情報', 'webhook'],
+    ru: ['api', 'разработчик', 'настройки', 'учетные данные', 'webhook'],
+    de: ['api', 'entwickler', 'einstellungen', 'zugangsdaten', 'webhook'],
+    fr: ['api', 'développeur', 'paramètres', 'identifiants', 'webhook'],
+    ar: ['api', 'مطور', 'إعدادات', 'بيانات اعتماد', 'webhook'],
+    tr: ['api', 'geliştirici', 'ayarlar', 'kimlik bilgileri', 'webhook'],
+    ko: ['api', '개발자', '설정', '토큰', '자격증명', 'webhook'],
+    it: ['api', 'sviluppatore', 'impostazioni', 'credenziali', 'webhook'],
+    nl: ['api', 'ontwikkelaar', 'instellingen', 'inloggegevens', 'webhook'],
+    pl: ['api', 'deweloper', 'ustawienia', 'dane logowania', 'webhook'],
+    hi: ['api', 'डेवलपर', 'सेटिंग्स', 'क्रेडेंशियल', 'webhook'],
+    sv: ['api', 'utvecklare', 'inställningar', 'inloggningsuppgifter', 'webhook'],
+    fi: ['api', 'kehittäjä', 'asetukset', 'tunnukset', 'webhook'],
+    da: ['api', 'udvikler', 'indstillinger', 'legitimation', 'webhook'],
+    no: ['api', 'utvikler', 'innstillinger', 'legitimasjon', 'webhook'],
+    cs: ['api', 'vývojář', 'nastavení', 'přihlašovací údaje', 'webhook'],
+    uk: ['api', 'розробник', 'налаштування', 'облікові дані', 'webhook'],
+  },
+  referral: {
+    en: ['referral', 'affiliate', 'partner', 'program', 'invite', 'invitation', 'referrer'],
+    zh: ['推荐', '联盟', '合作伙伴', '计划', '邀请', '邀请函', '推荐人'],
+    es: ['referido', 'afiliado', 'socio', 'programa', 'invitar', 'invitación', 'referente'],
+    pt: ['indicação', 'afiliado', 'parceiro', 'programa', 'convidar', 'convite', 'referenciador'],
+    ja: ['紹介', 'アフィリエイト', 'パートナー', 'プログラム', '招待', '招待状', '紹介者'],
+    ru: ['реферал', 'партнер', 'партнер', 'программа', 'пригласить', 'приглашение', 'рекомендатель'],
+    de: ['empfehlung', 'affiliate', 'partner', 'programm', 'einladen', 'einladung', 'empfehler'],
+    fr: ['parrainage', 'affilié', 'partenaire', 'programme', 'inviter', 'invitation', 'parrain'],
+    ar: ['إحالة', 'شريك', 'شريك', 'برنامج', 'دعوة', 'دعوة', 'مُحيل'],
+    tr: ['referans', 'ortak', 'iş ortağı', 'program', 'davet', 'davetiye', 'yönlendiren'],
+    ko: ['추천', '제휴', '파트너', '프로그램', '초대', '초대장', '추천인'],
+    it: ['referral', 'affiliato', 'partner', 'programma', 'invitare', 'invito', 'referente'],
+    nl: ['verwijzing', 'affiliate', 'partner', 'programma', 'uitnodigen', 'uitnodiging', 'verwijzer'],
+    pl: ['polecenie', 'partner', 'partner', 'program', 'zaprosić', 'zaproszenie', 'polecający'],
+    hi: ['रेफरल', 'सहबद्ध', 'साझेदार', 'कार्यक्रम', 'आमंत्रित', 'निमंत्रण', 'संदर्भ'],
+    sv: ['hänvisning', 'affiliate', 'partner', 'program', 'bjuda in', 'inbjudan', 'remittent'],
+    fi: ['suositus', 'kumppani', 'kumppani', 'ohjelma', 'kutsua', 'kutsu', 'suosittelija'],
+    da: ['henvisning', 'affiliate', 'partner', 'program', 'invitere', 'invitation', 'henviser'],
+    no: ['henvisning', 'affiliate', 'partner', 'program', 'invitere', 'invitasjon', 'henviser'],
+    cs: ['doporučení', 'partner', 'partner', 'program', 'pozvat', 'pozvánka', 'doporučovatel'],
+    uk: ['реферал', 'партнер', 'партнер', 'програма', 'запросити', 'запрошення', 'рекомендувач'],
+  },
+} as const
+
+/**
  * Allow-list patterns that OVERRIDE negative keywords
  * These patterns indicate the field IS a verification code field despite containing password/login keywords
  *
@@ -243,6 +327,31 @@ export const ALLOW_PATTERNS = [
   /\b(koodi|vahvistus)\s+(kirjoita|syötä)\b/i,  // koodi kirjoita, vahvistus syötä
   /\b(kirjoita|syötä)\s+(koodi|vahvistus)\b/i,  // kirjoita koodi, syötä vahvistus
 ] as const
+
+/**
+ * Check if text matches commercial context keywords in any supported language
+ * Used to detect non-OTP commercial fields (e-commerce, API, referral)
+ *
+ * @param text Combined text from label, placeholder, nearby text
+ * @returns true if commercial context detected, false otherwise
+ */
+function matchesCommercialContext(text: string): boolean {
+  // Early exit for empty text
+  if (!text || text.trim().length === 0) return false
+
+  const lowerText = text.toLowerCase()
+
+  // Check all categories and all languages
+  for (const category of Object.values(COMMERCIAL_KEYWORDS)) {
+    for (const keywords of Object.values(category)) {
+      if (keywords.some((keyword: string) => lowerText.includes(keyword.toLowerCase()))) {
+        return true
+      }
+    }
+  }
+
+  return false
+}
 
 /**
  * Character set detection for language hinting
@@ -504,7 +613,13 @@ export function validateContext(textSources: TextSources): ContextValidationResu
     }
   }
 
-  // HIGHEST PRIORITY: Check setup page patterns (Phase 1 - False-trigger fix)
+  // PRIORITY ORDER (defense-in-depth):
+  // 1. Setup page patterns (highest - always reject authenticator setup)
+  // 2. Allow-list (second - overrides all negatives)
+  // 3. Commercial context (third - e-commerce, API, referral)
+  // 4. Negative keywords (fourth - password/login detection)
+
+  // PRIORITY 1: Check setup page patterns (Phase 1 - False-trigger fix)
   // Rejects GitHub 2FA setup, Steam Guard setup, Microsoft Authenticator setup, etc.
   if (SETUP_PAGE_PATTERNS.some(pattern => pattern.test(combinedText))) {
     return {
@@ -515,13 +630,23 @@ export function validateContext(textSources: TextSources): ContextValidationResu
     }
   }
 
-  // Check allow-list SECOND (overrides negative keywords)
+  // PRIORITY 2: Check allow-list (Phase 3 - overrides ALL negatives below)
   if (matchesAllowList(combinedText)) {
     return {
       pass: true,
       matchedNegatives: [],
       language: null,
       confidence: 1.0,
+    }
+  }
+
+  // PRIORITY 3: Check commercial context (Phase 1b - False-positive prevention)
+  if (matchesCommercialContext(combinedText)) {
+    return {
+      pass: false,
+      matchedNegatives: ['commercial-context-detected'],
+      language: null,
+      confidence: 0.5, // Medium penalty (not as severe as password)
     }
   }
 

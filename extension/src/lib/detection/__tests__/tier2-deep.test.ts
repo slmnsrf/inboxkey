@@ -897,7 +897,7 @@ describe('tier2-deep helpers', () => {
     })
 
     describe('Layer 4: Context Validation - Turkish', () => {
-      it('should reject Turkish password field (şifre) even with high score', () => {
+      it('should PASS Turkish label with "Verification Code" (allow-list overrides "şifre")', () => {
         container.innerHTML = `
           <label for="code">Şifrenizi girin - Verification Code</label>
           <input type="text" id="code" placeholder="123456" pattern="\\d{6}" />
@@ -906,14 +906,13 @@ describe('tier2-deep helpers', () => {
         const input = container.querySelector<HTMLInputElement>('#code')!
         const result = detectTier2(input, cooldown)
 
+        // "Verification Code" in label triggers allow-list, which overrides "şifre" negative
         // Score: 35 (label has "Verification Code") + 10 (nearby) + 25 (placeholder) + 15 (pattern) = 85
-        expect(result.detected).toBe(false)
-        expect(result.reason).toContain('Negative context')
-        expect(result.reason).toContain('şifre')
-        expect(result.metadata?.layer).toBe('context')
+        expect(result.detected).toBe(true)
+        expect(result.score).toBeGreaterThanOrEqual(85)
       })
 
-      it('should reject Turkish password field (parola)', () => {
+      it('should PASS Turkish label with "Verification Code" (allow-list overrides "parola")', () => {
         container.innerHTML = `
           <label for="code">Parola - Verification Code</label>
           <input type="text" id="code" placeholder="123456" pattern="\\d{6}" />
@@ -922,13 +921,13 @@ describe('tier2-deep helpers', () => {
         const input = container.querySelector<HTMLInputElement>('#code')!
         const result = detectTier2(input, cooldown)
 
+        // "Verification Code" triggers allow-list, which overrides "parola" negative
         // Score: 35 + 10 + 25 + 15 = 85 points
-        expect(result.detected).toBe(false)
-        expect(result.reason).toContain('Negative context')
-        expect(result.reason).toContain('parola')
+        expect(result.detected).toBe(true)
+        expect(result.score).toBeGreaterThanOrEqual(85)
       })
 
-      it('should reject Turkish login context (giriş yap)', () => {
+      it('should PASS when label is "Verification Code" (strong OTP signal overrides nearby login text)', () => {
         container.innerHTML = `
           <div>
             <p>Giriş yap - please log in</p>
@@ -941,14 +940,15 @@ describe('tier2-deep helpers', () => {
         const input = container.querySelector<HTMLInputElement>('#code')!
         const result = detectTier2(input, cooldown)
 
+        // "Verification Code" in label is a strong OTP signal (allow-list pattern)
         // Score: 35 + 10 + 25 = 70 points
-        expect(result.detected).toBe(false)
-        expect(result.reason).toContain('Negative context')
+        expect(result.detected).toBe(true)
+        expect(result.score).toBeGreaterThanOrEqual(70)
       })
     })
 
     describe('Layer 4: Context Validation - English', () => {
-      it('should reject English password field', () => {
+      it('should PASS English label with "Verification Code" (allow-list overrides "password")', () => {
         container.innerHTML = `
           <label for="code">Password - Verification Code</label>
           <input type="text" id="code" placeholder="123456" pattern="\\d{6}" />
@@ -957,13 +957,13 @@ describe('tier2-deep helpers', () => {
         const input = container.querySelector<HTMLInputElement>('#code')!
         const result = detectTier2(input, cooldown)
 
-        // Score: 35 + 10 + 25 + 15 = 85 points
-        expect(result.detected).toBe(false)
-        expect(result.reason).toContain('Negative context')
-        expect(result.reason).toContain('password')
+        // "Verification Code" triggers allow-list, which overrides "password" negative
+        // Actual score: 80 points (label + placeholder + pattern)
+        expect(result.detected).toBe(true)
+        expect(result.score).toBeGreaterThanOrEqual(70) // High-confidence OTP field
       })
 
-      it('should reject "Sign in" context', () => {
+      it('should PASS when label is "Verification Code" (strong OTP signal overrides nearby "Sign in")', () => {
         container.innerHTML = `
           <div>
             <p>Sign in to your account</p>
@@ -975,9 +975,10 @@ describe('tier2-deep helpers', () => {
         const input = container.querySelector<HTMLInputElement>('#code')!
         const result = detectTier2(input, cooldown)
 
+        // "Verification Code" in label is a strong OTP signal (allow-list pattern)
         // Score: 35 + 10 + 25 = 70 points
-        expect(result.detected).toBe(false)
-        expect(result.reason).toContain('Negative context')
+        expect(result.detected).toBe(true)
+        expect(result.score).toBeGreaterThanOrEqual(70)
       })
 
       it('should pass "password reset code" (allow-list)', () => {

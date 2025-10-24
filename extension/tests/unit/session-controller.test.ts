@@ -11,6 +11,7 @@ const mockMarkCodeUsed = vi.fn()
 const mockGetMailboxes = vi.fn()
 const mockUpdateMailbox = vi.fn()
 const mockAddCode = vi.fn()
+const mockGetSettings = vi.fn()
 
 // Mock StorageFactory to return our mock storage
 vi.mock("../../src/lib/storage/storage-factory", () => {
@@ -22,6 +23,7 @@ vi.mock("../../src/lib/storage/storage-factory", () => {
         getMailboxes: mockGetMailboxes,
         updateMailbox: mockUpdateMailbox,
         addCode: mockAddCode,
+        getSettings: mockGetSettings,
       })),
     },
   }
@@ -74,6 +76,7 @@ describe("SessionController", () => {
     mockGetMailboxes.mockReset()
     mockUpdateMailbox.mockReset()
     mockAddCode.mockReset()
+    mockGetSettings.mockReset()
 
     // Setup default mailbox mock (required for polling to work)
     mockGetMailboxes.mockResolvedValue([{
@@ -82,6 +85,16 @@ describe("SessionController", () => {
       email: "test@gmail.com",
       lastSyncedAt: Date.now() - 60000
     }])
+
+    // Setup default settings mock
+    mockGetSettings.mockResolvedValue({
+      autoFillEnabled: true,
+      lockEnabled: false,
+      lockTimeoutMinutes: 15,
+      allowedDomains: [],
+      deniedDomains: [],
+      notificationsEnabled: true,
+    })
 
     mockKeyManagerInstance.isUnlocked.mockReturnValue(true)
     mockKeyManagerInstance.getMasterKey.mockReturnValue({})

@@ -20,8 +20,20 @@ export class PopupBridge {
    * Get popup data from background worker.
    */
   async getPopupData(timeout = 5000): Promise<PopupCache> {
+    // Get current tab domain for scoring
+    let currentDomain: string | undefined
+    try {
+      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true })
+      if (tab?.url) {
+        const url = new URL(tab.url)
+        currentDomain = url.hostname
+      }
+    } catch (error) {
+      console.warn('[PopupBridge] Could not get current tab domain:', error)
+    }
+
     const response = await this.sendMessage<PopupCache>(
-      { type: 'GET_POPUP_DATA' },
+      { type: 'GET_POPUP_DATA', currentDomain },
       timeout
     )
     return response

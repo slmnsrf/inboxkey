@@ -28,10 +28,10 @@ const bridge = new PopupBridge()
 const clipboardService = new ClipboardService()
 const linkService = new LinkService()
 function PopupContent() {
-  const { data, loading, error, refresh } = usePopupData()
+  const { data, loading, error, refresh, isSyncing: isAutoSyncing } = usePopupData()
   const { showToast } = useToast()
   const { syncError, dismissSyncError } = useSyncErrors()
-  const [isSyncing, setIsSyncing] = useState(false)
+  const [isManualSyncing, setIsManualSyncing] = useState(false)
   const [currentTabDomain, setCurrentTabDomain] = useState<string | null>(null)
 
   // Get current tab domain for link matching
@@ -86,9 +86,9 @@ function PopupContent() {
   }
 
   const handleSync = async () => {
-    if (isSyncing) return
+    if (isManualSyncing || isAutoSyncing) return
 
-    setIsSyncing(true)
+    setIsManualSyncing(true)
     try {
       await bridge.triggerSync()
       await refresh()
@@ -102,7 +102,7 @@ function PopupContent() {
       showToast(`⚠️ ${errorMsg}`, 'error', 5000)
       console.error('[Popup] Sync failed:', err)
     } finally {
-      setIsSyncing(false)
+      setIsManualSyncing(false)
     }
   }
 
@@ -172,6 +172,8 @@ function PopupContent() {
 
   const bestCode = getBestCode()
   const latestLink = getBestLink()
+
+  const isSyncing = isManualSyncing || isAutoSyncing
 
   return (
     <div className="popup-container" aria-label={t('popup_title')}>

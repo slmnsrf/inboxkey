@@ -324,59 +324,16 @@ export class SessionController {
         const mailbox = mailboxes.find(m => m.providerId === candidate.provider)
         if (!mailbox) continue
 
-        // V2: Extract senderETLD from email sender
-        const senderETLD = candidate.from
-          ? extractETLD(
-              candidate.from.includes('@')
-                ? candidate.from.split('@')[1]
-                : candidate.from
-            )
-          : undefined
-
         if (candidate.code) {
-          // Save OTP code
-          const storedCode = {
-            code: candidate.code.value,
-            timestamp: candidate.receivedEpochMs || Date.now(),
-            receivedAt: candidate.receivedEpochMs,  // V2: Store receivedAt
-            source: `${candidate.from || 'Unknown'} - ${candidate.subject || 'No subject'}`,
-            used: false,
-            siteMatch: undefined,
-            mailboxId: mailbox.id,
-            senderETLD,  // V2: Store extracted sender eTLD+1
-          }
-
-          // Check for duplicates
-          const recentCodes = await storage.getRecentCodes(50)
-          const isDuplicate = recentCodes.some(c => c.code === storedCode.code)
-
-          if (!isDuplicate) {
-            await storage.addCode(storedCode)
-            console.log(`[SessionController] Saved code: ${storedCode.code}`)
-          }
+          // V2: Codes are ephemeral-only (stored in PopupCache via chrome.storage.session)
+          // No persistence to chrome.storage.local
+          console.log(`[SessionController] Found code: ${candidate.code.value}`)
         }
 
         if (candidate.link) {
-          // Save magic link (with "magic-link:" prefix for compatibility)
-          const storedLink = {
-            code: `magic-link:${candidate.link.href}`,
-            timestamp: candidate.receivedEpochMs || Date.now(),
-            receivedAt: candidate.receivedEpochMs,  // V2: Store receivedAt
-            source: `${candidate.from || 'Unknown'} - ${candidate.subject || 'No subject'}`,
-            used: false,
-            siteMatch: candidate.link.domain,
-            mailboxId: mailbox.id,
-            senderETLD,  // V2: Store extracted sender eTLD+1
-          }
-
-          // Check for duplicates
-          const recentCodes = await storage.getRecentCodes(50)
-          const isDuplicate = recentCodes.some(c => c.code === storedLink.code)
-
-          if (!isDuplicate) {
-            await storage.addCode(storedLink)
-            console.log(`[SessionController] Saved magic link from: ${candidate.link.domain}`)
-          }
+          // V2: Links are ephemeral-only (stored in PopupCache via chrome.storage.session)
+          // No persistence to chrome.storage.local
+          console.log(`[SessionController] Found magic link from: ${candidate.link.domain}`)
         }
       }
 
@@ -386,14 +343,68 @@ export class SessionController {
         await storage.updateMailbox(mailbox.id, { lastSyncedAt: now })
       }
 
-      // Update popup cache if available
+      // Update popup cache if available (using ephemeral candidates)
       if (this.popupCacheManager && candidates.length > 0) {
-        const recentCodes = await storage.getRecentCodes(10)
-        await this.popupCacheManager.updateWithNewCodes(recentCodes, mailboxes.length, mailboxes)
+        // Convert candidates to StoredCode format for PopupCache
+        const ephemeralCodes = candidates.flatMap(candidate => {
+          const mailbox = mailboxes.find(m => m.providerId === candidate.provider)
+          if (!mailbox) return []
+
+          const senderETLD = candidate.from
+            ? extractETLD(
+                candidate.from.includes('@')
+                  ? candidate.from.split('@')[1]
+                  : candidate.from
+              )
+            : undefined
+
+          const results = []
+
+          if (candidate.code) {
+            results.push({
+              code: candidate.code.value,
+              timestamp: candidate.receivedEpochMs || Date.now(),
+              receivedAt: candidate.receivedEpochMs,
+              source: `${candidate.from || 'Unknown'} - ${candidate.subject || 'No subject'}`,
+              used: false,
+              siteMatch: undefined,
+              mailboxId: mailbox.id,
+              senderETLD,
+            })
+          }
+
+          if (candidate.link) {
+            results.push({
+              code: `magic-link:${candidate.link.href}`,
+              timestamp: candidate.receivedEpochMs || Date.now(),
+              receivedAt: candidate.receivedEpochMs,
+              source: `${candidate.from || 'Unknown'} - ${candidate.subject || 'No subject'}`,
+              used: false,
+              siteMatch: candidate.link.domain,
+              mailboxId: mailbox.id,
+              senderETLD,
+            })
+          }
+
+          return results
+        })
+
+        await this.popupCacheManager.updateWithNewCodes(ephemeralCodes, mailboxes.length, mailboxes)
       }
 
-      // Check storage for matching codes
-      const codes = await storage.getRecentCodes(10)
+      // Get codes from PopupCache (ephemeral only)
+      const cache = this.popupCacheManager ? await this.popupCacheManager.getCache() : null
+      const codes = cache ? cache.codes.map(c => ({
+        code: c.code,
+        timestamp: c.receivedAt,
+        source: c.source,
+        used: c.usedAt !== undefined,
+        siteMatch: undefined, // PopupCacheCode doesn't have siteMatch
+        mailboxId: undefined, // PopupCacheCode doesn't have mailboxId
+        senderETLD: c.senderETLD,
+        receivedAt: c.receivedAt,
+        domainAffinity: c.domainAffinity,
+      })) : []
 
       // V2: Pass sessionStart and expectedShape to v2 scoring algorithm (if enabled)
       // When v2 is disabled, fall back to basic matching without session/shape parameters
@@ -416,14 +427,16 @@ export class SessionController {
         return null
       }
 
-      // Mark code as used
-      try {
-        await storage.markCodeUsed(best.code)
-      } catch (error) {
-        console.warn(
-          "[SessionController] Failed to mark code as used, continuing",
-          error
-        )
+      // Mark code as used in PopupCache (ephemeral only)
+      if (this.popupCacheManager) {
+        try {
+          await this.popupCacheManager.markCodeUsed(best.code)
+        } catch (error) {
+          console.warn(
+            "[SessionController] Failed to mark code as used, continuing",
+            error
+          )
+        }
       }
 
       return {

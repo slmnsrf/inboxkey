@@ -68,6 +68,7 @@ const ANIMATION = {
  * Global state for animation management
  */
 let animationInterval: ReturnType<typeof setInterval> | null = null
+let isAnimating = false // Track if listening animation is active
 
 /**
  * Clear any running animation interval
@@ -77,6 +78,7 @@ function stopAnimation(): void {
     clearInterval(animationInterval)
     animationInterval = null
   }
+  isAnimating = false // Clear animation flag when stopping
 }
 
 /**
@@ -153,6 +155,12 @@ export function setBadgeListening(): void {
     return // Higher priority badge is active
   }
 
+  // Skip if already animating to prevent restart
+  if (isAnimating) {
+    console.log('[BadgeManager] Already listening, animation continues')
+    return
+  }
+
   stopAnimation()
 
   if (!isActionApiAvailable()) {
@@ -161,6 +169,7 @@ export function setBadgeListening(): void {
   }
 
   currentBadgePriority = BadgePriority.LISTENING
+  isAnimating = true // Set flag before animation starts
 
   // Set color
   setBadgeBackgroundColor(COLORS.listening)
@@ -202,6 +211,7 @@ export function setBadgeSuccess(): void {
   }
 
   stopAnimation()
+  isAnimating = false // Explicit flag clear
 
   if (!isActionApiAvailable()) {
     console.warn('[BadgeManager] chrome.action API not available for success badge')
@@ -228,6 +238,7 @@ export function setBadgeNoCode(): void {
   }
 
   stopAnimation()
+  isAnimating = false // Explicit flag clear
 
   if (!isActionApiAvailable()) {
     console.warn('[BadgeManager] chrome.action API not available for no-code badge')
@@ -263,6 +274,7 @@ export function setBadgeCount(count: number): void {
   }
 
   stopAnimation()
+  isAnimating = false // Explicit flag clear
 
   if (!isActionApiAvailable()) {
     console.warn('[BadgeManager] chrome.action API not available for count badge')
@@ -289,6 +301,7 @@ export function setBadgeSyncError(): void {
   }
 
   stopAnimation()
+  isAnimating = false // Explicit flag clear
 
   if (!isActionApiAvailable()) {
     console.warn('[BadgeManager] chrome.action API not available for sync error badge')
@@ -312,6 +325,7 @@ export function setBadgeSyncError(): void {
  */
 export function clearBadge(): void {
   stopAnimation()
+  isAnimating = false // Explicit flag clear
 
   // Always reset priority to IDLE, even if API unavailable
   // This ensures tests can reset state properly

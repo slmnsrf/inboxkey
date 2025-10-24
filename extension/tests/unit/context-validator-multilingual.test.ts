@@ -195,7 +195,7 @@ describe('Multilingual Context Validator - P1 Regression Tests', () => {
       { lang: 'Russian', loginText: 'Войти', passText: 'Код', shouldFailLogin: true, shouldPassCode: true },
       { lang: 'German', loginText: 'Anmelden', passText: 'Code', shouldFailLogin: true, shouldPassCode: true },
       { lang: 'French', loginText: 'Se connecter', passText: 'Code', shouldFailLogin: true, shouldPassCode: true },
-      { lang: 'Arabic', loginText: 'تسجيل الدخول', passText: 'رمز', shouldFailLogin: true, shouldPassCode: true },
+      { lang: 'Arabic', loginText: 'تسجيل الدخول', passText: 'رمز', shouldFailLogin: true, shouldPassCode: true }, // رمز = code/token (removed from commercial keywords to avoid false positives)
       { lang: 'Korean', loginText: '로그인', passText: '코드', shouldFailLogin: true, shouldPassCode: true },
       { lang: 'Italian', loginText: 'Accedi', passText: 'Codice', shouldFailLogin: true, shouldPassCode: true },
       { lang: 'Dutch', loginText: 'Inloggen', passText: 'Code', shouldFailLogin: true, shouldPassCode: true },
@@ -303,6 +303,289 @@ describe('Multilingual Context Validator - P1 Regression Tests', () => {
 
       expect(result.pass).toBe(true)  // Turkish allow-pattern + English
       expect(result.matchedNegatives).toHaveLength(0)
+    })
+  })
+
+  describe('Commercial Context Detection (Phase 1b)', () => {
+    it('should reject e-commerce discount code context', () => {
+      const result = validateContext({
+        label: 'Discount Code',
+        placeholder: 'Enter your discount code',
+        nearbyText: 'Have a promo code? Apply it here',
+        ariaLabel: '',
+        pageTitle: 'Checkout - Summer Sale',
+      })
+
+      expect(result.pass).toBe(false)
+      expect(result.matchedNegatives).toContain('commercial-context-detected')
+      expect(result.confidence).toBe(0.5)
+    })
+
+    it('should reject API token developer context', () => {
+      const result = validateContext({
+        label: 'API Token',
+        placeholder: 'Paste your API key',
+        nearbyText: 'Developer Settings - Manage your credentials',
+        ariaLabel: '',
+        pageTitle: 'API Keys - Developer Portal',
+      })
+
+      expect(result.pass).toBe(false)
+      expect(result.matchedNegatives).toContain('commercial-context-detected')
+      expect(result.confidence).toBe(0.5)
+    })
+
+    it('should reject referral program context', () => {
+      const result = validateContext({
+        label: 'Referral Code',
+        placeholder: 'Enter your referral code',
+        nearbyText: 'Invite friends and earn rewards',
+        ariaLabel: '',
+        pageTitle: 'Referral Program',
+      })
+
+      expect(result.pass).toBe(false)
+      expect(result.matchedNegatives).toContain('commercial-context-detected')
+      expect(result.confidence).toBe(0.5)
+    })
+
+    it('should pass legitimate OTP with "code" keyword', () => {
+      const result = validateContext({
+        label: 'Verification Code',
+        placeholder: 'Enter 6-digit code',
+        nearbyText: 'Enter the code sent to your email',
+        ariaLabel: '',
+        pageTitle: 'Two-Factor Authentication',
+      })
+
+      expect(result.pass).toBe(true)
+      expect(result.matchedNegatives).toEqual([])
+    })
+
+    it('should handle mixed context with commercial keywords', () => {
+      const result = validateContext({
+        label: 'Code',
+        placeholder: '',
+        nearbyText: 'Shopping cart checkout',
+        ariaLabel: '',
+        pageTitle: 'Checkout',
+      })
+
+      expect(result.pass).toBe(false)
+      expect(result.matchedNegatives).toContain('commercial-context-detected')
+    })
+  })
+
+  describe('Commercial Context Detection - Multilingual (21 Languages)', () => {
+    // E-commerce category (5 languages)
+    it('should reject e-commerce context in Chinese', () => {
+      const result = validateContext({
+        label: '折扣码',
+        placeholder: '输入优惠券代码',
+        nearbyText: '促销活动',
+        ariaLabel: '',
+        pageTitle: '购物车结账',
+      })
+      expect(result.pass).toBe(false)
+      expect(result.matchedNegatives).toContain('commercial-context-detected')
+      expect(result.confidence).toBe(0.5)
+    })
+
+    it('should reject e-commerce context in Spanish', () => {
+      const result = validateContext({
+        label: 'Código de descuento',
+        placeholder: 'Ingrese su cupón',
+        nearbyText: 'Promoción especial',
+        ariaLabel: '',
+        pageTitle: 'Carrito de compras',
+      })
+      expect(result.pass).toBe(false)
+      expect(result.matchedNegatives).toContain('commercial-context-detected')
+      expect(result.confidence).toBe(0.5)
+    })
+
+    it('should reject e-commerce context in Arabic', () => {
+      const result = validateContext({
+        label: 'كود الخصم',
+        placeholder: 'أدخل قسيمة الشراء',
+        nearbyText: 'عرض ترويجي',
+        ariaLabel: '',
+        pageTitle: 'سلة التسوق',
+      })
+      expect(result.pass).toBe(false)
+      expect(result.matchedNegatives).toContain('commercial-context-detected')
+      expect(result.confidence).toBe(0.5)
+    })
+
+    it('should reject e-commerce context in Turkish', () => {
+      const result = validateContext({
+        label: 'İndirim kodu',
+        placeholder: 'Kupon kodunuzu girin',
+        nearbyText: 'Promosyon kampanyası',
+        ariaLabel: '',
+        pageTitle: 'Alışveriş sepeti',
+      })
+      expect(result.pass).toBe(false)
+      expect(result.matchedNegatives).toContain('commercial-context-detected')
+      expect(result.confidence).toBe(0.5)
+    })
+
+    it('should reject e-commerce context in English (existing, verify still works)', () => {
+      const result = validateContext({
+        label: 'Discount Code',
+        placeholder: 'Enter your promo code',
+        nearbyText: 'Apply coupon at checkout',
+        ariaLabel: '',
+        pageTitle: 'Shopping Cart',
+      })
+      expect(result.pass).toBe(false)
+      expect(result.matchedNegatives).toContain('commercial-context-detected')
+      expect(result.confidence).toBe(0.5)
+    })
+
+    // Developer category (5 languages)
+    it('should reject developer context in Chinese', () => {
+      const result = validateContext({
+        label: 'API密钥',
+        placeholder: '输入访问令牌',
+        nearbyText: '开发者设置',
+        ariaLabel: '',
+        pageTitle: 'API配置',
+      })
+      expect(result.pass).toBe(false)
+      expect(result.matchedNegatives).toContain('commercial-context-detected')
+      expect(result.confidence).toBe(0.5)
+    })
+
+    it('should reject developer context in Spanish', () => {
+      const result = validateContext({
+        label: 'Clave API',
+        placeholder: 'Token de acceso',
+        nearbyText: 'Configuración de desarrollador',
+        ariaLabel: '',
+        pageTitle: 'Credenciales API',
+      })
+      expect(result.pass).toBe(false)
+      expect(result.matchedNegatives).toContain('commercial-context-detected')
+      expect(result.confidence).toBe(0.5)
+    })
+
+    it('should reject developer context in Arabic', () => {
+      const result = validateContext({
+        label: 'مفتاح API',
+        placeholder: 'رمز الوصول',
+        nearbyText: 'إعدادات المطور',
+        ariaLabel: '',
+        pageTitle: 'بيانات اعتماد API',
+      })
+      expect(result.pass).toBe(false)
+      expect(result.matchedNegatives).toContain('commercial-context-detected')
+      expect(result.confidence).toBe(0.5)
+    })
+
+    it('should reject developer context in Turkish', () => {
+      const result = validateContext({
+        label: 'API Anahtarı',
+        placeholder: 'Erişim token\'ı',
+        nearbyText: 'Geliştirici ayarları',
+        ariaLabel: '',
+        pageTitle: 'API Kimlik Bilgileri',
+      })
+      expect(result.pass).toBe(false)
+      expect(result.matchedNegatives).toContain('commercial-context-detected')
+      expect(result.confidence).toBe(0.5)
+    })
+
+    it('should reject developer context in English (existing, verify still works)', () => {
+      const result = validateContext({
+        label: 'API Key',
+        placeholder: 'Enter access token',
+        nearbyText: 'Developer settings',
+        ariaLabel: '',
+        pageTitle: 'API Credentials',
+      })
+      expect(result.pass).toBe(false)
+      expect(result.matchedNegatives).toContain('commercial-context-detected')
+      expect(result.confidence).toBe(0.5)
+    })
+
+    // Referral category (5 languages)
+    it('should reject referral context in Chinese', () => {
+      const result = validateContext({
+        label: '推荐码',
+        placeholder: '输入邀请代码',
+        nearbyText: '推荐计划',
+        ariaLabel: '',
+        pageTitle: '合作伙伴计划',
+      })
+      expect(result.pass).toBe(false)
+      expect(result.matchedNegatives).toContain('commercial-context-detected')
+      expect(result.confidence).toBe(0.5)
+    })
+
+    it('should reject referral context in Spanish', () => {
+      const result = validateContext({
+        label: 'Código de referido',
+        placeholder: 'Código de invitación',
+        nearbyText: 'Programa de afiliados',
+        ariaLabel: '',
+        pageTitle: 'Programa de socios',
+      })
+      expect(result.pass).toBe(false)
+      expect(result.matchedNegatives).toContain('commercial-context-detected')
+      expect(result.confidence).toBe(0.5)
+    })
+
+    it('should reject referral context in Arabic', () => {
+      const result = validateContext({
+        label: 'كود الإحالة',
+        placeholder: 'كود الدعوة',
+        nearbyText: 'برنامج الشراكة',
+        ariaLabel: '',
+        pageTitle: 'برنامج الشركاء',
+      })
+      expect(result.pass).toBe(false)
+      expect(result.matchedNegatives).toContain('commercial-context-detected')
+      expect(result.confidence).toBe(0.5)
+    })
+
+    it('should reject referral context in Turkish', () => {
+      const result = validateContext({
+        label: 'Referans kodu',
+        placeholder: 'Davet kodu',
+        nearbyText: 'İş ortağı programı',
+        ariaLabel: '',
+        pageTitle: 'Ortak programı',
+      })
+      expect(result.pass).toBe(false)
+      expect(result.matchedNegatives).toContain('commercial-context-detected')
+      expect(result.confidence).toBe(0.5)
+    })
+
+    it('should reject referral context in English (existing, verify still works)', () => {
+      const result = validateContext({
+        label: 'Referral Code',
+        placeholder: 'Enter invite code',
+        nearbyText: 'Partner program',
+        ariaLabel: '',
+        pageTitle: 'Affiliate Program',
+      })
+      expect(result.pass).toBe(false)
+      expect(result.matchedNegatives).toContain('commercial-context-detected')
+      expect(result.confidence).toBe(0.5)
+    })
+
+    // Edge case: Legitimate OTP fields should pass even with non-commercial context words
+    it('should allow OTP field with strong verification signals', () => {
+      const result = validateContext({
+        label: 'Verification Code',
+        placeholder: 'Enter 6-digit code',
+        nearbyText: 'Confirmation code sent via SMS',
+        ariaLabel: 'One-time password',
+        pageTitle: 'Verify Your Account',
+      })
+      // Should pass because no commercial keywords, only OTP signals
+      expect(result.pass).toBe(true)
     })
   })
 })

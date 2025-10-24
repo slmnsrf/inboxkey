@@ -66,13 +66,6 @@ async function ensureDefaults(): Promise<void> {
     })
   }
 
-  const codesResult = await chrome.storage.local.get(STORAGE_KEYS.RECENT_CODES)
-  if (!codesResult[STORAGE_KEYS.RECENT_CODES]) {
-    await chrome.storage.local.set({
-      [STORAGE_KEYS.RECENT_CODES]: [],
-    })
-  }
-
   // Ensure session state exists
   const sessionResult = await chrome.storage.session.get(
     STORAGE_KEYS.SESSION_STATE
@@ -207,14 +200,12 @@ export async function exportStorage(): Promise<StorageSchema> {
   const result = await chrome.storage.local.get([
     STORAGE_KEYS.VERSION,
     STORAGE_KEYS.MAILBOXES,
-    STORAGE_KEYS.RECENT_CODES,
     STORAGE_KEYS.SETTINGS,
   ])
 
   return {
     version: result[STORAGE_KEYS.VERSION] || CURRENT_SCHEMA_VERSION,
     mailboxes: result[STORAGE_KEYS.MAILBOXES] || [],
-    recentCodes: result[STORAGE_KEYS.RECENT_CODES] || [],
     settings: result[STORAGE_KEYS.SETTINGS] || getDefaultSettings(),
     domainPreferences: result[STORAGE_KEYS.DOMAIN_PREFERENCES] || { domains: {} },
   }
@@ -236,7 +227,6 @@ export async function importStorage(data: StorageSchema): Promise<void> {
   await chrome.storage.local.set({
     [STORAGE_KEYS.VERSION]: data.version,
     [STORAGE_KEYS.MAILBOXES]: data.mailboxes,
-    [STORAGE_KEYS.RECENT_CODES]: data.recentCodes,
     [STORAGE_KEYS.SETTINGS]: data.settings,
   })
 
