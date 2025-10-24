@@ -143,7 +143,7 @@ export interface MailboxInfo {
  * Messages sent from popup to background
  */
 export type PopupRequest =
-  | { type: 'GET_POPUP_DATA' }
+  | { type: 'GET_POPUP_DATA'; currentDomain?: string }
   | { type: 'TRIGGER_SYNC' }
   | { type: 'MARK_CODE_USED'; code: string }
   | { type: 'MARK_CODES_SEEN' } // Mark all codes as seen when popup opens

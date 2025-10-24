@@ -6,7 +6,7 @@
  * - PlaintextStorage: Stores data in plaintext using Chrome Storage API
  */
 
-import type { Mailbox, SessionState, Settings, StoredCode, DomainPreferences } from "./schema"
+import type { Mailbox, SessionState, Settings, DomainPreferences } from "./schema"
 
 /**
  * Storage interface defining all storage operations
@@ -50,42 +50,6 @@ export interface IStorage {
    * @throws ValidationError if ID is invalid or mailbox not found
    */
   removeMailbox(id: string): Promise<void>
-
-  // ============================================================================
-  // Code Operations
-  // ============================================================================
-
-  /**
-   * Add a new verification code
-   * @throws ValidationError if code data is invalid
-   */
-  addCode(code: StoredCode): Promise<void>
-
-  /**
-   * Get recent verification codes
-   * @param limit - Optional maximum number of codes to return
-   * @returns Array of codes sorted by timestamp (newest first)
-   */
-  getRecentCodes(limit?: number): Promise<StoredCode[]>
-
-  /**
-   * Mark a code as used
-   * @param code - The code string to mark as used
-   * @throws ValidationError if code is empty or not found
-   */
-  markCodeUsed(code: string): Promise<void>
-
-  /**
-   * Clear old verification codes
-   * @param olderThanMs - Clear codes older than this many milliseconds
-   * @throws ValidationError if olderThanMs is not positive
-   */
-  clearOldCodes(olderThanMs: number): Promise<void>
-
-  /**
-   * Clear all verification codes
-   */
-  clearAllCodes(): Promise<void>
 
   // ============================================================================
   // Settings Operations

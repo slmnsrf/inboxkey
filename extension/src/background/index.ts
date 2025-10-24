@@ -15,6 +15,7 @@ import {
 } from "./session-controller"
 import { PopupCacheManager } from "./popup-cache"
 import { PopupMessageHandler } from "./popup-handler"
+import { ErrorStateManager } from "./error-state-manager"
 import { StorageFactory } from "@/lib/storage/storage-factory"
 import type { Mailbox } from "@/lib/storage/schema"
 import notificationIconUrl from "url:~assets/icon.png"
@@ -58,10 +59,11 @@ const tabContexts = new Map<number, WatchPortContext>()
 const sessionContexts = new Map<string, WatchPortContext>()
 
 // Create popup cache manager and handler
-// Note: Sync error tracking is now handled in popup-handler.ts
 const popupCacheManager = new PopupCacheManager()
+const errorStateManager = new ErrorStateManager()
 const popupMessageHandler = new PopupMessageHandler(
-  popupCacheManager
+  popupCacheManager,
+  errorStateManager
 )
 
 const sessionController = new SessionController(
@@ -84,25 +86,26 @@ sessionController
     await popupCacheManager.initialize()
     console.log("[InboxKey] PopupCacheManager initialized")
 
-    // Warm popup cache with mailbox count and recent codes
+    // Warm popup cache with mailbox count (codes are ephemeral-only now)
     try {
       const storage = await StorageFactory.create()
 
-      // Clean up old codes (older than 24 hours) on startup to prevent showing stale v1 entries
-      const TWENTY_FOUR_HOURS = 24 * 60 * 60 * 1000
-      await storage.clearOldCodes(TWENTY_FOUR_HOURS)
-      console.log(`[InboxKey] Cleared codes older than 24 hours`)
-
       const mailboxes = await storage.getMailboxes()
-      const recentCodes = await storage.getRecentCodes(10)
-      await popupCacheManager.updateWithNewCodes(recentCodes, mailboxes.length, mailboxes)
-      console.log(`[InboxKey] PopupCache warmed with ${mailboxes.length} mailboxes, ${recentCodes.length} codes`)
+      // Codes are ephemeral (chrome.storage.session only), so start with empty cache
+      await popupCacheManager.updateWithNewCodes([], mailboxes.length, mailboxes)
+      console.log(`[InboxKey] PopupCache warmed with ${mailboxes.length} mailboxes (codes ephemeral-only)`)
 
       // Update count badge with unseen codes
       const cache = await popupCacheManager.getCache()
       const unseenCount = cache.codes.filter((c) => !c.seenAt && !c.usedAt).length
       if (unseenCount > 0) {
         setBadgeCount(unseenCount)
+      }
+
+      // Restore error badge if needed
+      if (await errorStateManager.shouldShowBadge()) {
+        console.log('[InboxKey] Restoring error badge from previous session')
+        setBadgeSyncError()
       }
     } catch (error) {
       console.warn("[InboxKey] Failed to warm popup cache:", error)
@@ -604,15 +607,16 @@ function handleRemoveMailbox(msg: any, sendResponse: (response: any) => void) {
 
 /**
  * Handle CLEAR_ALL_CODES requests.
+ * Note: Codes are now ephemeral (chrome.storage.session only), so this clears the popup cache.
  */
 function handleClearAllCodes(sendResponse: (response: any) => void) {
   ;(async () => {
     try {
-      // Use StorageFactory to get appropriate storage
-      const storage = await StorageFactory.create()
-      await storage.clearAllCodes()
+      // Clear popup cache (ephemeral codes only)
+      await chrome.storage.session.remove('inboxkey.popup_cache')
 
-      // Update popup cache to reflect cleared codes
+      // Re-initialize empty cache
+      const storage = await StorageFactory.create()
       const mailboxes = await storage.getMailboxes()
       await popupCacheManager.warmCache([], mailboxes.length, mailboxes)
 
@@ -635,14 +639,13 @@ function handleClearAllCodes(sendResponse: (response: any) => void) {
 function handleClearCache(sendResponse: (response: any) => void) {
   ;(async () => {
     try {
-      // Clear session storage cache
+      // Clear session storage cache (ephemeral codes only)
       await chrome.storage.session.remove('inboxkey.popup_cache')
 
-      // Optionally re-warm the cache
+      // Re-warm the cache with empty codes
       const storage = await StorageFactory.create()
       const mailboxes = await storage.getMailboxes()
-      const recentCodes = await storage.getRecentCodes(10)
-      await popupCacheManager.updateWithNewCodes(recentCodes, mailboxes.length, mailboxes)
+      await popupCacheManager.updateWithNewCodes([], mailboxes.length, mailboxes)
 
       console.log("[Background] Popup cache cleared and refreshed")
       sendResponse({ success: true })

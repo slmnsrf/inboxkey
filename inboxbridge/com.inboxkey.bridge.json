@@ -4,6 +4,6 @@
   "path": "/home/dev/work/inboxkey/inboxbridge/target/release/inboxbridge",
   "type": "stdio",
   "allowed_origins": [
-    "chrome-extension://EXTENSION_ID_PLACEHOLDER/"
+    "chrome-extension://mioicbneapdjamkppcidooggnmegpocn/"
   ]
 }

@@ -17,10 +17,10 @@ export const CURRENT_SCHEMA_VERSION = 1
 export const STORAGE_KEYS = {
   VERSION: "version",
   MAILBOXES: "mailboxes",
-  RECENT_CODES: "recent_codes",
   SETTINGS: "settings",
   SESSION_STATE: "session_state", // chrome.storage.session only
   DOMAIN_PREFERENCES: "domain_preferences",
+  SYNC_ERROR_STATE: "sync_error_state",
 } as const
 
 /**
@@ -29,7 +29,6 @@ export const STORAGE_KEYS = {
 export interface StorageSchema {
   version: number
   mailboxes: Mailbox[]
-  recentCodes: StoredCode[]
   settings: Settings
   domainPreferences: DomainPreferences
 }
@@ -101,6 +100,32 @@ export interface StoredCode {
 export interface DomainPreferences {
   /** Map of domain (eTLD+1) to enabled state */
   domains: Record<string, boolean>
+}
+
+/**
+ * Sync error information for popup banner
+ */
+export interface SyncErrorInfo {
+  type: 'auth-expired' | 'sync-failed' | 'network-offline'
+  variant: 'error' | 'warning' | 'info'
+  message: string
+  timestamp: number
+  mailboxId?: string  // Which mailbox failed
+}
+
+/**
+ * Persistent sync error state
+ */
+export interface SyncErrorState {
+  consecutiveFailures: number
+  lastErrorTime: number | null
+  currentError: SyncErrorInfo | null
+  errorHistory: Array<{
+    timestamp: number
+    error: string
+    mailboxId?: string
+    errorType: SyncErrorInfo['type']
+  }>
 }
 
 /**

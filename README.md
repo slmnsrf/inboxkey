@@ -101,7 +101,7 @@ InboxKey requires the following permissions:
 
 ## Supported Email Providers
 
-### Gmail ✅
+### Gmail 
 - Chrome Identity API authentication (chrome.identity.getAuthToken())
 - OAuth 2.0 with automatic PKCE and token refresh
 - Read-only access via Gmail API
@@ -109,12 +109,12 @@ InboxKey requires the following permissions:
 - **Requirement**: Users must be signed in to Chrome with their Google account
 - **Browser**: Currently Chrome-only (other Chromium browsers may not work)
 
-### Outlook ✅
+### Outlook 
 - OAuth 2.0 authentication
 - Read-only access via Microsoft Graph API
 - Supports Outlook.com, Hotmail, Office 365
 
-### IMAP 🔮 (Coming Soon)
+### IMAP  (Coming Soon)
 - Support for Yahoo, ProtonMail, custom email servers
 - Requires separate native helper app (InboxBridge)
 - See [IMAP Setup Guide](docs/imap-setup.md)

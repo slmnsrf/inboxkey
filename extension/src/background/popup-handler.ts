@@ -6,24 +6,24 @@
  */
 
 import { PopupCacheManager } from './popup-cache'
-import type { PopupRequest, PopupResponse, SyncErrorInfo } from '@/shared/popup-messages'
+import { ErrorStateManager } from './error-state-manager'
+import { SyncRateLimiter } from './sync-rate-limiter'
+import type { PopupRequest, PopupResponse } from '@/shared/popup-messages'
 import { EmailPollingService } from '@/lib/services/email-polling-service'
 import { createAdaptersFromMailboxes } from '@/lib/services/provider-adapter'
 import { StorageFactory } from '@/lib/storage/storage-factory'
 import { setBadgeCount, setBadgeSyncError, clearBadge } from '@/contents/badge-manager'
 import { BADGE_EXPIRY_MS } from '@/lib/popup/popup-config'
 
-// Sync error tracking
-let consecutiveSyncFailures = 0
-let lastSyncErrorTime: number | null = null
-let currentSyncError: SyncErrorInfo | null = null
-
 /**
  * Handles popup-related messages from the UI
  */
 export class PopupMessageHandler {
+  private readonly rateLimiter = new SyncRateLimiter()
+
   constructor(
-    private readonly cacheManager: PopupCacheManager
+    private readonly cacheManager: PopupCacheManager,
+    private readonly errorManager: ErrorStateManager
   ) {}
 
   /**
@@ -33,6 +33,32 @@ export class PopupMessageHandler {
     try {
       switch (request.type) {
         case 'GET_POPUP_DATA': {
+          const currentDomain = request.currentDomain
+
+          // Refresh cache with domain context if we have one
+          if (currentDomain) {
+            const storage = await StorageFactory.create()
+            const mailboxes = await storage.getMailboxes()
+            const cache = await this.cacheManager.getCache()
+
+            // Re-score with domain context (use existing codes)
+            const storedCodes = cache.codes.map(c => ({
+              code: c.code,
+              timestamp: c.receivedAt,
+              source: c.source,
+              used: !!c.usedAt,
+              siteMatch: undefined,
+              mailboxId: undefined,
+            }))
+
+            await this.cacheManager.updateWithNewCodes(
+              storedCodes,
+              mailboxes.length,
+              mailboxes,
+              currentDomain
+            )
+          }
+
           const cache = await this.cacheManager.getCache()
           return { success: true, data: cache }
         }
@@ -51,6 +77,20 @@ export class PopupMessageHandler {
 
         case 'TRIGGER_SYNC': {
           try {
+            // Check rate limit
+            if (!await this.rateLimiter.canSync()) {
+              const remaining = await this.rateLimiter.getTimeRemaining()
+              return {
+                success: false,
+                error: `Please wait ${Math.ceil(remaining / 1000)}s before syncing again`
+              }
+            }
+
+            // Record sync started
+            await this.rateLimiter.recordSync()
+
+            const startTime = Date.now()
+
             // Get storage for current mode
             const storage = await StorageFactory.create()
 
@@ -73,59 +113,42 @@ export class PopupMessageHandler {
 
             console.log(`[PopupHandler] Manual sync found ${candidates.length} candidates`)
 
-            // Convert v2 candidates to StoredCode format and save to storage
-            let newCodesCount = 0
-            for (const candidate of candidates) {
+            // Convert v2 candidates to StoredCode format for PopupCache (ephemeral only)
+            const ephemeralCodes = candidates.flatMap(candidate => {
               // Find mailbox for this provider
               const mailbox = mailboxes.find(m => m.providerId === candidate.provider)
-              if (!mailbox) continue
+              if (!mailbox) return []
+
+              const results = []
 
               if (candidate.code) {
-                // Save OTP code
-                const storedCode = {
+                results.push({
                   code: candidate.code.value,
                   timestamp: candidate.receivedEpochMs || Date.now(),
                   source: `${candidate.from || 'Unknown'} - ${candidate.subject || 'No subject'}`,
                   used: false,
                   siteMatch: undefined,
                   mailboxId: mailbox.id,
-                }
-
-                // Check for duplicates
-                const recentCodes = await storage.getRecentCodes(50)
-                const isDuplicate = recentCodes.some(c => c.code === storedCode.code)
-
-                if (!isDuplicate) {
-                  await storage.addCode(storedCode)
-                  newCodesCount++
-                  console.log(`[PopupHandler] Saved code: ${storedCode.code}`)
-                }
+                })
+                console.log(`[PopupHandler] Found code: ${candidate.code.value}`)
               }
 
               if (candidate.link) {
-                // Save magic link (with "magic-link:" prefix for compatibility)
-                const storedLink = {
+                results.push({
                   code: `magic-link:${candidate.link.href}`,
                   timestamp: candidate.receivedEpochMs || Date.now(),
                   source: `${candidate.from || 'Unknown'} - ${candidate.subject || 'No subject'}`,
                   used: false,
                   siteMatch: candidate.link.domain,
                   mailboxId: mailbox.id,
-                }
-
-                // Check for duplicates
-                const recentCodes = await storage.getRecentCodes(50)
-                const isDuplicate = recentCodes.some(c => c.code === storedLink.code)
-
-                if (!isDuplicate) {
-                  await storage.addCode(storedLink)
-                  newCodesCount++
-                  console.log(`[PopupHandler] Saved magic link from: ${candidate.link.domain}`)
-                }
+                })
+                console.log(`[PopupHandler] Found magic link from: ${candidate.link.domain}`)
               }
-            }
 
-            console.log(`[PopupHandler] Stored ${newCodesCount} new items`)
+              return results
+            })
+
+            console.log(`[PopupHandler] Found ${ephemeralCodes.length} new items (ephemeral only)`)
 
             // Update lastSyncedAt for all mailboxes after successful sync
             const now = Date.now()
@@ -134,28 +157,34 @@ export class PopupMessageHandler {
             }
             console.log(`[PopupHandler] Updated lastSyncedAt for ${mailboxes.length} mailboxes`)
 
-            // Update popup cache with recent codes from storage
-            const recentCodes = await storage.getRecentCodes(10)
-            await this.cacheManager.updateWithNewCodes(recentCodes, mailboxes.length, mailboxes)
+            // Update popup cache with ephemeral codes (session storage only)
+            await this.cacheManager.updateWithNewCodes(ephemeralCodes, mailboxes.length, mailboxes)
 
             // Return updated cache
             const cache = await this.cacheManager.getCache()
 
             // Reset sync failure tracking on successful sync
-            consecutiveSyncFailures = 0
-            lastSyncErrorTime = null
-            currentSyncError = null
+            await this.errorManager.recordSuccess()
 
             // Update badge with unseen code count (only fresh codes < 10 min old)
             const unseenCount = cache.codes.filter((c) =>
               !c.seenAt &&
               !c.usedAt &&
-              (now - c.timestamp) < BADGE_EXPIRY_MS
+              (now - c.receivedAt) < BADGE_EXPIRY_MS
             ).length
             if (unseenCount > 0) {
               setBadgeCount(unseenCount)
             } else {
               clearBadge()
+            }
+
+            // Enforce minimum duration (3 seconds) for visual feedback
+            const elapsed = Date.now() - startTime
+            const MIN_DURATION = 3000
+            if (elapsed < MIN_DURATION) {
+              const delay = MIN_DURATION - elapsed
+              console.log(`[PopupHandler] Sync completed in ${elapsed}ms, waiting ${delay}ms for minimum duration`)
+              await new Promise(resolve => setTimeout(resolve, delay))
             }
 
             return {
@@ -166,32 +195,16 @@ export class PopupMessageHandler {
             console.error('[PopupHandler] Manual sync failed:', error)
 
             // Track sync failures for error badge
-            consecutiveSyncFailures++
-            lastSyncErrorTime = Date.now()
+            await this.errorManager.recordFailure(error as Error)
 
-            // Detect error type (auth vs sync failure)
-            const errorMsg = error instanceof Error ? error.message : String(error)
-            const isAuthError = errorMsg.toLowerCase().includes('401') ||
-                               errorMsg.toLowerCase().includes('auth') ||
-                               errorMsg.toLowerCase().includes('token') ||
-                               errorMsg.toLowerCase().includes('unauthorized')
-
-            // Set current error for popup banner
-            currentSyncError = {
-              type: isAuthError ? 'auth-expired' : 'sync-failed',
-              variant: isAuthError ? 'warning' : 'error',
-              message: isAuthError
-                ? 'Gmail access expired. Reconnect to resume sync.'
-                : 'Sync failed. Check your connection.',
-              timestamp: Date.now()
-            }
-
-            // Show error badge after 3 consecutive failures OR 15min of persistent errors
-            const persistentError = lastSyncErrorTime && (Date.now() - lastSyncErrorTime > 15 * 60 * 1000)
-            if (consecutiveSyncFailures >= 3 || persistentError) {
+            // Show error badge if needed
+            if (await this.errorManager.shouldShowBadge()) {
               setBadgeSyncError()
+            } else {
+              clearBadge()
             }
 
+            const errorMsg = error instanceof Error ? error.message : String(error)
             return {
               success: false,
               error: errorMsg,
@@ -201,9 +214,10 @@ export class PopupMessageHandler {
 
         case 'GET_SYNC_ERROR': {
           // Return current sync error state for error banner
+          const error = await this.errorManager.getCurrentError()
           return {
             success: true,
-            error: currentSyncError
+            error
           }
         }
 

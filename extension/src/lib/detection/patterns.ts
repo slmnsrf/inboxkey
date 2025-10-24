@@ -93,20 +93,46 @@ export const TYPICAL_CODE_LENGTHS = {
 /**
  * Keywords to exclude (false positives)
  * These patterns suggest the field is NOT a verification code
+ *
+ * IMPORTANT: Use [\s\-_] for field identifier patterns to catch:
+ * - snake_case (Python, Ruby, REST APIs, Salesforce)
+ * - kebab-case (HTML attributes)
+ * - space-separated (rare but valid)
+ *
+ * Examples:
+ * - zip_code, zip-code, zip code → zip[\s\-_]?code
+ * - user_name, user-name, username → user[\s\-_]?name
+ * - first_name, first-name, firstname → ^(?:first|last|full)[\s\-_]?name$
  */
 export const EXCLUSION_PATTERNS = {
   password: /password/i,
-  email: /^e[-\s]?mail$/i,  // Exact match only - don't exclude "email_code"
-  username: /user[-\s]?name/i,
+  email: /^e[\s\-_]?mail$/i,  // Exact match only - don't exclude "email_code"
+  username: /user[\s\-_]?name/i,
   search: /search/i,
-  name: /^(?:first|last|full)[-\s]?name$/i,
+  name: /^(?:first|last|full)[\s\-_]?name$/i,
   address: /address/i,
   phone: /phone.*number/i,  // Full phone number, not just verification
-  zip: /zip[-\s]?code/i,
+  zip: /zip[\s\-_]?code/i,
   postal: /postal/i,
   card: /card.*number/i,
   cvv: /cvv/i,
   ssn: /ssn|social.*security/i,
+
+  // Commercial & E-commerce
+  discount: /discount[\s\-_]?code/i,
+  promo: /promo(tional)?[\s\-_]?code/i,
+  coupon: /coupon[\s\-_]?code/i,
+  voucher: /voucher[\s\-_]?code/i,
+
+  // Developer & API
+  api_key: /api[\s\-_]?(key|secret)/i,
+  access_token: /access[\s\-_]?token/i,
+  refresh_token: /refresh[\s\-_]?token/i,
+
+  // Referral & Social
+  referral: /referral[\s\-_]?(code|link)/i,
+  affiliate: /affiliate[\s\-_]?(code|link)/i,
+  invite: /invit(e|ation)[\s\-_]?code/i,
 } as const
 
 /**

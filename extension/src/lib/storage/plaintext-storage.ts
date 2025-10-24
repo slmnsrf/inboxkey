@@ -15,15 +15,12 @@ import type {
   Mailbox,
   SessionState,
   Settings,
-  StorageSchema,
-  StoredCode,
   DomainPreferences,
 } from "./schema"
 import {
   isMailbox,
   isSessionState,
   isSettings,
-  isStoredCode,
   isValidEmail,
   isValidProviderId,
   isValidTimestamp,
@@ -37,7 +34,6 @@ import { validateMailboxBeforeWrite } from "./validators"
  */
 const PLAINTEXT_STORAGE_KEYS = {
   MAILBOXES: "mailboxes_plain",
-  RECENT_CODES: "recent_codes_plain",
   SETTINGS: "settings",
   SESSION_STATE: "session_state",
   DOMAIN_PREFERENCES: "domain_preferences",
@@ -226,109 +222,6 @@ export class PlaintextStorage {
   }
 
   // ============================================================================
-  // Code Operations
-  // ============================================================================
-
-  async addCode(code: StoredCode): Promise<void> {
-    this.validateStoredCode(code)
-
-    await this.mutex.runExclusive(async () => {
-      const codes = await this.getRecentCodes()
-      codes.unshift(code) // Add to beginning (most recent first)
-      await this.saveCodes(codes)
-      await this.notifyChange("codes")
-    })
-  }
-
-  async getRecentCodes(limit?: number): Promise<StoredCode[]> {
-    try {
-      const result = await chrome.storage.local.get(
-        PLAINTEXT_STORAGE_KEYS.RECENT_CODES
-      )
-      const codes = (result[PLAINTEXT_STORAGE_KEYS.RECENT_CODES] ||
-        []) as StoredCode[]
-
-      // Validate each code
-      for (const code of codes) {
-        if (!isStoredCode(code)) {
-          throw new ValidationError("Invalid stored code structure")
-        }
-      }
-
-      // Sort by timestamp descending (newest first)
-      codes.sort((a, b) => b.timestamp - a.timestamp)
-
-      return limit ? codes.slice(0, limit) : codes
-    } catch (error) {
-      if (error instanceof ValidationError) throw error
-      throw new StorageError("Failed to retrieve codes", error)
-    }
-  }
-
-  async markCodeUsed(code: string): Promise<void> {
-    if (!code || code.length === 0) {
-      throw new ValidationError("Code cannot be empty", "code")
-    }
-
-    await this.mutex.runExclusive(async () => {
-      const codes = await this.getRecentCodes()
-      const found = codes.find((c) => c.code === code)
-
-      if (!found) {
-        throw new ValidationError(`Code "${code}" not found`)
-      }
-
-      found.used = true
-      await this.saveCodes(codes)
-      await this.notifyChange("codes")
-    })
-  }
-
-  async clearOldCodes(olderThanMs: number): Promise<void> {
-    if (olderThanMs <= 0) {
-      throw new ValidationError("olderThanMs must be positive", "olderThanMs")
-    }
-
-    await this.mutex.runExclusive(async () => {
-      const codes = await this.getRecentCodes()
-      const cutoff = Date.now() - olderThanMs
-      const filtered = codes.filter((c) => c.timestamp >= cutoff)
-
-      await this.saveCodes(filtered)
-      await this.notifyChange("codes")
-    })
-  }
-
-  async clearAllCodes(): Promise<void> {
-    await this.mutex.runExclusive(async () => {
-      await this.saveCodes([])
-      await this.notifyChange("codes")
-    })
-  }
-
-  private async saveCodes(codes: StoredCode[]): Promise<void> {
-    // Store directly as JSON
-    await chrome.storage.local.set({
-      [PLAINTEXT_STORAGE_KEYS.RECENT_CODES]: codes,
-    })
-  }
-
-  private validateStoredCode(code: StoredCode): void {
-    if (!code.code || code.code.length === 0) {
-      throw new ValidationError("Code cannot be empty", "code")
-    }
-    if (!isValidTimestamp(code.timestamp)) {
-      throw new ValidationError("Invalid timestamp", "timestamp")
-    }
-    if (!code.source || code.source.length === 0) {
-      throw new ValidationError("Source cannot be empty", "source")
-    }
-    if (typeof code.used !== "boolean") {
-      throw new ValidationError("Used must be a boolean", "used")
-    }
-  }
-
-  // ============================================================================
   // Settings Operations
   // ============================================================================
 
@@ -440,7 +333,6 @@ export class PlaintextStorage {
       // Clear all plaintext storage keys
       await chrome.storage.local.remove([
         PLAINTEXT_STORAGE_KEYS.MAILBOXES,
-        PLAINTEXT_STORAGE_KEYS.RECENT_CODES,
         PLAINTEXT_STORAGE_KEYS.SETTINGS,
         PLAINTEXT_STORAGE_KEYS.DOMAIN_PREFERENCES,
       ])
@@ -454,7 +346,6 @@ export class PlaintextStorage {
       // Get size of plaintext storage keys only
       const result = await chrome.storage.local.getBytesInUse([
         PLAINTEXT_STORAGE_KEYS.MAILBOXES,
-        PLAINTEXT_STORAGE_KEYS.RECENT_CODES,
         PLAINTEXT_STORAGE_KEYS.SETTINGS,
         PLAINTEXT_STORAGE_KEYS.DOMAIN_PREFERENCES,
       ])
