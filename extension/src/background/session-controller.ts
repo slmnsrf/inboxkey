@@ -114,8 +114,10 @@ export class SessionController {
     Object.values(persisted).forEach((session) => {
       if (session.status === "active") {
         this.sessions.set(session.id, session)
-        // V2: Delegate poll scheduling to SessionPoller
-        this.poller.schedulePolls(session.id, session.startedAt)
+        // Calculate poll times from stored pollSchedule (relative offsets from startedAt)
+        const pollTimesMs = session.pollSchedule.map(absoluteTime => absoluteTime - session.startedAt)
+        // V2: Delegate poll scheduling to SessionPoller with calculated poll times
+        this.poller.schedulePolls(session.id, session.startedAt, pollTimesMs)
       }
     })
   }
@@ -142,9 +144,17 @@ export class SessionController {
     const id = crypto.randomUUID()
     const now = Date.now()
 
-    // V2: Poll schedule is now managed by SessionPoller using WATCH_SESSION_SCORING.pollTimesMs
-    // We store absolute timestamps for tracking, but SessionPoller determines actual intervals
-    const pollSchedule = WATCH_SESSION_SCORING.pollTimesMs.map(offset => now + offset)
+    // Calculate dynamic poll schedule based on timeout setting
+    // Formula: [0%, 50%, 100%] of timeout
+    const timeoutMs = (timeoutSeconds ?? 20) * 1000
+    const pollTimesMs = [
+      0,                    // t=0 (immediate)
+      timeoutMs * 0.5,      // t=50%
+      timeoutMs             // t=100%
+    ]
+
+    // Store absolute timestamps for tracking
+    const pollSchedule = pollTimesMs.map(offset => now + offset)
 
     // V2: Extract siteETLD from URL
     const siteETLD = extractETLD(new URL(url).hostname)
@@ -177,8 +187,8 @@ export class SessionController {
     await this.persistSessions()
     this.callbacks.onSessionStarted?.(session)
 
-    // V2: Delegate poll scheduling to SessionPoller
-    this.poller.schedulePolls(id, now)
+    // V2: Delegate poll scheduling to SessionPoller with dynamic poll times
+    this.poller.schedulePolls(id, now, pollTimesMs)
 
     return session
   }
@@ -213,8 +223,11 @@ export class SessionController {
     const session = this.sessions.get(sessionId)
     if (!session || session.status !== "active") return
 
-    // V2: Delegate to SessionPoller
-    this.poller.schedulePolls(sessionId, session.startedAt)
+    // Calculate poll times from stored pollSchedule (relative offsets from startedAt)
+    const pollTimesMs = session.pollSchedule.map(absoluteTime => absoluteTime - session.startedAt)
+
+    // V2: Delegate to SessionPoller with calculated poll times
+    this.poller.schedulePolls(sessionId, session.startedAt, pollTimesMs)
   }
 
   /**
