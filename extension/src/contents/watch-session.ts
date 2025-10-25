@@ -11,6 +11,8 @@ import type { DetectionResult } from "@/lib/types"
 import { showNotification } from "./notification"
 import { showSessionChip, type ChipHandle } from "./session-chip"
 import { extractDomain, isDomainEnabled } from "@/lib/utils/domain"
+import { StorageFactory } from '@/lib/storage/storage-factory'
+import { findAndClickSubmitButton } from './autofill'
 
 interface SessionCodeResult {
   code: string
@@ -92,7 +94,6 @@ export class WatchSession {
     const expected = deriveExpectedShape(this.field)
 
     // Load timeout setting
-    const { StorageFactory } = await import('@/lib/storage/storage-factory')
     const storage = await StorageFactory.create()
     const settings = await storage.getSettings()
     const timeoutSeconds = settings.sessionTimeoutSeconds ?? 20
@@ -168,7 +169,6 @@ export class WatchSession {
         this.sessionId = session.session.id
 
         // Load settings for timeout
-        const { StorageFactory } = await import('@/lib/storage/storage-factory')
         const storage = await StorageFactory.create()
         const settings = await storage.getSettings()
         const timeoutSeconds = settings.sessionTimeoutSeconds ?? 20
@@ -348,7 +348,6 @@ export class WatchSession {
         console.log('[WatchSession] [BETA] Extended button detection enabled')
       }
 
-      const { findAndClickSubmitButton } = await import('./autofill')
       const clicked = await findAndClickSubmitButton(this.field, extendedDetection)
 
       if (clicked) {
