@@ -226,11 +226,11 @@ describe("SessionController", () => {
         timeoutSeconds: 0.2,
       })
 
-      // Execute all 3 polls: t=0, t=5000, t=10000
+      // Execute all 3 polls: t=0, t=100ms (50% of 200ms), t=200ms (100% of 200ms)
       await vi.advanceTimersByTimeAsync(0)
       await vi.advanceTimersByTimeAsync(1)
-      await vi.advanceTimersByTimeAsync(4999)
-      await vi.advanceTimersByTimeAsync(5000)
+      await vi.advanceTimersByTimeAsync(99)
+      await vi.advanceTimersByTimeAsync(100)
 
       expect(onCompleted).toHaveBeenCalledWith(
         expect.objectContaining({ status: "timedout" }),
@@ -309,9 +309,9 @@ describe("SessionController", () => {
         expect.objectContaining({ status: "active" })
       )
 
-      // Complete remaining polls
-      await vi.advanceTimersByTimeAsync(4999)
-      await vi.advanceTimersByTimeAsync(5000)
+      // Complete remaining polls: t=100ms, t=200ms
+      await vi.advanceTimersByTimeAsync(99)
+      await vi.advanceTimersByTimeAsync(100)
 
       expect(onCompleted).toHaveBeenCalledWith(
         expect.objectContaining({ status: "timedout" }),
@@ -340,12 +340,12 @@ describe("SessionController", () => {
       await vi.advanceTimersByTimeAsync(1)
       expect(mockPopupCacheManager.getCache).toHaveBeenCalledTimes(1)
 
-      // Second poll at 5000ms (pollTimes[1] = 5000ms)
-      await vi.advanceTimersByTimeAsync(4999)
+      // Second poll at 100ms (50% of 200ms timeout)
+      await vi.advanceTimersByTimeAsync(99)
       expect(mockPopupCacheManager.getCache).toHaveBeenCalledTimes(2)
 
-      // Third poll at 10000ms (pollTimes[2] = 10000ms)
-      await vi.advanceTimersByTimeAsync(5000)
+      // Third poll at 200ms (100% of 200ms timeout)
+      await vi.advanceTimersByTimeAsync(100)
       expect(mockPopupCacheManager.getCache).toHaveBeenCalledTimes(3)
     })
 
@@ -491,13 +491,13 @@ describe("SessionController", () => {
         timeoutSeconds: 0.2,
       })
 
-      // Execute all 3 polls: t=0, t=5000, t=10000
+      // Execute all 3 polls: t=0, t=100ms (50% of 200ms), t=200ms (100% of 200ms)
       await vi.advanceTimersByTimeAsync(0)
       await vi.advanceTimersByTimeAsync(1)
-      await vi.advanceTimersByTimeAsync(4999)
-      await vi.advanceTimersByTimeAsync(5000)
+      await vi.advanceTimersByTimeAsync(99)
+      await vi.advanceTimersByTimeAsync(100)
 
-      // All 3 polls should execute (pollTimesMs = [0, 5000, 10000])
+      // All 3 polls should execute (pollTimesMs = [0, 100, 200])
       expect(mockPopupCacheManager.getCache).toHaveBeenCalledTimes(3)
       expect(onCompleted).toHaveBeenCalledWith(
         expect.anything(),
@@ -505,7 +505,7 @@ describe("SessionController", () => {
       )
 
       // No more polls after timeout
-      await vi.advanceTimersByTimeAsync(10000)
+      await vi.advanceTimersByTimeAsync(1000)
       expect(mockPopupCacheManager.getCache).toHaveBeenCalledTimes(3)
     })
   })

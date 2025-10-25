@@ -95,18 +95,22 @@ export class SessionPoller {
    * Schedules a polling sequence for a watch session.
    *
    * Creates dual timers (setTimeout + chrome.alarms) for each poll time
-   * defined in WATCH_SESSION_SCORING.pollTimesMs. Whichever timer fires
-   * first executes the poll and clears the other.
+   * defined in WATCH_SESSION_SCORING.pollTimesMs or custom poll times.
+   * Whichever timer fires first executes the poll and clears the other.
    *
    * @param {string} sessionId - Unique identifier for the watch session
    * @param {number} startedAt - Unix timestamp (ms) when session started
+   * @param {number[]} customPollTimes - Optional custom poll times (ms offsets from startedAt)
    *
    * @example
-   * // Schedule polls at t=0, 5s, 10s from now
+   * // Schedule polls at t=0, 5s, 10s from now (default)
    * poller.schedulePolls("session-456", Date.now());
+   *
+   * // Schedule polls at t=0, 10s, 20s from now (custom)
+   * poller.schedulePolls("session-456", Date.now(), [0, 10000, 20000]);
    */
-  public schedulePolls(sessionId: string, startedAt: number): void {
-    const pollTimes = WATCH_SESSION_SCORING.pollTimesMs;
+  public schedulePolls(sessionId: string, startedAt: number, customPollTimes?: number[]): void {
+    const pollTimes = customPollTimes ?? WATCH_SESSION_SCORING.pollTimesMs;
 
     // Store schedule for tracking
     const schedule: PollingSchedule = {
