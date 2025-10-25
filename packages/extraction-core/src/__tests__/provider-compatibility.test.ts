@@ -15,7 +15,7 @@
  */
 
 import { describe, it, expect } from 'vitest'
-import { extractOTPs } from '../extraction/otp-extractor'
+import { extractOTPs } from '../extraction/otp-extractor.js'
 import { readFileSync, readdirSync } from 'fs'
 import { join } from 'path'
 
@@ -119,7 +119,7 @@ describe('Provider Compatibility', () => {
         })
 
         if (fixture.extracted?.code) {
-          const found = result.some(r => r.code === fixture.extracted.code)
+          const found = result.some(r => r.code === fixture.extracted!.code)
           if (found) correctExtractions++
         }
       }
@@ -171,7 +171,7 @@ describe('Provider Compatibility', () => {
       })
 
       if (fixture.extracted?.code) {
-        const found = result.some(r => r.code === fixture.extracted.code)
+        const found = result.some(r => r.code === fixture.extracted!.code)
         if (!found) {
           const provider = detectProvider(fixture.from)
           failuresByProvider[provider].push(fixture)
@@ -213,7 +213,7 @@ describe('Provider Compatibility', () => {
         })
 
         if (fixture.extracted?.code) {
-          const found = result.some(r => r.code === fixture.extracted.code)
+          const found = result.some(r => r.code === fixture.extracted!.code)
           if (found) correctExtractions++
         }
       }

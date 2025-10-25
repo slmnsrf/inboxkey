@@ -22,9 +22,9 @@ import {
   COMMON_OTP_PATTERNS,
   // Keyword dictionary (array of strings or regex sources) in multiple locales
   CODE_KEYWORDS,
-} from './extraction-types'
+} from './extraction-types.js'
 
-import { shapeScore, type ExpectedShape } from '../matching/shape-matcher'
+import { shapeScore, type ExpectedShape } from '../matching/shape-matcher.js'
 
 /** Character set for OTP */
 export type OtpCharset = 'digits' | 'alnum'

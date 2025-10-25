@@ -20,8 +20,8 @@ import {
   MAGIC_LINK_KEYWORDS,
   MAGIC_LINK_URL_HINTS,
   DANGEROUS_LINK_KEYWORDS,
-} from './extraction-types'
-import { extractOTPs } from './otp-extractor'
+} from './extraction-types.js'
+import { extractOTPs } from './otp-extractor.js'
 
 // ---------------- Types (local, to avoid hard coupling) ----------------
 

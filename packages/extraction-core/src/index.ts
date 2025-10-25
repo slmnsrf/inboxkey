@@ -6,8 +6,8 @@
  */
 
 // Main extraction functions
-export { extractFromEmail, extractMagicLinks } from './extraction/extractor'
-export { extractOTPs } from './extraction/otp-extractor'
+export { extractFromEmail, extractMagicLinks } from './extraction/extractor.js'
+export { extractOTPs } from './extraction/otp-extractor.js'
 
 // Types from extractor
 export type {
@@ -16,14 +16,14 @@ export type {
   LinkCandidate,
   ExtractResult,
   Charset,
-} from './extraction/extractor'
+} from './extraction/extractor.js'
 
 // Types from otp-extractor
 export type {
   OTPCandidate,
   OTPExtractOptions,
   OtpCharset,
-} from './extraction/otp-extractor'
+} from './extraction/otp-extractor.js'
 
 // Constants from extraction-types
 export {
@@ -38,8 +38,8 @@ export {
   SCORE_WEIGHTS,
   THRESHOLDS,
   EXTRACTION_DEFAULTS,
-} from './extraction/extraction-types'
+} from './extraction/extraction-types.js'
 
 // Matching utilities (for advanced use)
-export { shapeScore, type ExpectedShape } from './matching/shape-matcher'
-export { domainAffinity, extractETLD } from './matching/domain-affinity'
+export { shapeScore, type ExpectedShape } from './matching/shape-matcher.js'
+export { domainAffinity, extractETLD } from './matching/domain-affinity.js'
