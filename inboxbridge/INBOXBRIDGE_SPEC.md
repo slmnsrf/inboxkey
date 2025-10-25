@@ -1059,9 +1059,76 @@ tokio-test = "0.4"           # Async test utilities
 
 ---
 
+## Appendix C: Extension Integration Requirements
+
+### Background Script Message Handler
+
+The extension's background script must handle IMAP account storage:
+
+**File:** `/extension/src/background/index.ts` (or runtime message handler)
+
+```typescript
+case 'STORE_IMAP_MAILBOX': {
+  const { accountId, email, server, port } = message
+
+  // Create mailbox record
+  const mailbox: Mailbox = {
+    id: generateId(),
+    providerId: 'imap-bridge',
+    email,
+    imapAccountId: accountId,
+    imapServer: server,
+    imapPort: port,
+    addedAt: Date.now(),
+    lastSyncedAt: 0,
+  }
+
+  // Store in chrome.storage.local
+  await storeMailbox(mailbox)
+
+  return { success: true, mailboxId: mailbox.id }
+}
+```
+
+### IMAP Email Polling Integration
+
+**File:** `/extension/src/background/email-polling-service.ts` (or similar)
+
+```typescript
+import { IMAPBridgeProvider } from '@/lib/providers/imap-bridge/imap-bridge-provider'
+
+// In polling loop:
+if (mailbox.providerId === 'imap-bridge') {
+  const provider = new IMAPBridgeProvider()
+  const emails = await provider.fetchEmails(
+    mailbox.imapAccountId!,
+    { newerThan: new Date(Date.now() - 10 * 60 * 1000), maxResults: 15 }
+  )
+  // Process emails...
+}
+```
+
+### GitHub Releases Structure
+
+**Release assets required:**
+
+```
+Release v1.0.0 - InboxBridge IMAP Support
+├─ inboxbridge-macos-x64
+├─ inboxbridge-macos-arm64
+├─ inboxbridge-windows-x64.exe
+├─ inboxbridge-linux-x64
+├─ com.inboxkey.bridge.json (macOS manifest)
+├─ com.inboxkey.bridge.json (Linux manifest)
+├─ com.inboxkey.bridge.reg (Windows registry)
+└─ INSTALL.md (installation guide)
+```
+
+---
+
 **End of Specification**
 
 **Status:** Ready for Implementation (Post-MVP)
 **Next Step:** Create GitHub repository `inboxkey/inboxbridge`, set up CI/CD, begin Rust development
 **Owner:** InboxKey Core Team
-**Last Updated:** 2025-10-16
+**Last Updated:** 2025-10-25
