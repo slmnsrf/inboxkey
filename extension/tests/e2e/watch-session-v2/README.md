@@ -50,7 +50,7 @@ npm run test:e2e:debug
 - Badge animates (listening state)
 - Mock email arrives with code
 - Code is autofilled
-- Chip shows "Filled ✓"
+- Chip shows "Code filled ✓"
 - Badge shows success
 - Chip auto-dismisses after 5s
 

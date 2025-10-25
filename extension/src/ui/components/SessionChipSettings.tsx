@@ -12,6 +12,7 @@ import { t } from '@/lib/i18n'
 export function SessionChipSettings() {
   const { showToast } = useToast()
   const [showSessionChips, setShowSessionChips] = useState<boolean>(true)
+  const [sessionTimeoutSeconds, setSessionTimeoutSeconds] = useState<number>(20)
   const [loading, setLoading] = useState<boolean>(true)
 
   useEffect(() => {
@@ -24,6 +25,7 @@ export function SessionChipSettings() {
       const storage = await StorageFactory.create()
       const settings = await storage.getSettings()
       setShowSessionChips(settings.showSessionChips ?? true)
+      setSessionTimeoutSeconds(settings.sessionTimeoutSeconds ?? 20)
     } catch (error) {
       console.error('[SessionChipSettings] Failed to load settings:', error)
       showToast(t('error_generic'), 'error')
@@ -56,6 +58,35 @@ export function SessionChipSettings() {
       const statusEl = document.getElementById('session-chip-status')
       if (statusEl) {
         statusEl.textContent = 'Failed to save session chip setting'
+      }
+
+      showToast(t('error_generic'), 'error')
+    }
+  }
+
+  const handleTimeoutChange = async (value: number) => {
+    try {
+      setSessionTimeoutSeconds(value) // Optimistic update
+
+      const storage = await StorageFactory.create()
+      await storage.updateSettings({ sessionTimeoutSeconds: value })
+
+      // Update ARIA live region for screen readers
+      const statusEl = document.getElementById('session-chip-status')
+      if (statusEl) {
+        statusEl.textContent = `Email check timeout set to ${value} seconds`
+      }
+
+      showToast(t('toast_settings_saved'), 'success')
+    } catch (error) {
+      console.error('[SessionChipSettings] Failed to save timeout:', error)
+      // Revert on error
+      await loadSettings()
+
+      // Announce error to screen readers
+      const statusEl = document.getElementById('session-chip-status')
+      if (statusEl) {
+        statusEl.textContent = 'Failed to save timeout setting'
       }
 
       showToast(t('error_generic'), 'error')
@@ -98,6 +129,38 @@ export function SessionChipSettings() {
 
         <p id="session-chip-help" className="session-chip-settings-card__hint">
           {t('settings_session_chips_hint')}
+        </p>
+
+        <div className="setting-row" aria-labelledby="session-timeout-label">
+          <div className="setting-row__info">
+            <label htmlFor="session-timeout" id="session-timeout-label" className="setting-row__label">
+              Email check timeout
+            </label>
+            <p className="setting-row__description">
+              How long to wait for verification codes (10-75 seconds)
+            </p>
+          </div>
+          <div className="setting-row__control" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '8px' }}>
+            <input
+              id="session-timeout"
+              type="range"
+              min="10"
+              max="75"
+              step="5"
+              value={sessionTimeoutSeconds}
+              onChange={(e) => handleTimeoutChange(Number(e.target.value))}
+              disabled={loading}
+              aria-describedby="session-timeout-help"
+              style={{ width: '200px' }}
+            />
+            <output htmlFor="session-timeout" style={{ fontSize: '14px', fontWeight: 500 }}>
+              {sessionTimeoutSeconds}s
+            </output>
+          </div>
+        </div>
+
+        <p id="session-timeout-help" className="session-chip-settings-card__hint">
+          Increase for slower email providers or unreliable connections
         </p>
 
         <span id="session-chip-status" className="sr-only" role="status" aria-live="polite" aria-atomic="true"></span>

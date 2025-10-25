@@ -34,38 +34,63 @@ const NO_OP_CHIP_HANDLE: ChipHandle = {
 
 const STYLE_ID = 'inboxkey-session-chip-styles'
 const ANIMATION_DURATION_MS = 300
-const AUTO_DISMISS_DELAY_MS = 5000 // Success states (filled/copied)
-const AUTO_DISMISS_ERROR_DELAY_MS = 7000 // Error states (timeout - longer for readability)
-const AUTO_DISMISS_LISTENING_DELAY_MS = 45000 // Listening state safety net (45s)
+// Intentional deviation from 3s toast standard for faster success feedback (opt-in feature)
+const AUTO_DISMISS_FILLED_MS = 1500 // filled: 1.5s
+const AUTO_DISMISS_COPIED_MS = 3000 // copied: 3s
+const AUTO_DISMISS_TIMEOUT_MS = 3000 // timeout: 3s
+
+interface StateConfig {
+  text: string
+  color: string
+  icon: string
+  autoDismissMs: number | null
+  showButton?: boolean
+  buttonLabel?: string
+}
 
 // State configuration
-const STATE_CONFIG: Record<ChipState, { text: string; color: string; icon: string }> = {
+const STATE_CONFIG: Record<ChipState, StateConfig> = {
   listening: {
     text: 'Checking e-mails...',
     color: COLOR_PRIMARY,
-    icon: ''
+    icon: '',
+    autoDismissMs: null, // Dynamic - set at runtime
+    showButton: true,
+    buttonLabel: 'Abort'
   },
   filled: {
-    text: 'Filled',
+    text: 'Code filled',
     color: COLOR_SUCCESS,
-    icon: ''
+    icon: '',
+    autoDismissMs: AUTO_DISMISS_FILLED_MS,
+    showButton: false
   },
   copied: {
     text: 'Code copied to clipboard',
     color: COLOR_SUCCESS,
-    icon: ''
+    icon: '',
+    autoDismissMs: AUTO_DISMISS_COPIED_MS,
+    showButton: false
   },
   timeout: {
     text: 'No code received',
     color: COLOR_ERROR,
-    icon: ''
+    icon: '',
+    autoDismissMs: AUTO_DISMISS_TIMEOUT_MS,
+    showButton: false
   }
 }
 
 /**
  * Show a session status chip near the target field
  */
-export async function showSessionChip(field: HTMLInputElement): Promise<ChipHandle> {
+export async function showSessionChip(
+  field: HTMLInputElement,
+  sessionTimeoutSeconds?: number,
+  callbacks?: {
+    onAbort?: () => void | Promise<void>
+  }
+): Promise<ChipHandle> {
   // Check if chips are enabled in settings
   try {
     const result = await chrome.storage.local.get('settings')
@@ -98,7 +123,7 @@ export async function showSessionChip(field: HTMLInputElement): Promise<ChipHand
 
   // Initialize chip with 'listening' state to prevent blank blue box
   const initialState: ChipState = 'listening'
-  updateChipState(chip, liveRegion, initialState)
+  updateChipState(chip, liveRegion, initialState, sessionTimeoutSeconds, callbacks)
 
   // Keyboard handler for Esc key
   const handleKeydown = (event: KeyboardEvent) => {
@@ -118,27 +143,27 @@ export async function showSessionChip(field: HTMLInputElement): Promise<ChipHand
   // Create handle for external control
   const handle: ChipHandle = {
     update(state: ChipState) {
-      updateChipState(chip, liveRegion, state)
+      updateChipState(chip, liveRegion, state, sessionTimeoutSeconds, callbacks)
 
       // Clear any existing timeout
       if (autoDismissTimeout !== null) {
         clearTimeout(autoDismissTimeout)
       }
 
-      // FIXED: Auto-dismiss for ALL states (including listening) with appropriate timing
-      let delay: number
+      // Auto-dismiss based on state configuration
+      const config = STATE_CONFIG[state]
+      let delay: number | null = config.autoDismissMs
 
-      if (state === 'listening') {
-        delay = AUTO_DISMISS_LISTENING_DELAY_MS // 45s safety net
-      } else if (state === 'timeout') {
-        delay = AUTO_DISMISS_ERROR_DELAY_MS // 7s for errors
-      } else {
-        delay = AUTO_DISMISS_DELAY_MS // 5s for filled/copied
+      // For listening state, use dynamic timeout based on sessionTimeoutSeconds
+      if (state === 'listening' && sessionTimeoutSeconds) {
+        delay = sessionTimeoutSeconds * 1000 + 5000 // timeout + 5s buffer
       }
 
-      autoDismissTimeout = setTimeout(() => {
-        handle.hide()
-      }, delay) as unknown as number
+      if (delay !== null) {
+        autoDismissTimeout = setTimeout(() => {
+          handle.hide()
+        }, delay) as unknown as number
+      }
     },
 
     hide() {
@@ -177,6 +202,14 @@ function createChipElement(): HTMLDivElement {
   const textEl = document.createElement('span')
   textEl.className = 'inboxkey-chip-text'
 
+  // Abort button (hidden by default, shown only in listening state)
+  const abortBtn = document.createElement('button')
+  abortBtn.className = 'inboxkey-chip-abort'
+  abortBtn.setAttribute('aria-label', 'Abort session')
+  abortBtn.setAttribute('type', 'button')
+  abortBtn.style.display = 'none' // Hidden by default
+  abortBtn.textContent = 'Abort'
+
   // Close button
   const closeBtn = document.createElement('button')
   closeBtn.className = 'inboxkey-chip-close'
@@ -192,6 +225,7 @@ function createChipElement(): HTMLDivElement {
 
   content.appendChild(iconEl)
   content.appendChild(textEl)
+  content.appendChild(abortBtn)
   content.appendChild(closeBtn)
   chip.appendChild(content)
   chip.appendChild(liveRegion)
@@ -205,11 +239,16 @@ function createChipElement(): HTMLDivElement {
 function updateChipState(
   chip: HTMLDivElement,
   liveRegion: HTMLDivElement,
-  state: ChipState
+  state: ChipState,
+  _sessionTimeoutSeconds?: number,
+  callbacks?: {
+    onAbort?: () => void | Promise<void>
+  }
 ): void {
   const config = STATE_CONFIG[state]
   const iconEl = chip.querySelector('.inboxkey-chip-icon') as HTMLSpanElement
   const textEl = chip.querySelector('.inboxkey-chip-text') as HTMLSpanElement
+  const abortBtn = chip.querySelector('.inboxkey-chip-abort') as HTMLButtonElement
 
   // Update content
   if (config.icon) {
@@ -223,6 +262,26 @@ function updateChipState(
 
   // Update background color
   chip.style.backgroundColor = config.color
+
+  // Show/hide abort button based on state
+  if (config.showButton && config.buttonLabel) {
+    abortBtn.textContent = config.buttonLabel
+    abortBtn.style.display = ''
+
+    // Wire up abort callback (remove old listener first)
+    const newAbortBtn = abortBtn.cloneNode(true) as HTMLButtonElement
+    abortBtn.parentNode?.replaceChild(newAbortBtn, abortBtn)
+
+    newAbortBtn.addEventListener('click', async () => {
+      console.log('[SessionChip] Abort button clicked')
+      if (callbacks?.onAbort) {
+        await callbacks.onAbort()
+      }
+      // Chip will be hidden by the abort callback (via handle.hide())
+    })
+  } else {
+    abortBtn.style.display = 'none'
+  }
 
   // Announce to screen readers
   liveRegion.textContent = config.text
@@ -387,10 +446,40 @@ function injectStyles(): void {
       font-weight: 500;
     }
 
+    .inboxkey-chip-abort {
+      flex-shrink: 0;
+      padding: 12px 16px;
+      border: 1px solid rgba(255, 255, 255, 0.5);
+      background: rgba(255, 255, 255, 0.1);
+      color: white;
+      border-radius: 4px;
+      font-size: 13px;
+      font-weight: 500;
+      line-height: 1.4;
+      cursor: pointer;
+      margin-left: ${SPACE_SM};
+      transition: background ${DURATION_FAST}ms ease, transform ${DURATION_FAST}ms ease;
+      min-height: 44px;
+    }
+
+    .inboxkey-chip-abort:hover {
+      background: rgba(255, 255, 255, 0.2);
+    }
+
+    .inboxkey-chip-abort:focus {
+      outline: 2px solid white;
+      outline-offset: 2px;
+    }
+
+    .inboxkey-chip-abort:active {
+      background: rgba(255, 255, 255, 0.3);
+      transform: scale(0.95);
+    }
+
     .inboxkey-chip-close {
       flex-shrink: 0;
-      width: 24px; /* Increased for better accessibility (closer to 44px minimum) */
-      height: 24px;
+      width: 44px;
+      height: 44px;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -398,7 +487,7 @@ function injectStyles(): void {
       background: rgba(255, 255, 255, 0.2);
       color: white;
       border-radius: 4px;
-      font-size: 18px;
+      font-size: 20px;
       line-height: 1;
       cursor: pointer;
       padding: 0;
