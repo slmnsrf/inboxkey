@@ -18,7 +18,6 @@ import { PopupMessageHandler } from "./popup-handler"
 import { ErrorStateManager } from "./error-state-manager"
 import { StorageFactory } from "@/lib/storage/storage-factory"
 import type { Mailbox } from "@/lib/storage/schema"
-import notificationIconUrl from "url:~assets/icon.png"
 import {
   setBadgeListening,
   setBadgeSuccess,
@@ -27,7 +26,6 @@ import {
   setBadgeSyncError,
   clearBadge,
 } from "@/contents/badge-manager"
-import { extractDomain, isDomainEnabled } from "@/lib/utils/domain"
 
 interface StartSessionMessage {
   type: "START_SESSION"
@@ -36,6 +34,7 @@ interface StartSessionMessage {
     length?: number
     charset?: "digits" | "alnum"
   }
+  timeoutSeconds?: number
 }
 
 interface StopSessionMessage {
@@ -75,7 +74,6 @@ const sessionController = new SessionController(
       deliverSessionCompletion(session, result)
     },
   },
-  undefined, // Use default poll schedule
   popupCacheManager // Pass cache manager for updates
 )
 
@@ -371,6 +369,7 @@ async function handleWatchPortMessage(
       tabId: context.tabId,
       url: message.url,
       expected,
+      timeoutSeconds: message.timeoutSeconds,
     })
 
     // Replace existing session mapping if necessary

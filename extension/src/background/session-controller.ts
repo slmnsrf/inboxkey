@@ -20,11 +20,11 @@ import { EmailPollingService } from "@/lib/services/email-polling-service"
 import { createAdaptersFromMailboxes } from "@/lib/services/provider-adapter"
 import { SessionPoller } from "./session-poller"
 import { extractETLD } from "@/lib/matching/domain-affinity"
+import { WATCH_SESSION_SCORING } from "@/lib/matching/scoring-config"
 import type { ExpectedShape } from "@/lib/matching/shape-matcher"
 import type { PopupCacheManager } from "./popup-cache"
 
 const SESSION_STORAGE_KEY = "inboxkey.sessions"
-const DEFAULT_POLL_SCHEDULE = [0, 5000, 10000] as const
 
 type SessionStatus = "active" | "filled" | "timedout" | "canceled"
 
@@ -94,7 +94,6 @@ export class SessionController {
 
   constructor(
     private readonly callbacks: SessionControllerCallbacks,
-    private readonly pollSchedule: readonly number[] = DEFAULT_POLL_SCHEDULE,
     private readonly popupCacheManager?: PopupCacheManager
   ) {
     // V2: Initialize SessionPoller with callback to handlePoll
@@ -129,8 +128,9 @@ export class SessionController {
     tabId: number
     url: string
     expected: SessionExpected
+    timeoutSeconds?: number
   }): Promise<SessionState> {
-    const { tabId, url, expected } = params
+    const { tabId, url, expected, timeoutSeconds } = params
 
     // Cancel existing session for tab
     for (const existing of this.sessions.values()) {
@@ -141,7 +141,10 @@ export class SessionController {
 
     const id = crypto.randomUUID()
     const now = Date.now()
-    const pollSchedule = this.pollSchedule.map((delay) => now + delay)
+
+    // V2: Poll schedule is now managed by SessionPoller using WATCH_SESSION_SCORING.pollTimesMs
+    // We store absolute timestamps for tracking, but SessionPoller determines actual intervals
+    const pollSchedule = WATCH_SESSION_SCORING.pollTimesMs.map(offset => now + offset)
 
     // V2: Extract siteETLD from URL
     const siteETLD = extractETLD(new URL(url).hostname)

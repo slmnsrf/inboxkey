@@ -91,11 +91,18 @@ export class WatchSession {
 
     const expected = deriveExpectedShape(this.field)
 
+    // Load timeout setting
+    const { StorageFactory } = await import('@/lib/storage/storage-factory')
+    const storage = await StorageFactory.create()
+    const settings = await storage.getSettings()
+    const timeoutSeconds = settings.sessionTimeoutSeconds ?? 20
+
     try {
       this.port.postMessage({
         type: "START_SESSION",
         url: window.location.href,
         expected,
+        timeoutSeconds,
       })
     } catch (error) {
       console.error("[WatchSession] Failed to send START_SESSION:", error)
@@ -160,8 +167,23 @@ export class WatchSession {
         }
         this.sessionId = session.session.id
 
-        // V2: Show chip in "listening" state and set badge
-        this.chipHandle = await showSessionChip(this.field)
+        // Load settings for timeout
+        const { StorageFactory } = await import('@/lib/storage/storage-factory')
+        const storage = await StorageFactory.create()
+        const settings = await storage.getSettings()
+        const timeoutSeconds = settings.sessionTimeoutSeconds ?? 20
+
+        // V2: Show chip in "listening" state with timeout and abort callback
+        this.chipHandle = await showSessionChip(
+          this.field,
+          timeoutSeconds,
+          {
+            onAbort: () => {
+              console.log('[WatchSession] User aborted session')
+              this.stop()
+            }
+          }
+        )
         this.updateBadge('listening')
 
         this.callbacks.onSessionStarted?.(session.session.id)

@@ -60,10 +60,7 @@ describe("SessionController Load Testing", () => {
   describe("Concurrent Session Handling", () => {
     it("should handle 10 concurrent sessions", async () => {
       const onCompleted = vi.fn()
-      const controller = new SessionController(
-        { onSessionCompleted: onCompleted },
-        [0, 10, 20]
-      )
+      const controller = new SessionController({ onSessionCompleted: onCompleted })
 
       await controller.initialize()
       mockGetRecentCodes.mockResolvedValue([])
@@ -75,6 +72,7 @@ describe("SessionController Load Testing", () => {
             tabId: i + 1,
             url: `https://example${i + 1}.com`,
             expected: {},
+            timeoutSeconds: 0.2,
           })
         )
       )
@@ -102,10 +100,7 @@ describe("SessionController Load Testing", () => {
 
     it("should handle 25 concurrent sessions", async () => {
       const onCompleted = vi.fn()
-      const controller = new SessionController(
-        { onSessionCompleted: onCompleted },
-        [0, 10]
-      )
+      const controller = new SessionController({ onSessionCompleted: onCompleted })
 
       await controller.initialize()
       mockGetRecentCodes.mockResolvedValue([])
@@ -117,6 +112,7 @@ describe("SessionController Load Testing", () => {
             tabId: i + 1,
             url: `https://site${i + 1}.com`,
             expected: {},
+            timeoutSeconds: 0.2,
           })
         )
       )
@@ -131,10 +127,7 @@ describe("SessionController Load Testing", () => {
 
     it("should handle mixed outcomes in concurrent sessions", async () => {
       const onCompleted = vi.fn()
-      const controller = new SessionController(
-        { onSessionCompleted: onCompleted },
-        [0, 10]
-      )
+      const controller = new SessionController({ onSessionCompleted: onCompleted })
 
       await controller.initialize()
 
@@ -167,6 +160,7 @@ describe("SessionController Load Testing", () => {
             tabId: i + 1,
             url: `https://example${i + 1}.com`,
             expected: {},
+            timeoutSeconds: 0.2,
           })
         )
       )
@@ -191,10 +185,7 @@ describe("SessionController Load Testing", () => {
   describe("Rapid Session Creation/Cancellation", () => {
     it("should handle rapid session creation and cancellation", async () => {
       const onCompleted = vi.fn()
-      const controller = new SessionController(
-        { onSessionCompleted: onCompleted },
-        [0, 100]
-      )
+      const controller = new SessionController({ onSessionCompleted: onCompleted })
 
       await controller.initialize()
       mockGetRecentCodes.mockResolvedValue([])
@@ -205,6 +196,7 @@ describe("SessionController Load Testing", () => {
           tabId: 1,
           url: `https://example.com/${i}`,
           expected: {},
+          timeoutSeconds: 0.2,
         })
 
         // Immediately cancel
@@ -225,10 +217,7 @@ describe("SessionController Load Testing", () => {
 
     it("should handle 50 rapid session replacements", async () => {
       const onCompleted = vi.fn()
-      const controller = new SessionController(
-        { onSessionCompleted: onCompleted },
-        [0, 100]
-      )
+      const controller = new SessionController({ onSessionCompleted: onCompleted })
 
       await controller.initialize()
       mockGetRecentCodes.mockResolvedValue([])
@@ -239,6 +228,7 @@ describe("SessionController Load Testing", () => {
           tabId: 1,
           url: `https://example.com/${i}`,
           expected: {},
+          timeoutSeconds: 0.2,
         })
       }
 
@@ -252,10 +242,7 @@ describe("SessionController Load Testing", () => {
 
     it("should handle interleaved create/cancel across tabs", async () => {
       const onCompleted = vi.fn()
-      const controller = new SessionController(
-        { onSessionCompleted: onCompleted },
-        [0, 100, 200]
-      )
+      const controller = new SessionController({ onSessionCompleted: onCompleted })
 
       await controller.initialize()
       mockGetRecentCodes.mockResolvedValue([])
@@ -267,6 +254,7 @@ describe("SessionController Load Testing", () => {
             tabId: i + 1,
             url: `https://tab${i + 1}.com`,
             expected: {},
+            timeoutSeconds: 0.2,
           })
         )
       )
@@ -294,10 +282,7 @@ describe("SessionController Load Testing", () => {
   describe("Session Churn (Realistic Browser Behavior)", () => {
     it("should handle session churn - tabs opening and closing", async () => {
       const onCompleted = vi.fn()
-      const controller = new SessionController(
-        { onSessionCompleted: onCompleted },
-        [0, 50, 100]
-      )
+      const controller = new SessionController({ onSessionCompleted: onCompleted })
 
       await controller.initialize()
       mockGetRecentCodes.mockResolvedValue([])
@@ -310,6 +295,7 @@ describe("SessionController Load Testing", () => {
           tabId: i + 1,
           url: `https://site${i + 1}.com`,
           expected: {},
+          timeoutSeconds: 0.2,
         })
 
         activeSessions.add(session.id)
@@ -342,10 +328,7 @@ describe("SessionController Load Testing", () => {
 
     it("should handle burst of sessions followed by quiet period", async () => {
       const onCompleted = vi.fn()
-      const controller = new SessionController(
-        { onSessionCompleted: onCompleted },
-        [0, 50, 100]
-      )
+      const controller = new SessionController({ onSessionCompleted: onCompleted })
 
       await controller.initialize()
       mockGetRecentCodes.mockResolvedValue([])
@@ -357,6 +340,7 @@ describe("SessionController Load Testing", () => {
             tabId: i + 1,
             url: `https://burst${i + 1}.com`,
             expected: {},
+            timeoutSeconds: 0.2,
           })
         )
       )
@@ -378,6 +362,7 @@ describe("SessionController Load Testing", () => {
             tabId: i + 100,
             url: `https://burst2-${i + 1}.com`,
             expected: {},
+            timeoutSeconds: 0.2,
           })
         )
       )
@@ -391,10 +376,7 @@ describe("SessionController Load Testing", () => {
   describe("Resource Management", () => {
     it("should not leak timers after sessions complete", async () => {
       const onCompleted = vi.fn()
-      const controller = new SessionController(
-        { onSessionCompleted: onCompleted },
-        [0, 10]
-      )
+      const controller = new SessionController({ onSessionCompleted: onCompleted })
 
       await controller.initialize()
       mockGetRecentCodes.mockResolvedValue([])
@@ -405,6 +387,7 @@ describe("SessionController Load Testing", () => {
           tabId: i + 1,
           url: `https://site${i + 1}.com`,
           expected: {},
+          timeoutSeconds: 0.2,
         })
 
         await vi.runAllTimersAsync()
@@ -416,10 +399,7 @@ describe("SessionController Load Testing", () => {
 
     it("should clean up alarms after sessions complete", async () => {
       const onCompleted = vi.fn()
-      const controller = new SessionController(
-        { onSessionCompleted: onCompleted },
-        [0, 10]
-      )
+      const controller = new SessionController({ onSessionCompleted: onCompleted })
 
       await controller.initialize()
       mockGetRecentCodes.mockResolvedValue([])
@@ -428,6 +408,7 @@ describe("SessionController Load Testing", () => {
         tabId: 1,
         url: "https://example.com",
         expected: {},
+        timeoutSeconds: 0.2,
       })
 
       await vi.runAllTimersAsync()
@@ -438,10 +419,7 @@ describe("SessionController Load Testing", () => {
 
     it("should handle memory-intensive persistence operations", async () => {
       const onCompleted = vi.fn()
-      const controller = new SessionController(
-        { onSessionCompleted: onCompleted },
-        [0, 10, 20]
-      )
+      const controller = new SessionController({ onSessionCompleted: onCompleted })
 
       await controller.initialize()
       mockGetRecentCodes.mockResolvedValue([])
@@ -456,6 +434,7 @@ describe("SessionController Load Testing", () => {
               length: 6,
               charset: "digits" as const,
             },
+            timeoutSeconds: 0.2,
           })
         )
       )
@@ -490,6 +469,7 @@ describe("SessionController Load Testing", () => {
           tabId: i + 1,
           url: `https://site${i + 1}.com`,
           expected: {},
+          timeoutSeconds: 0.2,
         })
 
         await vi.runAllTimersAsync()
@@ -500,10 +480,7 @@ describe("SessionController Load Testing", () => {
 
     it("should handle overlapping poll schedules correctly", async () => {
       const onCompleted = vi.fn()
-      const controller = new SessionController(
-        { onSessionCompleted: onCompleted },
-        [0, 50, 100, 150, 200]
-      )
+      const controller = new SessionController({ onSessionCompleted: onCompleted })
 
       await controller.initialize()
       mockGetRecentCodes.mockResolvedValue([])
@@ -513,6 +490,7 @@ describe("SessionController Load Testing", () => {
         tabId: 1,
         url: "https://site1.com",
         expected: {},
+        timeoutSeconds: 0.2,
       })
 
       await vi.advanceTimersByTimeAsync(25)
@@ -521,6 +499,7 @@ describe("SessionController Load Testing", () => {
         tabId: 2,
         url: "https://site2.com",
         expected: {},
+        timeoutSeconds: 0.2,
       })
 
       await vi.advanceTimersByTimeAsync(25)
@@ -529,6 +508,7 @@ describe("SessionController Load Testing", () => {
         tabId: 3,
         url: "https://site3.com",
         expected: {},
+        timeoutSeconds: 0.2,
       })
 
       // Complete all
@@ -545,15 +525,9 @@ describe("SessionController Load Testing", () => {
       const onCompleted1 = vi.fn()
       const onCompleted2 = vi.fn()
 
-      const controller1 = new SessionController(
-        { onSessionCompleted: onCompleted1 },
-        [0, 10]
-      )
+      const controller1 = new SessionController({ onSessionCompleted: onCompleted1 })
 
-      const controller2 = new SessionController(
-        { onSessionCompleted: onCompleted2 },
-        [0, 20, 40, 60]
-      )
+      const controller2 = new SessionController({ onSessionCompleted: onCompleted2 })
 
       await controller1.initialize()
       await controller2.initialize()
@@ -564,12 +538,14 @@ describe("SessionController Load Testing", () => {
         tabId: 1,
         url: "https://fast.com",
         expected: {},
+        timeoutSeconds: 0.2,
       })
 
       await controller2.startSession({
         tabId: 2,
         url: "https://slow.com",
         expected: {},
+        timeoutSeconds: 0.2,
       })
 
       await vi.runAllTimersAsync()
@@ -584,10 +560,7 @@ describe("SessionController Load Testing", () => {
   describe("Stress Tests", () => {
     it("should survive 100 rapid tab replacements", async () => {
       const onCompleted = vi.fn()
-      const controller = new SessionController(
-        { onSessionCompleted: onCompleted },
-        [0, 50]
-      )
+      const controller = new SessionController({ onSessionCompleted: onCompleted })
 
       await controller.initialize()
       mockGetRecentCodes.mockResolvedValue([])
@@ -598,6 +571,7 @@ describe("SessionController Load Testing", () => {
           tabId: 1,
           url: `https://page${i}.com`,
           expected: {},
+          timeoutSeconds: 0.2,
         })
       }
 
@@ -611,10 +585,7 @@ describe("SessionController Load Testing", () => {
 
     it("should handle alternating create/cancel pattern", async () => {
       const onCompleted = vi.fn()
-      const controller = new SessionController(
-        { onSessionCompleted: onCompleted },
-        [0, 100]
-      )
+      const controller = new SessionController({ onSessionCompleted: onCompleted })
 
       await controller.initialize()
       mockGetRecentCodes.mockResolvedValue([])
@@ -625,12 +596,14 @@ describe("SessionController Load Testing", () => {
           tabId: 1,
           url: `https://tab1-${i}.com`,
           expected: {},
+          timeoutSeconds: 0.2,
         })
 
         const session2 = await controller.startSession({
           tabId: 2,
           url: `https://tab2-${i}.com`,
           expected: {},
+          timeoutSeconds: 0.2,
         })
 
         if (i % 2 === 0) {

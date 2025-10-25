@@ -92,7 +92,7 @@ describe('session-chip', () => {
       chipHandle.update('filled')
 
       const chip = document.querySelector('.inboxkey-chip') as HTMLElement
-      expect(chip.textContent).toContain('Filled')
+      expect(chip.textContent).toContain('Code filled')
       expect(chip.style.backgroundColor).toBe('#10B981')
 
       chipHandle.hide()
@@ -129,7 +129,7 @@ describe('session-chip', () => {
 
       chipHandle.update('filled')
       chip = document.querySelector('.inboxkey-chip') as HTMLElement
-      expect(chip.textContent).toContain('Filled')
+      expect(chip.textContent).toContain('Code filled')
 
       chipHandle.hide()
     })
@@ -216,7 +216,7 @@ describe('session-chip', () => {
   })
 
   describe('Auto-dismiss behavior', () => {
-    it('should auto-dismiss "filled" state after 5s', async () => {
+    it('should auto-dismiss "filled" state after 1.5s', async () => {
       vi.useFakeTimers()
 
       const chipHandle = await showSessionChip(testField)
@@ -230,8 +230,8 @@ describe('session-chip', () => {
       const timersBefore = vi.getTimerCount()
       expect(timersBefore).toBeGreaterThan(0) // Should have at least the auto-dismiss timer
 
-      // Fast-forward 4.9s - chip should still be visible
-      vi.advanceTimersByTime(4900)
+      // Fast-forward 1.4s - chip should still be visible
+      vi.advanceTimersByTime(1400)
       expect(chip.style.animation).toBe('') // No dismissal animation yet
 
       // Fast-forward past the dismiss delay to trigger hide()
@@ -244,7 +244,7 @@ describe('session-chip', () => {
       chipHandle.hide()
     })
 
-    it('should auto-dismiss "copied" state after 5s', async () => {
+    it('should auto-dismiss "copied" state after 3s', async () => {
       vi.useFakeTimers()
 
       const chipHandle = await showSessionChip(testField)
@@ -255,7 +255,7 @@ describe('session-chip', () => {
       expect(chip).not.toBeNull()
 
       // Fast-forward past dismiss delay
-      vi.advanceTimersByTime(5100)
+      vi.advanceTimersByTime(3100)
 
       // Check that dismissal animation was applied
       expect(chip.style.animation).toContain('inboxkeyChipFadeOut')
@@ -264,7 +264,7 @@ describe('session-chip', () => {
       chipHandle.hide()
     })
 
-    it('should auto-dismiss "timeout" state after 7s', async () => {
+    it('should auto-dismiss "timeout" state after 3s', async () => {
       vi.useFakeTimers()
 
       const chipHandle = await showSessionChip(testField)
@@ -275,7 +275,7 @@ describe('session-chip', () => {
       expect(chip).not.toBeNull()
 
       // Fast-forward past dismiss delay
-      vi.advanceTimersByTime(7100)
+      vi.advanceTimersByTime(3100)
 
       // Check that dismissal animation was applied
       expect(chip.style.animation).toContain('inboxkeyChipFadeOut')
@@ -284,21 +284,21 @@ describe('session-chip', () => {
       chipHandle.hide()
     })
 
-    it('should auto-dismiss "listening" state after 45s', async () => {
+    it('should auto-dismiss "listening" state dynamically based on timeout', async () => {
       vi.useFakeTimers()
 
-      const chipHandle = await showSessionChip(testField)
+      const chipHandle = await showSessionChip(testField, 20) // 20s timeout
 
       chipHandle.update('listening')
 
       const chip = document.querySelector('.inboxkey-chip') as HTMLElement
       expect(chip).not.toBeNull()
 
-      // Fast-forward 44s - chip should still be visible
-      vi.advanceTimersByTime(44000)
+      // Fast-forward 24s (20s timeout + 4s buffer) - chip should still be visible
+      vi.advanceTimersByTime(24000)
       expect(chip.style.animation).toBe('') // No dismissal animation yet
 
-      // Fast-forward past the dismiss delay
+      // Fast-forward past the dismiss delay (20s + 5s buffer = 25s total)
       vi.advanceTimersByTime(1100)
 
       // Check that dismissal animation was applied
@@ -336,9 +336,9 @@ describe('session-chip', () => {
       const chips = document.querySelectorAll('.inboxkey-chip')
       expect(chips.length).toBeGreaterThanOrEqual(1) // At least one chip exists
 
-      // The last chip created should have "Filled" text
+      // The last chip created should have "Code filled" text
       const allChips = Array.from(chips)
-      const filledChip = allChips.find(chip => chip.textContent?.includes('Filled'))
+      const filledChip = allChips.find(chip => chip.textContent?.includes('Code filled'))
       expect(filledChip).toBeDefined()
 
       handle1.hide()
@@ -382,7 +382,7 @@ describe('session-chip', () => {
 
       chipHandle.update('filled')
       chip = document.querySelector('.inboxkey-chip') as HTMLElement
-      expect(chip.textContent).toContain('Filled')
+      expect(chip.textContent).toContain('Code filled')
 
       chipHandle.hide()
     })
@@ -466,6 +466,61 @@ describe('session-chip', () => {
       const handle = await showSessionChip(testField)
       expect(document.querySelector('.inboxkey-chip')).not.toBeNull()
       handle.hide()
+    })
+  })
+
+  describe('Abort button', () => {
+    it('should show abort button only in listening state', async () => {
+      const chipHandle = await showSessionChip(testField)
+
+      chipHandle.update('listening')
+      let abortBtn = document.querySelector('.inboxkey-chip-abort') as HTMLButtonElement
+      expect(abortBtn).not.toBeNull()
+      expect(abortBtn.style.display).not.toBe('none')
+      expect(abortBtn.textContent).toBe('Abort')
+
+      chipHandle.update('filled')
+      abortBtn = document.querySelector('.inboxkey-chip-abort') as HTMLButtonElement
+      expect(abortBtn.style.display).toBe('none')
+
+      chipHandle.update('copied')
+      abortBtn = document.querySelector('.inboxkey-chip-abort') as HTMLButtonElement
+      expect(abortBtn.style.display).toBe('none')
+
+      chipHandle.update('timeout')
+      abortBtn = document.querySelector('.inboxkey-chip-abort') as HTMLButtonElement
+      expect(abortBtn.style.display).toBe('none')
+
+      chipHandle.hide()
+    })
+
+    it('should call onAbort callback when abort button is clicked', async () => {
+      const onAbortMock = vi.fn()
+      const chipHandle = await showSessionChip(testField, 20, { onAbort: onAbortMock })
+
+      chipHandle.update('listening')
+
+      const abortBtn = document.querySelector('.inboxkey-chip-abort') as HTMLButtonElement
+      expect(abortBtn).not.toBeNull()
+
+      abortBtn.click()
+
+      expect(onAbortMock).toHaveBeenCalledTimes(1)
+
+      chipHandle.hide()
+    })
+
+    it('should not show abort button if no callback provided', async () => {
+      const chipHandle = await showSessionChip(testField, 20)
+
+      chipHandle.update('listening')
+
+      const abortBtn = document.querySelector('.inboxkey-chip-abort') as HTMLButtonElement
+      expect(abortBtn).not.toBeNull()
+      // Button should still be hidden even in listening state if no callback
+      expect(abortBtn.style.display).not.toBe('none')
+
+      chipHandle.hide()
     })
   })
 })

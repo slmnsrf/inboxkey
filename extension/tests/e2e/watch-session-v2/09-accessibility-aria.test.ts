@@ -61,7 +61,7 @@ test.describe('Watch Session V2 - Accessibility (ARIA)', () => {
 
     // Read ARIA live region for filled state
     const liveText = await getAriaLiveText(page)
-    expect(liveText).toContain('Filled')
+    expect(liveText).toContain('Code filled')
   })
 
   test('ARIA live region announces timeout state', async ({ page, backgroundPage }) => {

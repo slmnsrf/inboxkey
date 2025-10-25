@@ -63,10 +63,7 @@ describe("SessionController Integration", () => {
       const onCompleted2 = vi.fn()
 
       // Phase 1: Create initial controller and start session
-      const controller1 = new SessionController(
-        { onSessionCompleted: onCompleted1 },
-        [0, 100]
-      )
+      const controller1 = new SessionController({ onSessionCompleted: onCompleted1 })
 
       await controller1.initialize()
       mockGetRecentCodes.mockResolvedValue([])
@@ -75,6 +72,7 @@ describe("SessionController Integration", () => {
         tabId: 1,
         url: "https://example.com",
         expected: {},
+        timeoutSeconds: 0.2,
       })
 
       // Complete first poll
@@ -86,10 +84,7 @@ describe("SessionController Integration", () => {
       expect(stored["inboxkey.sessions"][session.id]).toBeDefined()
 
       // Phase 2: Create new controller (simulates SW restart)
-      const controller2 = new SessionController(
-        { onSessionCompleted: onCompleted2 },
-        [0, 100]
-      )
+      const controller2 = new SessionController({ onSessionCompleted: onCompleted2 })
 
       // Should load the persisted session
       await controller2.initialize()
@@ -106,10 +101,7 @@ describe("SessionController Integration", () => {
 
     it("should use alarm fallback when timer fails", async () => {
       const onCompleted = vi.fn()
-      const controller = new SessionController(
-        { onSessionCompleted: onCompleted },
-        [0, 100]
-      )
+      const controller = new SessionController({ onSessionCompleted: onCompleted })
 
       await controller.initialize()
       mockGetRecentCodes.mockResolvedValue([])
@@ -118,6 +110,7 @@ describe("SessionController Integration", () => {
         tabId: 1,
         url: "https://example.com",
         expected: {},
+        timeoutSeconds: 0.2,
       })
 
       // First poll executes via timer
@@ -138,10 +131,7 @@ describe("SessionController Integration", () => {
 
     it("should prevent duplicate polls via idempotency", async () => {
       const onCompleted = vi.fn()
-      const controller = new SessionController(
-        { onSessionCompleted: onCompleted },
-        [0, 100, 200]
-      )
+      const controller = new SessionController({ onSessionCompleted: onCompleted })
 
       await controller.initialize()
       mockGetRecentCodes.mockResolvedValue([])
@@ -150,6 +140,7 @@ describe("SessionController Integration", () => {
         tabId: 1,
         url: "https://example.com",
         expected: {},
+        timeoutSeconds: 0.2,
       })
 
       // First poll via timer
@@ -172,10 +163,7 @@ describe("SessionController Integration", () => {
 
     it("should handle rapid session restarts", async () => {
       const onCompleted = vi.fn()
-      const controller = new SessionController(
-        { onSessionCompleted: onCompleted },
-        [0, 100]
-      )
+      const controller = new SessionController({ onSessionCompleted: onCompleted })
 
       await controller.initialize()
       mockGetRecentCodes.mockResolvedValue([])
@@ -185,6 +173,7 @@ describe("SessionController Integration", () => {
         tabId: 1,
         url: "https://example.com",
         expected: {},
+        timeoutSeconds: 0.2,
       })
 
       // Immediately start session 2 for same tab
@@ -192,6 +181,7 @@ describe("SessionController Integration", () => {
         tabId: 1,
         url: "https://example.com/login",
         expected: {},
+        timeoutSeconds: 0.2,
       })
 
       // Session 1 should be canceled
@@ -212,10 +202,7 @@ describe("SessionController Integration", () => {
 
     it("should persist state across multiple sessions", async () => {
       const onCompleted = vi.fn()
-      const controller = new SessionController(
-        { onSessionCompleted: onCompleted },
-        [0, 10]
-      )
+      const controller = new SessionController({ onSessionCompleted: onCompleted })
 
       await controller.initialize()
       mockGetRecentCodes.mockResolvedValue([])
@@ -226,6 +213,7 @@ describe("SessionController Integration", () => {
           tabId: i,
           url: `https://example${i}.com`,
           expected: {},
+          timeoutSeconds: 0.2,
         })
 
         await vi.runAllTimersAsync()
@@ -244,10 +232,7 @@ describe("SessionController Integration", () => {
 
   describe("Alarm Fallback Behavior", () => {
     it("should create alarms as backup for all polls", async () => {
-      const controller = new SessionController(
-        { onSessionCompleted: vi.fn() },
-        [0, 5000, 10000]
-      )
+      const controller = new SessionController({ onSessionCompleted: vi.fn() })
 
       await controller.initialize()
       mockGetRecentCodes.mockResolvedValue([])
@@ -256,6 +241,7 @@ describe("SessionController Integration", () => {
         tabId: 1,
         url: "https://example.com",
         expected: {},
+        timeoutSeconds: 0.2,
       })
 
       // Should create alarm for first poll immediately
@@ -276,10 +262,7 @@ describe("SessionController Integration", () => {
 
     it("should clear alarms when poll executes via timer", async () => {
       const onCompleted = vi.fn()
-      const controller = new SessionController(
-        { onSessionCompleted: onCompleted },
-        [0, 100]
-      )
+      const controller = new SessionController({ onSessionCompleted: onCompleted })
 
       await controller.initialize()
       mockGetRecentCodes.mockResolvedValue([])
@@ -288,6 +271,7 @@ describe("SessionController Integration", () => {
         tabId: 1,
         url: "https://example.com",
         expected: {},
+        timeoutSeconds: 0.2,
       })
 
       await vi.advanceTimersByTimeAsync(1)
@@ -321,10 +305,7 @@ describe("SessionController Integration", () => {
 
       mockGetRecentCodes.mockResolvedValue([])
 
-      const controller = new SessionController(
-        { onSessionCompleted: onCompleted },
-        [0, 100, 200]
-      )
+      const controller = new SessionController({ onSessionCompleted: onCompleted })
 
       await controller.initialize()
 
@@ -339,10 +320,7 @@ describe("SessionController Integration", () => {
   describe("Concurrent Session Management", () => {
     it("should handle multiple tabs with separate sessions", async () => {
       const onCompleted = vi.fn()
-      const controller = new SessionController(
-        { onSessionCompleted: onCompleted },
-        [0, 10]
-      )
+      const controller = new SessionController({ onSessionCompleted: onCompleted })
 
       await controller.initialize()
       mockGetRecentCodes.mockResolvedValue([])
@@ -352,18 +330,21 @@ describe("SessionController Integration", () => {
         tabId: 1,
         url: "https://example1.com",
         expected: {},
+        timeoutSeconds: 0.2,
       })
 
       await controller.startSession({
         tabId: 2,
         url: "https://example2.com",
         expected: {},
+        timeoutSeconds: 0.2,
       })
 
       await controller.startSession({
         tabId: 3,
         url: "https://example3.com",
         expected: {},
+        timeoutSeconds: 0.2,
       })
 
       // Complete all sessions
@@ -375,10 +356,7 @@ describe("SessionController Integration", () => {
 
     it("should handle session completion while others are active", async () => {
       const onCompleted = vi.fn()
-      const controller = new SessionController(
-        { onSessionCompleted: onCompleted },
-        [0, 100]
-      )
+      const controller = new SessionController({ onSessionCompleted: onCompleted })
 
       await controller.initialize()
 
@@ -400,12 +378,14 @@ describe("SessionController Integration", () => {
         tabId: 1,
         url: "https://example1.com",
         expected: {},
+        timeoutSeconds: 0.2,
       })
 
       await controller.startSession({
         tabId: 2,
         url: "https://example2.com",
         expected: {},
+        timeoutSeconds: 0.2,
       })
 
       await vi.runAllTimersAsync()
@@ -424,10 +404,7 @@ describe("SessionController Integration", () => {
 
     it("should isolate errors between sessions", async () => {
       const onCompleted = vi.fn()
-      const controller = new SessionController(
-        { onSessionCompleted: onCompleted },
-        [0, 10]
-      )
+      const controller = new SessionController({ onSessionCompleted: onCompleted })
 
       await controller.initialize()
 
@@ -443,12 +420,14 @@ describe("SessionController Integration", () => {
         tabId: 1,
         url: "https://example1.com",
         expected: {},
+        timeoutSeconds: 0.2,
       })
 
       await controller.startSession({
         tabId: 2,
         url: "https://example2.com",
         expected: {},
+        timeoutSeconds: 0.2,
       })
 
       await vi.runAllTimersAsync()
@@ -460,10 +439,7 @@ describe("SessionController Integration", () => {
 
   describe("Persistence and Recovery", () => {
     it("should recover from storage read errors during initialize", async () => {
-      const controller = new SessionController(
-        { onSessionCompleted: vi.fn() },
-        [0, 100]
-      )
+      const controller = new SessionController({ onSessionCompleted: vi.fn() })
 
       // Mock storage.get to fail
       vi.spyOn(chrome.storage.session, "get").mockRejectedValueOnce(
@@ -483,6 +459,7 @@ describe("SessionController Integration", () => {
         tabId: 1,
         url: "https://example.com",
         expected: {},
+        timeoutSeconds: 0.2,
       })
     })
 
@@ -512,10 +489,7 @@ describe("SessionController Integration", () => {
 
       mockGetRecentCodes.mockResolvedValue([])
 
-      const controller = new SessionController(
-        { onSessionCompleted: onCompleted },
-        [0, 100]
-      )
+      const controller = new SessionController({ onSessionCompleted: onCompleted })
 
       // Should load good session and skip bad one
       await controller.initialize()
@@ -527,10 +501,7 @@ describe("SessionController Integration", () => {
 
     it("should handle session cleanup during persistence errors", async () => {
       const onCompleted = vi.fn()
-      const controller = new SessionController(
-        { onSessionCompleted: onCompleted },
-        [0, 10]
-      )
+      const controller = new SessionController({ onSessionCompleted: onCompleted })
 
       await controller.initialize()
       mockGetRecentCodes.mockResolvedValue([
@@ -560,6 +531,7 @@ describe("SessionController Integration", () => {
         tabId: 1,
         url: "https://example.com",
         expected: {},
+        timeoutSeconds: 0.2,
       })
 
       // The persistence error will cause the poll to fail
@@ -575,10 +547,7 @@ describe("SessionController Integration", () => {
 
   describe("Edge Cases", () => {
     it("should handle canceling non-existent session", async () => {
-      const controller = new SessionController(
-        { onSessionCompleted: vi.fn() },
-        [0, 100]
-      )
+      const controller = new SessionController({ onSessionCompleted: vi.fn() })
 
       await controller.initialize()
 
@@ -587,10 +556,7 @@ describe("SessionController Integration", () => {
     })
 
     it("should handle alarm for non-existent session", async () => {
-      const controller = new SessionController(
-        { onSessionCompleted: vi.fn() },
-        [0, 100]
-      )
+      const controller = new SessionController({ onSessionCompleted: vi.fn() })
 
       await controller.initialize()
 
@@ -600,10 +566,7 @@ describe("SessionController Integration", () => {
 
     it("should handle alarm for completed session", async () => {
       const onCompleted = vi.fn()
-      const controller = new SessionController(
-        { onSessionCompleted: onCompleted },
-        [0]
-      )
+      const controller = new SessionController({ onSessionCompleted: onCompleted })
 
       await controller.initialize()
       mockGetRecentCodes.mockResolvedValue([
@@ -619,6 +582,7 @@ describe("SessionController Integration", () => {
         tabId: 1,
         url: "https://example.com",
         expected: {},
+        timeoutSeconds: 0.2,
       })
 
       // Complete the session
@@ -632,10 +596,7 @@ describe("SessionController Integration", () => {
     })
 
     it("should handle resume for inactive session", async () => {
-      const controller = new SessionController(
-        { onSessionCompleted: vi.fn() },
-        [0, 100]
-      )
+      const controller = new SessionController({ onSessionCompleted: vi.fn() })
 
       await controller.initialize()
 
@@ -664,6 +625,7 @@ describe("SessionController Integration", () => {
         tabId: 1,
         url: "https://example.com",
         expected: {},
+        timeoutSeconds: 0.2,
       })
 
       // Complete immediately

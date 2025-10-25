@@ -223,6 +223,11 @@ export interface Settings {
    * @default false (opt-in for MVP)
    */
   disableOnBankingSites?: boolean
+  /**
+   * Session timeout in seconds (how long to wait for codes).
+   * @default 20
+   */
+  sessionTimeoutSeconds?: number
 }
 
 /**
@@ -262,6 +267,7 @@ export const DEFAULT_SETTINGS: Settings = {
   domainsEnabledByDefault: true, // Default: enable on all domains
   showSessionChips: true, // Default: show session status chips
   disableOnBankingSites: false, // Opt-in: users must enable manually
+  sessionTimeoutSeconds: 20, // Default: 20 seconds
 }
 
 /**
@@ -403,7 +409,8 @@ export function isSettings(obj: unknown): obj is Settings {
     (s.domainsEnabledByDefault === undefined || typeof s.domainsEnabledByDefault === "boolean") &&
     (s.extendedButtonDetection === undefined || typeof s.extendedButtonDetection === "boolean") &&
     (s.showSessionChips === undefined || typeof s.showSessionChips === "boolean") &&
-    (s.disableOnBankingSites === undefined || typeof s.disableOnBankingSites === "boolean")
+    (s.disableOnBankingSites === undefined || typeof s.disableOnBankingSites === "boolean") &&
+    (s.sessionTimeoutSeconds === undefined || (typeof s.sessionTimeoutSeconds === "number" && s.sessionTimeoutSeconds >= 10 && s.sessionTimeoutSeconds <= 75))
   )
 }
 

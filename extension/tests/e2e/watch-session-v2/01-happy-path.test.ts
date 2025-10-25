@@ -6,7 +6,7 @@
  * 2. Badge animates (listening state)
  * 3. Mock email arrives with code
  * 4. Code is autofilled
- * 5. Chip shows "Filled ✓"
+ * 5. Chip shows "Code filled ✓"
  * 6. Badge shows success (green checkmark)
  * 7. Chip auto-dismisses after 5s
  */
@@ -69,9 +69,9 @@ test.describe('Watch Session V2 - Happy Path', () => {
     const fieldValue = await page.inputValue('#otp')
     expect(fieldValue).toBe('123456')
 
-    // STEP 10: Verify chip shows "Filled ✓" message
+    // STEP 10: Verify chip shows "Code filled ✓" message
     const filledChipText = await getChipText(page)
-    expect(filledChipText).toContain('Filled')
+    expect(filledChipText).toContain('Code filled')
 
     // STEP 11: Verify field is marked as filled with data attributes
     const isFilled = await page.evaluate(() => {
