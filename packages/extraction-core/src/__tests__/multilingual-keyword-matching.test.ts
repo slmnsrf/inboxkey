@@ -16,7 +16,7 @@
  */
 
 import { describe, it, expect } from 'vitest'
-import { extractOTPs } from '../extraction/otp-extractor'
+import { extractOTPs } from '../extraction/otp-extractor.js'
 
 describe('Multilingual OTP Keyword Matching', () => {
   describe('Agglutinative Languages - Suffix Matching', () => {

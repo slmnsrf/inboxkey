@@ -13,13 +13,13 @@
  */
 
 import { describe, it, expect } from 'vitest'
-import { extractOTPs } from '../extraction/otp-extractor'
+import { extractOTPs } from '../extraction/otp-extractor.js'
 import {
   generatePerformanceReport,
   compareWithBaseline,
   formatComparison,
   type PerformanceMetrics
-} from './performance-reporter'
+} from './performance-reporter.js'
 
 const SHORT_TEXT = `
 Hi there,

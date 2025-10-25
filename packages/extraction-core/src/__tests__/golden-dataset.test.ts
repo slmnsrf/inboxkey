@@ -10,7 +10,7 @@
  */
 
 import { describe, it, expect } from 'vitest'
-import { extractOTPs } from '../extraction/otp-extractor'
+import { extractOTPs } from '../extraction/otp-extractor.js'
 import { readFileSync, readdirSync } from 'fs'
 import { join } from 'path'
 
@@ -50,7 +50,7 @@ describe('Golden Dataset - OTP Extraction', () => {
 
       // Check if we extracted the expected code
       if (fixture.extracted?.code) {
-        const found = result.some(r => r.code === fixture.extracted.code)
+        const found = result.some(r => r.code === fixture.extracted!.code)
         if (found) correctExtractions++
       }
     }
@@ -74,7 +74,7 @@ describe('Golden Dataset - OTP Extraction', () => {
 
       // Check if we extracted the expected code
       if (fixture.extracted?.code) {
-        const found = result.some(r => r.code === fixture.extracted.code)
+        const found = result.some(r => r.code === fixture.extracted!.code)
         if (found) correctExtractions++
       }
     }
@@ -103,7 +103,7 @@ describe('Golden Dataset - OTP Extraction', () => {
       totalExtractions += result.length
 
       if (fixture.extracted?.code) {
-        const found = result.some(r => r.code === fixture.extracted.code)
+        const found = result.some(r => r.code === fixture.extracted!.code)
         if (found) {
           truePositives++
         } else if (result.length > 0) {

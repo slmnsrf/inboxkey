@@ -45,7 +45,7 @@
  * @module lib/matching/domain-affinity
  */
 
-import { DOMAIN_ALIASES } from "./scoring-config";
+import { DOMAIN_ALIASES } from "./scoring-config.js";
 
 /**
  * Extracts the effective top-level domain plus one label (eTLD+1) from a full domain.
