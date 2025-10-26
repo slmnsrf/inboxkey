@@ -7,6 +7,12 @@
  */
 
 import type { ProviderAdapter, EmailLike } from '../../services/provider-adapter'
+import {
+  NativeMessagingClient,
+  type FetchRecentResult,
+  NativeErrorCode,
+  NativeMessagingError,
+} from '../../native-messaging'
 
 /**
  * Provider adapter for IMAP Bridge (Native Messaging)
@@ -31,34 +37,66 @@ export class IMAPBridgeAdapter implements ProviderAdapter {
    *
    * @param params - Fetch parameters
    * @returns Array of emails matching criteria
-   *
-   * TODO Phase 3: Implement Native Messaging calls to InboxBridge
    */
   async listRecent(params: {
     sinceEpochMs: number
     max: number
     keywordHint?: string
   }): Promise<EmailLike[]> {
-    // TODO: Implement in Phase 3 - Native Messaging Integration
-    //
-    // Implementation plan:
-    // 1. Connect to native app via chrome.runtime.connectNative('com.inboxkey.bridge')
-    // 2. Send mail.fetchRecent request (PROTOCOL.md § 3.8):
-    //    {
-    //      "v": 1,
-    //      "id": "uuid-...",
-    //      "method": "mail.fetchRecent",
-    //      "params": {
-    //        "accountId": this.accountId,
-    //        "sinceMinutes": Math.ceil((Date.now() - params.sinceEpochMs) / 60000),
-    //        "limit": params.max
-    //      }
-    //    }
-    // 3. Wait for response with messages array
-    // 4. Convert each message to EmailLike format via convertToEmailLike()
-    // 5. Handle errors (connection lost, auth failure, etc.)
+    const client = NativeMessagingClient.getInstance()
 
-    throw new Error('IMAPBridgeAdapter.listRecent not yet implemented')
+    // Convert sinceEpochMs to minutes (InboxBridge protocol uses minutes-ago, not epoch)
+    const sinceMinutes = Math.ceil((Date.now() - params.sinceEpochMs) / 60000)
+
+    try {
+      // Call mail.fetchRecent RPC method
+      const response = await client.request<FetchRecentResult>('mail.fetchRecent', {
+        accountId: this.accountId,
+        sinceMinutes,
+        limit: params.max,
+      })
+
+      // Convert IMAP messages to EmailLike format
+      return response.messages.map((msg) => this.convertToEmailLike(msg))
+    } catch (error) {
+      // Handle errors gracefully - don't crash polling
+      // Return empty array to allow other providers (Gmail, Outlook) to continue
+      if (error instanceof NativeMessagingError) {
+        switch (error.code) {
+          case NativeErrorCode.ACCOUNT_NOT_FOUND:
+            console.error(
+              `[IMAPBridgeAdapter] Account ${this.accountId} not found on backend`
+            )
+            break
+          case NativeErrorCode.KEYCHAIN_UNAVAILABLE:
+            console.error(
+              `[IMAPBridgeAdapter] Keychain unavailable for ${this.accountId}`
+            )
+            break
+          case NativeErrorCode.IMAP_AUTH:
+            console.error(`[IMAPBridgeAdapter] Auth failed for ${this.accountEmail}`)
+            break
+          case NativeErrorCode.IMAP_NETWORK:
+            console.warn(`[IMAPBridgeAdapter] Network error for ${this.accountEmail}`)
+            break
+          case NativeErrorCode.PORT_DISCONNECTED:
+            console.error('[IMAPBridgeAdapter] InboxBridge not running')
+            break
+          case NativeErrorCode.TIMEOUT:
+            console.warn(
+              `[IMAPBridgeAdapter] Timeout fetching emails for ${this.accountEmail}`
+            )
+            break
+          default:
+            console.error('[IMAPBridgeAdapter] Unknown error:', error.message)
+        }
+      } else {
+        console.error('[IMAPBridgeAdapter] Unexpected error:', error)
+      }
+
+      // Return empty array to allow other providers to continue
+      return []
+    }
   }
 
   /**
@@ -72,14 +110,15 @@ export class IMAPBridgeAdapter implements ProviderAdapter {
    */
   private convertToEmailLike(msg: {
     uid: number
-    mailbox: string
+    mailbox?: string
     date: string
     from: string
     subject: string
     snippet: string
   }): EmailLike {
+    const mailbox = msg.mailbox || 'INBOX' // Default to INBOX if not specified
     return {
-      id: `${this.accountId}:${msg.mailbox}:${msg.uid}`, // Composite key: accountId:mailbox:uid (IMAP UIDs only unique per mailbox)
+      id: `${this.accountId}:${mailbox}:${msg.uid}`, // Composite key: accountId:mailbox:uid (IMAP UIDs only unique per mailbox)
       provider: 'imap-bridge',
       subject: msg.subject,
       from: msg.from,

@@ -5,7 +5,7 @@
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { Window } from 'happy-dom'
-import { showSessionChip, type ChipState } from '../../src/contents/session-chip'
+import { showSessionChip } from '../../src/contents/session-chip'
 
 describe('session-chip', () => {
   let window: Window
@@ -173,43 +173,55 @@ describe('session-chip', () => {
     })
   })
 
-  describe('Keyboard accessibility', () => {
-    it('should dismiss chip on Escape key', async () => {
-      vi.useFakeTimers()
-
+  describe('Icon visibility', () => {
+    it('should show correct icon for listening state', async () => {
       const chipHandle = await showSessionChip(testField)
 
-      const chip = document.querySelector('.inboxkey-chip') as HTMLElement
-      expect(chip).not.toBeNull()
+      chipHandle.update('listening')
 
-      // Simulate Escape key
-      const event = new window.KeyboardEvent('keydown', { key: 'Escape' })
-      document.dispatchEvent(event)
+      const icon = document.querySelector('.inboxkey-chip-icon') as HTMLSpanElement
+      expect(icon).not.toBeNull()
+      expect(icon.textContent).toBe('⋯')
+      expect(icon.style.display).not.toBe('none')
 
-      // Fast-forward through animation
-      vi.advanceTimersByTime(300)
-
-      // Chip should be removed
-      const removedChip = document.querySelector('.inboxkey-chip')
-      expect(removedChip).toBeNull()
-
-      vi.useRealTimers()
-      chipHandle.hide() // Cleanup
+      chipHandle.hide()
     })
 
-    it('should not dismiss chip on other keys', async () => {
+    it('should show correct icon for filled state', async () => {
       const chipHandle = await showSessionChip(testField)
 
-      const chip = document.querySelector('.inboxkey-chip') as HTMLElement
-      expect(chip).not.toBeNull()
+      chipHandle.update('filled')
 
-      // Simulate Enter key
-      const event = new window.KeyboardEvent('keydown', { key: 'Enter' })
-      document.dispatchEvent(event)
+      const icon = document.querySelector('.inboxkey-chip-icon') as HTMLSpanElement
+      expect(icon).not.toBeNull()
+      expect(icon.textContent).toBe('✓')
+      expect(icon.style.display).not.toBe('none')
 
-      // Chip should still exist
-      const stillThere = document.querySelector('.inboxkey-chip')
-      expect(stillThere).not.toBeNull()
+      chipHandle.hide()
+    })
+
+    it('should show correct icon for copied state', async () => {
+      const chipHandle = await showSessionChip(testField)
+
+      chipHandle.update('copied')
+
+      const icon = document.querySelector('.inboxkey-chip-icon') as HTMLSpanElement
+      expect(icon).not.toBeNull()
+      expect(icon.textContent).toBe('⎘')
+      expect(icon.style.display).not.toBe('none')
+
+      chipHandle.hide()
+    })
+
+    it('should show correct icon for timeout state', async () => {
+      const chipHandle = await showSessionChip(testField)
+
+      chipHandle.update('timeout')
+
+      const icon = document.querySelector('.inboxkey-chip-icon') as HTMLSpanElement
+      expect(icon).not.toBeNull()
+      expect(icon.textContent).toBe('○')
+      expect(icon.style.display).not.toBe('none')
 
       chipHandle.hide()
     })
@@ -434,9 +446,8 @@ describe('session-chip', () => {
       const chipHandle = await showSessionChip(testField)
       chipHandle.hide()
 
-      // Dispatch escape key after hide - should not throw
-      const event = new window.KeyboardEvent('keydown', { key: 'Escape' })
-      expect(() => document.dispatchEvent(event)).not.toThrow()
+      // Chip should be removed
+      expect(document.querySelector('.inboxkey-chip')).toBeNull()
     })
   })
 
@@ -469,56 +480,60 @@ describe('session-chip', () => {
     })
   })
 
-  describe('Abort button', () => {
-    it('should show abort button only in listening state', async () => {
+  describe('Close button', () => {
+    it('should show close button only in listening state', async () => {
       const chipHandle = await showSessionChip(testField)
 
       chipHandle.update('listening')
-      let abortBtn = document.querySelector('.inboxkey-chip-abort') as HTMLButtonElement
-      expect(abortBtn).not.toBeNull()
-      expect(abortBtn.style.display).not.toBe('none')
-      expect(abortBtn.textContent).toBe('Abort')
+      let closeBtn = document.querySelector('.inboxkey-chip-close') as HTMLButtonElement
+      expect(closeBtn).not.toBeNull()
+      expect(closeBtn.style.display).not.toBe('none')
+      expect(closeBtn.getAttribute('title')).toBe('Cancel & ignore this URL')
+      expect(closeBtn.getAttribute('aria-label')).toBe('Cancel and ignore this URL')
 
       chipHandle.update('filled')
-      abortBtn = document.querySelector('.inboxkey-chip-abort') as HTMLButtonElement
-      expect(abortBtn.style.display).toBe('none')
+      closeBtn = document.querySelector('.inboxkey-chip-close') as HTMLButtonElement
+      expect(closeBtn.style.display).toBe('none')
 
       chipHandle.update('copied')
-      abortBtn = document.querySelector('.inboxkey-chip-abort') as HTMLButtonElement
-      expect(abortBtn.style.display).toBe('none')
+      closeBtn = document.querySelector('.inboxkey-chip-close') as HTMLButtonElement
+      expect(closeBtn.style.display).toBe('none')
 
       chipHandle.update('timeout')
-      abortBtn = document.querySelector('.inboxkey-chip-abort') as HTMLButtonElement
-      expect(abortBtn.style.display).toBe('none')
+      closeBtn = document.querySelector('.inboxkey-chip-close') as HTMLButtonElement
+      expect(closeBtn.style.display).toBe('none')
 
       chipHandle.hide()
     })
 
-    it('should call onAbort callback when abort button is clicked', async () => {
-      const onAbortMock = vi.fn()
-      const chipHandle = await showSessionChip(testField, 20, { onAbort: onAbortMock })
+    it('should call onClose callback when close button is clicked in listening state', async () => {
+      const onCloseMock = vi.fn()
+      const chipHandle = await showSessionChip(testField, 20, { onClose: onCloseMock })
 
       chipHandle.update('listening')
 
-      const abortBtn = document.querySelector('.inboxkey-chip-abort') as HTMLButtonElement
-      expect(abortBtn).not.toBeNull()
+      const closeBtn = document.querySelector('.inboxkey-chip-close') as HTMLButtonElement
+      expect(closeBtn).not.toBeNull()
 
-      abortBtn.click()
+      await closeBtn.click()
 
-      expect(onAbortMock).toHaveBeenCalledTimes(1)
+      expect(onCloseMock).toHaveBeenCalledTimes(1)
 
       chipHandle.hide()
     })
 
-    it('should not show abort button if no callback provided', async () => {
-      const chipHandle = await showSessionChip(testField, 20)
+    it('should not call onClose callback when chip is not in listening state', async () => {
+      const onCloseMock = vi.fn()
+      const chipHandle = await showSessionChip(testField, 20, { onClose: onCloseMock })
 
-      chipHandle.update('listening')
+      chipHandle.update('filled')
 
-      const abortBtn = document.querySelector('.inboxkey-chip-abort') as HTMLButtonElement
-      expect(abortBtn).not.toBeNull()
-      // Button should still be hidden even in listening state if no callback
-      expect(abortBtn.style.display).not.toBe('none')
+      const closeBtn = document.querySelector('.inboxkey-chip-close') as HTMLButtonElement
+
+      await closeBtn.click()
+
+      // onClose should not be called since we're not in listening state
+      expect(onCloseMock).not.toHaveBeenCalled()
 
       chipHandle.hide()
     })

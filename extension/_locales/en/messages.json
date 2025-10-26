@@ -81,6 +81,10 @@
     "message": "Magic Links",
     "description": "Section heading for magic links"
   },
+  "section_recent_items": {
+    "message": "Recent Items",
+    "description": "Unified section heading for recent codes and magic links combined"
+  },
 
   "button_copy": {
     "message": "Copy",
@@ -187,6 +191,14 @@
   "empty_no_links_message": {
     "message": "Magic login links will appear here when detected.",
     "description": "Empty state: no links message"
+  },
+  "empty_no_items_title": {
+    "message": "No items yet",
+    "description": "Empty state: unified no items title"
+  },
+  "empty_no_items_message": {
+    "message": "Verification codes and magic links will appear here when they arrive.",
+    "description": "Empty state: unified no items message"
   },
   "link_type_login": {
     "message": "Login",
@@ -447,16 +459,20 @@
   },
 
   "toast_code_copied": {
-    "message": "✓ Code copied to clipboard",
+    "message": "Code copied to clipboard",
     "description": "Toast: code copied"
   },
   "toast_link_opened": {
-    "message": "✓ Link opened",
+    "message": "Link opened",
     "description": "Toast: link opened"
   },
   "toast_settings_saved": {
-    "message": "✓ Settings saved",
+    "message": "Settings saved",
     "description": "Toast: settings saved"
+  },
+  "toast_settings_failed": {
+    "message": "Failed to save settings",
+    "description": "Toast: settings save error"
   },
   "toast_error_copy": {
     "message": "Failed to copy code",
@@ -469,6 +485,26 @@
   "toast_rate_limited": {
     "message": "Too many link opens. Please wait.",
     "description": "Toast: rate limited"
+  },
+  "toast_codes_cleared": {
+    "message": "All codes cleared",
+    "description": "Toast: codes cleared successfully"
+  },
+  "toast_clear_codes_failed": {
+    "message": "Failed to clear codes",
+    "description": "Toast: clear codes error"
+  },
+  "toast_cache_cleared": {
+    "message": "Cache cleared",
+    "description": "Toast: cache cleared successfully"
+  },
+  "toast_clear_cache_failed": {
+    "message": "Failed to clear cache",
+    "description": "Toast: clear cache error"
+  },
+  "button_close_notification": {
+    "message": "Close notification",
+    "description": "ARIA label for toast close button"
   },
 
   "error_token_expired_title": {
@@ -951,12 +987,48 @@
     "message": "Add IMAP Account",
     "description": "Title for add IMAP account modal"
   },
+  "accounts_imap_provider_preset_label": {
+    "message": "Email Provider",
+    "description": "Label for provider preset dropdown"
+  },
+  "accounts_imap_provider_preset_hint": {
+    "message": "Select your email provider to auto-fill IMAP settings",
+    "description": "Hint for provider preset dropdown"
+  },
+  "accounts_imap_provider_custom": {
+    "message": "Custom / Manual Setup",
+    "description": "Custom provider option in preset dropdown"
+  },
+  "accounts_imap_provider_gmail": {
+    "message": "Gmail (imap.gmail.com:993)",
+    "description": "Gmail provider option in preset dropdown"
+  },
+  "accounts_imap_provider_yahoo": {
+    "message": "Yahoo Mail (imap.mail.yahoo.com:993)",
+    "description": "Yahoo provider option in preset dropdown"
+  },
+  "accounts_imap_provider_outlook": {
+    "message": "Outlook / Office 365 (outlook.office365.com:993)",
+    "description": "Outlook provider option in preset dropdown"
+  },
+  "accounts_imap_provider_icloud": {
+    "message": "iCloud Mail (imap.mail.me.com:993)",
+    "description": "iCloud provider option in preset dropdown"
+  },
+  "accounts_imap_provider_protonmail": {
+    "message": "ProtonMail Bridge (127.0.0.1:1143)",
+    "description": "ProtonMail provider option in preset dropdown"
+  },
+  "accounts_imap_provider_fastmail": {
+    "message": "FastMail (imap.fastmail.com:993)",
+    "description": "FastMail provider option in preset dropdown"
+  },
   "accounts_imap_reconnect_title": {
     "message": "Reconnect IMAP Account",
     "description": "Title for reconnect IMAP account modal"
   },
   "accounts_imap_bridge_not_installed": {
-    "message": "InboxBridge not installed",
+    "message": "InboxBridge (IMAP helper app) is not installed or not running",
     "description": "Error when InboxBridge native app is not installed"
   },
   "accounts_imap_bridge_install_instructions": {
@@ -996,8 +1068,32 @@
     "description": "Label for IMAP password field"
   },
   "accounts_imap_password_hint": {
-    "message": "Your email password or app-specific password",
+    "message": "Gmail, Yahoo, and Outlook require an app-specific password instead of your main account password.",
     "description": "Hint for IMAP password field"
+  },
+  "accounts_imap_password_help_link": {
+    "message": "How to create one?",
+    "description": "Link text for app password help"
+  },
+  "accounts_imap_password_help_link_aria": {
+    "message": "Learn how to create app-specific password (opens in new tab)",
+    "description": "Aria-label for app password help link"
+  },
+  "accounts_imap_show": {
+    "message": "Show",
+    "description": "Button text to show password"
+  },
+  "accounts_imap_hide": {
+    "message": "Hide",
+    "description": "Button text to hide password"
+  },
+  "accounts_imap_show_password": {
+    "message": "Show password",
+    "description": "Aria-label for show password button"
+  },
+  "accounts_imap_hide_password": {
+    "message": "Hide password",
+    "description": "Aria-label for hide password button"
   },
   "accounts_imap_label_label": {
     "message": "Account Label (Optional)",
@@ -1035,16 +1131,32 @@
     "message": "Connection test failed",
     "description": "Error toast when IMAP test fails"
   },
+  "accounts_imap_error_generic": {
+    "message": "Connection test failed. Check your server settings and credentials.",
+    "description": "Generic IMAP connection error"
+  },
   "accounts_imap_error_auth": {
-    "message": "Authentication failed. Check your email and password.",
+    "message": "Authentication failed. For Gmail/Yahoo/Outlook, you must use an app-specific password, not your regular password. Check your credentials and try again.",
     "description": "IMAP authentication error"
   },
   "accounts_imap_error_timeout": {
-    "message": "Connection timeout. Check server address and port.",
+    "message": "Connection timeout. Check your server address and port (usually 993). If correct, check your firewall or network settings.",
     "description": "IMAP timeout error"
   },
   "accounts_imap_error_keychain": {
-    "message": "Keychain access error. Grant InboxBridge keychain permissions.",
+    "message": "Cannot save password to system keychain. On macOS: System Settings → Privacy & Security → InboxBridge. On Windows: Check Credential Manager permissions.",
     "description": "IMAP keychain error"
+  },
+  "accounts_imap_error_tls": {
+    "message": "SSL/TLS connection error. Standard port is 993 with TLS enabled. For port 143, disable TLS. Check your provider's IMAP settings.",
+    "description": "IMAP TLS/SSL connection error"
+  },
+  "accounts_imap_error_bridge_not_running": {
+    "message": "Cannot connect to InboxBridge. Is it running?",
+    "description": "Error when InboxBridge app is not running"
+  },
+  "accounts_imap_privacy_reassurance": {
+    "message": "Credentials stored in OS keychain • Local-only • No servers",
+    "description": "Privacy reassurance message for IMAP account modal"
   }
 }

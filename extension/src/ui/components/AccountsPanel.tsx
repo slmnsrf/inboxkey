@@ -397,8 +397,7 @@ export function AccountsPanel() {
     try {
       await chrome.runtime.sendMessage({ type: 'MARK_LINK_OPENED', url: item.url })
       await chrome.tabs.create({ url: item.url })
-      const domain = item.domain || new URL(item.url).hostname
-      showToast(`🔗 Opened ${domain}`, 'success', 3000)
+      showToast(t('toast_link_opened'), 'success', 3000)
     } catch (error) {
       console.error('[AccountsPanel] Failed to open link:', error)
       showToast(t('toast_error_link'), 'error', 5000)
@@ -434,7 +433,6 @@ export function AccountsPanel() {
       <ImapAccountsSection
         accounts={imapAccounts}
         disabled={false}
-        isLocked={false}
         onAdd={handleAddImap}
         onReconnect={handleReconnectImap}
         onRemove={handleRemoveImap}
@@ -451,7 +449,6 @@ export function AccountsPanel() {
         items={recentItems}
         onCopyCode={handleCopyCode}
         onOpenLink={handleOpenLink}
-        isLocked={false}
         loading={recentLoading}
       />
 

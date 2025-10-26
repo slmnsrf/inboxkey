@@ -13,12 +13,39 @@
 // =============================================================================
 
 /**
+ * Maximum number of items (codes + links combined) shown in popup
+ *
+ * Rationale: 5 items provides optimal balance:
+ * - Solves empty section problem (no wasted space when only codes OR only links arrive)
+ * - Shows top 5 most relevant items regardless of type
+ * - Prevents decision paralysis while providing sufficient context
+ * - Popup real estate is limited; prioritize clarity over quantity
+ *
+ * Items are priority-sorted by recency, domain affinity, and freshness.
+ * Action buttons ("Copy" vs "Open") differentiate item types without badges.
+ */
+export const MAX_ITEMS = 5
+
+/**
  * Maximum number of verification codes shown in popup
+ *
+ * @deprecated Use MAX_ITEMS instead. Kept for backward compatibility during migration.
+ *
+ * Rationale: 3 is sufficient because:
+ * - Verification codes are rare events (not continuous)
+ * - Users typically need only the most recent 1-2 codes
+ * - More items create visual clutter and decision paralysis
+ * - Popup real estate is limited; prioritize clarity over quantity
  */
 export const MAX_CODES = 3
 
 /**
  * Maximum number of magic links shown in popup
+ *
+ * @deprecated Use MAX_ITEMS instead. Kept for backward compatibility during migration.
+ *
+ * Rationale: Same as codes - 3 provides enough context without overwhelming.
+ * Most users interact with 1 link at a time; showing more adds no value.
  */
 export const MAX_LINKS = 3
 
@@ -28,23 +55,25 @@ export const MAX_LINKS = 3
 
 /**
  * Code Time-To-Live: Codes older than this are NOT shown in popup
- * Default: 30 minutes
- * Rationale: Most verification flows complete within 30 minutes
+ * Default: 15 minutes
+ * Rationale: Most verification flows complete within 15 minutes.
+ * Codes are short-lived (5-10min expiry); 15min provides sufficient buffer.
  */
-export const CODE_TTL_MS = 30 * 60 * 1000 // 30 minutes
+export const CODE_TTL_MS = 15 * 60 * 1000 // 15 minutes
 
 /**
  * Link Time-To-Live: Links older than this are NOT shown in popup
- * Default: 24 hours
- * Rationale: Magic links often have 24h expiration; UI can filter to 60min
+ * Uses same retention as codes for consistency and privacy.
+ * Magic links are typically used immediately; longer retention is unnecessary.
  */
-export const LINK_TTL_MS = 24 * 60 * 60 * 1000 // 24 hours
+export const LINK_TTL_MS = CODE_TTL_MS // Same as codes (15 minutes)
 
 /**
- * Default UI filter for magic links (tighter than hard TTL)
- * Links older than this are grayed out or hidden by default filter
+ * Default UI filter for magic links (grays out older links)
+ * Links older than this are grayed out or hidden by default filter.
+ * Set to 10 minutes to provide visual feedback before hard TTL cutoff.
  */
-export const LINK_UI_FILTER_MS = 60 * 60 * 1000 // 60 minutes
+export const LINK_UI_FILTER_MS = 10 * 60 * 1000 // 10 minutes
 
 /**
  * Used items disappear after this time
@@ -114,14 +143,14 @@ export const WEIGHT_FRESHNESS = 0.10  // Unused items get small boost
  * - 0-2 min: score = 1.0 (very fresh)
  * - 2-5 min: score = 0.7 (fresh)
  * - 5-10 min: score = 0.4 (medium)
- * - 10-30 min: score = 0.0 (old but valid)
- * - >30 min: dropped by TTL
+ * - 10-15 min: score = 0.0 (old but valid)
+ * - >15 min: dropped by TTL
  */
 export const RECENCY_BREAKPOINTS = {
   veryFresh: 2,   // minutes
   fresh: 5,       // minutes
   medium: 10,     // minutes
-  old: 30,        // minutes
+  old: 15,        // minutes (updated from 30 to match new CODE_TTL_MS)
 } as const
 
 /**

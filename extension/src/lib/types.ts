@@ -71,9 +71,6 @@ export interface StorageSchema {
     autoFillEnabled: boolean
     magicLinkAutoOpen: boolean
     pollingIntervals: [number, number, number] // [0, 5, 10]
-    // TODO: Phase 3 - Remove lockEnabled and lockTimeoutMinutes during migration
-    // lockEnabled: boolean
-    // lockTimeoutMinutes: number
   }
 }
 

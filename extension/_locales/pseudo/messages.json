@@ -44,6 +44,15 @@
   "empty_no_codes_message": {
     "message": "[Vërîfîçåtîõñ çõdës wîll åþþëår hërë whëñ thëý årrîvë îñ ýõür ëmåîl. one two three four five six seven]"
   },
+  "empty_no_items_title": {
+    "message": "[Ñõ îtëms ýët one two three]"
+  },
+  "empty_no_items_message": {
+    "message": "[Vërîfîçåtîõñ çõdës åñd måğîç lîñks wîll åþþëår hërë whëñ thëý årrîvë. one two three four five six seven eight]"
+  },
+  "section_recent_items": {
+    "message": "[Rëçëñt Îtëms one two three]"
+  },
   "security_banner_setup": {
     "message": "[Sët å þåsswõrd tõ þrõtëçt ýõür çõdës one two three four five six]"
   },

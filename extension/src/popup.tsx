@@ -14,6 +14,7 @@ import { PopupFooter } from './ui/components/PopupFooter'
 import { Header } from './ui/components/Header'
 import { CodeListSection } from './ui/components/CodeListSection'
 import { MagicLinkSection } from './ui/components/MagicLinkSection'
+import { RecentItemsSection } from './ui/components/RecentItemsSection'
 import { LoadingSkeleton } from './ui/components/LoadingSkeleton'
 import { usePopupData } from './ui/hooks/usePopupData'
 import { useSyncErrors } from './ui/hooks/useSyncErrors'
@@ -33,6 +34,7 @@ function PopupContent() {
   const { syncError, dismissSyncError } = useSyncErrors()
   const [isManualSyncing, setIsManualSyncing] = useState(false)
   const [currentTabDomain, setCurrentTabDomain] = useState<string | null>(null)
+  const [justSynced, setJustSynced] = useState(false)
 
   // Get current tab domain for link matching
   useEffect(() => {
@@ -62,9 +64,9 @@ function PopupContent() {
     try {
       await clipboardService.copyCode(code)
       await bridge.markCodeUsed(code)
-      showToast(`📋 Code copied: ${code}`, 'success', 3000)
+      showToast(t('toast_code_copied'), 'success', 3000)
     } catch (err) {
-      showToast('⚠️ Failed to copy code', 'error', 5000)
+      showToast(t('toast_error_copy'), 'error', 5000)
       console.error('[Popup] Copy failed:', err)
     }
   }
@@ -73,13 +75,12 @@ function PopupContent() {
     try {
       await linkService.openLink(link)
       await bridge.markLinkOpened(link.url)
-      const domain = link.source || new URL(link.url).hostname
-      showToast(`🔗 Opened ${domain}`, 'success', 3000)
+      showToast(t('toast_link_opened'), 'success', 3000)
     } catch (err) {
       if (err instanceof Error && err.message.includes('wait')) {
-        showToast('⚠️ Too many link opens. Wait...', 'error', 5000)
+        showToast(t('toast_rate_limited'), 'error', 5000)
       } else {
-        showToast('⚠️ Failed to open link', 'error', 5000)
+        showToast(t('toast_error_link'), 'error', 5000)
       }
       console.error('[Popup] Open link failed:', err)
     }
@@ -92,14 +93,17 @@ function PopupContent() {
     try {
       await bridge.triggerSync()
       await refresh()
-      const mailboxCount = data?.mailboxCount ?? 0
-      const message = mailboxCount > 0
-        ? `Synced ${mailboxCount} ${mailboxCount === 1 ? 'account' : 'accounts'}`
-        : 'Synced successfully'
-      showToast(message, 'success', 3000)
+
+      // Trigger green flash on sync status
+      setJustSynced(true)
+
+      // Auto-reset after 3 seconds (matches CSS transition duration)
+      setTimeout(() => {
+        setJustSynced(false)
+      }, 3000)
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : 'Sync failed'
-      showToast(`⚠️ ${errorMsg}`, 'error', 5000)
+      showToast(errorMsg, 'error', 5000)
       console.error('[Popup] Sync failed:', err)
     } finally {
       setIsManualSyncing(false)
@@ -182,6 +186,7 @@ function PopupContent() {
         lastSync={data.lastSync}
         onSync={handleSync}
         isSyncing={isSyncing}
+        justSynced={justSynced}
       />
       {syncError && (
         <ErrorBanner
@@ -212,8 +217,19 @@ function PopupContent() {
             {t('button_open_last')}
           </button>
         </div>
-        <CodeListSection codes={data.codes} onCopy={handleCopy} />
-        <MagicLinkSection links={data.magicLinks} onOpen={handleOpenLink} />
+        {/* Use unified section if available (V2), otherwise fall back to legacy separate sections */}
+        {'items' in data && data.items ? (
+          <RecentItemsSection
+            items={data.items}
+            onCopyCode={handleCopy}
+            onOpenLink={handleOpenLink}
+          />
+        ) : (
+          <>
+            <CodeListSection codes={data.codes} onCopy={handleCopy} />
+            <MagicLinkSection links={data.magicLinks} onOpen={handleOpenLink} />
+          </>
+        )}
       </main>
       <PopupFooter />
       <ToastContainer />

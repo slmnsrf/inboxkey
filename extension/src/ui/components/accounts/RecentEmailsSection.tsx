@@ -6,7 +6,6 @@ interface RecentEmailsSectionProps {
   items: RecentItem[]
   onCopyCode?: (item: RecentItem) => Promise<void>
   onOpenLink?: (item: RecentItem) => Promise<void>
-  isLocked?: boolean
   loading?: boolean
 }
 
@@ -14,11 +13,10 @@ export function RecentEmailsSection({
   items,
   onCopyCode,
   onOpenLink,
-  isLocked = false,
   loading = false,
 }: RecentEmailsSectionProps) {
   const visibleItems = items.slice(0, 5)
-  const disabled = isLocked || loading
+  const disabled = loading
 
   return (
     <section className="accounts-section" aria-labelledby="recent-emails-title">
@@ -34,7 +32,7 @@ export function RecentEmailsSection({
 
       {disabled && (
         <div className="empty-state" role="status">
-          {isLocked ? t('accounts_recent_locked') : t('accounts_recent_loading')}
+          {t('accounts_recent_loading')}
         </div>
       )}
 
