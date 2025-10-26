@@ -215,7 +215,7 @@ describe('Tier 1 Fast Detection', () => {
         { attr: 'campo', value: 'password', lang: 'English' }, // password
       ]
 
-      testCases.forEach(({ attr, value, lang }) => {
+      testCases.forEach(({ attr, value, lang: _lang }) => {
         // Create fresh cooldown for each test case to avoid interference
         const freshCooldown = createCooldownRegistry()
         const input = createInput({

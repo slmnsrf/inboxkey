@@ -27,6 +27,7 @@ function OptionsApp() {
   const [mailboxCount, setMailboxCount] = useState<number | null>(null)
   const [activeTab, setActiveTab] = useState<Tab>('settings')
   const [isBlacklistModalOpen, setIsBlacklistModalOpen] = useState(false)
+  const [blacklistInitialTab, setBlacklistInitialTab] = useState<'domains' | 'urls'>('domains')
 
   // Fetch mailbox count
   useEffect(() => {
@@ -54,6 +55,19 @@ function OptionsApp() {
       setActiveTab(mailboxCount === 0 ? 'accounts' : 'settings')
     }
   }, [mailboxCount])
+
+  // Listen for OPEN_BLACKLIST_MODAL message from popup
+  useEffect(() => {
+    const handleMessage = (message: any) => {
+      if (message.type === 'OPEN_BLACKLIST_MODAL') {
+        setBlacklistInitialTab(message.tab || 'domains')
+        setIsBlacklistModalOpen(true)
+      }
+    }
+
+    chrome.runtime.onMessage.addListener(handleMessage)
+    return () => chrome.runtime.onMessage.removeListener(handleMessage)
+  }, [])
 
   return (
     <ThemeProvider>
@@ -153,6 +167,7 @@ function OptionsApp() {
                 <BlacklistModal
                   isOpen={isBlacklistModalOpen}
                   onClose={() => setIsBlacklistModalOpen(false)}
+                  initialTab={blacklistInitialTab}
                 />
 
                 <div

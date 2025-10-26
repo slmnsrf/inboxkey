@@ -24,6 +24,13 @@ export interface ImapAccountRow {
   statusText?: string
 }
 
+export interface OutlookAccountRow {
+  id: string
+  email: string
+  lastSyncedLabel?: string
+  tokenExpiresAt?: number
+}
+
 export type RecentItemKind = 'code' | 'link'
 
 export interface RecentItem {

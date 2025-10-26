@@ -50,14 +50,44 @@ export interface FetchOptions {
 }
 
 /**
- * Email Provider Adapter Interface
+ * Base Email Provider Interface
  *
- * All email providers must implement these methods.
+ * Common contract shared by all email providers regardless of auth method.
+ * Providers must implement email fetching and token management.
  */
 export interface IEmailProvider {
   readonly providerId: ProviderId
   readonly displayName: string
 
+  /**
+   * Refresh access token using refresh token
+   *
+   * Note: For Chrome Identity providers, the refreshToken parameter
+   * may be the old access token (Chrome manages refresh internally)
+   */
+  refreshTokens(refreshToken: string): Promise<OAuthTokens>
+
+  /**
+   * Fetch recent emails
+   */
+  fetchEmails(
+    accessToken: string,
+    options?: FetchOptions
+  ): Promise<EmailMessage[]>
+
+  /**
+   * Revoke tokens (logout)
+   */
+  revokeTokens?(accessToken: string): Promise<void>
+}
+
+/**
+ * PKCE OAuth Provider Interface
+ *
+ * For providers that use OAuth 2.0 PKCE flow (Outlook, IMAP Bridge, etc.)
+ * Requires explicit startAuth/completeAuth methods to handle the OAuth flow.
+ */
+export interface IPKCEProvider extends IEmailProvider {
   /**
    * Start OAuth PKCE authorization flow
    * Returns the authorization URL to open in browser
@@ -76,24 +106,18 @@ export interface IEmailProvider {
     codeVerifier: string
     state: string
   }): Promise<OAuthTokens>
+}
 
-  /**
-   * Refresh access token using refresh token
-   */
-  refreshTokens(refreshToken: string): Promise<OAuthTokens>
-
-  /**
-   * Fetch recent emails
-   */
-  fetchEmails(
-    accessToken: string,
-    options?: FetchOptions
-  ): Promise<EmailMessage[]>
-
-  /**
-   * Revoke tokens (logout)
-   */
-  revokeTokens?(accessToken: string): Promise<void>
+/**
+ * Chrome Identity Provider Interface
+ *
+ * For providers that use Chrome's managed OAuth (chrome.identity.getAuthToken)
+ * Chrome handles the OAuth flow automatically - no startAuth/completeAuth needed.
+ *
+ * Used by: Gmail
+ */
+export interface IChromeIdentityProvider extends IEmailProvider {
+  // No additional methods needed - Chrome manages auth flow
 }
 
 /**

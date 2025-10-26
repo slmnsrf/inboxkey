@@ -6,7 +6,7 @@
  * Each tab allows adding, removing, and clearing entries.
  */
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Modal } from '@/ui/components/Modal'
 import { BlacklistDomainTab } from './BlacklistDomainTab'
 import { BlacklistUrlTab } from './BlacklistUrlTab'
@@ -17,10 +17,18 @@ export type BlacklistTab = 'domains' | 'urls'
 export interface BlacklistModalProps {
   isOpen: boolean
   onClose: () => void
+  initialTab?: BlacklistTab
 }
 
-export function BlacklistModal({ isOpen, onClose }: BlacklistModalProps) {
-  const [activeTab, setActiveTab] = useState<BlacklistTab>('domains')
+export function BlacklistModal({ isOpen, onClose, initialTab = 'domains' }: BlacklistModalProps) {
+  const [activeTab, setActiveTab] = useState<BlacklistTab>(initialTab)
+
+  // Update active tab when initialTab changes or modal opens
+  useEffect(() => {
+    if (isOpen) {
+      setActiveTab(initialTab)
+    }
+  }, [isOpen, initialTab])
 
   const handleClose = () => {
     // Reset to domains tab when closing

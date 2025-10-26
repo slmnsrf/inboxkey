@@ -607,6 +607,18 @@
     "message": "OFF",
     "description": "Domain toggle OFF state"
   },
+  "domain_toggle_disabled_warning": {
+    "message": "InboxKey disabled on this site",
+    "description": "Warning shown when domain toggle is OFF"
+  },
+  "domain_toggle_url_warning": {
+    "message": "Extension disabled on this page.",
+    "description": "Warning shown when URL is blacklisted but domain is enabled"
+  },
+  "domain_toggle_manage_settings": {
+    "message": "Manage in Settings",
+    "description": "Link text to open blacklist modal in Settings"
+  },
   "settings_advanced_section": {
     "message": "Advanced",
     "description": "Advanced settings section heading"

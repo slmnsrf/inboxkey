@@ -26,6 +26,7 @@ import {
   setBadgeSyncError,
   clearBadge,
 } from "@/contents/badge-manager"
+import { addBlacklistedDomain, removeBlacklistedDomain } from "@/lib/utils/blacklist"
 
 interface StartSessionMessage {
   type: "START_SESSION"
@@ -731,6 +732,17 @@ function handleSetDomainPreference(msg: any, sendResponse: (response: any) => vo
 
       // Set domain preference
       await storage.setDomainPreference(msg.domain, msg.enabled)
+
+      // Sync with blacklist
+      if (msg.enabled) {
+        // Remove domain from blacklist (but preserve URL entries)
+        await removeBlacklistedDomain(msg.domain)
+        console.log(`[Background] Removed ${msg.domain} from blacklist (domain enabled)`)
+      } else {
+        // Add domain to blacklist
+        await addBlacklistedDomain(msg.domain)
+        console.log(`[Background] Added ${msg.domain} to blacklist (domain disabled)`)
+      }
 
       console.log(`[Background] Domain preference updated: ${msg.domain} -> ${msg.enabled}`)
       sendResponse({ success: true })

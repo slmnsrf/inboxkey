@@ -5,7 +5,7 @@
  */
 
 import type {
-  IEmailProvider,
+  IPKCEProvider,
   EmailMessage,
   FetchOptions,
 } from '../provider-interface'
@@ -14,7 +14,7 @@ import { OutlookAPIClient } from './outlook-api'
 import { OutlookParser } from './outlook-parser'
 import { OUTLOOK_CONFIG } from './config'
 
-export class OutlookProvider implements IEmailProvider {
+export class OutlookProvider implements IPKCEProvider {
   readonly providerId = 'outlook' as const
   readonly displayName = 'Microsoft Outlook'
 

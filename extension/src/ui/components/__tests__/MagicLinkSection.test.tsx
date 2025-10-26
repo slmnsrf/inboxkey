@@ -6,7 +6,7 @@
 
 import React from 'react'
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
-import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import { render, screen, fireEvent, waitFor as _waitFor } from '@testing-library/react'
 import { MagicLinkSection } from '../MagicLinkSection'
 import type { PopupCacheMagicLink } from '@/shared/popup-messages'
 

@@ -55,7 +55,7 @@ export class GmailAuth {
     }
 
     // Now get a fresh token from Chrome
-    return new Promise((resolve, eject) => {
+    return new Promise((resolve, reject) => {
       chrome.identity.getAuthToken(
         { interactive: false },
         (token) => {
@@ -115,7 +115,7 @@ export class GmailAuth {
     }
 
     // Step 2: Clear Chrome's token cache
-    await new Promise<void>((resolve, eject) => {
+    await new Promise<void>((resolve, _reject) => {
       chrome.identity.removeCachedAuthToken(
         { token: accessToken },
         () => {

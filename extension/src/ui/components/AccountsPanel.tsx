@@ -243,6 +243,36 @@ export function AccountsPanel() {
     }
   }
 
+  const handleReconnectOutlook = async (mailboxId: string) => {
+    const mailbox = mailboxes.find((mb) => mb.id === mailboxId)
+    if (!mailbox) return
+    await handleConnect('outlook', 'reconnect')
+  }
+
+  const handleRemoveOutlook = async (mailboxId: string) => {
+    if (!confirm(t('accounts_remove_confirm'))) {
+      return
+    }
+
+    try {
+      const response = await chrome.runtime.sendMessage({
+        type: 'REMOVE_MAILBOX',
+        mailboxId,
+      })
+
+      if (response.success) {
+        showToast(t('toast_account_disconnected'), 'success', 4000)
+        await loadMailboxes()
+        await loadRecentItems()
+      } else {
+        showToast(t('toast_disconnect_failed'), 'error', 5000)
+      }
+    } catch (error) {
+      console.error('[AccountsPanel] Failed to remove Outlook account:', error)
+      showToast(t('toast_disconnect_failed'), 'error', 5000)
+    }
+  }
+
   const handleAddImap = () => {
     setImapPrefillData(undefined)
     setShowAddImapModal(true)
@@ -450,8 +480,8 @@ export function AccountsPanel() {
         accounts={outlookAccounts}
         limit={10}
         onAdd={() => handleConnect('outlook', 'connect')}
-        onReconnect={handleDisconnect}
-        onRemove={handleDisconnect}
+        onReconnect={handleReconnectOutlook}
+        onRemove={handleRemoveOutlook}
       />
 
       <ImapAccountsSection

@@ -221,7 +221,7 @@ export class NativeMessagingClient {
     console.warn('[NativeMessagingClient] Port disconnected:', errorMessage)
 
     // Reject all pending requests
-    for (const [id, pending] of this.pendingRequests.entries()) {
+    for (const [_id, pending] of this.pendingRequests.entries()) {
       clearTimeout(pending.timeoutId)
       pending.reject(
         new NativeMessagingError(
@@ -401,7 +401,7 @@ export class NativeMessagingClient {
     console.log('[NativeMessagingClient] Disconnecting from InboxBridge')
 
     // Reject all pending requests
-    for (const [id, pending] of this.pendingRequests.entries()) {
+    for (const [_id, pending] of this.pendingRequests.entries()) {
       clearTimeout(pending.timeoutId)
       pending.reject(
         new NativeMessagingError(

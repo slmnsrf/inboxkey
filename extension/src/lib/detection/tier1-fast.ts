@@ -84,7 +84,7 @@ function getLabelText(input: HTMLInputElement): string {
   }
 
   // Check for parent label
-  let parent = input.parentElement
+  const parent = input.parentElement
   if (parent?.tagName === 'LABEL' && parent.textContent) {
     labels.push(parent.textContent.trim())
   }
