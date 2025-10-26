@@ -21,6 +21,32 @@ import type { DetectionResult } from '@/lib/types'
 import { isExtensionEnabled } from '@/lib/utils/domain'
 import { detectSplitInputGroup } from '@/lib/detection/split-input-detector'
 
+/**
+ * Global Set to track processed representative fields across all batches
+ * NOTE: Set uses object identity comparison. If a field is removed from DOM
+ * and recreated with identical attributes, it will be treated as a new field.
+ * This is acceptable - it's rare and prevents blocking legitimate re-renders.
+ */
+let globalProcessedRepresentatives: Set<HTMLInputElement> | null = null
+
+/**
+ * URL change detection timer for SPA navigation
+ * Cleared on page unload to prevent memory leaks
+ */
+let urlCheckTimer: ReturnType<typeof setInterval> | null = null
+
+/**
+ * Clear the global Set of processed representatives
+ * Called after watch session completes (autofill, timeout, cancel)
+ */
+export function clearProcessedFields(): void {
+  if (globalProcessedRepresentatives) {
+    const size = globalProcessedRepresentatives.size
+    globalProcessedRepresentatives.clear()
+    console.log(`[InboxKey] 🧹 Cleared ${size} processed representative(s)`)
+  }
+}
+
 // Wrap initialization in async IIFE to check domain before any execution
 ;(async () => {
   // CRITICAL: Check extension state FIRST before any logging or initialization
@@ -89,13 +115,18 @@ import { detectSplitInputGroup } from '@/lib/detection/split-input-detector'
             field: targetField,
             showFeedback: true,
           })
+          if (success) {
+            clearProcessedFields()
+          }
           return success
         },
         onTimeout: () => {
           console.log("[InboxKey] Watch session timed out without code")
+          clearProcessedFields()
         },
         onCanceled: () => {
           console.log("[InboxKey] Watch session canceled")
+          clearProcessedFields()
         },
       }
     )
@@ -141,10 +172,26 @@ import { detectSplitInputGroup } from '@/lib/detection/split-input-detector'
 
     const pendingFields = new Set<HTMLInputElement>()
     let debounceTimer: number | null = null
+    let callbackCount = 0  // Track how many times observer fires
+
+    // Initialize global Set (module-level variable)
+    globalProcessedRepresentatives = new Set<HTMLInputElement>()
+
+    // Clear Set on SPA navigation (assign to module-level variable for cleanup)
+    let lastUrl = window.location.href
+    urlCheckTimer = window.setInterval(() => {
+      if (window.location.href !== lastUrl) {
+        console.log('[InboxKey] 🔄 URL changed, clearing processed representatives')
+        globalProcessedRepresentatives?.clear()
+        lastUrl = window.location.href
+      }
+    }, 500)
 
     detector.startObserving(async (field: HTMLInputElement) => {
-      console.log('[InboxKey] ⚡ Dynamic detection callback fired for field:', {
-        element: field,
+      callbackCount++
+      console.log(`[InboxKey] ⚡ Dynamic detection callback #${callbackCount} fired for field:`, {
+        id: field.id,
+        name: field.name,
         maxLength: field.maxLength,
         type: field.type,
         role: field.getAttribute('role')
@@ -163,7 +210,8 @@ import { detectSplitInputGroup } from '@/lib/detection/split-input-detector'
         const fields = Array.from(pendingFields)
         pendingFields.clear()
 
-        console.log(`[InboxKey] Processing ${fields.length} dynamically injected field(s)`)
+        console.log(`[InboxKey] 📦 Processing batch of ${fields.length} field(s)`)
+        console.log('[InboxKey] 📦 Field IDs in batch:', fields.map(f => f.id || f.name || '?'))
 
         // Check automation level
         try {
@@ -180,9 +228,7 @@ import { detectSplitInputGroup } from '@/lib/detection/split-input-detector'
 
         // Detect all batched fields at once (call detectExisting ONCE, not per field)
         const results = detector.detectExisting({ strictVisibility: true })
-
-        // Deduplicate fields by split-input groups BEFORE processing
-        const processedRepresentatives = new Set<HTMLInputElement>()
+        console.log('[InboxKey] 🔍 detectExisting() found', results.length, 'results')
 
         // Process batched fields
         for (const f of fields) {
@@ -190,25 +236,31 @@ import { detectSplitInputGroup } from '@/lib/detection/split-input-detector'
           const group = detectSplitInputGroup(f)
           const representative = group?.representative || f
 
-          // Skip if we've already processed this representative
-          if (processedRepresentatives.has(representative)) {
-            console.log('[InboxKey] Skipping field - representative already processed:', {
-              field: f.id || f.name || f.getAttribute('aria-label'),
-              representative: representative.id || representative.name || representative.getAttribute('aria-label')
-            })
+          console.log('[InboxKey] 🎯 Field:', f.id || f.name, '→ Representative:', representative.id || representative.name)
+
+          // Skip if we've already processed this representative (GLOBAL check across all batches)
+          if (globalProcessedRepresentatives?.has(representative)) {
+            console.log('[InboxKey] ⏭️  SKIPPING - representative already processed globally')
             continue
           }
 
-          // Mark representative as processed
-          processedRepresentatives.add(representative)
-
-          console.log('[InboxKey] Dynamically injected field detected:', f)
+          // Mark representative as processed GLOBALLY (only if still in DOM)
+          if (document.contains(representative)) {
+            globalProcessedRepresentatives?.add(representative)
+            console.log('[InboxKey] ✅ Added representative to global Set (size:', globalProcessedRepresentatives?.size, ')')
+          } else {
+            console.log('[InboxKey] ⚠️  Representative no longer in DOM, skipping')
+            continue  // Don't process dead DOM nodes
+          }
 
           // Find detection result for the representative field
           const result = results.find((r) => r.field === representative)
 
           if (result) {
+            console.log('[InboxKey] ✓ Found detection result, calling handleDetectedField()')
             handleDetectedField(representative, result)
+          } else {
+            console.log('[InboxKey] ✗ No detection result found for representative')
           }
         }
       }, 50)  // 50ms debounce window
@@ -256,6 +308,14 @@ import { detectSplitInputGroup } from '@/lib/detection/split-input-detector'
   // Clean up on page unload
   window.addEventListener('beforeunload', () => {
     console.log('[InboxKey] Cleaning up before page unload')
+
+    // Clear URL check timer (prevent memory leak)
+    if (urlCheckTimer !== null) {
+      clearInterval(urlCheckTimer)
+      urlCheckTimer = null
+      console.log('[InboxKey] 🧹 Cleared URL check timer')
+    }
+
     detector.stopObserving()
     const activeWatch = getActiveWatch()
     if (activeWatch) {
