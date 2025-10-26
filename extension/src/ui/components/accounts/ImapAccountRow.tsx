@@ -1,40 +1,39 @@
 import React, { useMemo } from 'react'
 import { t } from '@/lib/i18n'
-import type { OutlookAccountRow } from './types'
+import type { ImapAccountRow } from './types'
 import { getAccountStatus } from './account-status'
 
-interface OutlookAccountRowProps {
-  account: OutlookAccountRow
-  onReconnect: (id: string) => void
-  onRemove: (id: string) => void
+interface ImapAccountRowProps {
+  account: ImapAccountRow
+  onReconnect?: (id: string) => void
+  onRemove?: (id: string) => void
   disabled?: boolean
 }
 
-export function OutlookAccountRowComponent({
+export function ImapAccountRowComponent({
   account,
   onReconnect,
   onRemove,
   disabled = false,
-}: OutlookAccountRowProps) {
+}: ImapAccountRowProps) {
   const handleReconnect = () => {
-    if (disabled) return
+    if (disabled || !onReconnect) return
     onReconnect(account.id)
   }
 
   const handleRemove = () => {
-    if (disabled) return
+    if (disabled || !onRemove) return
     onRemove(account.id)
   }
 
   const { status, label: statusLabel } = useMemo(
     () =>
       getAccountStatus({
-        tokenExpiresAt: account.tokenExpiresAt,
         lastSyncedAt: account.lastSyncedAt,
         lastSyncError: account.lastSyncError,
         isSyncing: account.isSyncing,
       }),
-    [account.tokenExpiresAt, account.lastSyncedAt, account.lastSyncError, account.isSyncing]
+    [account.lastSyncedAt, account.lastSyncError, account.isSyncing]
   )
 
   return (
@@ -48,6 +47,11 @@ export function OutlookAccountRowComponent({
           />
           {account.email}
         </span>
+        <span className="imap-subtext">
+          {account.host
+            ? t('accounts_imap_host', account.host)
+            : t('accounts_imap_generic_host')}
+        </span>
         {account.lastSyncedLabel && (
           <span className="imap-subtext">
             {t('accounts_last_synced', account.lastSyncedLabel)}
@@ -60,7 +64,7 @@ export function OutlookAccountRowComponent({
           className="btn btn--secondary"
           onClick={handleReconnect}
           disabled={disabled}
-          aria-label={t('aria_reconnect_outlook', [account.email])}
+          aria-label={t('aria_reconnect_imap', [account.email])}
         >
           {t('accounts_reconnect')}
         </button>
@@ -69,7 +73,7 @@ export function OutlookAccountRowComponent({
           className="btn btn--danger"
           onClick={handleRemove}
           disabled={disabled}
-          aria-label={t('aria_remove_outlook', [account.email])}
+          aria-label={t('aria_remove_imap', [account.email])}
         >
           {t('accounts_remove_button')}
         </button>

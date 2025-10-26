@@ -98,9 +98,14 @@ export class PlaintextStorage {
         throw new ValidationError(`Mailbox with ID ${mailbox.id} already exists`)
       }
 
-      if (mailboxes.some((m) => m.email === mailbox.email)) {
+      // Check for duplicate email within the same provider
+      // This allows:
+      // - Multiple Outlook accounts with different emails
+      // - Multiple IMAP accounts with different emails
+      // - Same email across different providers (rare but valid, e.g., Google Workspace via both Gmail API and IMAP)
+      if (mailboxes.some((m) => m.email === mailbox.email && m.providerId === mailbox.providerId)) {
         throw new ValidationError(
-          `Mailbox with email ${mailbox.email} already exists`
+          `Mailbox with email ${mailbox.email} already exists for provider ${mailbox.providerId}`
         )
       }
 
@@ -201,17 +206,33 @@ export class PlaintextStorage {
     if (!isValidEmail(mailbox.email)) {
       throw new ValidationError("Invalid email format", "email")
     }
-    if (!mailbox.accessToken || mailbox.accessToken.length === 0) {
-      throw new ValidationError("Access token cannot be empty", "accessToken")
-    }
-    // Refresh token is only required for providers using PKCE (not Gmail with chrome.identity)
-    if (mailbox.providerId !== 'gmail') {
-      if (!mailbox.refreshToken || mailbox.refreshToken.length === 0) {
-        throw new ValidationError("Refresh token cannot be empty", "refreshToken")
+
+    // Provider-specific validation
+    if (mailbox.providerId === 'imap-bridge') {
+      // IMAP mailbox validation
+      if (!mailbox.imapServer || mailbox.imapServer.length === 0) {
+        throw new ValidationError("IMAP server cannot be empty", "imapServer")
       }
-    }
-    if (!isValidTimestamp(mailbox.tokenExpiresAt)) {
-      throw new ValidationError("Invalid token expiration timestamp", "tokenExpiresAt")
+      if (!mailbox.imapPort || mailbox.imapPort <= 0) {
+        throw new ValidationError("IMAP port must be a positive number", "imapPort")
+      }
+      if (!mailbox.imapAccountId || mailbox.imapAccountId.length === 0) {
+        throw new ValidationError("IMAP account ID cannot be empty", "imapAccountId")
+      }
+    } else {
+      // OAuth mailbox validation (gmail, outlook)
+      if (!mailbox.accessToken || mailbox.accessToken.length === 0) {
+        throw new ValidationError("Access token cannot be empty", "accessToken")
+      }
+      // Refresh token is only required for providers using PKCE (not Gmail with chrome.identity)
+      if (mailbox.providerId !== 'gmail') {
+        if (!mailbox.refreshToken || mailbox.refreshToken.length === 0) {
+          throw new ValidationError("Refresh token cannot be empty", "refreshToken")
+        }
+      }
+      if (!isValidTimestamp(mailbox.tokenExpiresAt)) {
+        throw new ValidationError("Invalid token expiration timestamp", "tokenExpiresAt")
+      }
     }
     if (!isValidTimestamp(mailbox.addedAt)) {
       throw new ValidationError("Invalid addedAt timestamp", "addedAt")

@@ -1,6 +1,7 @@
 import React from 'react'
 import { t } from '@/lib/i18n'
 import type { ImapAccountRow } from './types'
+import { ImapAccountRowComponent } from './ImapAccountRow'
 
 interface ImapAccountsSectionProps {
   accounts: ImapAccountRow[]
@@ -67,39 +68,13 @@ export function ImapAccountsSection({
       ) : (
         <div className="imap-list">
           {accounts.map((account) => (
-            <div key={account.id} className="imap-row">
-              <div className="imap-meta">
-                <span className="imap-email">{account.email}</span>
-                <span className="imap-subtext">
-                  {account.host
-                    ? t('accounts_imap_host', account.host)
-                    : t('accounts_imap_generic_host')}
-                </span>
-                {account.lastSyncedLabel && (
-                  <span className="imap-subtext">
-                    {t('accounts_last_synced', account.lastSyncedLabel)}
-                  </span>
-                )}
-              </div>
-              <div className="imap-actions">
-                <button
-                  type="button"
-                  className="btn btn--secondary"
-                  onClick={() => onReconnect?.(account.id)}
-                  disabled={actionDisabled}
-                >
-                  {t('accounts_reconnect')}
-                </button>
-                <button
-                  type="button"
-                  className="btn btn--danger"
-                  onClick={() => onRemove?.(account.id)}
-                  disabled={actionDisabled}
-                >
-                  {t('accounts_remove_button')}
-                </button>
-              </div>
-            </div>
+            <ImapAccountRowComponent
+              key={account.id}
+              account={account}
+              onReconnect={onReconnect}
+              onRemove={onRemove}
+              disabled={actionDisabled}
+            />
           ))}
         </div>
       )}

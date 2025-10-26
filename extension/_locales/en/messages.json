@@ -731,6 +731,38 @@
     "message": "Remove $1 from InboxKey",
     "description": "ARIA label for removing Outlook account"
   },
+  "aria_reconnect_imap": {
+    "message": "Reconnect $1",
+    "description": "ARIA label for reconnecting IMAP account"
+  },
+  "aria_remove_imap": {
+    "message": "Remove $1 from InboxKey",
+    "description": "ARIA label for removing IMAP account"
+  },
+  "status_online_label": {
+    "message": "Online - Connected and syncing",
+    "description": "Account status: online and healthy"
+  },
+  "status_offline_token_expired": {
+    "message": "Offline - Token expired",
+    "description": "Account status: OAuth token expired"
+  },
+  "status_offline_connection_failed": {
+    "message": "Offline - Connection failed",
+    "description": "Account status: sync error"
+  },
+  "status_warning_token_expiring": {
+    "message": "Warning - Token expires within 24 hours",
+    "description": "Account status: token expires within 24h"
+  },
+  "status_warning_sync_delayed": {
+    "message": "Warning - Not synced in over 1 hour",
+    "description": "Account status: no sync in over 1 hour"
+  },
+  "status_syncing_label": {
+    "message": "Syncing - Checking for new messages",
+    "description": "Account status: actively syncing"
+  },
   "accounts_recent_title": {
     "message": "Recent Activity",
     "description": "Recent activity section title"
@@ -923,6 +955,14 @@
     "message": "Last synced: $1",
     "description": "Last synced time display"
   },
+  "accounts_imap_host": {
+    "message": "Server: $1",
+    "description": "IMAP server hostname display"
+  },
+  "accounts_imap_generic_host": {
+    "message": "IMAP account",
+    "description": "Generic IMAP account label when server unknown"
+  },
   "aria_connect_gmail": {
     "message": "Connect Gmail account",
     "description": "ARIA label for connect Gmail button"
@@ -958,6 +998,22 @@
   "accounts_microcopy_gmail": {
     "message": "Only one Gmail account can be connected.",
     "description": "Gmail single-account limitation notice"
+  },
+  "accounts_microcopy_gmail_limit": {
+    "message": "Only one Gmail account allowed",
+    "description": "Gmail single-account constraint for row design"
+  },
+  "accounts_gmail_limit_learn_why": {
+    "message": "Learn why.",
+    "description": "Learn why link for Gmail limitation"
+  },
+  "accounts_gmail_limit_modal_title": {
+    "message": "Why Only One Gmail Account?",
+    "description": "Modal title explaining Gmail single-account limitation"
+  },
+  "accounts_gmail_limit_modal_body": {
+    "message": "Gmail uses Chrome's built-in authentication, which only supports one account at a time.\n\nUnlike Outlook (which uses PKCE), Google requires a backend server to enable multiple accounts. I don't add a backend because it would compromise your privacy. All your email stays on your device, always.\n\nIf Google adds PKCE support in the future like Microsoft did, I'll update the extension to support multiple Gmail accounts.",
+    "description": "Detailed explanation of Gmail single-account technical limitation"
   },
   "accounts_empty_gmail": {
     "message": "Connect your Google account to detect codes and magic links in Gmail.",
@@ -1198,5 +1254,117 @@
   "accounts_imap_privacy_reassurance": {
     "message": "Credentials stored in OS keychain • Local-only • No servers",
     "description": "Privacy reassurance message for IMAP account modal"
+  },
+  "clear_codes_confirm": {
+    "message": "Are you sure you want to clear all codes? This cannot be undone.",
+    "description": "Confirmation message when clearing all codes"
+  },
+  "clear_cache_confirm": {
+    "message": "Are you sure you want to clear the cache?",
+    "description": "Confirmation message when clearing cache"
+  },
+  "accounts_authenticating": {
+    "message": "Authenticating...",
+    "description": "Status message during OAuth authentication"
+  },
+  "accounts_loading_profile": {
+    "message": "Loading profile...",
+    "description": "Status message when loading user profile"
+  },
+  "accounts_saving": {
+    "message": "Saving account...",
+    "description": "Status message when saving account credentials"
+  },
+  "accounts_connecting": {
+    "message": "Connecting...",
+    "description": "Generic connecting status message"
+  },
+  "accounts_disconnecting": {
+    "message": "Disconnecting...",
+    "description": "Status message when disconnecting account"
+  },
+  "accounts_disconnected": {
+    "message": "Disconnected",
+    "description": "Success message after account disconnection"
+  },
+  "accounts_reconnect": {
+    "message": "Reconnect",
+    "description": "Button text to reconnect an account"
+  },
+  "accounts_reconnecting": {
+    "message": "Reconnecting...",
+    "description": "Status message during account reconnection"
+  },
+  "accounts_reconnected": {
+    "message": "Reconnected",
+    "description": "Success message after account reconnection"
+  },
+  "accounts_remove_button": {
+    "message": "Remove",
+    "description": "Button text to remove an account"
+  },
+  "accounts_removing": {
+    "message": "Removing...",
+    "description": "Status message during account removal"
+  },
+  "accounts_removed": {
+    "message": "Removed",
+    "description": "Success message after account removal"
+  },
+  "accounts_imap_heading": {
+    "message": "IMAP Accounts",
+    "description": "IMAP accounts section heading"
+  },
+  "accounts_empty_imap": {
+    "message": "No IMAP accounts connected. Add one to get started.",
+    "description": "Empty state for IMAP accounts"
+  },
+  "toast_outlook_connected": {
+    "message": "Outlook account connected successfully",
+    "description": "Toast message when Outlook account is connected"
+  },
+  "toast_connect_duplicate": {
+    "message": "This account is already connected",
+    "description": "Toast message when trying to connect duplicate account"
+  },
+  "toast_connect_failed": {
+    "message": "Failed to connect account. Please try again.",
+    "description": "Toast message when account connection fails"
+  },
+  "toast_gmail_connected": {
+    "message": "Gmail account connected successfully",
+    "description": "Toast message when Gmail account is connected"
+  },
+  "toast_account_disconnected": {
+    "message": "Account disconnected successfully",
+    "description": "Toast message when account is disconnected"
+  },
+  "toast_disconnect_failed": {
+    "message": "Failed to disconnect account",
+    "description": "Toast message when account disconnection fails"
+  },
+  "accounts_remove_confirm": {
+    "message": "Are you sure you want to remove this account?",
+    "description": "Confirmation message when removing account"
+  },
+  "toast_connect_invalid_credentials": {
+    "message": "OAuth not configured. Check extension configuration.",
+    "description": "Toast message when OAuth credentials are not configured"
+  },
+  "toast_oauth_cancelled": {
+    "message": "OAuth authentication was cancelled",
+    "description": "Toast message when user cancels OAuth flow"
+  },
+  "toast_connect_profile_failed": {
+    "message": "Failed to load profile information",
+    "description": "Toast message when profile fetch fails"
+  },
+  "toast_connect_network_error": {
+    "message": "Network error during connection",
+    "description": "Toast message when network error occurs"
+  },
+  "toast_imap_added": {
+    "message": "IMAP account added successfully: $1",
+    "description": "Toast message when IMAP account is added"
   }
 }
