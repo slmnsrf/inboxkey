@@ -142,7 +142,7 @@ export class NativeMessagingClient {
     this.port = null;
 
     // Reject all pending requests
-    for (const [id, { reject, timeout }] of this.pendingRequests.entries()) {
+    for (const [_id, { reject, timeout }] of this.pendingRequests.entries()) {
       window.clearTimeout(timeout);
       reject(new Error(error ? error.message : 'InboxBridge disconnected'));
     }

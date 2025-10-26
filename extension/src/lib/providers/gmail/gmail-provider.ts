@@ -5,7 +5,7 @@
  */
 
 import type {
-  IEmailProvider,
+  IChromeIdentityProvider,
   EmailMessage,
   FetchOptions,
 } from '../provider-interface'
@@ -14,7 +14,7 @@ import { GmailAPIClient } from './gmail-api'
 import { GmailParser } from './gmail-parser'
 import { GMAIL_CONFIG } from './config'
 
-export class GmailProvider implements IEmailProvider {
+export class GmailProvider implements IChromeIdentityProvider {
   readonly providerId = 'gmail' as const
   readonly displayName = 'Gmail'
 

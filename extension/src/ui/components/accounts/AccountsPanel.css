@@ -198,12 +198,28 @@
   gap: var(--space-2);
 }
 
+.outlook-list {
+  max-height: calc(6 * (60px + var(--space-2)));
+  overflow-y: auto;
+  border-radius: var(--radius-md);
+}
+
+.outlook-list::-webkit-scrollbar {
+  width: 8px;
+}
+
+.outlook-list::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: var(--radius-full);
+}
+
 .imap-row {
   display: grid;
   grid-template-columns: 1fr auto;
   gap: var(--space-2);
   align-items: center;
   padding: var(--space-3);
+  min-height: 60px;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   background: var(--surface-card);

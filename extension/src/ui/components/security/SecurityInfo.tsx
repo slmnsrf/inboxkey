@@ -3,7 +3,6 @@ import './SecurityInfo.css'
 
 export function SecurityInfo() {
   const openSourceUrl = 'https://github.com/slmnsrf/inboxkey'
-  const docsUrl = 'https://github.com/slmnsrf/inboxkey/blob/main/docs/SECURITY_ARCHITECTURE.md'
 
   return (
     <div className="security-info">

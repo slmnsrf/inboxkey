@@ -10,10 +10,10 @@ import {
   analyzeButtonIntent,
   analyzeFieldProximity,
   detectTier2,
-  type FormContext,
-  type ButtonIntent,
-  type FieldProximity,
-  type Tier2Result,
+  type FormContext as _FormContext,
+  type ButtonIntent as _ButtonIntent,
+  type FieldProximity as _FieldProximity,
+  type Tier2Result as _Tier2Result,
 } from '../tier2-deep'
 import { createCooldownRegistry } from '../cooldown-registry'
 

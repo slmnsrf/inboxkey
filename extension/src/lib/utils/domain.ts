@@ -5,6 +5,7 @@
 import type { DomainPreferences } from '@/lib/storage/schema'
 import { STORAGE_KEYS } from '@/lib/storage/schema'
 import { isBankingDomain } from '@/lib/data/banking-blocklist'
+import { isBlacklisted } from './blacklist'
 
 /**
  * Extract eTLD+1 (effective top-level domain + 1) from a URL
@@ -67,6 +68,57 @@ export function extractDomain(url: string): string {
   } catch (error) {
     console.error('[Domain] Failed to extract domain from:', url, error)
     return ''
+  }
+}
+
+/**
+ * Check if InboxKey is enabled for a given URL (full precedence checking)
+ *
+ * Precedence order (highest to lowest):
+ * 1. Domain Preferences (popup toggle) - HIGHEST PRIORITY
+ * 2. Banking blocklist (if setting enabled)
+ * 3. Domain blacklist
+ * 4. URL blacklist
+ * 5. Global default setting
+ *
+ * @param url - Full URL to check
+ * @returns true if enabled, false if disabled
+ */
+export async function isExtensionEnabled(url: string): Promise<boolean> {
+  try {
+    const domain = extractDomain(url)
+
+    const result = await chrome.storage.local.get([
+      STORAGE_KEYS.DOMAIN_PREFERENCES,
+      STORAGE_KEYS.SETTINGS
+    ])
+
+    const domainPreferences: DomainPreferences =
+      result[STORAGE_KEYS.DOMAIN_PREFERENCES] || { domains: {} }
+    const settings = result[STORAGE_KEYS.SETTINGS] || {}
+
+    // 1. Check explicit domain preference (HIGHEST PRIORITY - allows override)
+    if (domain in domainPreferences.domains) {
+      return domainPreferences.domains[domain]
+    }
+
+    // 2. Check banking blocklist (if setting enabled)
+    const disableOnBankingSites = settings.disableOnBankingSites ?? false
+    if (disableOnBankingSites && isBankingDomain(domain)) {
+      return false
+    }
+
+    // 3. Check blacklist (domain + URL)
+    const blacklisted = await isBlacklisted(url)
+    if (blacklisted) {
+      return false
+    }
+
+    // 4. Fall back to default setting
+    return settings.domainsEnabledByDefault ?? true
+  } catch (error) {
+    console.error('[Domain] Failed to check extension state:', error)
+    return true // Default to enabled on error
   }
 }
 

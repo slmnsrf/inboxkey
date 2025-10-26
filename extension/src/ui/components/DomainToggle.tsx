@@ -119,20 +119,20 @@ export function DomainToggle() {
       </label>
       {!loading && !error && !enabled && (
         <span className="domain-toggle__warning">
-          InboxKey disabled on this site
+          {t('domain_toggle_disabled_warning')}
         </span>
       )}
       {!loading && !error && enabled && urlBlacklisted && (
         <div className="domain-toggle__url-warning" role="status" aria-live="polite">
           <span className="domain-toggle__url-warning-text">
-            Extension disabled on this page.
+            {t('domain_toggle_url_warning')}
           </span>
           <button
             type="button"
             className="domain-toggle__url-warning-link"
             onClick={handleOpenBlacklist}
           >
-            Manage in Settings
+            {t('domain_toggle_manage_settings')}
           </button>
         </div>
       )}

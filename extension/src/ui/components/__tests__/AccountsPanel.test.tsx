@@ -31,9 +31,9 @@ vi.mock('@/lib/providers/outlook/config', () => ({
 
 // Import the mocked functions after mocks are set up
 const { authenticateGmail: mockAuthenticateGmail } = await import('@/lib/providers/gmail/chrome-auth')
-const { authenticateOutlook: mockAuthenticateOutlook } = await import('@/lib/providers/outlook/chrome-auth')
+const { authenticateOutlook: _mockAuthenticateOutlook } = await import('@/lib/providers/outlook/chrome-auth')
 const { fetchGmailProfile: mockFetchGmailProfile } = await import('@/lib/providers/gmail/profile')
-const { fetchOutlookProfile: mockFetchOutlookProfile } = await import('@/lib/providers/outlook/profile')
+const { fetchOutlookProfile: _mockFetchOutlookProfile } = await import('@/lib/providers/outlook/profile')
 
 const renderWithProviders = (ui: React.ReactElement) => {
   return render(
