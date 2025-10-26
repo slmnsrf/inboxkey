@@ -109,6 +109,8 @@
   --color-success-darker: #065f46;  /* Even darker for high emphasis */
   --color-error-dark: #b91c1c;  /* Darker red for text/icons */
   --color-error-darker: #991b1b;  /* Even darker for high emphasis */
+  --color-warning-dark: #b45309;  /* Darker amber for text/icons on light backgrounds */
+  --color-warning-darker: #92400e;  /* Even darker for high emphasis */
 
   /* ========================================
      SPACING - 4px Scale
@@ -301,6 +303,8 @@
   --color-success-darker: #10b981;
   --color-error-dark: #f87171;  /* Lighter red for better visibility on dark */
   --color-error-darker: #ef4444;
+  --color-warning-dark: #fbbf24;  /* Lighter amber for better visibility on dark */
+  --color-warning-darker: #f59e0b;
 
   --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.45);
   --shadow-md: 0 4px 20px rgba(15, 23, 42, 0.5);

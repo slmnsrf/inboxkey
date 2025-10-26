@@ -78,8 +78,8 @@
 }
 
 .provider-dot {
-  width: 10px;
-  height: 10px;
+  width: 8px;
+  height: 8px;
   border-radius: 50%;
   background: currentColor;
 }
@@ -231,6 +231,9 @@
 }
 
 .imap-email {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
   font-weight: var(--font-weight-medium);
   color: var(--color-text-primary);
 }
@@ -238,6 +241,23 @@
 .imap-subtext {
   color: var(--color-text-secondary);
   font-size: var(--font-size-xs);
+}
+
+/* Status Dot (online/offline) */
+.status-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.status-dot--online {
+  background-color: var(--color-success);
+}
+
+.status-dot--offline {
+  background-color: var(--color-error);
 }
 
 .imap-actions {
@@ -603,6 +623,179 @@
 .btn--sm {
   padding: var(--space-1) var(--space-3);
   font-size: var(--font-size-sm);
+}
+
+/* Stateful Button States */
+.btn--loading {
+  position: relative;
+  color: transparent;
+}
+
+.btn--loading::after {
+  content: '';
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  top: 50%;
+  left: 50%;
+  margin-left: -8px;
+  margin-top: -8px;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  border-top-color: transparent;
+  animation: spin 600ms linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.btn--success {
+  background-color: var(--color-success) !important;
+  border-color: var(--color-success) !important;
+}
+
+.btn--error {
+  background-color: var(--color-error) !important;
+  border-color: var(--color-error) !important;
+}
+
+/* Inline Alert */
+.inline-alert {
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-sm);
+  border: 1px solid;
+  margin-top: var(--space-3);
+  animation: slideIn 200ms ease-out, fadeOut 300ms 6200ms ease-out;
+}
+
+.inline-alert--success {
+  background: rgba(16, 185, 129, 0.1);
+  border-color: rgba(16, 185, 129, 0.3);
+  color: var(--color-success);
+}
+
+.inline-alert--error {
+  background: rgba(239, 68, 68, 0.1);
+  border-color: rgba(239, 68, 68, 0.3);
+  color: var(--color-error);
+}
+
+.inline-alert--warning {
+  background: rgba(245, 158, 11, 0.1);
+  border-color: rgba(245, 158, 11, 0.3);
+  color: #D97706;
+}
+
+.inline-alert--info {
+  background: rgba(59, 130, 246, 0.1);
+  border-color: rgba(59, 130, 246, 0.3);
+  color: var(--color-primary);
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeOut {
+  to { opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .inline-alert {
+    animation: fadeIn 200ms, fadeOut 300ms 6200ms;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+}
+
+/* Provider Card Header */
+.provider-card-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.account-counter {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  font-weight: 400;
+}
+
+/* Account Row Generic */
+.account-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+}
+
+.account-row__info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.account-row__email {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-weight: 500;
+}
+
+.account-row__meta {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+.account-row__actions {
+  display: flex;
+  gap: var(--space-2);
+  flex-shrink: 0;
+}
+
+/* Inline link button (for "Learn why" and similar links) */
+.inline-link-button {
+  background: none;
+  border: none;
+  color: var(--color-primary);
+  cursor: pointer;
+  padding: 0;
+  text-decoration: underline;
+  font-size: inherit;
+  font-family: inherit;
+  line-height: inherit;
+}
+
+.inline-link-button:hover {
+  color: var(--color-primary-dark, var(--color-primary));
+  text-decoration: none;
+}
+
+.inline-link-button:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+.inline-link-button:active {
+  color: var(--color-primary-dark, var(--color-primary));
 }
 
 @media (max-width: 960px) {

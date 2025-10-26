@@ -21,14 +21,20 @@ export interface ImapAccountRow {
   email: string
   host?: string
   lastSyncedLabel?: string
+  lastSyncedAt?: number
   statusText?: string
+  isSyncing?: boolean
+  lastSyncError?: string
 }
 
 export interface OutlookAccountRow {
   id: string
   email: string
   lastSyncedLabel?: string
+  lastSyncedAt?: number
   tokenExpiresAt?: number
+  isSyncing?: boolean
+  lastSyncError?: string
 }
 
 export type RecentItemKind = 'code' | 'link'

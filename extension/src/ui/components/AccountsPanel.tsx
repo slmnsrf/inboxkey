@@ -18,8 +18,9 @@ import { t, timeAgo } from '@/lib/i18n'
 import type { PopupCache } from '@/shared/popup-messages'
 import type { ProviderKey, ProviderSlotState, ImapAccountRow, OutlookAccountRow, RecentItem } from './accounts/types'
 import { ProviderSlotCard } from './accounts/ProviderSlotCard'
-import { ImapAccountsSection } from './accounts/ImapAccountsSection'
-import { OutlookAccountsSection } from './accounts/OutlookAccountsSection'
+import { GmailAccountCard } from './accounts/GmailAccountCard'
+import { OutlookAccountCard } from './accounts/OutlookAccountCard'
+import { ImapAccountCard } from './accounts/ImapAccountCard'
 import { RecentEmailsSection } from './accounts/RecentEmailsSection'
 import { AddImapAccountModal } from './accounts/AddImapAccountModal'
 import { getNativeClient } from '@/lib/providers/imap-bridge/native-client'
@@ -34,6 +35,8 @@ interface MailboxInfo {
   lastSyncedAt: number
   /** OAuth token expiry (undefined for IMAP providers) */
   tokenExpiresAt?: number
+  /** IMAP server host (only for IMAP providers) */
+  imapServer?: string
 }
 
 type ConnectionStage = 'authenticating' | 'loading_profile' | 'saving' | null
@@ -141,14 +144,12 @@ export function AccountsPanel() {
       if (provider === 'gmail' && !isGmailConfigured()) {
         const errorMsg = t('toast_connect_invalid_credentials')
         setConnectionError({ provider, message: errorMsg })
-        showToast(errorMsg, 'error', 5000)
         return
       }
 
       if (provider === 'outlook' && !isOutlookConfigured()) {
         const errorMsg = t('toast_connect_invalid_credentials')
         setConnectionError({ provider, message: errorMsg })
-        showToast(errorMsg, 'error', 5000)
         return
       }
 
@@ -170,7 +171,6 @@ export function AccountsPanel() {
       // Gmail limited to 1 account (Chrome Identity API constraint)
       // Outlook supports multiple accounts (PKCE-based)
       if (mode === 'connect' && provider === 'gmail' && existing) {
-        showToast(t('toast_connect_duplicate'), 'error', 5000)
         setConnectionError({
           provider,
           message: t('toast_connect_duplicate'),
@@ -179,6 +179,23 @@ export function AccountsPanel() {
       }
 
       setConnectionStage('saving')
+
+      // If reconnecting (same email) or Gmail (single account only), remove old account FIRST
+      if (existing && (existing.email === email || provider === 'gmail')) {
+        const removeResponse = await chrome.runtime.sendMessage({
+          type: 'REMOVE_MAILBOX',
+          mailboxId: existing.id,
+        })
+
+        if (!removeResponse.success) {
+          setConnectionError({
+            provider,
+            message: removeResponse.error || t('toast_disconnect_failed'),
+          })
+          return
+        }
+      }
+
       const storeResponse = await chrome.runtime.sendMessage({
         type: 'STORE_MAILBOX',
         provider,
@@ -187,28 +204,18 @@ export function AccountsPanel() {
       })
 
       if (storeResponse.success) {
-        if (existing) {
-          await chrome.runtime.sendMessage({
-            type: 'REMOVE_MAILBOX',
-            mailboxId: existing.id,
-          })
-        }
-
-        showToast(
-          provider === 'gmail' ? t('toast_gmail_connected') : t('toast_outlook_connected'),
-          'success',
-          4000
-        )
         await loadMailboxes()
         await loadRecentItems()
       } else {
-        showToast(storeResponse.error || t('toast_connect_failed'), 'error', 5000)
+        setConnectionError({
+          provider,
+          message: storeResponse.error || t('toast_connect_failed'),
+        })
       }
     } catch (error) {
       console.error('[AccountsPanel] Connection error:', error)
       const message = getConnectionErrorMessage(error)
       setConnectionError({ provider, message })
-      showToast(message, 'error', 5000)
     } finally {
       setIsConnecting(false)
       setConnectingProvider(null)
@@ -231,47 +238,16 @@ export function AccountsPanel() {
       })
 
       if (response.success) {
-        showToast(t('toast_account_disconnected'), 'success', 4000)
         await loadMailboxes()
         await loadRecentItems()
       } else {
-        showToast(t('toast_disconnect_failed'), 'error', 5000)
+        console.error('[AccountsPanel] Disconnect failed:', response.error)
       }
     } catch (error) {
       console.error('[AccountsPanel] Disconnect failed:', error)
-      showToast(t('toast_disconnect_failed'), 'error', 5000)
     }
   }
 
-  const handleReconnectOutlook = async (mailboxId: string) => {
-    const mailbox = mailboxes.find((mb) => mb.id === mailboxId)
-    if (!mailbox) return
-    await handleConnect('outlook', 'reconnect')
-  }
-
-  const handleRemoveOutlook = async (mailboxId: string) => {
-    if (!confirm(t('accounts_remove_confirm'))) {
-      return
-    }
-
-    try {
-      const response = await chrome.runtime.sendMessage({
-        type: 'REMOVE_MAILBOX',
-        mailboxId,
-      })
-
-      if (response.success) {
-        showToast(t('toast_account_disconnected'), 'success', 4000)
-        await loadMailboxes()
-        await loadRecentItems()
-      } else {
-        showToast(t('toast_disconnect_failed'), 'error', 5000)
-      }
-    } catch (error) {
-      console.error('[AccountsPanel] Failed to remove Outlook account:', error)
-      showToast(t('toast_disconnect_failed'), 'error', 5000)
-    }
-  }
 
   const handleAddImap = () => {
     setImapPrefillData(undefined)
@@ -296,16 +272,14 @@ export function AccountsPanel() {
       })
 
       if (response.success) {
-        showToast(t('toast_imap_added', accountData.email), 'success', 4000)
         await loadMailboxes()
         await loadRecentItems()
         setShowAddImapModal(false)
       } else {
-        showToast(response.error || t('toast_connect_failed'), 'error', 5000)
+        console.error('[AccountsPanel] Failed to add IMAP account:', response.error)
       }
     } catch (error) {
       console.error('[AccountsPanel] Failed to add IMAP account:', error)
-      showToast(t('toast_connect_failed'), 'error', 5000)
     }
   }
 
@@ -322,38 +296,6 @@ export function AccountsPanel() {
       label: mailbox.email,
     })
     setShowAddImapModal(true)
-  }
-
-  const handleRemoveImap = async (mailboxId: string) => {
-    if (!confirm(t('accounts_remove_confirm'))) {
-      return
-    }
-
-    try {
-      const response = await chrome.runtime.sendMessage({
-        type: 'REMOVE_MAILBOX',
-        mailboxId,
-      })
-
-      if (response.success) {
-        showToast(t('toast_account_disconnected'), 'success', 4000)
-        await loadMailboxes()
-        await loadRecentItems()
-      } else {
-        showToast(t('toast_disconnect_failed'), 'error', 5000)
-      }
-    } catch (error) {
-      console.error('[AccountsPanel] Failed to remove IMAP account:', error)
-      showToast(t('toast_disconnect_failed'), 'error', 5000)
-    }
-
-    // Also try to remove from native app
-    try {
-      const client = getNativeClient()
-      await client.call('account.remove', { accountId: mailboxId })
-    } catch (error) {
-      console.warn('[AccountsPanel] Failed to remove from native app:', error)
-    }
   }
 
   const providerSlots = useMemo<ProviderSlotState[]>(() => {
@@ -409,8 +351,26 @@ export function AccountsPanel() {
       .map((mb) => ({
         id: mb.id,
         email: mb.email,
+        host: mb.imapServer,
         lastSyncedLabel: mb.lastSyncedAt ? timeAgo(mb.lastSyncedAt) : undefined,
+        lastSyncedAt: mb.lastSyncedAt,
+        isSyncing: false, // TODO: Track syncing state
+        lastSyncError: undefined, // TODO: Track sync errors
       }))
+  }, [mailboxes])
+
+  const gmailAccount = useMemo(() => {
+    const mailbox = mailboxes.find((mb) => mb.providerId === 'gmail')
+    if (!mailbox) return null
+    return {
+      id: mailbox.id,
+      email: mailbox.email,
+      lastSyncedLabel: mailbox.lastSyncedAt ? timeAgo(mailbox.lastSyncedAt) : undefined,
+      lastSyncedAt: mailbox.lastSyncedAt,
+      tokenExpiresAt: mailbox.tokenExpiresAt,
+      isSyncing: false, // TODO: Track syncing state
+      lastSyncError: undefined, // TODO: Track sync errors
+    }
   }, [mailboxes])
 
   const outlookAccounts: OutlookAccountRow[] = useMemo(() => {
@@ -420,7 +380,10 @@ export function AccountsPanel() {
         id: mb.id,
         email: mb.email,
         lastSyncedLabel: mb.lastSyncedAt ? timeAgo(mb.lastSyncedAt) : undefined,
+        lastSyncedAt: mb.lastSyncedAt,
         tokenExpiresAt: mb.tokenExpiresAt,
+        isSyncing: false, // TODO: Track syncing state
+        lastSyncError: undefined, // TODO: Track sync errors
       }))
   }, [mailboxes])
 
@@ -450,46 +413,35 @@ export function AccountsPanel() {
 
   return (
     <div className="accounts-panel">
-      <section className="accounts-section" aria-labelledby="connected-accounts-title">
-        <div className="accounts-section__header">
-          <div>
-            <h2 id="connected-accounts-title" className="accounts-section__title">
-              {t('accounts_panel_heading')}
-            </h2>
-            <p className="accounts-section__description">
-              {t('accounts_panel_summary')}
-            </p>
-          </div>
-        </div>
-
-        <div className="provider-grid">
-          {providerSlots
-            .filter((slot) => slot.provider === 'gmail')
-            .map((slot) => (
-              <ProviderSlotCard
-                key={slot.provider}
-                slot={slot}
-                onConnect={() => handleConnect(slot.provider, 'connect')}
-                onDisconnect={() => handleDisconnect(slot.provider)}
-              />
-            ))}
-        </div>
-      </section>
-
-      <OutlookAccountsSection
-        accounts={outlookAccounts}
-        limit={10}
-        onAdd={() => handleConnect('outlook', 'connect')}
-        onReconnect={handleReconnectOutlook}
-        onRemove={handleRemoveOutlook}
+      <GmailAccountCard
+        account={gmailAccount}
+        onAccountChanged={async () => {
+          await loadMailboxes()
+          await loadRecentItems()
+        }}
+        disabled={isConnecting}
       />
 
-      <ImapAccountsSection
+      <OutlookAccountCard
+        accounts={outlookAccounts}
+        onAccountChanged={async () => {
+          await loadMailboxes()
+          await loadRecentItems()
+        }}
+        disabled={isConnecting}
+        maxAccounts={10}
+      />
+
+      <ImapAccountCard
         accounts={imapAccounts}
-        disabled={false}
-        onAdd={handleAddImap}
-        onReconnect={handleReconnectImap}
-        onRemove={handleRemoveImap}
+        onAccountChanged={async () => {
+          await loadMailboxes()
+          await loadRecentItems()
+        }}
+        disabled={isConnecting}
+        maxAccounts={10}
+        onAddImap={handleAddImap}
+        onReconnectImap={handleReconnectImap}
       />
 
       <AddImapAccountModal

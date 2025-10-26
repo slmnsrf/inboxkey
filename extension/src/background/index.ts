@@ -236,6 +236,11 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     return true
   }
 
+  if (msg.type === "STORE_IMAP_MAILBOX") {
+    handleStoreImapMailbox(msg, sendResponse)
+    return true
+  }
+
   if (msg.type === "CLEAR_ALL_CODES") {
     handleClearAllCodes(sendResponse)
     return true
@@ -602,6 +607,50 @@ function handleRemoveMailbox(msg: any, sendResponse: (response: any) => void) {
     }
   })().catch((error) => {
     console.error("[Background] handleRemoveMailbox unhandled rejection:", error)
+  })
+}
+
+/**
+ * Handle STORE_IMAP_MAILBOX requests.
+ */
+function handleStoreImapMailbox(msg: any, sendResponse: (response: any) => void) {
+  ;(async () => {
+    try {
+      // Use StorageFactory to get appropriate storage
+      const storage = await StorageFactory.create()
+
+      // Create IMAP mailbox record
+      const mailbox: Mailbox = {
+        id: crypto.randomUUID(),
+        providerId: 'imap-bridge',
+        email: msg.email,
+        imapServer: msg.server,
+        imapPort: msg.port,
+        imapAccountId: msg.accountId,
+        imapUsername: msg.email, // Default username to email
+        addedAt: Date.now(),
+        lastSyncedAt: 0,
+      }
+
+      await storage.addMailbox(mailbox)
+
+      // Update popup cache with new mailbox count
+      const mailboxes = await storage.getMailboxes()
+      await popupCacheManager.warmCache([], mailboxes.length, mailboxes)
+
+      sendResponse({
+        success: true,
+        mailbox: { id: mailbox.id, email: mailbox.email },
+      })
+    } catch (error) {
+      console.error("[Background] Failed to store IMAP mailbox:", error)
+      sendResponse({
+        success: false,
+        error: error instanceof Error ? error.message : String(error),
+      })
+    }
+  })().catch((error) => {
+    console.error("[Background] handleStoreImapMailbox unhandled rejection:", error)
   })
 }
 

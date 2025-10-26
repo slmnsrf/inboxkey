@@ -74,6 +74,12 @@ export interface Mailbox {
 
   addedAt: number // Unix timestamp (ms)
   lastSyncedAt: number // Unix timestamp (ms)
+
+  // Sync state fields (for UI status indicators)
+  /** True when actively polling/syncing emails */
+  isSyncing?: boolean
+  /** Last sync error message (undefined = no error) */
+  lastSyncError?: string
 }
 
 /**

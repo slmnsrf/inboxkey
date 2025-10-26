@@ -66,7 +66,7 @@ export class OutlookAuth {
     // 4. Build Microsoft authorization URL with OAuth parameters
     // NOTE: Microsoft uses different parameters than Google:
     // - No 'access_type' parameter (always gets refresh token with offline_access scope)
-    // - No 'prompt' parameter needed (handles consent automatically)
+    // - 'prompt=select_account' forces account picker (enables multi-account support)
     // - Uses 'response_mode' to specify query parameter return
     const params = new URLSearchParams({
       client_id: this.config.clientId,
@@ -77,6 +77,7 @@ export class OutlookAuth {
       code_challenge_method: 'S256',
       state,
       response_mode: 'query', // Microsoft-specific: return code via query params
+      prompt: 'select_account', // Force account picker to enable adding different accounts
     })
 
     const authUrl = `${this.config.authUrl}?${params}`
