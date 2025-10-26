@@ -1,0 +1,309 @@
+/**
+ * BlacklistTab Component Styles
+ *
+ * Shared styles for both domain and URL tabs.
+ * Includes form inputs, lists, empty states, and error messages.
+ */
+
+.blacklist-tab-container {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4, 16px);
+}
+
+/* Description */
+.blacklist-description {
+  padding: var(--space-3, 12px);
+  background: var(--color-info-bg, #334155);
+  border-radius: var(--radius-md, 6px);
+  border: 1px solid rgba(100, 116, 139, 0.3);
+}
+
+.blacklist-description p {
+  margin: 0 0 var(--space-2, 8px) 0;
+  color: var(--color-text-primary, #F9FAFB);
+  font-size: var(--font-size-sm, 14px);
+  line-height: 1.5;
+}
+
+.blacklist-description p:last-child {
+  margin-bottom: 0;
+}
+
+.blacklist-hint {
+  font-size: var(--font-size-xs, 13px);
+  color: var(--color-text-primary, #F9FAFB);
+}
+
+.blacklist-hint code {
+  padding: 2px 6px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+  font-family: 'Monaco', 'Menlo', 'Consolas', monospace;
+  font-size: 12px;
+}
+
+/* Add Section */
+.blacklist-add-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2, 8px);
+}
+
+.blacklist-input-group {
+  display: flex;
+  gap: var(--space-2, 8px);
+  align-items: flex-start;
+}
+
+.blacklist-input {
+  flex: 1;
+  min-height: var(--min-tap-target, 44px);
+  padding: var(--space-3, 12px);
+  border: 1px solid var(--color-border, #e5e7eb);
+  border-radius: var(--radius-md, 6px);
+  font-size: var(--font-size-base, 16px);
+  font-family: var(--font-system);
+  transition: border-color var(--duration-fast, 150ms) ease-out,
+              box-shadow var(--duration-fast, 150ms) ease-out;
+}
+
+.blacklist-input:focus {
+  outline: none;
+  border-color: var(--color-primary, #3B82F6);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.blacklist-input[aria-invalid="true"] {
+  border-color: var(--color-error, #EF4444);
+}
+
+.blacklist-input::placeholder {
+  color: var(--color-text-tertiary, #9ca3af);
+}
+
+/* Error and Warning Messages */
+.blacklist-error {
+  padding: var(--space-2, 8px) var(--space-3, 12px);
+  background: var(--color-error-bg, #991B1B);
+  color: var(--color-error-text, #FEE2E2);
+  border-radius: var(--radius-md, 6px);
+  font-size: var(--font-size-sm, 14px);
+  border: 1px solid rgba(239, 68, 68, 0.4);
+}
+
+.blacklist-warning {
+  padding: var(--space-2, 8px) var(--space-3, 12px);
+  background: var(--color-warning-bg, #92400E);
+  color: var(--color-warning-text, #FEF3C7);
+  border-radius: var(--radius-md, 6px);
+  font-size: var(--font-size-sm, 14px);
+  border: 1px solid rgba(251, 191, 36, 0.4);
+}
+
+/* Loading State */
+.blacklist-loading {
+  padding: var(--space-5, 24px);
+  text-align: center;
+  color: var(--color-text-secondary, #545b6a);
+  font-size: var(--font-size-sm, 14px);
+}
+
+/* Empty State */
+.blacklist-empty {
+  padding: var(--space-6, 32px);
+  text-align: center;
+  color: var(--color-text-secondary, #545b6a);
+}
+
+.blacklist-empty-icon {
+  font-size: 48px;
+  margin: 0 0 var(--space-3, 12px) 0;
+}
+
+.blacklist-empty-text {
+  margin: 0 0 var(--space-2, 8px) 0;
+  font-size: var(--font-size-lg, 18px);
+  font-weight: var(--font-weight-medium, 500);
+  color: var(--color-text-primary, #111827);
+}
+
+.blacklist-empty-hint {
+  margin: 0;
+  font-size: var(--font-size-sm, 14px);
+  color: var(--color-text-secondary, #545b6a);
+}
+
+/* List Section */
+.blacklist-list-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3, 12px);
+}
+
+.blacklist-list-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3, 12px);
+  padding: var(--space-2, 8px) 0;
+}
+
+.blacklist-list-header > .btn {
+  margin-left: auto;
+}
+
+.blacklist-count {
+  font-size: var(--font-size-sm, 14px);
+  font-weight: var(--font-weight-medium, 500);
+  color: var(--color-text-secondary, #545b6a);
+  white-space: nowrap;
+}
+
+/* List */
+.blacklist-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2, 8px);
+  max-height: 300px;
+  overflow-y: auto;
+  border: 1px solid var(--color-border, #e5e7eb);
+  border-radius: var(--radius-md, 6px);
+  padding: var(--space-2, 8px);
+}
+
+.blacklist-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3, 12px);
+  padding: var(--space-3, 12px);
+  background: var(--surface-card, #ffffff);
+  border: 1px solid var(--color-border, #e5e7eb);
+  border-radius: var(--radius-md, 6px);
+  transition: background var(--duration-fast, 150ms) ease-out;
+}
+
+.blacklist-item:hover {
+  background: var(--surface-card-muted, #f9fafb);
+}
+
+.blacklist-item-text {
+  flex: 1;
+  font-size: var(--font-size-sm, 14px);
+  color: var(--color-text-primary, #111827);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: 'Monaco', 'Menlo', 'Consolas', monospace;
+}
+
+.blacklist-remove-btn {
+  width: var(--size-touch-min, 44px);
+  height: var(--size-touch-min, 44px);
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-md, 6px);
+  border: none;
+  background: transparent;
+  color: var(--color-text-secondary, #545b6a);
+  font-size: 18px;
+  cursor: pointer;
+  transition: background var(--duration-fast, 150ms) ease-out,
+              color var(--duration-fast, 150ms) ease-out;
+  flex-shrink: 0;
+}
+
+.blacklist-remove-btn:hover {
+  background: var(--color-error-bg, #FEE2E2);
+  color: var(--color-error, #EF4444);
+}
+
+.blacklist-remove-btn:focus-visible {
+  outline: 2px solid var(--color-primary, #3B82F6);
+  outline-offset: 2px;
+}
+
+/* Button Styles (if not inherited from global) */
+.btn {
+  min-height: var(--min-tap-target, 44px);
+  padding: var(--space-3, 12px) var(--space-4, 16px);
+  border-radius: var(--radius-md, 6px);
+  font-size: var(--font-size-base, 16px);
+  font-weight: var(--font-weight-medium, 500);
+  cursor: pointer;
+  transition: background var(--duration-fast, 150ms) ease-out,
+              transform var(--duration-fast, 150ms) ease-out;
+  border: none;
+  font-family: var(--font-system);
+}
+
+.btn:focus-visible {
+  outline: 2px solid var(--color-primary, #3B82F6);
+  outline-offset: 2px;
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn--primary {
+  background: var(--color-primary, #3B82F6);
+  color: white;
+}
+
+.btn--primary:hover:not(:disabled) {
+  background: var(--color-primary-hover, #2563EB);
+}
+
+.btn--primary:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+.btn--secondary {
+  background: var(--surface-card, #ffffff);
+  color: var(--color-text-primary, #111827);
+  border: 1px solid var(--color-border, #e5e7eb);
+}
+
+.btn--secondary:hover:not(:disabled) {
+  background: var(--surface-card-muted, #f9fafb);
+}
+
+.btn--text {
+  background: transparent;
+  padding: var(--space-2, 8px) var(--space-3, 12px);
+  min-height: auto;
+}
+
+.btn--text:hover:not(:disabled) {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.btn--danger {
+  color: var(--color-error, #EF4444);
+}
+
+.btn--danger:hover:not(:disabled) {
+  background: var(--color-error-bg, #FEE2E2);
+  color: var(--color-error, #EF4444);
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .blacklist-input,
+  .blacklist-item,
+  .blacklist-remove-btn,
+  .btn {
+    transition: none;
+  }
+
+  .btn:active:not(:disabled) {
+    transform: none;
+  }
+}

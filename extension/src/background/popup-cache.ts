@@ -21,7 +21,7 @@
 
 import type { StoredCode, Mailbox } from '@/lib/storage/schema'
 import type {
-  PopupCache,
+  UnifiedPopupCache,
   PopupCacheCode,
   PopupCacheMagicLink,
   PopupItem,
@@ -33,8 +33,7 @@ import { filterPopupItems, separateItems } from '@/lib/popup/popup-filters'
 import { dedupeByKey } from '@/lib/popup/popup-dedup'
 import { sortByPriority, computePriority } from '@/lib/popup/popup-priority'
 import {
-  MAX_CODES,
-  MAX_LINKS,
+  MAX_ITEMS,
   POPUP_CACHE_STALE_MS,
 } from '@/lib/popup/popup-config'
 import { extractETLD, domainAffinity as computeDomainAffinity } from '@/lib/matching/domain-affinity'
@@ -46,7 +45,7 @@ const POPUP_CACHE_KEY = 'inboxkey.popup_cache'
  * Manages the popup cache for fast access to recent codes/links
  */
 export class PopupCacheManager {
-  private cache: PopupCache | null = null
+  private cache: UnifiedPopupCache | null = null
   private mailboxCache: Map<string, Mailbox> = new Map()
 
   /**
@@ -54,7 +53,7 @@ export class PopupCacheManager {
    */
   async initialize(): Promise<void> {
     const result = await chrome.storage.session.get(POPUP_CACHE_KEY)
-    this.cache = (result[POPUP_CACHE_KEY] as PopupCache | undefined) || this.getEmptyCache()
+    this.cache = (result[POPUP_CACHE_KEY] as UnifiedPopupCache | undefined) || this.getEmptyCache()
   }
 
   /**
@@ -71,14 +70,14 @@ export class PopupCacheManager {
    * Get current cache (fast path if warm, fallback to storage).
    * Detects staleness and can trigger async refresh if needed.
    */
-  async getCache(): Promise<PopupCache> {
+  async getCache(): Promise<UnifiedPopupCache> {
     if (this.cache) {
       // Check staleness (V2 feature)
       if (this.cache.ts) {
         const age = Date.now() - this.cache.ts
         if (age > POPUP_CACHE_STALE_MS) {
           // Cache is stale but return it anyway (popup will trigger refresh)
-          console.log(`[PopupCache] Cache is stale (${age}ms old)`)
+          // Staleness is expected behavior; popup will trigger async refresh
         }
       }
       return this.cache
@@ -86,7 +85,7 @@ export class PopupCacheManager {
 
     // Cold start: read from storage
     const result = await chrome.storage.session.get(POPUP_CACHE_KEY)
-    this.cache = (result[POPUP_CACHE_KEY] as PopupCache | undefined) || this.getEmptyCache()
+    this.cache = (result[POPUP_CACHE_KEY] as UnifiedPopupCache | undefined) || this.getEmptyCache()
     return this.cache
   }
 
@@ -129,22 +128,25 @@ export class PopupCacheManager {
     // Step 4: Priority sorting
     const sortedItems = sortByPriority(dedupedItems, now, currentTabDomain)
 
-    // Step 5: Separate codes and links, slice to limits
-    const { codes: codeItems, links: linkItems } = separateItems(sortedItems)
-    const topCodes = codeItems.slice(0, MAX_CODES)
-    const topLinks = linkItems.slice(0, MAX_LINKS)
+    // Step 5: Slice unified list to MAX_ITEMS (NEW: unified approach)
+    // This solves the empty section problem - top 5 items regardless of type
+    const topItems = sortedItems.slice(0, MAX_ITEMS)
 
-    // Step 6: Convert to legacy format for backward compatibility
-    const legacyCodes = topCodes.map((item) => this.convertPopupItemToLegacyCode(item, now, currentTabDomain))
-    const legacyLinks = topLinks.map((item) => this.convertPopupItemToLegacyLink(item))
+    // Step 6: Separate for legacy format (backward compatibility)
+    const { codes: codeItems, links: linkItems } = separateItems(topItems)
 
-    // Build cache with both V2 and V1 fields
-    const cache: PopupCache = {
-      codes: legacyCodes,
-      magicLinks: legacyLinks,
+    // Step 7: Convert to legacy format for backward compatibility
+    const legacyCodes = codeItems.map((item) => this.convertPopupItemToLegacyCode(item as CodeItem, now, currentTabDomain))
+    const legacyLinks = linkItems.map((item) => this.convertPopupItemToLegacyLink(item as LinkItem))
+
+    // Build unified cache with V2 items array + V1 legacy arrays
+    const cache: UnifiedPopupCache = {
+      items: topItems, // NEW: Unified priority-sorted list
+      codes: legacyCodes, // Legacy: for backward compatibility
+      magicLinks: legacyLinks, // Legacy: for backward compatibility
       lastSync: now,
       mailboxCount,
-      ts: now, // V2: Cache timestamp for staleness detection
+      ts: now, // Cache timestamp for staleness detection
     }
 
     await this.saveCache(cache)
@@ -190,7 +192,7 @@ export class PopupCacheManager {
   /**
    * Save cache to both memory and chrome.storage.session
    */
-  private async saveCache(cache: PopupCache): Promise<void> {
+  private async saveCache(cache: UnifiedPopupCache): Promise<void> {
     this.cache = cache
     await chrome.storage.session.set({ [POPUP_CACHE_KEY]: cache })
   }
@@ -198,8 +200,9 @@ export class PopupCacheManager {
   /**
    * Create an empty cache
    */
-  private getEmptyCache(): PopupCache {
+  private getEmptyCache(): UnifiedPopupCache {
     return {
+      items: [],
       codes: [],
       magicLinks: [],
       lastSync: 0,

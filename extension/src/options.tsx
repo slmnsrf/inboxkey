@@ -17,6 +17,8 @@ import { SessionChipSettings } from './ui/components/SessionChipSettings'
 import { DataManagement } from './ui/components/DataManagement'
 import { AdvancedSettings } from './ui/components/AdvancedSettings'
 import { BuyMeACoffeeButton } from './ui/components/BuyMeACoffeeButton'
+import { BlacklistManageButton } from './ui/components/blacklist/BlacklistManageButton'
+import { BlacklistModal } from './ui/components/blacklist/BlacklistModal'
 import { t } from './lib/i18n'
 import './options.css'
 import './ui/components/security/SecurityInfo.css'
@@ -24,6 +26,7 @@ import './ui/components/security/SecurityInfo.css'
 function OptionsApp() {
   const [mailboxCount, setMailboxCount] = useState<number | null>(null)
   const [activeTab, setActiveTab] = useState<Tab>('settings')
+  const [isBlacklistModalOpen, setIsBlacklistModalOpen] = useState(false)
 
   // Fetch mailbox count
   useEffect(() => {
@@ -141,9 +144,16 @@ function OptionsApp() {
                     <AutomationSettings />
                     <AppearanceSettings />
                     <DataManagement />
+                    <BlacklistManageButton onClick={() => setIsBlacklistModalOpen(true)} />
                     <AdvancedSettings />
                   </section>
                 </div>
+
+                {/* Blacklist Modal */}
+                <BlacklistModal
+                  isOpen={isBlacklistModalOpen}
+                  onClose={() => setIsBlacklistModalOpen(false)}
+                />
 
                 <div
                   id="about-panel"

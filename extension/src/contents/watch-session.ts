@@ -13,6 +13,7 @@ import { showSessionChip, type ChipHandle } from "./session-chip"
 import { extractDomain, isDomainEnabled } from "@/lib/utils/domain"
 import { StorageFactory } from '@/lib/storage/storage-factory'
 import { findAndClickSubmitButton } from './autofill'
+import { isBlacklisted, addBlacklistedUrl } from "@/lib/utils/blacklist"
 
 interface SessionCodeResult {
   code: string
@@ -60,8 +61,16 @@ export class WatchSession {
       return
     }
 
+    // Check if URL is blacklisted (before domain check)
+    const currentUrl = window.location.href
+    const blacklisted = await isBlacklisted(currentUrl)
+    if (blacklisted) {
+      console.log("[WatchSession] URL is blacklisted, skipping watch session")
+      return
+    }
+
     // Check if domain is enabled before starting session
-    const domain = extractDomain(window.location.href)
+    const domain = extractDomain(currentUrl)
     if (domain) {
       const enabled = await isDomainEnabled(domain)
       if (!enabled) {
@@ -173,13 +182,20 @@ export class WatchSession {
         const settings = await storage.getSettings()
         const timeoutSeconds = settings.sessionTimeoutSeconds ?? 20
 
-        // V2: Show chip in "listening" state with timeout and abort callback
+        // V2: Show chip in "listening" state with timeout and close callback
         this.chipHandle = await showSessionChip(
           this.field,
           timeoutSeconds,
           {
-            onAbort: () => {
-              console.log('[WatchSession] User aborted session')
+            onClose: async () => {
+              console.log('[WatchSession] User closed session chip, adding URL to blacklist')
+              const currentUrl = window.location.href
+              const result = await addBlacklistedUrl(currentUrl)
+              if (result.success) {
+                console.log('[WatchSession] URL successfully blacklisted:', currentUrl)
+              } else {
+                console.warn('[WatchSession] Failed to blacklist URL:', result.errorMessage)
+              }
               this.stop()
             }
           }

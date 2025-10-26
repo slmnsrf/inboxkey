@@ -164,8 +164,6 @@ export interface BetaFeatureUsage {
  */
 export interface Settings {
   autoFillEnabled: boolean
-  lockEnabled: boolean
-  lockTimeoutMinutes: number
   allowedDomains: string[] // Empty = all domains allowed
   deniedDomains: string[]
   notificationsEnabled: boolean
@@ -224,10 +222,51 @@ export interface Settings {
    */
   disableOnBankingSites?: boolean
   /**
-   * Session timeout in seconds (how long to wait for codes).
-   * @default 20
+   * Session timeout in seconds (maximum time to wait for codes).
+   * Controls session duration and number of polls executed.
+   *
+   * Poll schedule:
+   * - 0-20s: Every 5s (dense, for fast providers like Gmail/Outlook)
+   * - 20-120s: Every 10s (sparse, for slow providers like IMAP)
+   *
+   * Examples:
+   * - 10s → 3 polls [0, 5, 10]
+   * - 30s → 6 polls [0, 5, 10, 15, 20, 30] (default)
+   * - 60s → 9 polls [0, 5, 10, 15, 20, 30, 40, 50, 60]
+   * - 120s → 15 polls [0, 5, 10, 15, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120] (maximum)
+   *
+   * @default 30
    */
   sessionTimeoutSeconds?: number
+  /**
+   * Blacklisted domains (hostname only, no protocol/path).
+   * Blocks all pages on the domain and its subdomains.
+   *
+   * Examples:
+   * - "example.com" → blocks example.com, www.example.com, sub.example.com
+   * - "localhost" → blocks localhost
+   *
+   * Maximum 100 entries. Domains are stored in lowercase.
+   * @default []
+   */
+  blacklistedDomains?: string[]
+  /**
+   * Blacklisted URLs (full URLs with protocol).
+   * Blocks specific pages only (exact match after normalization).
+   *
+   * URLs are normalized before storage:
+   * - Hostname lowercased
+   * - Query string and hash removed
+   * - Trailing slash removed from pathname
+   *
+   * Examples:
+   * - "https://example.com/login" → blocks only /login page
+   * - "https://example.com/" → blocks only homepage
+   *
+   * Maximum 100 entries.
+   * @default []
+   */
+  blacklistedUrls?: string[]
 }
 
 /**
@@ -235,8 +274,6 @@ export interface Settings {
  * This is ephemeral and cleared when the browser closes
  */
 export interface SessionState {
-  isLocked: boolean
-  unlockedAt?: number // Unix timestamp (ms)
   activeWatchSessions: WatchSession[]
 }
 
@@ -256,8 +293,6 @@ export interface WatchSession {
  */
 export const DEFAULT_SETTINGS: Settings = {
   autoFillEnabled: true,
-  lockEnabled: false,
-  lockTimeoutMinutes: 15,
   allowedDomains: [],
   deniedDomains: [],
   notificationsEnabled: true,
@@ -267,15 +302,15 @@ export const DEFAULT_SETTINGS: Settings = {
   domainsEnabledByDefault: true, // Default: enable on all domains
   showSessionChips: true, // Default: show session status chips
   disableOnBankingSites: false, // Opt-in: users must enable manually
-  sessionTimeoutSeconds: 20, // Default: 20 seconds
+  sessionTimeoutSeconds: 30, // Default: 30 seconds
+  blacklistedDomains: [], // Default: no blacklisted domains
+  blacklistedUrls: [], // Default: no blacklisted URLs
 }
 
 /**
  * Default session state
  */
 export const DEFAULT_SESSION_STATE: SessionState = {
-  isLocked: false,
-  unlockedAt: undefined,
   activeWatchSessions: [],
 }
 
@@ -395,9 +430,6 @@ export function isSettings(obj: unknown): obj is Settings {
   const s = obj as Partial<Settings>
   return (
     typeof s.autoFillEnabled === "boolean" &&
-    typeof s.lockEnabled === "boolean" &&
-    typeof s.lockTimeoutMinutes === "number" &&
-    s.lockTimeoutMinutes > 0 &&
     Array.isArray(s.allowedDomains) &&
     s.allowedDomains.every((d) => typeof d === "string") &&
     Array.isArray(s.deniedDomains) &&
@@ -410,7 +442,9 @@ export function isSettings(obj: unknown): obj is Settings {
     (s.extendedButtonDetection === undefined || typeof s.extendedButtonDetection === "boolean") &&
     (s.showSessionChips === undefined || typeof s.showSessionChips === "boolean") &&
     (s.disableOnBankingSites === undefined || typeof s.disableOnBankingSites === "boolean") &&
-    (s.sessionTimeoutSeconds === undefined || (typeof s.sessionTimeoutSeconds === "number" && s.sessionTimeoutSeconds >= 10 && s.sessionTimeoutSeconds <= 75))
+    (s.sessionTimeoutSeconds === undefined || (typeof s.sessionTimeoutSeconds === "number" && s.sessionTimeoutSeconds >= 10 && s.sessionTimeoutSeconds <= 120)) &&
+    (s.blacklistedDomains === undefined || (Array.isArray(s.blacklistedDomains) && s.blacklistedDomains.every((d) => typeof d === "string"))) &&
+    (s.blacklistedUrls === undefined || (Array.isArray(s.blacklistedUrls) && s.blacklistedUrls.every((u) => typeof u === "string")))
   )
 }
 
@@ -418,9 +452,6 @@ export function isSessionState(obj: unknown): obj is SessionState {
   if (typeof obj !== "object" || obj === null) return false
   const s = obj as Partial<SessionState>
   return (
-    typeof s.isLocked === "boolean" &&
-    (s.unlockedAt === undefined ||
-      (typeof s.unlockedAt === "number" && isValidTimestamp(s.unlockedAt))) &&
     Array.isArray(s.activeWatchSessions) &&
     s.activeWatchSessions.every(isWatchSession)
   )

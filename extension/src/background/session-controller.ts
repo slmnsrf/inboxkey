@@ -13,6 +13,10 @@
  * - Added senderETLD extraction when adding codes
  * - Passes sessionStart and expectedShape to findBestMatchingCode() for v2 algorithm
  * - Reduced LOC from 477 to ~400 by delegating polling to SessionPoller
+ * - Changed to fixed 12-poll schedule: [0, 5, 10, 15, 20, 30, 40, 50, 60, 70, 80, 90]s
+ * - First 20s: 5s intervals (fast providers like Gmail/Outlook)
+ * - After 20s: 10s intervals (slow providers like IMAP)
+ * - Extended max timeout from 75s to 90s
  */
 import { findBestMatchingCode } from "@/lib/matching/code-matcher"
 import { StorageFactory } from "@/lib/storage/storage-factory"
@@ -144,14 +148,19 @@ export class SessionController {
     const id = crypto.randomUUID()
     const now = Date.now()
 
-    // Calculate dynamic poll schedule based on timeout setting
-    // Formula: [0%, 50%, 100%] of timeout
+    // Use fixed poll schedule, filtered by user's timeout setting
+    // This allows users to control session duration while maintaining optimized poll density
     const timeoutMs = (timeoutSeconds ?? 20) * 1000
-    const pollTimesMs = [
-      0,                    // t=0 (immediate)
-      timeoutMs * 0.5,      // t=50%
-      timeoutMs             // t=100%
-    ]
+
+    // Filter poll times that fall within user's timeout
+    const pollTimesMs = WATCH_SESSION_SCORING.pollTimesMs.filter(
+      pollTime => pollTime <= timeoutMs
+    )
+
+    // Guard: ensure at least one poll at t=0
+    if (pollTimesMs.length === 0) {
+      pollTimesMs.push(0)
+    }
 
     // Store absolute timestamps for tracking
     const pollSchedule = pollTimesMs.map(offset => now + offset)

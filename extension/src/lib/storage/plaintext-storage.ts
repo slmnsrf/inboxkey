@@ -266,8 +266,6 @@ export class PlaintextStorage {
   private getDefaultSettings(): Settings {
     return {
       autoFillEnabled: true,
-      lockEnabled: false,
-      lockTimeoutMinutes: 15,
       allowedDomains: [],
       deniedDomains: [],
       notificationsEnabled: true,
@@ -318,8 +316,6 @@ export class PlaintextStorage {
 
   private getDefaultSessionState(): SessionState {
     return {
-      isLocked: false,
-      unlockedAt: undefined,
       activeWatchSessions: [],
     }
   }

@@ -8,7 +8,6 @@ interface ImapAccountsSectionProps {
   onAdd?: () => void
   onReconnect?: (id: string) => void
   onRemove?: (id: string) => void
-  isLocked?: boolean
   disabled?: boolean
 }
 
@@ -18,7 +17,6 @@ export function ImapAccountsSection({
   onAdd,
   onReconnect,
   onRemove,
-  isLocked = false,
   disabled = true,
 }: ImapAccountsSectionProps) {
   const countLabel = t('accounts_imap_counter', [
@@ -31,7 +29,7 @@ export function ImapAccountsSection({
     onAdd()
   }
 
-  const actionDisabled = disabled || isLocked
+  const actionDisabled = disabled
   const addDisabled = actionDisabled || accounts.length >= limit
 
   return (

@@ -127,6 +127,33 @@ export interface PopupCache {
 }
 
 /**
+ * Unified popup cache structure (V2)
+ *
+ * Single priority-sorted list of codes and links combined.
+ * Replaces separate codes/magicLinks arrays with unified items array.
+ *
+ * Benefits:
+ * - Solves empty section problem (no wasted space)
+ * - Top N most relevant items regardless of type
+ * - Simplified UI rendering (single section)
+ *
+ * Backward compatibility: Still includes legacy codes/magicLinks arrays
+ * for gradual migration. UI can use either format.
+ */
+export interface UnifiedPopupCache {
+  /** Unified priority-sorted items (codes + links combined) */
+  items: PopupItem[]
+  /** Legacy: Separate codes array (for backward compatibility) */
+  codes: PopupCacheCode[]
+  /** Legacy: Separate links array (for backward compatibility) */
+  magicLinks: PopupCacheMagicLink[]
+  lastSync: number
+  mailboxCount: number
+  /** Cache timestamp for staleness detection (ms) */
+  ts?: number
+}
+
+/**
  * Mailbox information returned to popup (without sensitive tokens)
  */
 export interface MailboxInfo {

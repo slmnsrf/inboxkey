@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { useToast } from '../contexts/ToastContext'
 import { LiveRegion } from './LiveRegion'
+import { t } from '@/lib/i18n'
 import './ToastContainer.css'
 
 export function ToastContainer() {
@@ -23,8 +24,9 @@ export function ToastContainer() {
   return (
     <div className="toast-container" data-testid="toast-container">
       {toasts.map(toast => {
+        // Minimalistic icons: no emojis, simple characters
         const icon = toast.variant === 'success' ? '✓' :
-                     toast.variant === 'error' ? '❌' : 'ℹ️'
+                     toast.variant === 'error' ? '✕' : 'i'
         const politeness = toast.variant === 'error' ? 'assertive' : 'polite'
 
         return (
@@ -32,6 +34,8 @@ export function ToastContainer() {
             <LiveRegion message={toast.message} politeness={politeness} />
             <div
               className={`toast toast--${toast.variant}${visibleToasts.has(toast.id) ? ' show' : ''}`}
+              role="status"
+              aria-live={politeness}
               data-testid="toast"
             >
               <span className="toast__icon" aria-hidden="true">{icon}</span>
@@ -39,7 +43,7 @@ export function ToastContainer() {
               <button
                 className="toast__close"
                 onClick={() => dismissToast(toast.id)}
-                aria-label="Close notification"
+                aria-label={t('button_close_notification')}
                 data-testid="toast-close"
               >
                 ✕

@@ -24,13 +24,15 @@ interface HeaderProps {
   lastSync: number
   onSync?: () => void
   isSyncing?: boolean
+  justSynced?: boolean
 }
 
 export function Header({
   mailboxCount,
   lastSync,
   onSync,
-  isSyncing = false
+  isSyncing = false,
+  justSynced = false
 }: HeaderProps) {
   const mailboxLabel = plural('popup_mailbox', 'popup_mailboxes', mailboxCount)
   const syncLabel = isSyncing
@@ -42,13 +44,12 @@ export function Header({
       <div className="popup-header__row">
         <div className="popup-header__title-group">
           <h1 className="popup-title">{t('popup_title')}</h1>
-          <p className="privacy-status-line">{t('footer_local_only')}</p>
           <div className="popup-header__pills" role="status">
             <span className="header-pill" data-testid="mailbox-pill">
               {mailboxLabel}
             </span>
             <span
-              className="header-pill"
+              className={`header-pill ${justSynced ? 'header-pill--success' : ''}`}
               data-testid="sync-pill"
               aria-live="polite"
               data-syncing={isSyncing}

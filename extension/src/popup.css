@@ -108,6 +108,16 @@ body {
   font-weight: var(--font-weight-medium);
   color: var(--color-text-secondary);
   line-height: 1.2;
+  transition: color 2.5s ease-out;
+}
+
+/* Green flash for "just synced" feedback */
+.header-pill--success {
+  color: var(--color-success);
+}
+
+[data-theme='dark'] .header-pill--success {
+  color: var(--color-success);
 }
 
 .popup-header__actions {
@@ -276,6 +286,39 @@ body {
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
+}
+
+/* Unified card list: subtle background tints to differentiate types */
+.card-list--unified .code-card {
+  background: linear-gradient(
+    to right,
+    var(--surface-card),
+    rgba(59, 130, 246, 0.02)
+  );
+}
+
+.card-list--unified .link-card {
+  background: linear-gradient(
+    to right,
+    var(--surface-card),
+    rgba(34, 197, 94, 0.02)
+  );
+}
+
+[data-theme='dark'] .card-list--unified .code-card {
+  background: linear-gradient(
+    to right,
+    var(--surface-card),
+    rgba(59, 130, 246, 0.04)
+  );
+}
+
+[data-theme='dark'] .card-list--unified .link-card {
+  background: linear-gradient(
+    to right,
+    var(--surface-card),
+    rgba(34, 197, 94, 0.04)
+  );
 }
 
 .link-card {

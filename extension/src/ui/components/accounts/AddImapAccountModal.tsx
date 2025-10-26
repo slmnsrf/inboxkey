@@ -42,10 +42,12 @@ export function AddImapAccountModal({
   useEscapeKey(onCancel, isOpen)
 
   // Form state
+  const [providerPreset, setProviderPreset] = useState('custom')
   const [email, setEmail] = useState('')
   const [server, setServer] = useState('')
   const [port, setPort] = useState('993')
   const [password, setPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
   const [label, setLabel] = useState('')
   const [tlsEnabled, setTlsEnabled] = useState(true)
 
@@ -54,6 +56,34 @@ export function AddImapAccountModal({
   const [testError, setTestError] = useState<string | null>(null)
   const [bridgeInstalled, setBridgeInstalled] = useState<boolean | null>(null)
   const [accountId, setAccountId] = useState<string | null>(null)
+
+  // Provider presets for common IMAP services
+  const providerPresets = {
+    gmail: { server: 'imap.gmail.com', port: '993', tls: true },
+    yahoo: { server: 'imap.mail.yahoo.com', port: '993', tls: true },
+    outlook: { server: 'outlook.office365.com', port: '993', tls: true },
+    icloud: { server: 'imap.mail.me.com', port: '993', tls: true },
+    protonmail: { server: '127.0.0.1', port: '1143', tls: false }, // ProtonBridge
+    fastmail: { server: 'imap.fastmail.com', port: '993', tls: true },
+    custom: { server: '', port: '993', tls: true },
+  } as const
+
+  const handleProviderPresetChange = (preset: string) => {
+    setProviderPreset(preset)
+
+    // Type-safe check
+    if (!(preset in providerPresets)) {
+      if (process.env.NODE_ENV === 'development') {
+        console.warn(`[AddImapAccountModal] Invalid preset: ${preset}`)
+      }
+      return
+    }
+
+    const config = providerPresets[preset as keyof typeof providerPresets]
+    setServer(config.server)
+    setPort(config.port)
+    setTlsEnabled(config.tls)
+  }
 
   // Check if InboxBridge is installed when modal opens
   useEffect(() => {
@@ -141,7 +171,7 @@ export function AddImapAccountModal({
         setAccountId(configResult.accountId)
       } else {
         setTestState('error')
-        setTestError(t('toast_imap_test_failed') + ': ' + (result.error || 'Unknown error'))
+        setTestError(result.error || t('accounts_imap_error_generic'))
       }
     } catch (error) {
       setTestState('error')
@@ -150,14 +180,20 @@ export function AddImapAccountModal({
         if (error.message.includes('Failed to connect to InboxBridge')) {
           setTestError(t('accounts_imap_bridge_not_installed'))
           setBridgeInstalled(false)
-        } else if (error.message.includes('AUTH')) {
+        } else if (error.message.includes('AUTH') || error.message.includes('authentication')) {
           setTestError(t('accounts_imap_error_auth'))
         } else if (error.message.includes('timeout')) {
           setTestError(t('accounts_imap_error_timeout'))
+        } else if (error.message.includes('TLS') || error.message.includes('SSL')) {
+          setTestError(t('accounts_imap_error_tls'))
         } else if (error.message.includes('keychain')) {
           setTestError(t('accounts_imap_error_keychain'))
         } else {
-          setTestError(error.message)
+          // Generic fallback with dev-friendly console log
+          if (process.env.NODE_ENV === 'development') {
+            console.error('[AddImapAccountModal] Connection error:', error)
+          }
+          setTestError(error.message || t('accounts_imap_error_generic'))
         }
       } else {
         setTestError(t('toast_imap_test_failed'))
@@ -205,6 +241,13 @@ export function AddImapAccountModal({
         </div>
 
         <div id="add-imap-description" className="modal-body">
+          {/* Privacy Reassurance Banner (REQUIRED per ui-ux-principles.md DoD) */}
+          <div className="modal-reassurance" role="status">
+            <p>
+              <strong>{t('accounts_imap_privacy_reassurance')}</strong>
+            </p>
+          </div>
+
           {bridgeInstalled === false && (
             <div className="alert alert--warning" role="alert">
               <p>
@@ -223,6 +266,29 @@ export function AddImapAccountModal({
           )}
 
           <form className="imap-form" onSubmit={(e) => e.preventDefault()}>
+            {/* Provider Preset Dropdown */}
+            <div className="form-group">
+              <label htmlFor="provider-preset" className="form-label">
+                {t('accounts_imap_provider_preset_label')}
+              </label>
+              <select
+                id="provider-preset"
+                className="form-input"
+                value={providerPreset}
+                onChange={(e) => handleProviderPresetChange(e.target.value)}
+                disabled={bridgeInstalled === false}
+              >
+                <option value="custom">{t('accounts_imap_provider_custom')}</option>
+                <option value="gmail">{t('accounts_imap_provider_gmail')}</option>
+                <option value="yahoo">{t('accounts_imap_provider_yahoo')}</option>
+                <option value="outlook">{t('accounts_imap_provider_outlook')}</option>
+                <option value="icloud">{t('accounts_imap_provider_icloud')}</option>
+                <option value="protonmail">{t('accounts_imap_provider_protonmail')}</option>
+                <option value="fastmail">{t('accounts_imap_provider_fastmail')}</option>
+              </select>
+              <p className="form-hint">{t('accounts_imap_provider_preset_hint')}</p>
+            </div>
+
             <div className="form-group">
               <label htmlFor="imap-email" className="form-label">
                 {t('accounts_imap_email_label')}
@@ -301,19 +367,44 @@ export function AddImapAccountModal({
               <label htmlFor="imap-password" className="form-label">
                 {t('accounts_imap_password_label')}
               </label>
-              <input
-                id="imap-password"
-                type="password"
-                className="form-input"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
-                required
-                aria-required="true"
-                autoComplete="off"
-                disabled={bridgeInstalled === false}
-              />
-              <p className="form-hint">{t('accounts_imap_password_hint')}</p>
+              <div className="form-input-group">
+                <input
+                  id="imap-password"
+                  type={showPassword ? 'text' : 'password'}
+                  className="form-input"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  required
+                  aria-required="true"
+                  autoComplete="off"
+                  disabled={bridgeInstalled === false}
+                />
+                <button
+                  type="button"
+                  className="form-input-toggle"
+                  onClick={() => setShowPassword(!showPassword)}
+                  aria-label={showPassword ? t('accounts_imap_hide_password') : t('accounts_imap_show_password')}
+                  aria-pressed={showPassword}
+                  disabled={bridgeInstalled === false}
+                  tabIndex={0}
+                >
+                  {showPassword ? t('accounts_imap_hide') : t('accounts_imap_show')}
+                </button>
+              </div>
+              <p className="form-hint">
+                {t('accounts_imap_password_hint')}
+                {' '}
+                <a
+                  href="https://support.google.com/accounts/answer/185833"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="form-hint-link"
+                  aria-label={t('accounts_imap_password_help_link_aria')}
+                >
+                  {t('accounts_imap_password_help_link')} <span aria-hidden="true">↗</span>
+                </a>
+              </p>
             </div>
 
             <div className="form-group">
@@ -370,6 +461,13 @@ export function AddImapAccountModal({
               </div>
             )}
           </form>
+
+          {/* Screen reader status announcements */}
+          <div className="sr-only" role="status" aria-live="polite" aria-atomic="true">
+            {testState === 'testing' && t('accounts_imap_testing')}
+            {testState === 'success' && t('accounts_imap_test_success')}
+            {testState === 'error' && testError && testError}
+          </div>
         </div>
 
         <div className="modal-footer">

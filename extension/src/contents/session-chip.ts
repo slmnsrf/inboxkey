@@ -44,8 +44,7 @@ interface StateConfig {
   color: string
   icon: string
   autoDismissMs: number | null
-  showButton?: boolean
-  buttonLabel?: string
+  showCloseButton: boolean
 }
 
 // State configuration
@@ -53,31 +52,30 @@ const STATE_CONFIG: Record<ChipState, StateConfig> = {
   listening: {
     text: 'Checking e-mails...',
     color: COLOR_PRIMARY,
-    icon: '',
+    icon: '⋯',
     autoDismissMs: null, // Dynamic - set at runtime
-    showButton: true,
-    buttonLabel: 'Abort'
+    showCloseButton: true
   },
   filled: {
     text: 'Code filled',
     color: COLOR_SUCCESS,
-    icon: '',
+    icon: '✓',
     autoDismissMs: AUTO_DISMISS_FILLED_MS,
-    showButton: false
+    showCloseButton: false
   },
   copied: {
     text: 'Code copied to clipboard',
     color: COLOR_SUCCESS,
-    icon: '',
+    icon: '⎘',
     autoDismissMs: AUTO_DISMISS_COPIED_MS,
-    showButton: false
+    showCloseButton: false
   },
   timeout: {
     text: 'No code received',
     color: COLOR_ERROR,
-    icon: '',
+    icon: '○',
     autoDismissMs: AUTO_DISMISS_TIMEOUT_MS,
-    showButton: false
+    showCloseButton: false
   }
 }
 
@@ -88,7 +86,7 @@ export async function showSessionChip(
   field: HTMLInputElement,
   sessionTimeoutSeconds?: number,
   callbacks?: {
-    onAbort?: () => void | Promise<void>
+    onClose?: () => void | Promise<void>
   }
 ): Promise<ChipHandle> {
   // Check if chips are enabled in settings
@@ -121,21 +119,20 @@ export async function showSessionChip(
   // Track auto-dismiss timeout
   let autoDismissTimeout: number | null = null
 
+  // Track current state for close button handler
+  let currentState: ChipState = 'listening'
+
   // Initialize chip with 'listening' state to prevent blank blue box
   const initialState: ChipState = 'listening'
   updateChipState(chip, liveRegion, initialState, sessionTimeoutSeconds, callbacks)
 
-  // Keyboard handler for Esc key
-  const handleKeydown = (event: KeyboardEvent) => {
-    if (event.key === 'Escape') {
-      handle.hide()
-    }
-  }
-  document.addEventListener('keydown', handleKeydown)
-
   // Close button click handler
   const closeBtn = chip.querySelector('.inboxkey-chip-close') as HTMLButtonElement
-  const handleCloseClick = () => {
+  const handleCloseClick = async () => {
+    // If in listening state, trigger onClose callback to blacklist URL
+    if (currentState === 'listening' && callbacks?.onClose) {
+      await callbacks.onClose()
+    }
     handle.hide()
   }
   closeBtn.addEventListener('click', handleCloseClick)
@@ -143,6 +140,9 @@ export async function showSessionChip(
   // Create handle for external control
   const handle: ChipHandle = {
     update(state: ChipState) {
+      // Track current state
+      currentState = state
+
       updateChipState(chip, liveRegion, state, sessionTimeoutSeconds, callbacks)
 
       // Clear any existing timeout
@@ -174,7 +174,6 @@ export async function showSessionChip(
       }
 
       // Remove event listeners
-      document.removeEventListener('keydown', handleKeydown)
       closeBtn.removeEventListener('click', handleCloseClick)
 
       // Dismiss with animation
@@ -202,14 +201,6 @@ function createChipElement(): HTMLDivElement {
   const textEl = document.createElement('span')
   textEl.className = 'inboxkey-chip-text'
 
-  // Abort button (hidden by default, shown only in listening state)
-  const abortBtn = document.createElement('button')
-  abortBtn.className = 'inboxkey-chip-abort'
-  abortBtn.setAttribute('aria-label', 'Abort session')
-  abortBtn.setAttribute('type', 'button')
-  abortBtn.style.display = 'none' // Hidden by default
-  abortBtn.textContent = 'Abort'
-
   // Close button
   const closeBtn = document.createElement('button')
   closeBtn.className = 'inboxkey-chip-close'
@@ -225,7 +216,6 @@ function createChipElement(): HTMLDivElement {
 
   content.appendChild(iconEl)
   content.appendChild(textEl)
-  content.appendChild(abortBtn)
   content.appendChild(closeBtn)
   chip.appendChild(content)
   chip.appendChild(liveRegion)
@@ -241,14 +231,14 @@ function updateChipState(
   liveRegion: HTMLDivElement,
   state: ChipState,
   _sessionTimeoutSeconds?: number,
-  callbacks?: {
-    onAbort?: () => void | Promise<void>
+  _callbacks?: {
+    onClose?: () => void | Promise<void>
   }
 ): void {
   const config = STATE_CONFIG[state]
   const iconEl = chip.querySelector('.inboxkey-chip-icon') as HTMLSpanElement
   const textEl = chip.querySelector('.inboxkey-chip-text') as HTMLSpanElement
-  const abortBtn = chip.querySelector('.inboxkey-chip-abort') as HTMLButtonElement
+  const closeBtn = chip.querySelector('.inboxkey-chip-close') as HTMLButtonElement
 
   // Update content
   if (config.icon) {
@@ -263,28 +253,25 @@ function updateChipState(
   // Update background color
   chip.style.backgroundColor = config.color
 
-  // Show/hide abort button based on state
-  if (config.showButton && config.buttonLabel) {
-    abortBtn.textContent = config.buttonLabel
-    abortBtn.style.display = ''
-
-    // Wire up abort callback (remove old listener first)
-    const newAbortBtn = abortBtn.cloneNode(true) as HTMLButtonElement
-    abortBtn.parentNode?.replaceChild(newAbortBtn, abortBtn)
-
-    newAbortBtn.addEventListener('click', async () => {
-      console.log('[SessionChip] Abort button clicked')
-      if (callbacks?.onAbort) {
-        await callbacks.onAbort()
-      }
-      // Chip will be hidden by the abort callback (via handle.hide())
-    })
+  // Show/hide close button based on state and update tooltip
+  if (config.showCloseButton) {
+    closeBtn.style.display = ''
+    closeBtn.setAttribute('title', 'Cancel & ignore this URL')
+    closeBtn.setAttribute('aria-label', 'Cancel and ignore this URL')
   } else {
-    abortBtn.style.display = 'none'
+    closeBtn.style.display = 'none'
+    closeBtn.removeAttribute('title')
+    closeBtn.removeAttribute('aria-label') // Remove, don't set generic label
   }
 
-  // Announce to screen readers
-  liveRegion.textContent = config.text
+  // Announce to screen readers with enhanced semantics
+  const stateDescriptions: Record<ChipState, string> = {
+    listening: 'Checking emails for verification code',
+    filled: 'Success: Code filled automatically',
+    copied: 'Success: Code copied to clipboard',
+    timeout: 'Error: No code received'
+  }
+  liveRegion.textContent = stateDescriptions[state]
 
   // Update state class
   chip.setAttribute('data-state', state)
@@ -444,36 +431,6 @@ function injectStyles(): void {
     .inboxkey-chip-text {
       flex: 1;
       font-weight: 500;
-    }
-
-    .inboxkey-chip-abort {
-      flex-shrink: 0;
-      padding: 12px 16px;
-      border: 1px solid rgba(255, 255, 255, 0.5);
-      background: rgba(255, 255, 255, 0.1);
-      color: white;
-      border-radius: 4px;
-      font-size: 13px;
-      font-weight: 500;
-      line-height: 1.4;
-      cursor: pointer;
-      margin-left: ${SPACE_SM};
-      transition: background ${DURATION_FAST}ms ease, transform ${DURATION_FAST}ms ease;
-      min-height: 44px;
-    }
-
-    .inboxkey-chip-abort:hover {
-      background: rgba(255, 255, 255, 0.2);
-    }
-
-    .inboxkey-chip-abort:focus {
-      outline: 2px solid white;
-      outline-offset: 2px;
-    }
-
-    .inboxkey-chip-abort:active {
-      background: rgba(255, 255, 255, 0.3);
-      transform: scale(0.95);
     }
 
     .inboxkey-chip-close {

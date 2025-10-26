@@ -137,7 +137,7 @@ export function SessionChipSettings() {
               Email check timeout
             </label>
             <p className="setting-row__description">
-              How long to wait for verification codes (10-75 seconds)
+              How long to wait for verification codes (10-120 seconds)
             </p>
           </div>
           <div className="setting-row__control" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '8px' }}>
@@ -145,8 +145,8 @@ export function SessionChipSettings() {
               id="session-timeout"
               type="range"
               min="10"
-              max="75"
-              step="5"
+              max="120"
+              step="10"
               value={sessionTimeoutSeconds}
               onChange={(e) => handleTimeoutChange(Number(e.target.value))}
               disabled={loading}
@@ -160,7 +160,7 @@ export function SessionChipSettings() {
         </div>
 
         <p id="session-timeout-help" className="session-chip-settings-card__hint">
-          Increase for slower email providers or unreliable connections
+          Higher timeouts allow more checks. Fast providers: 20-30s (5-6 checks). Slow providers: 60-120s (9-12 checks).
         </p>
 
         <span id="session-chip-status" className="sr-only" role="status" aria-live="polite" aria-atomic="true"></span>

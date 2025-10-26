@@ -34,7 +34,7 @@ export function AdvancedSettings() {
       setDisableOnBankingSites(settings.disableOnBankingSites ?? false)
     } catch (error) {
       console.error('[AdvancedSettings] Failed to load settings:', error)
-      showToast('Failed to load settings', 'error')
+      showToast(t('toast_settings_failed'), 'error')
     } finally {
       setLoading(false)
     }
@@ -53,7 +53,7 @@ export function AdvancedSettings() {
       console.error('[AdvancedSettings] Failed to save setting:', error)
       // Revert on error
       setDomainsEnabledByDefault(!domainsEnabledByDefault)
-      showToast('Failed to save setting', 'error')
+      showToast(t('toast_settings_failed'), 'error')
     }
   }
 
@@ -83,7 +83,7 @@ export function AdvancedSettings() {
         statusEl.textContent = 'Failed to save extended button detection setting'
       }
 
-      showToast('Failed to save setting', 'error')
+      showToast(t('toast_settings_failed'), 'error')
     }
   }
 
@@ -112,7 +112,7 @@ export function AdvancedSettings() {
         statusEl.textContent = 'Failed to save banking blocklist setting'
       }
 
-      showToast('Failed to save setting', 'error')
+      showToast(t('toast_settings_failed'), 'error')
     }
   }
 
