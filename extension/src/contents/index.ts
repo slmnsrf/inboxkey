@@ -181,15 +181,34 @@ import { detectSplitInputGroup } from '@/lib/detection/split-input-detector'
         // Detect all batched fields at once (call detectExisting ONCE, not per field)
         const results = detector.detectExisting({ strictVisibility: true })
 
+        // Deduplicate fields by split-input groups BEFORE processing
+        const processedRepresentatives = new Set<HTMLInputElement>()
+
         // Process batched fields
         for (const f of fields) {
+          // Detect if this field is part of a split-input group
+          const group = detectSplitInputGroup(f)
+          const representative = group?.representative || f
+
+          // Skip if we've already processed this representative
+          if (processedRepresentatives.has(representative)) {
+            console.log('[InboxKey] Skipping field - representative already processed:', {
+              field: f.id || f.name || f.getAttribute('aria-label'),
+              representative: representative.id || representative.name || representative.getAttribute('aria-label')
+            })
+            continue
+          }
+
+          // Mark representative as processed
+          processedRepresentatives.add(representative)
+
           console.log('[InboxKey] Dynamically injected field detected:', f)
 
-          // Find detection result for this field
-          const result = results.find((r) => r.field === f)
+          // Find detection result for the representative field
+          const result = results.find((r) => r.field === representative)
 
           if (result) {
-            handleDetectedField(f, result)
+            handleDetectedField(representative, result)
           }
         }
       }, 50)  // 50ms debounce window

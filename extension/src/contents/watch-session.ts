@@ -464,21 +464,50 @@ export class WatchSession {
 }
 
 let activeWatch: WatchSession | null = null
+let lastSessionCreated = 0
+const SESSION_CREATION_RATE_LIMIT_MS = 1000  // Max 1 session per second
 
 /**
  * Start watching a field for verification codes. Existing sessions are canceled.
+ * Defense-in-depth: Rate limiting prevents runaway session creation bugs.
  */
 export function startWatch(
   field: HTMLInputElement,
   detectionResult: DetectionResult,
   callbacks: WatchSessionCallbacks
 ): WatchSession {
+  // DEFENSE 1: Rate limiting (catches bugs that bypass other checks)
+  const now = Date.now()
+  if (now - lastSessionCreated < SESSION_CREATION_RATE_LIMIT_MS) {
+    console.warn('[WatchSession] 🚫 Rate limit exceeded - rejecting session creation')
+    console.warn(`[WatchSession] Last session created ${now - lastSessionCreated}ms ago (limit: ${SESSION_CREATION_RATE_LIMIT_MS}ms)`)
+
+    // Return existing session or create dummy
+    if (activeWatch) {
+      console.warn('[WatchSession] Reusing existing session due to rate limit')
+      return activeWatch
+    }
+    // No active session but rate limit triggered - possible bug, log and allow
+    console.error('[WatchSession] No active session but rate limit triggered - allowing this session')
+  }
+
+  // DEFENSE 2: Same field check
+  if (activeWatch && activeWatch.getField() === field) {
+    console.warn('[WatchSession] Field already has active session, reusing existing session')
+    return activeWatch
+  }
+
+  // DEFENSE 3: Stop existing session with diagnostic logging
   if (activeWatch) {
+    console.log('[WatchSession] Stopping previous session for different field')
+    console.log('[WatchSession]   Previous field:', activeWatch.getField().id || activeWatch.getField().name || '(no id)')
+    console.log('[WatchSession]   New field:', field.id || field.name || '(no id)')
     activeWatch.stop()
   }
 
   const session = new WatchSession(field, detectionResult, callbacks)
   activeWatch = session
+  lastSessionCreated = now
   session.start()
 
   return session

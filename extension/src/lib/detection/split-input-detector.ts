@@ -32,35 +32,71 @@ export interface SplitInputGroup {
 export function detectSplitInputGroup(
   field: HTMLInputElement
 ): SplitInputGroup | null {
-  // Fast rejection: Skip if maxLength is large or not set
+  // Fast rejection: Skip if maxLength is explicitly set to large values
+  // Allow unset maxLength (-1) for fields like Microsoft (codeEntry-0...5)
   // Split-input fields typically have maxlength="1" (Steam) or maxlength="2" (some banks)
   const maxLen = field.maxLength
-  if (maxLen > 3 || maxLen < 1) {
+
+  // DEBUG: Log maxLength for diagnosis
+  if (maxLen === -1) {
+    console.log('[SplitInputDetector] Field has unset maxLength (-1), proceeding with detection:', {
+      id: field.id,
+      name: field.name,
+      label: field.getAttribute('aria-label')
+    })
+  }
+
+  if (maxLen > 3 && maxLen !== -1) {
+    console.log('[SplitInputDetector] Rejecting field - maxLength too large:', {
+      maxLen,
+      id: field.id
+    })
     return null
   }
 
   // Get similar sibling inputs within same container
   const siblings = getSimilarSiblings(field)
 
+  console.log('[SplitInputDetector] Found siblings:', {
+    count: siblings.length,
+    ids: siblings.map(s => s.id || s.name || '?')
+  })
+
   // Need at least 4 inputs to be a group (support 4-8+ digit codes)
   // Single/pair/triple inputs are just short regular fields
   if (siblings.length < 4) {
+    console.log('[SplitInputDetector] Not enough siblings for group (need 4+)')
     return null
   }
 
   // Validate that inputs form a coherent group
   if (!isCoherentGroup(siblings)) {
+    console.log('[SplitInputDetector] Siblings failed coherence check')
     return null
   }
 
   // Detect the pattern used
   const pattern = detectGroupPattern(siblings)
 
-  // Sort inputs by DOM order (left-to-right, top-to-bottom)
+  // Sort inputs by GLOBAL DOM order (not parent-relative)
+  // Uses compareDocumentPosition for stable, consistent sorting
   const sortedInputs = siblings.sort((a, b) => {
-    const aIndex = getElementIndex(a)
-    const bIndex = getElementIndex(b)
-    return aIndex - bIndex
+    const position = a.compareDocumentPosition(b)
+
+    if (position & Node.DOCUMENT_POSITION_FOLLOWING) {
+      return -1  // a comes before b in document
+    } else if (position & Node.DOCUMENT_POSITION_PRECEDING) {
+      return 1   // a comes after b in document
+    }
+
+    return 0  // Same element (shouldn't happen)
+  })
+
+  console.log('[SplitInputDetector] ✓ Group detected:', {
+    pattern,
+    count: sortedInputs.length,
+    representative: sortedInputs[0].id || sortedInputs[0].name,
+    members: sortedInputs.map(s => s.id || s.name || '?')
   })
 
   return {
@@ -72,7 +108,8 @@ export function detectSplitInputGroup(
 
 /**
  * Get all similar sibling inputs within same container
- * Scans parent and grandparent (up to 2 levels)
+ * Scans parent, grandparent, and great-grandparent (up to 3 levels)
+ * Handles deep nesting like Microsoft's structure (input → span → div → div)
  *
  * @param field - Reference input field
  * @returns Array of similar inputs including the reference field
@@ -110,7 +147,24 @@ function getSimilarSiblings(field: HTMLInputElement): HTMLInputElement[] {
     }
   }
 
-  // Deduplicate (same input might appear in parent + grandparent results)
+  // If still not enough, check great-grandparent (3 levels up)
+  // Handles Microsoft structure: input → span → div → div[data-testid="codeEntry"]
+  if (candidates.length < 4) {
+    const greatGrandparent = parent?.parentElement?.parentElement
+    if (greatGrandparent) {
+      const greatGrandparentInputs = Array.from(greatGrandparent.querySelectorAll('input'))
+        .filter((input): input is HTMLInputElement =>
+          input instanceof HTMLInputElement &&
+          input.type === field.type &&
+          input.maxLength === field.maxLength &&
+          !input.disabled &&
+          !input.readOnly
+        )
+      candidates.push(...greatGrandparentInputs)
+    }
+  }
+
+  // Deduplicate (same input might appear in multiple parent results)
   const unique = Array.from(new Set(candidates))
 
   return unique
@@ -192,18 +246,4 @@ function detectGroupPattern(
   return 'adjacent-siblings'
 }
 
-/**
- * Get element's index in parent
- * Used for sorting inputs by DOM order
- *
- * @param element - HTML element
- * @returns Index in parent's children array
- */
-function getElementIndex(element: HTMLElement): number {
-  if (!element.parentElement) {
-    return 0
-  }
-
-  const children = Array.from(element.parentElement.children)
-  return children.indexOf(element)
-}
+// Removed getElementIndex() - now using compareDocumentPosition() for stable global DOM ordering

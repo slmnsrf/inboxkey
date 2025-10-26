@@ -28,7 +28,7 @@ describe('Steam Login Detection Failure Diagnosis', () => {
   })
 
   describe('Issue 1: Split Single-Character Inputs', () => {
-    it('should NOT detect 5 separate maxlength=1 inputs WITHOUT context (baseline test)', () => {
+    it('should detect 5 separate maxlength=1 inputs as split-input group', () => {
       // Create the exact Steam structure but WITHOUT Turkish context text
       const container = document.createElement('div')
       container.innerHTML = `
@@ -46,8 +46,10 @@ describe('Steam Login Detection Failure Diagnosis', () => {
 
       const result = detectVerificationField({ strictVisibility: false })
 
-      // Without nearby context, split inputs alone won't trigger detection
-      expect(result).toBeNull()
+      // Split-input fields ARE now detected (correct new behavior)
+      expect(result).not.toBeNull()
+      expect(result?.field).toBeInstanceOf(HTMLInputElement)
+      expect(result?.confidence).toBeGreaterThan(0)
     })
 
     it('should explain why maxlength=1 fields are not detected', () => {
