@@ -16,9 +16,10 @@ import { isOutlookConfigured } from '@/lib/providers/outlook/config'
 import { TrustIndicator } from './TrustIndicator'
 import { t, timeAgo } from '@/lib/i18n'
 import type { PopupCache } from '@/shared/popup-messages'
-import type { ProviderKey, ProviderSlotState, ImapAccountRow, RecentItem } from './accounts/types'
+import type { ProviderKey, ProviderSlotState, ImapAccountRow, OutlookAccountRow, RecentItem } from './accounts/types'
 import { ProviderSlotCard } from './accounts/ProviderSlotCard'
 import { ImapAccountsSection } from './accounts/ImapAccountsSection'
+import { OutlookAccountsSection } from './accounts/OutlookAccountsSection'
 import { RecentEmailsSection } from './accounts/RecentEmailsSection'
 import { AddImapAccountModal } from './accounts/AddImapAccountModal'
 import { getNativeClient } from '@/lib/providers/imap-bridge/native-client'
@@ -166,7 +167,9 @@ export function AccountsPanel() {
       const email = await fetchProfile(tokens.accessToken)
       const existing = mailboxes.find((mb) => mb.providerId === provider)
 
-      if (mode === 'connect' && existing) {
+      // Gmail limited to 1 account (Chrome Identity API constraint)
+      // Outlook supports multiple accounts (PKCE-based)
+      if (mode === 'connect' && provider === 'gmail' && existing) {
         showToast(t('toast_connect_duplicate'), 'error', 5000)
         setConnectionError({
           provider,
@@ -380,12 +383,23 @@ export function AccountsPanel() {
       }))
   }, [mailboxes])
 
+  const outlookAccounts: OutlookAccountRow[] = useMemo(() => {
+    return mailboxes
+      .filter((mb) => mb.providerId === 'outlook')
+      .map((mb) => ({
+        id: mb.id,
+        email: mb.email,
+        lastSyncedLabel: mb.lastSyncedAt ? timeAgo(mb.lastSyncedAt) : undefined,
+        tokenExpiresAt: mb.tokenExpiresAt,
+      }))
+  }, [mailboxes])
+
   const handleCopyCode = async (item: RecentItem) => {
     if (!item.code) return
     try {
       await navigator.clipboard.writeText(item.code)
       await chrome.runtime.sendMessage({ type: 'MARK_CODE_USED', code: item.code })
-      showToast(t('toast_code_copied', item.code), 'success', 3000)
+      // Visual feedback via button text change - no toast needed
     } catch (error) {
       console.error('[AccountsPanel] Failed to copy code:', error)
       showToast(t('toast_error_copy'), 'error', 5000)
@@ -397,7 +411,7 @@ export function AccountsPanel() {
     try {
       await chrome.runtime.sendMessage({ type: 'MARK_LINK_OPENED', url: item.url })
       await chrome.tabs.create({ url: item.url })
-      showToast(t('toast_link_opened'), 'success', 3000)
+      // Visual feedback via button text color transition - no toast needed
     } catch (error) {
       console.error('[AccountsPanel] Failed to open link:', error)
       showToast(t('toast_error_link'), 'error', 5000)
@@ -419,16 +433,26 @@ export function AccountsPanel() {
         </div>
 
         <div className="provider-grid">
-          {providerSlots.map((slot) => (
-            <ProviderSlotCard
-              key={slot.provider}
-              slot={slot}
-              onConnect={() => handleConnect(slot.provider, 'connect')}
-              onDisconnect={() => handleDisconnect(slot.provider)}
-            />
-          ))}
+          {providerSlots
+            .filter((slot) => slot.provider === 'gmail')
+            .map((slot) => (
+              <ProviderSlotCard
+                key={slot.provider}
+                slot={slot}
+                onConnect={() => handleConnect(slot.provider, 'connect')}
+                onDisconnect={() => handleDisconnect(slot.provider)}
+              />
+            ))}
         </div>
       </section>
+
+      <OutlookAccountsSection
+        accounts={outlookAccounts}
+        limit={10}
+        onAdd={() => handleConnect('outlook', 'connect')}
+        onReconnect={handleDisconnect}
+        onRemove={handleDisconnect}
+      />
 
       <ImapAccountsSection
         accounts={imapAccounts}

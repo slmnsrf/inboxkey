@@ -691,6 +691,34 @@
     "message": "No IMAP accounts connected",
     "description": "Empty state for IMAP accounts"
   },
+  "accounts_outlook_counter": {
+    "message": "$1 accounts",
+    "description": "Outlook accounts count"
+  },
+  "accounts_outlook_title": {
+    "message": "Microsoft Outlook",
+    "description": "Outlook accounts section title"
+  },
+  "accounts_outlook_add": {
+    "message": "Add Outlook Account",
+    "description": "Button to add Outlook account"
+  },
+  "accounts_outlook_description": {
+    "message": "Add multiple work and personal accounts",
+    "description": "Outlook accounts description"
+  },
+  "accounts_outlook_empty": {
+    "message": "No Outlook accounts connected. Add your first account to get started.",
+    "description": "Empty state for Outlook accounts"
+  },
+  "aria_reconnect_outlook": {
+    "message": "Reconnect $1",
+    "description": "ARIA label for reconnecting Outlook account"
+  },
+  "aria_remove_outlook": {
+    "message": "Remove $1 from InboxKey",
+    "description": "ARIA label for removing Outlook account"
+  },
   "accounts_recent_title": {
     "message": "Recent Activity",
     "description": "Recent activity section title"

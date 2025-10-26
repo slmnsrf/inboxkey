@@ -64,7 +64,7 @@ function PopupContent() {
     try {
       await clipboardService.copyCode(code)
       await bridge.markCodeUsed(code)
-      showToast(t('toast_code_copied'), 'success', 3000)
+      // Visual feedback via code text color flash - no toast needed
     } catch (err) {
       showToast(t('toast_error_copy'), 'error', 5000)
       console.error('[Popup] Copy failed:', err)
@@ -75,7 +75,7 @@ function PopupContent() {
     try {
       await linkService.openLink(link)
       await bridge.markLinkOpened(link.url)
-      showToast(t('toast_link_opened'), 'success', 3000)
+      // Visual feedback via button text color transition - no toast needed
     } catch (err) {
       if (err instanceof Error && err.message.includes('wait')) {
         showToast(t('toast_rate_limited'), 'error', 5000)

@@ -16,6 +16,8 @@ export function DomainToggle() {
   const [enabled, setEnabled] = useState<boolean>(true)
   const [loading, setLoading] = useState<boolean>(true)
   const [error, setError] = useState<string>('')
+  const [urlBlacklisted, setUrlBlacklisted] = useState<boolean>(false)
+  const [justToggled, setJustToggled] = useState<boolean>(false)
 
   useEffect(() => {
     loadDomainState()
@@ -26,13 +28,22 @@ export function DomainToggle() {
       setLoading(true)
       setError('')
 
-      // Get current tab's domain
+      // Get current tab's URL and domain
+      const tabs = await chrome.tabs.query({ active: true, currentWindow: true })
+      const currentUrl = tabs[0]?.url
+      if (!currentUrl) return
+
       const currentDomain = await bridge.getCurrentTabDomain()
       setDomain(currentDomain)
 
       // Get domain preference
       const isEnabled = await bridge.getDomainPreference(currentDomain)
       setEnabled(isEnabled)
+
+      // Check if current URL is blacklisted
+      const { isBlacklisted } = await import('@/lib/utils/blacklist')
+      const blacklisted = await isBlacklisted(currentUrl)
+      setUrlBlacklisted(blacklisted)
     } catch (err) {
       console.error('[DomainToggle] Failed to load domain state:', err)
       setError(t('error_domain_load'))
@@ -51,6 +62,10 @@ export function DomainToggle() {
       // Save to storage
       await bridge.setDomainPreference(domain, newState)
 
+      // Trigger visual feedback
+      setJustToggled(true)
+      setTimeout(() => setJustToggled(false), 1500)
+
       // Notify user via badge/icon update (handled by background script)
       console.log(`[DomainToggle] Domain ${domain} ${newState ? 'enabled' : 'disabled'}`)
     } catch (err) {
@@ -59,6 +74,16 @@ export function DomainToggle() {
       setEnabled(!enabled)
       setError(t('error_domain_update'))
     }
+  }
+
+  const handleOpenBlacklist = () => {
+    chrome.runtime.openOptionsPage()
+    // Send message to open blacklist modal on URLs tab
+    chrome.runtime.sendMessage({
+      type: 'OPEN_BLACKLIST_MODAL',
+      tab: 'urls'
+    })
+    window.close() // Close popup
   }
 
   if (loading) {
@@ -80,7 +105,9 @@ export function DomainToggle() {
 
   return (
     <div className="domain-toggle">
-      <span className="domain-toggle__label">{t('domain_toggle_label')}</span>
+      <span className={`domain-toggle__label ${justToggled ? 'domain-toggle__label--success' : ''}`}>
+        {t('domain_toggle_label')}
+      </span>
       <label className="toggle">
         <input
           type="checkbox"
@@ -92,8 +119,22 @@ export function DomainToggle() {
       </label>
       {!loading && !error && !enabled && (
         <span className="domain-toggle__warning">
-          ⚠️ InboxKey disabled on this site
+          InboxKey disabled on this site
         </span>
+      )}
+      {!loading && !error && enabled && urlBlacklisted && (
+        <div className="domain-toggle__url-warning" role="status" aria-live="polite">
+          <span className="domain-toggle__url-warning-text">
+            Extension disabled on this page.
+          </span>
+          <button
+            type="button"
+            className="domain-toggle__url-warning-link"
+            onClick={handleOpenBlacklist}
+          >
+            Manage in Settings
+          </button>
+        </div>
       )}
     </div>
   )

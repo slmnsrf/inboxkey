@@ -15,13 +15,18 @@ interface LinkCardProps {
 
 export function LinkCard({ item, onOpen }: LinkCardProps) {
   const [opening, setOpening] = useState(false)
+  const [justOpened, setJustOpened] = useState(false)
 
   const handleOpen = async () => {
     setOpening(true)
     try {
       await onOpen(item)
+      setJustOpened(true)
+      setTimeout(() => setJustOpened(false), 1500)
+    } catch (err) {
+      // Error handled by parent
     } finally {
-      setTimeout(() => setOpening(false), 2000)
+      setTimeout(() => setOpening(false), 200)
     }
   }
 
@@ -66,12 +71,12 @@ export function LinkCard({ item, onOpen }: LinkCardProps) {
       <div className="link-card__actions">
         <button
           type="button"
-          className={`action-button action-button--secondary ${opening ? 'action-button--loading' : ''}`}
+          className={`action-button action-button--secondary ${opening ? 'action-button--loading' : ''} ${justOpened ? 'action-button--success' : ''}`}
           onClick={handleOpen}
-          disabled={opening}
+          disabled={opening || justOpened}
           aria-label={t('aria_open_link_simple', [meta.subject || meta.from || item.url])}
         >
-          {opening ? t('button_opening') : t('button_open')}
+          {opening ? t('button_opening') : justOpened ? t('button_opened') : t('button_open')}
         </button>
       </div>
     </article>
