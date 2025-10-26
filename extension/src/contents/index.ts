@@ -18,21 +18,18 @@ import {
 } from './watch-session'
 import { autofillCode } from './autofill'
 import type { DetectionResult } from '@/lib/types'
-import { extractDomain, isDomainEnabled } from '@/lib/utils/domain'
+import { isExtensionEnabled } from '@/lib/utils/domain'
 import { detectSplitInputGroup } from '@/lib/detection/split-input-detector'
 
 // Wrap initialization in async IIFE to check domain before any execution
 ;(async () => {
-  // CRITICAL: Check domain FIRST before any logging or initialization
-  // If domain is disabled, exit silently with no traces
-  const domain = extractDomain(window.location.href)
-  if (domain) {
-    const enabled = await isDomainEnabled(domain)
-    if (!enabled) {
-      // Silent exit - no logs, no initialization, no background activity
-      // User must reload page after re-enabling domain in popup
-      return
-    }
+  // CRITICAL: Check extension state FIRST before any logging or initialization
+  // If extension is disabled (by domain preference, banking blocklist, or blacklist), exit silently
+  const enabled = await isExtensionEnabled(window.location.href)
+  if (!enabled) {
+    // Silent exit - no logs, no initialization, no background activity
+    // User must reload page after re-enabling extension
+    return
   }
 
   // Domain is enabled - proceed with normal initialization
@@ -142,7 +139,7 @@ import { detectSplitInputGroup } from '@/lib/detection/split-input-detector'
   function startDynamicDetection(): void {
     console.log('[InboxKey] Starting dynamic field detection...')
 
-    let pendingFields = new Set<HTMLInputElement>()
+    const pendingFields = new Set<HTMLInputElement>()
     let debounceTimer: number | null = null
 
     detector.startObserving(async (field: HTMLInputElement) => {

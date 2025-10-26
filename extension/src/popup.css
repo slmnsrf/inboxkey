@@ -489,6 +489,12 @@ body {
 
 .code-pill__text {
   letter-spacing: 0.18em;
+  transition: color 1.5s ease-out;
+}
+
+.code-pill--copied .code-pill__text {
+  color: var(--color-success);
+  transition: color 0s;
 }
 
 .copy-button {
@@ -545,7 +551,7 @@ body {
   cursor: pointer;
   transition: background var(--duration-fast) var(--easing-out),
     border-color var(--duration-fast) var(--easing-out),
-    color var(--duration-fast) var(--easing-out),
+    color 1.5s ease-out,
     transform var(--duration-fast) var(--easing-out);
 }
 
@@ -569,8 +575,8 @@ body {
 }
 
 .action-button--success {
-  background: var(--color-success);
-  color: var(--color-text-inverse);
+  color: var(--color-success);
+  transition: color 0s;
 }
 
 .action-button--loading {
@@ -1795,6 +1801,12 @@ body {
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-medium);
   color: var(--color-text-primary);
+  transition: color 1.5s ease-out;
+}
+
+.domain-toggle__label--success {
+  color: var(--color-success);
+  transition: color 0s;
 }
 
 .domain-toggle--loading {
@@ -1979,4 +1991,57 @@ body {
   text-align: right;
   font-weight: var(--font-weight-semibold);
   font-variant-numeric: tabular-nums;
+}
+
+/* ===========================
+   Domain Toggle URL Warning
+   =========================== */
+
+.domain-toggle__url-warning {
+  margin-top: var(--space-2, 8px);
+  padding: var(--space-2, 8px) var(--space-3, 12px);
+  background: var(--color-warning-light);
+  color: var(--color-warning-hover);
+  border-radius: var(--radius-md, 6px);
+  border: 1px solid var(--color-warning);
+  font-size: var(--font-size-xs, 13px);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1, 4px);
+}
+
+.domain-toggle__url-warning-text {
+  display: block;
+}
+
+.domain-toggle__url-warning-link {
+  align-self: flex-start;
+  min-height: var(--min-tap-target, 44px);
+  background: none;
+  border: none;
+  color: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+  padding: var(--space-2, 8px) 0;
+  font-size: inherit;
+  font-family: inherit;
+  display: flex;
+  align-items: center;
+}
+
+.domain-toggle__url-warning-link:hover {
+  opacity: 0.8;
+}
+
+.domain-toggle__url-warning-link:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring-shadow);
+  border-radius: var(--radius-sm);
+}
+
+/* Dark theme override */
+[data-theme='dark'] .domain-toggle__url-warning {
+  background: rgba(251, 191, 36, 0.15);
+  color: #fef3c7;
+  border-color: rgba(251, 191, 36, 0.4);
 }
