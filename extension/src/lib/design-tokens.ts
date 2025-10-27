@@ -5,19 +5,28 @@
  * Reference: docs/ui-ux/font-and-colors.md, spacing-and-sizes.md, motion-and-feedback.md
  */
 
-// Colors
-export const COLOR_PRIMARY = '#3B82F6' // Primary blue for actions and links
+// Colors (synced with tokens.css - Eye Comfort Palette 2025)
+export const COLOR_PRIMARY = '#2563EB' // Primary blue for actions and links
 export const COLOR_SUCCESS = '#10B981' // Success green for positive feedback
-export const COLOR_WARNING = '#FF9800' // Warning amber for caution states
+export const COLOR_WARNING = '#F59E0B' // Warning amber for caution states
 export const COLOR_ERROR = '#EF4444' // Error red for error states
 
-// Error Banner Colors (WCAG AA compliant)
-export const COLOR_ERROR_BG = '#FEE2E2' // Light red background for error banner
-export const COLOR_ERROR_TEXT = '#7F1D1D' // Dark red text (4.6:1 contrast with bg)
-export const COLOR_WARNING_BG = '#FEF3C7' // Light amber background for warning banner
-export const COLOR_WARNING_TEXT = '#78350F' // Dark amber text (7.8:1 contrast with bg)
-export const COLOR_INFO_BG = '#DBEAFE' // Light blue background for info banner
-export const COLOR_INFO_TEXT = '#1E3A8A' // Dark blue text (8.2:1 contrast with bg)
+// Banner/Toast Colors (WCAG AA compliant - synced with tokens.css)
+export const COLOR_ERROR_BG = '#FEE2E2' // Light red background
+export const COLOR_ERROR_TEXT = '#B91C1C' // Dark red text (synced with --color-error-dark)
+export const COLOR_WARNING_BG = '#FEF3C7' // Light amber background
+export const COLOR_WARNING_TEXT = '#B45309' // Dark amber text (synced with --color-warning-dark)
+export const COLOR_INFO_BG = '#DBEAFE' // Light blue background
+export const COLOR_INFO_TEXT = '#0B1324' // Dark text for high contrast (synced with --badge-fg)
+
+// Success feedback (for autofill, notifications)
+export const COLOR_SUCCESS_BG = '#D1FAE5' // Light green background (synced with --color-success-light)
+export const COLOR_SUCCESS_TEXT = '#047857' // Dark green text (synced with --color-success-dark)
+
+// Badge system (NEW)
+export const BADGE_BG = '#DBEAFE' // Badge background (synced with --badge-bg)
+export const BADGE_FG = '#0B1324' // Badge text (synced with --badge-fg)
+export const BADGE_BORDER = '#C9DDFB' // Badge border (synced with --badge-border)
 
 // Spacing (4px base grid)
 export const SPACE_XS = '4px'

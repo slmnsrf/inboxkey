@@ -21,7 +21,7 @@
     "message": "[Çõþý one two]"
   },
   "button_copied": {
-    "message": "[✓ Çõþîëd one two]"
+    "message": "[Çõþîëd one two]"
   },
   "button_open": {
     "message": "[Õþëñ one two]"
@@ -57,7 +57,7 @@
     "message": "[Sët å þåsswõrd tõ þrõtëçt ýõür çõdës one two three four five six]"
   },
   "security_no_recovery_title": {
-    "message": "[⚠️ Ñõ rëçõvërý þõssîblë one two three four]"
+    "message": "[Ñõ rëçõvërý þõssîblë one two three four]"
   },
   "security_no_recovery_message": {
     "message": "[Îf ýõü fõrğët ýõür þåsswõrd, ýõü'll lõsë åççëss tõ åll ýõür çõdës. Thërë îs ñõ wåý tõ rëçõvër ýõür dåtå. one two three four five six seven eight nine ten]"

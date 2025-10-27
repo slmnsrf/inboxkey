@@ -11,9 +11,9 @@
  *
  * States:
  * - listening: Animated dots (· → ·· → ···) indicating active polling
- * - success: Green checkmark (✓) indicating code found
+ * - success: 'OK' text indicating code found
  * - no-code: Orange exclamation (!) indicating timeout
- * - sync-error: Red X (✗) indicating persistent sync failure
+ * - sync-error: 'X' text indicating persistent sync failure
  * - count: Number (1, 2, 3...) indicating available codes
  * - idle: No badge
  *
@@ -200,7 +200,7 @@ export function setBadgeListening(): void {
 /**
  * Set badge to success state
  *
- * Displays a green checkmark (✓) to indicate code was found successfully.
+ * Displays 'OK' text to indicate code was found successfully.
  * Stops any running animation.
  *
  * @public
@@ -221,7 +221,7 @@ export function setBadgeSuccess(): void {
   currentBadgePriority = BadgePriority.SUCCESS
 
   setBadgeBackgroundColor(COLORS.success)
-  setBadgeText('✓')
+  setBadgeText('OK')
 }
 
 /**
@@ -290,7 +290,7 @@ export function setBadgeCount(count: number): void {
 /**
  * Set badge to sync error state
  *
- * Displays a red X (✗) to indicate persistent sync failure.
+ * Displays 'X' text to indicate persistent sync failure.
  * Higher priority than count badge, lower than watch session states.
  *
  * @public
@@ -311,7 +311,7 @@ export function setBadgeSyncError(): void {
   currentBadgePriority = BadgePriority.SYNC_ERROR
 
   setBadgeBackgroundColor(COLORS.syncError)
-  setBadgeText('✗')
+  setBadgeText('X')
 }
 
 /**

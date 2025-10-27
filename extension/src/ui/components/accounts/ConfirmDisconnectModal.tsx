@@ -8,6 +8,7 @@
 import React, { useEffect } from 'react'
 import { t } from '@/lib/i18n'
 import { useFocusTrap, useEscapeKey } from '@/ui/hooks/useFocusTrap'
+import { WarningIcon } from '../icons/StatusIcons'
 import type { ProviderKey } from './types'
 
 interface ConfirmDisconnectModalProps {
@@ -63,7 +64,7 @@ export function ConfirmDisconnectModal({
       >
         <div className="modal-header">
           <h2 id="disconnect-title" className="modal-title">
-            ⚠️ {t('modal_disconnect_title', providerName)}
+            <WarningIcon size={20} /> {t('modal_disconnect_title', providerName)}
           </h2>
         </div>
 

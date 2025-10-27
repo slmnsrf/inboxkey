@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { CheckIcon, XIcon } from '@/ui/components/icons/StatusIcons';
 
 type ButtonState = 'idle' | 'loading' | 'success' | 'error';
 type ButtonVariant = 'primary' | 'secondary' | 'danger';
@@ -79,8 +80,8 @@ export function StatefulButton(props: StatefulButtonProps) {
   };
 
   const getStateIcon = () => {
-    if (state === 'success') return '✓';
-    if (state === 'error') return '✗';
+    if (state === 'success') return <CheckIcon />;
+    if (state === 'error') return <XIcon />;
     return null;
   };
 
@@ -103,7 +104,7 @@ export function StatefulButton(props: StatefulButtonProps) {
       aria-live="polite"
       aria-label={props['aria-label']}
     >
-      {icon && <span aria-hidden="true">{icon} </span>}
+      {icon && <span className="btn__icon">{icon}</span>}
       {getButtonText()}
     </button>
   );

@@ -458,8 +458,6 @@ export function AccountsPanel() {
         loading={recentLoading}
       />
 
-      <TrustIndicator />
-
       <div className="sr-only" role="status" aria-live="polite" aria-atomic="true">
         {connectingProvider && connectionStage && (
           <>

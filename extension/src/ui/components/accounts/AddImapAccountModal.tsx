@@ -10,6 +10,7 @@ import { t } from '@/lib/i18n'
 import { useFocusTrap, useEscapeKey } from '@/ui/hooks/useFocusTrap'
 import { getNativeClient } from '@/lib/providers/imap-bridge/native-client'
 import { INBOXBRIDGE_RELEASES_URL } from '@/lib/constants'
+import { CheckIcon } from '../icons/StatusIcons'
 
 interface AddImapAccountModalProps {
   isOpen: boolean
@@ -438,7 +439,7 @@ export function AddImapAccountModal({
 
             {testState === 'success' && (
               <div className="alert alert--success" role="status">
-                ✓ {t('accounts_imap_test_success')}
+                <CheckIcon size={16} /> {t('accounts_imap_test_success')}
               </div>
             )}
 

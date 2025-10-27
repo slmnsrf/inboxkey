@@ -1,4 +1,5 @@
 import React from 'react'
+import { LockIcon, InfoIcon } from '@/ui/components/icons/StatusIcons'
 import './SecurityInfo.css'
 
 export function SecurityInfo() {
@@ -7,7 +8,9 @@ export function SecurityInfo() {
   return (
     <div className="security-info">
       <div className="security-section">
-        <div className="section-icon">🔒</div>
+        <div className="section-icon">
+          <LockIcon size={24} />
+        </div>
         <h3>Privacy First</h3>
         <ul className="feature-list">
           <li>100% local processing - no servers, no cloud</li>
@@ -17,7 +20,9 @@ export function SecurityInfo() {
       </div>
 
       <div className="security-section">
-        <div className="section-icon">🛡️</div>
+        <div className="section-icon">
+          <LockIcon size={24} />
+        </div>
         <h3>Data Security</h3>
         <ul className="feature-list">
           <li>Secured by Chrome's encrypted storage (OS-level)</li>
@@ -27,7 +32,9 @@ export function SecurityInfo() {
       </div>
 
       <div className="security-section">
-        <div className="section-icon">🔍</div>
+        <div className="section-icon">
+          <InfoIcon size={24} />
+        </div>
         <h3>Transparency</h3>
         <ul className="feature-list">
           <li>Fully open source - verify security yourself</li>
@@ -50,7 +57,9 @@ export function SecurityInfo() {
       <hr className="divider" />
 
       <div className="permissions-section">
-        <div className="section-icon">📋</div>
+        <div className="section-icon">
+          <InfoIcon size={24} />
+        </div>
         <h3>Permissions Explained</h3>
         <div className="permissions-list">
           <div className="permission-item">

@@ -370,7 +370,7 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.6);
+  background: var(--color-bg-overlay);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -640,7 +640,7 @@
   left: 50%;
   margin-left: -8px;
   margin-top: -8px;
-  border: 2px solid #fff;
+  border: 2px solid var(--color-text-inverse);
   border-radius: 50%;
   border-top-color: transparent;
   animation: spin 600ms linear infinite;
@@ -685,7 +685,7 @@
 .inline-alert--warning {
   background: rgba(245, 158, 11, 0.1);
   border-color: rgba(245, 158, 11, 0.3);
-  color: #D97706;
+  color: var(--color-warning-hover);
 }
 
 .inline-alert--info {

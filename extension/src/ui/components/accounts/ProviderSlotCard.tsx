@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { ProviderIcon } from '../icons/ProviderIcon'
 import { LoadingSpinner } from '../icons/LoadingSpinner'
+import { WarningIcon } from '../icons/StatusIcons'
 import { ConfirmDisconnectModal } from './ConfirmDisconnectModal'
 import type { ProviderKey, ProviderSlotState } from './types'
 import { t } from '@/lib/i18n'
@@ -127,7 +128,7 @@ export function ProviderSlotCard({
 
       {slot.errorMessage && (
         <div className="error-banner" role="alert">
-          <span aria-hidden="true">⚠️</span>
+          <WarningIcon size={16} />
           <span>{slot.errorMessage}</span>
         </div>
       )}

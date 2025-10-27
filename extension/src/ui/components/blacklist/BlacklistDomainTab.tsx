@@ -19,6 +19,7 @@ import {
   MAX_BLACKLIST_ENTRIES,
 } from '@/lib/utils/blacklist'
 import { BlacklistSearchFilter } from './BlacklistSearchFilter'
+import { GlobeIcon } from '@/ui/components/icons/StatusIcons'
 import './BlacklistTab.css'
 
 export function BlacklistDomainTab() {
@@ -179,7 +180,9 @@ export function BlacklistDomainTab() {
           {/* List or Empty State */}
           {domains.length === 0 ? (
             <div className="blacklist-empty">
-              <p className="blacklist-empty-icon">🌐</p>
+              <div className="blacklist-empty-icon">
+                <GlobeIcon size={48} />
+              </div>
               <p className="blacklist-empty-text">No ignored domains</p>
               <p className="blacklist-empty-hint">
                 Add domains above to prevent InboxKey from working on them
@@ -187,7 +190,9 @@ export function BlacklistDomainTab() {
             </div>
           ) : filteredDomains.length === 0 ? (
             <div className="blacklist-empty">
-              <div className="blacklist-empty-icon">🔍</div>
+              <div className="blacklist-empty-icon">
+                <GlobeIcon size={48} />
+              </div>
               <p className="blacklist-empty-text">No matching domains</p>
               <p className="blacklist-empty-hint">
                 Try adjusting your search or{' '}

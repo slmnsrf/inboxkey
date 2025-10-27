@@ -91,7 +91,7 @@
     "description": "Copy button label"
   },
   "button_copied": {
-    "message": "✓ Copied",
+    "message": "Copied",
     "description": "Copied confirmation"
   },
   "button_open": {
@@ -99,7 +99,7 @@
     "description": "Open link button"
   },
   "button_opened": {
-    "message": "✓ Opened",
+    "message": "Opened",
     "description": "Opened confirmation"
   },
   "button_cancel": {
@@ -303,7 +303,7 @@
     "description": "Password setup description"
   },
   "security_no_recovery_title": {
-    "message": "⚠️ No recovery possible",
+    "message": "No recovery possible",
     "description": "No recovery warning title"
   },
   "security_no_recovery_message": {
@@ -332,7 +332,7 @@
     "description": "Danger zone heading"
   },
   "security_danger_warning_title": {
-    "message": "⚠️ This action cannot be undone",
+    "message": "This action cannot be undone",
     "description": "Danger warning title"
   },
   "security_danger_warning_message": {
@@ -1072,7 +1072,7 @@
     "description": "Full automation description"
   },
   "automation_full_warning": {
-    "message": "⚠️ Auto-submit may be risky on untrusted sites",
+    "message": "Auto-submit may be risky on untrusted sites",
     "description": "Warning for full automation"
   },
   "automation_hint": {
