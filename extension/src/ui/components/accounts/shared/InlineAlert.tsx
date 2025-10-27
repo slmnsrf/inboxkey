@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { CheckIcon, XIcon, WarningIcon, InfoIcon } from '@/ui/components/icons/StatusIcons';
 
 type AlertVariant = 'success' | 'error' | 'warning' | 'info';
 
@@ -43,10 +44,10 @@ export function InlineAlert({
   };
 
   const defaultIcons = {
-    success: '✓',
-    error: '✗',
-    warning: '⚠',
-    info: 'ℹ',
+    success: <CheckIcon />,
+    error: <XIcon />,
+    warning: <WarningIcon />,
+    info: <InfoIcon />,
   };
 
   const displayIcon = icon ?? defaultIcons[variant];
@@ -61,7 +62,7 @@ export function InlineAlert({
       aria-atomic="true"
       style={!isVisible ? { opacity: 0 } : undefined}
     >
-      {displayIcon && <span aria-hidden="true">{displayIcon} </span>}
+      {displayIcon && <span className="inline-alert__icon">{displayIcon}</span>}
       {message}
       {dismissible && (
         <button

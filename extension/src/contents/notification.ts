@@ -3,6 +3,8 @@
  * Displays toast notifications to users within content script context
  */
 
+import { COLOR_SUCCESS, COLOR_ERROR, COLOR_PRIMARY } from '~lib/design-tokens'
+
 interface NotificationOptions {
   title: string
   message: string
@@ -91,7 +93,7 @@ function injectStyles(): void {
       position: fixed;
       top: 20px;
       right: 20px;
-      background: #10b981;
+      background: ${COLOR_SUCCESS};
       color: white;
       padding: 16px 20px;
       border-radius: 8px;
@@ -103,15 +105,15 @@ function injectStyles(): void {
     }
 
     .inboxkey-notification--success {
-      background: #10b981;
+      background: ${COLOR_SUCCESS};
     }
 
     .inboxkey-notification--error {
-      background: #ef4444;
+      background: ${COLOR_ERROR};
     }
 
     .inboxkey-notification--info {
-      background: #3b82f6;
+      background: ${COLOR_PRIMARY};
     }
 
     @keyframes inboxkeySlideIn {

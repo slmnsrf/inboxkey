@@ -7,6 +7,7 @@ import { extractDomain, isDomainEnabled } from '@/lib/utils/domain'
 import { findSubmitButton } from './submit-button-finder'
 import { logAutoSubmitFailure } from '@/lib/storage/telemetry'
 import { detectSplitInputGroup } from '@/lib/detection/split-input-detector'
+import { COLOR_SUCCESS, COLOR_SUCCESS_BG } from '~lib/design-tokens'
 
 export interface AutofillOptions {
   code: string
@@ -176,10 +177,10 @@ function showSuccessFeedback(field: HTMLInputElement): void {
   const originalBorder = field.style.border
   const originalTransition = field.style.transition
 
-  // Apply success styles
+  // Apply success styles (using design tokens)
   field.style.transition = 'background-color 0.3s ease'
-  field.style.backgroundColor = '#e8f5e9' // Light green
-  field.style.border = '2px solid #4caf50' // Green border
+  field.style.backgroundColor = COLOR_SUCCESS_BG // Light green from tokens
+  field.style.border = `2px solid ${COLOR_SUCCESS}` // Green border from tokens
 
   // Revert after 2 seconds
   setTimeout(() => {

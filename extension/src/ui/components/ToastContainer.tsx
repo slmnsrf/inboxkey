@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { useToast } from '../contexts/ToastContext'
 import { LiveRegion } from './LiveRegion'
+import { CheckIcon, XIcon, InfoIcon, CloseIcon } from './icons/StatusIcons'
 import { t } from '@/lib/i18n'
 import './ToastContainer.css'
 
@@ -24,9 +25,8 @@ export function ToastContainer() {
   return (
     <div className="toast-container" data-testid="toast-container">
       {toasts.map(toast => {
-        // Minimalistic icons: no emojis, simple characters
-        const icon = toast.variant === 'success' ? '✓' :
-                     toast.variant === 'error' ? '✕' : 'i'
+        const icon = toast.variant === 'success' ? <CheckIcon /> :
+                     toast.variant === 'error' ? <XIcon /> : <InfoIcon />
         const politeness = toast.variant === 'error' ? 'assertive' : 'polite'
 
         return (
@@ -46,7 +46,7 @@ export function ToastContainer() {
                 aria-label={t('button_close_notification')}
                 data-testid="toast-close"
               >
-                ✕
+                <CloseIcon />
               </button>
             </div>
           </React.Fragment>

@@ -59,7 +59,7 @@ const STATE_CONFIG: Record<ChipState, StateConfig> = {
   filled: {
     text: 'Code filled',
     color: COLOR_SUCCESS,
-    icon: '✓',
+    icon: 'OK',
     autoDismissMs: AUTO_DISMISS_FILLED_MS,
     showCloseButton: false
   },

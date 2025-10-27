@@ -8,6 +8,7 @@ import React, { useState, useEffect } from 'react'
 import { StorageFactory } from '@/lib/storage/storage-factory'
 import { useToast } from '@/ui/contexts/ToastContext'
 import { t } from '@/lib/i18n'
+import { WarningIcon } from '@/ui/components/icons/StatusIcons'
 import type { AutomationLevel } from '@/lib/storage/schema'
 
 export function AdvancedSettings() {
@@ -207,7 +208,9 @@ export function AdvancedSettings() {
                     Detects custom button components (Vue.js, React) used by modern websites.
                   </p>
                   <div className="setting-row__warning">
-                    <span className="warning-icon" aria-hidden="true">⚠️</span>
+                    <span className="warning-icon">
+                      <WarningIcon size={16} />
+                    </span>
                     <span className="warning-text">
                       <strong>Note:</strong> May occasionally interact with navigation elements.
                       Only enable if your sites use custom button components.

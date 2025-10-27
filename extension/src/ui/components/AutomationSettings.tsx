@@ -2,10 +2,11 @@ import React, { useState, useEffect } from 'react'
 import { useToast } from '@/ui/contexts/ToastContext'
 import { t } from '@/lib/i18n'
 import type { AutomationLevel } from '@/lib/storage/schema'
+import { LockIcon, InfoIcon, CheckIcon } from '@/ui/components/icons/StatusIcons'
 
 interface AutomationOption {
   value: AutomationLevel
-  icon: string
+  icon: React.ReactNode
   titleKey: string
   descriptionKey: string
 }
@@ -13,25 +14,25 @@ interface AutomationOption {
 const AUTOMATION_LEVELS: AutomationOption[] = [
   {
     value: 'manual',
-    icon: '🔒',
+    icon: <LockIcon size={20} />,
     titleKey: 'automation_manual_title',
     descriptionKey: 'automation_manual_description',
   },
   {
     value: 'clipboard',
-    icon: '📋',
+    icon: <InfoIcon size={20} />,
     titleKey: 'automation_clipboard_title',
     descriptionKey: 'automation_clipboard_description',
   },
   {
     value: 'autofill',
-    icon: '✨',
+    icon: <CheckIcon size={20} />,
     titleKey: 'automation_autofill_title',
     descriptionKey: 'automation_autofill_description',
   },
   {
     value: 'full-automation',
-    icon: '⚡',
+    icon: <CheckIcon size={20} />,
     titleKey: 'automation_full_title',
     descriptionKey: 'automation_full_description',
   },
@@ -123,7 +124,7 @@ export function AutomationSettings() {
               />
               <div className="automation-level-card__content">
                 <div className="automation-level-card__header">
-                  <span className="automation-level-card__icon" aria-hidden="true">
+                  <span className="automation-level-card__icon">
                     {option.icon}
                   </span>
                   <span className="automation-level-card__title">
@@ -141,7 +142,7 @@ export function AutomationSettings() {
 
       {level === 'full-automation' && (
         <div className="automation-warning">
-          <span aria-hidden="true">ℹ️</span>
+          <InfoIcon size={16} />
           <span>{t('automation_full_warning')}</span>
         </div>
       )}

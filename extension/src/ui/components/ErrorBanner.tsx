@@ -22,6 +22,7 @@
 
 import React, { useEffect, useRef } from 'react'
 import { LiveRegion } from './LiveRegion'
+import { InfoIcon, WarningIcon, CloseIcon } from './icons/StatusIcons'
 import './ErrorBanner.css'
 
 export type BannerVariant = 'error' | 'warning' | 'info'
@@ -63,7 +64,7 @@ export function ErrorBanner({
   }, [dismissible, onDismiss])
 
   // Determine icon and ARIA role based on variant
-  const icon = variant === 'info' ? 'ℹ️' : '⚠️'
+  const icon = variant === 'info' ? <InfoIcon /> : <WarningIcon />
   const role = variant === 'error' ? 'alert' : 'status'
   const politeness = variant === 'error' ? 'assertive' : 'polite'
 
@@ -101,7 +102,7 @@ export function ErrorBanner({
             aria-label={`Dismiss ${variant} notification: ${message}`}
             data-testid="error-banner-close"
           >
-            ✕
+            <CloseIcon />
           </button>
         )}
       </div>

@@ -71,7 +71,7 @@
 }
 
 .error-banner__action:hover:not(:disabled) {
-  background: rgba(0, 0, 0, 0.05);
+  background: var(--color-bg-secondary);
 }
 
 .error-banner__action:active:not(:disabled) {
@@ -110,7 +110,7 @@
 
 .error-banner__close:hover:not(:disabled) {
   opacity: 1;
-  background: rgba(0, 0, 0, 0.05);
+  background: var(--color-bg-secondary);
 }
 
 .error-banner__close:focus-visible {
