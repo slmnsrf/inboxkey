@@ -30,7 +30,7 @@
   max-height: 90vh;
   display: flex;
   flex-direction: column;
-  border: none;
+  border: 1px solid var(--color-border);
   animation: slideUp 250ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
