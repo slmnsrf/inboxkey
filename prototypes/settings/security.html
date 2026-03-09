@@ -1,0 +1,1252 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="status" content="Ideation">
+  <meta name="date" content="2026-03-09">
+  <meta name="category" content="settings">
+  <title>Security Tab - InboxKey Prototype</title>
+  <link rel="stylesheet" href="../shared/tokens.css">
+
+  <!-- Lucide Icons CDN for prototype -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <style>
+    /* ============================
+       PAGE SHELL (mirrors options.css)
+       ============================ */
+
+    *, *::before, *::after { box-sizing: border-box; }
+    body { margin: 0; }
+
+    .options-container {
+      min-height: 100vh;
+      background: var(--color-bg-primary);
+      color: var(--color-text-primary);
+      font-family: var(--font-system);
+      font-size: var(--font-size-base);
+      line-height: var(--line-height-normal);
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    .options-shell {
+      max-width: 840px;
+      margin: 0 auto;
+      padding: var(--space-6);
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-6);
+    }
+
+    /* ============================
+       HEADER
+       ============================ */
+
+    .options-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding-bottom: var(--space-3);
+      border-bottom: 1px solid var(--color-border);
+    }
+
+    .options-header__identity {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+    }
+
+    .brand__icon {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 40px;
+      height: 40px;
+      background: var(--color-primary);
+      color: var(--color-text-inverse);
+      border-radius: var(--radius-lg);
+    }
+
+    .brand__title {
+      margin: 0;
+      font-size: var(--font-size-2xl);
+      font-weight: var(--font-weight-bold);
+      letter-spacing: -0.03em;
+    }
+
+    .privacy-line {
+      margin: 0;
+      font-size: var(--font-size-xs);
+      color: var(--color-text-tertiary);
+    }
+
+    .options-header__actions {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+    }
+
+    .support-link {
+      display: inline-flex;
+      align-items: center;
+      padding: var(--space-2) var(--space-3);
+      border-radius: var(--radius-full);
+      font-size: var(--font-size-xs);
+      font-weight: var(--font-weight-medium);
+      color: var(--color-text-secondary);
+      background: var(--surface-card);
+      border: 1px solid var(--color-border);
+      text-decoration: none;
+      transition: background var(--duration-fast) ease-out;
+    }
+
+    .support-link:hover {
+      background: var(--surface-card-muted);
+    }
+
+    .coffee-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-2);
+      padding: var(--space-2) var(--space-4);
+      border-radius: var(--radius-full);
+      font-size: var(--font-size-xs);
+      font-weight: var(--font-weight-semibold);
+      color: var(--color-support-text);
+      background: var(--color-support-bg);
+      border: 1px solid var(--color-support-border);
+      text-decoration: none;
+      cursor: pointer;
+      transition: filter var(--duration-fast) ease-out;
+    }
+
+    .coffee-btn:hover {
+      filter: brightness(0.95);
+    }
+
+    /* ============================
+       TRUST BANNER
+       ============================ */
+
+    .trust-banner {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: var(--space-3);
+      padding: var(--space-5) var(--space-6);
+      background: var(--surface-card);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-xl);
+      box-shadow: var(--shadow-sm);
+      text-align: center;
+    }
+
+    .trust-banner__headline {
+      margin: 0;
+      font-size: var(--font-size-sm);
+      color: var(--color-text-secondary);
+      font-weight: var(--font-weight-medium);
+    }
+
+    .trust-banner__pillars {
+      display: flex;
+      align-items: center;
+      gap: var(--space-6);
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .trust-pillar {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+    }
+
+    .trust-pillar__icon {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 28px;
+      height: 28px;
+      border-radius: var(--radius-md);
+      background: var(--color-primary-light);
+      color: var(--color-primary);
+    }
+
+    .trust-pillar__label {
+      font-size: var(--font-size-sm);
+      font-weight: var(--font-weight-medium);
+      color: var(--color-text-primary);
+      white-space: nowrap;
+    }
+
+    /* ============================
+       TAB NAVIGATION
+       ============================ */
+
+    .tab-navigation {
+      display: flex;
+      border-bottom: 1px solid var(--color-border);
+      gap: 0;
+    }
+
+    .tab-button {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-2);
+      padding: var(--space-3) var(--space-4);
+      border: none;
+      background: transparent;
+      color: var(--color-text-secondary);
+      font-family: var(--font-system);
+      font-size: var(--font-size-sm);
+      font-weight: var(--font-weight-medium);
+      cursor: pointer;
+      position: relative;
+      transition: color var(--duration-fast) ease-out;
+    }
+
+    .tab-button__icon {
+      display: flex;
+      align-items: center;
+      opacity: 0.6;
+    }
+
+    .tab-button:hover {
+      color: var(--color-text-primary);
+    }
+
+    .tab-button--active {
+      color: var(--color-primary);
+      border-bottom: 2px solid var(--color-primary);
+    }
+
+    .tab-button--active .tab-button__icon {
+      opacity: 1;
+    }
+
+    /* ============================
+       CONTENT SECTION WRAPPER
+       ============================ */
+
+    .section {
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      padding: var(--space-6);
+      background: var(--surface-card);
+      box-shadow: var(--shadow-sm);
+    }
+
+    /* ============================
+       SECURITY SCORE HERO
+       ============================ */
+
+    .security-hero {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: var(--space-5);
+      padding: var(--space-8) var(--space-6);
+      margin-bottom: var(--space-6);
+      text-align: center;
+    }
+
+    .score-ring {
+      position: relative;
+      width: 140px;
+      height: 140px;
+    }
+
+    .score-ring svg {
+      width: 140px;
+      height: 140px;
+      transform: rotate(-90deg);
+    }
+
+    .score-ring__track {
+      fill: none;
+      stroke: var(--color-border);
+      stroke-width: 8;
+    }
+
+    .score-ring__fill {
+      fill: none;
+      stroke: var(--color-success);
+      stroke-width: 8;
+      stroke-linecap: round;
+      stroke-dasharray: 376.99;
+      stroke-dashoffset: 376.99;
+      transition: stroke-dashoffset 1.5s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .score-ring__fill--animated {
+      stroke-dashoffset: 0;
+    }
+
+    .score-ring__label {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 2px;
+    }
+
+    .score-ring__value {
+      font-size: 36px;
+      font-weight: var(--font-weight-bold);
+      color: var(--color-success);
+      letter-spacing: -0.03em;
+      line-height: 1;
+      opacity: 0;
+      transform: scale(0.8);
+      transition: opacity 0.6s ease-out 0.8s, transform 0.6s ease-out 0.8s;
+    }
+
+    .score-ring__value--visible {
+      opacity: 1;
+      transform: scale(1);
+    }
+
+    .score-ring__sublabel {
+      font-size: var(--font-size-xs);
+      color: var(--color-text-tertiary);
+      font-weight: var(--font-weight-medium);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      opacity: 0;
+      transition: opacity 0.4s ease-out 1.2s;
+    }
+
+    .score-ring__sublabel--visible {
+      opacity: 1;
+    }
+
+    .security-hero__title {
+      margin: 0;
+      font-size: var(--font-size-xl);
+      font-weight: var(--font-weight-semibold);
+      color: var(--color-text-primary);
+      letter-spacing: -0.02em;
+    }
+
+    .security-hero__subtitle {
+      margin: 0;
+      font-size: var(--font-size-sm);
+      color: var(--color-text-secondary);
+      max-width: 480px;
+      line-height: var(--line-height-normal);
+    }
+
+    /* ============================
+       AUDIT SECTION
+       ============================ */
+
+    .audit-section {
+      margin-bottom: var(--space-6);
+    }
+
+    .audit-section:last-child {
+      margin-bottom: 0;
+    }
+
+    .audit-section__header {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+      margin-bottom: var(--space-4);
+      padding-bottom: var(--space-3);
+      border-bottom: 1px solid var(--color-border);
+    }
+
+    .audit-section__icon {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 36px;
+      height: 36px;
+      border-radius: var(--radius-md);
+      flex-shrink: 0;
+    }
+
+    .audit-section__icon--green {
+      background: var(--color-success-light);
+      color: var(--color-success);
+    }
+
+    .audit-section__icon--blue {
+      background: var(--color-primary-light);
+      color: var(--color-primary);
+    }
+
+    .audit-section__title {
+      margin: 0;
+      font-size: var(--font-size-lg);
+      font-weight: var(--font-weight-semibold);
+      color: var(--color-text-primary);
+      letter-spacing: -0.01em;
+    }
+
+    .audit-section__description {
+      margin: var(--space-1) 0 0;
+      font-size: var(--font-size-xs);
+      color: var(--color-text-tertiary);
+    }
+
+    /* ============================
+       AUDIT ITEMS (CHECKLIST)
+       ============================ */
+
+    .audit-list {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-3);
+    }
+
+    .audit-item {
+      display: flex;
+      align-items: flex-start;
+      gap: var(--space-3);
+      padding: var(--space-4);
+      background: var(--surface-card-muted);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+      transition: border-color var(--duration-normal) var(--easing-default),
+                  background var(--duration-normal) var(--easing-default);
+      opacity: 0;
+      transform: translateY(8px);
+    }
+
+    .audit-item--revealed {
+      opacity: 1;
+      transform: translateY(0);
+      transition: opacity 0.4s ease-out, transform 0.4s ease-out,
+                  border-color var(--duration-normal) var(--easing-default),
+                  background var(--duration-normal) var(--easing-default);
+    }
+
+    .audit-item:hover {
+      border-color: var(--color-border-hover);
+      background: var(--surface-card);
+    }
+
+    .audit-item__check {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 22px;
+      height: 22px;
+      border-radius: var(--radius-full);
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+
+    .audit-item__check--pass {
+      background: var(--color-success-light);
+      color: var(--color-success);
+    }
+
+    .audit-item__check--info {
+      background: var(--color-primary-light);
+      color: var(--color-primary);
+    }
+
+    .audit-item__check i {
+      width: 14px;
+      height: 14px;
+    }
+
+    .audit-item__content {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .audit-item__title {
+      margin: 0;
+      font-size: var(--font-size-base);
+      font-weight: var(--font-weight-semibold);
+      color: var(--color-text-primary);
+      line-height: var(--line-height-tight);
+    }
+
+    .audit-item__detail {
+      margin: var(--space-1) 0 0;
+      font-size: var(--font-size-sm);
+      color: var(--color-text-secondary);
+      line-height: var(--line-height-normal);
+    }
+
+    /* ============================
+       PERMISSIONS TABLE
+       ============================ */
+
+    .permissions-grid {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-3);
+    }
+
+    .permission-row {
+      display: grid;
+      grid-template-columns: 44px 130px 1fr;
+      gap: var(--space-3);
+      align-items: center;
+      padding: var(--space-4);
+      background: var(--surface-card-muted);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+      transition: border-color var(--duration-normal) var(--easing-default),
+                  background var(--duration-normal) var(--easing-default);
+      opacity: 0;
+      transform: translateY(8px);
+    }
+
+    .permission-row--revealed {
+      opacity: 1;
+      transform: translateY(0);
+      transition: opacity 0.4s ease-out, transform 0.4s ease-out,
+                  border-color var(--duration-normal) var(--easing-default),
+                  background var(--duration-normal) var(--easing-default);
+    }
+
+    .permission-row:hover {
+      border-color: var(--color-border-hover);
+      background: var(--surface-card);
+    }
+
+    .permission-row__icon {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 32px;
+      height: 32px;
+      border-radius: var(--radius-md);
+      background: var(--color-success-light);
+      color: var(--color-success);
+    }
+
+    .permission-row__icon i {
+      width: 16px;
+      height: 16px;
+    }
+
+    .permission-row__name {
+      font-size: var(--font-size-base);
+      font-weight: var(--font-weight-semibold);
+      color: var(--color-text-primary);
+    }
+
+    .permission-row__name code {
+      font-family: var(--font-mono);
+      font-size: var(--font-size-xs);
+      background: var(--color-primary-light);
+      color: var(--color-primary);
+      padding: 1px 6px;
+      border-radius: var(--radius-sm);
+      font-weight: var(--font-weight-medium);
+    }
+
+    .permission-row__reason {
+      font-size: var(--font-size-sm);
+      color: var(--color-text-secondary);
+      line-height: var(--line-height-normal);
+    }
+
+    /* ============================
+       SOURCE CODE CTA
+       ============================ */
+
+    .source-cta {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: var(--space-3);
+      padding: var(--space-5) var(--space-6);
+      margin-top: var(--space-6);
+      background: var(--color-primary-light);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      text-align: center;
+    }
+
+    .source-cta__icon {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 40px;
+      height: 40px;
+      border-radius: var(--radius-md);
+      background: var(--color-primary);
+      color: var(--color-text-inverse);
+      flex-shrink: 0;
+    }
+
+    .source-cta__text {
+      text-align: left;
+    }
+
+    .source-cta__title {
+      margin: 0;
+      font-size: var(--font-size-base);
+      font-weight: var(--font-weight-semibold);
+      color: var(--color-text-primary);
+    }
+
+    .source-cta__detail {
+      margin: 2px 0 0;
+      font-size: var(--font-size-sm);
+      color: var(--color-text-secondary);
+    }
+
+    .source-cta__link {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-2);
+      margin-left: auto;
+      padding: var(--space-2) var(--space-4);
+      background: var(--color-primary);
+      color: var(--color-text-inverse);
+      border-radius: var(--radius-md);
+      font-size: var(--font-size-sm);
+      font-weight: var(--font-weight-medium);
+      text-decoration: none;
+      white-space: nowrap;
+      transition: background var(--duration-normal) ease-out,
+                  transform var(--duration-fast) ease-out;
+    }
+
+    .source-cta__link:hover {
+      background: var(--color-primary-hover);
+      transform: translateY(-1px);
+    }
+
+    .source-cta__link:active {
+      transform: translateY(0);
+    }
+
+    .source-cta__link:focus-visible {
+      outline: 2px solid var(--color-primary);
+      outline-offset: 2px;
+    }
+
+    /* ============================
+       CONTACT FOOTER
+       ============================ */
+
+    .security-contact {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: var(--space-3);
+      margin-top: var(--space-6);
+      padding: var(--space-5);
+      background: var(--surface-card-muted);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      text-align: center;
+    }
+
+    .security-contact__icon {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 36px;
+      height: 36px;
+      border-radius: var(--radius-full);
+      background: var(--color-primary-light);
+      color: var(--color-primary);
+      flex-shrink: 0;
+    }
+
+    .security-contact__text {
+      text-align: left;
+    }
+
+    .security-contact__title {
+      margin: 0;
+      font-size: var(--font-size-base);
+      font-weight: var(--font-weight-semibold);
+      color: var(--color-text-primary);
+    }
+
+    .security-contact__detail {
+      margin: 2px 0 0;
+      font-size: var(--font-size-sm);
+      color: var(--color-text-secondary);
+    }
+
+    .security-contact__detail a {
+      color: var(--color-primary);
+      text-decoration: none;
+      font-weight: var(--font-weight-medium);
+      transition: color var(--duration-fast) ease-out;
+    }
+
+    .security-contact__detail a:hover {
+      color: var(--color-primary-hover);
+      text-decoration: underline;
+    }
+
+    .security-contact__detail a:focus-visible {
+      outline: 2px solid var(--color-primary);
+      outline-offset: 2px;
+      border-radius: 2px;
+    }
+
+    /* ============================
+       SECTION DIVIDER
+       ============================ */
+
+    .section-divider {
+      border: none;
+      border-top: 1px solid var(--color-border);
+      margin: var(--space-6) 0;
+    }
+
+    /* ============================
+       DARK MODE REFINEMENTS
+       ============================ */
+
+    [data-theme="dark"] .audit-item {
+      background: var(--color-bg-secondary);
+    }
+
+    [data-theme="dark"] .audit-item:hover {
+      background: var(--color-bg-tertiary);
+    }
+
+    [data-theme="dark"] .permission-row {
+      background: var(--color-bg-secondary);
+    }
+
+    [data-theme="dark"] .permission-row:hover {
+      background: var(--color-bg-tertiary);
+    }
+
+    [data-theme="dark"] .source-cta {
+      background: rgba(10, 132, 255, 0.08);
+    }
+
+    [data-theme="dark"] .security-contact {
+      background: var(--color-bg-secondary);
+    }
+
+    [data-theme="dark"] .score-ring__fill {
+      stroke: var(--color-success);
+    }
+
+    [data-theme="dark"] .permission-row__name code {
+      background: rgba(10, 132, 255, 0.15);
+    }
+
+    /* ============================
+       RESPONSIVE
+       ============================ */
+
+    @media (max-width: 768px) {
+      .options-shell {
+        padding: var(--space-4);
+      }
+
+      .options-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: var(--space-3);
+      }
+
+      .trust-banner__pillars {
+        gap: var(--space-3);
+      }
+    }
+
+    @media (max-width: 600px) {
+      .section {
+        padding: var(--space-4);
+      }
+
+      .security-hero {
+        padding: var(--space-6) var(--space-4);
+      }
+
+      .score-ring {
+        width: 110px;
+        height: 110px;
+      }
+
+      .score-ring svg {
+        width: 110px;
+        height: 110px;
+      }
+
+      .score-ring__value {
+        font-size: 28px;
+      }
+
+      .permission-row {
+        grid-template-columns: 1fr;
+        gap: var(--space-2);
+      }
+
+      .permission-row__icon {
+        display: none;
+      }
+
+      .source-cta {
+        flex-direction: column;
+        text-align: center;
+      }
+
+      .source-cta__text {
+        text-align: center;
+      }
+
+      .source-cta__link {
+        margin-left: 0;
+      }
+
+      .security-contact {
+        flex-direction: column;
+        text-align: center;
+      }
+
+      .security-contact__text {
+        text-align: center;
+      }
+    }
+
+    /* ============================
+       REDUCED MOTION
+       ============================ */
+
+    @media (prefers-reduced-motion: reduce) {
+      .audit-item,
+      .permission-row {
+        opacity: 1;
+        transform: none;
+      }
+
+      .score-ring__fill {
+        transition: none;
+      }
+
+      .score-ring__value,
+      .score-ring__sublabel {
+        opacity: 1;
+        transform: none;
+        transition: none;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ============================
+       PROTO TOOLBAR
+       ============================ -->
+  <div class="proto-toolbar">
+    <div class="proto-toolbar__left">
+      <span class="proto-toolbar__title">Security Tab</span>
+      <span class="proto-toolbar__status" data-status="ideation">Ideation</span>
+      <span class="proto-toolbar__date">2026-03-09</span>
+    </div>
+    <div class="proto-toolbar__right">
+      <div class="proto-theme-toggle" role="group" aria-label="Theme toggle">
+        <button data-theme-btn="light" aria-pressed="true">Light</button>
+        <button data-theme-btn="dark" aria-pressed="false">Dark</button>
+      </div>
+      <button class="proto-decisions-toggle">Decisions</button>
+    </div>
+  </div>
+
+  <!-- Decisions panel (slide-in) -->
+  <div class="proto-decisions-panel" role="dialog" aria-label="Design decisions">
+    <button class="proto-decisions-close" aria-label="Close decisions panel">&times;</button>
+    <h3>Design Decisions</h3>
+    <ol></ol>
+  </div>
+
+  <!-- ============================
+       PAGE CONTENT
+       ============================ -->
+  <main class="proto-canvas">
+    <div class="options-container">
+      <div class="options-shell">
+
+        <!-- Header -->
+        <header class="options-header" aria-labelledby="options-title">
+          <div class="options-header__identity">
+            <span class="brand__icon" aria-hidden="true">
+              <i data-lucide="key-round"></i>
+            </span>
+            <div>
+              <h1 id="options-title" class="brand__title">InboxKey</h1>
+              <p class="privacy-line">100% local. Your data never leaves your device.</p>
+            </div>
+          </div>
+          <div class="options-header__actions">
+            <a class="support-link" href="https://github.com/inboxkey/extension" target="_blank" rel="noreferrer" aria-label="View source code on GitHub">View Source</a>
+            <a class="coffee-btn" href="#" aria-label="Support InboxKey development">Buy me a coffee</a>
+          </div>
+        </header>
+
+        <!-- Trust Banner -->
+        <section class="trust-banner" role="region" aria-label="Trust indicators">
+          <p class="trust-banner__headline">Your privacy is our foundation, not just a feature.</p>
+          <div class="trust-banner__pillars">
+            <div class="trust-pillar">
+              <span class="trust-pillar__icon" aria-hidden="true"><i data-lucide="puzzle"></i></span>
+              <span class="trust-pillar__label">Open Source</span>
+            </div>
+            <div class="trust-pillar">
+              <span class="trust-pillar__icon" aria-hidden="true"><i data-lucide="lock"></i></span>
+              <span class="trust-pillar__label">Local Only</span>
+            </div>
+            <div class="trust-pillar">
+              <span class="trust-pillar__icon" aria-hidden="true"><i data-lucide="shield-check"></i></span>
+              <span class="trust-pillar__label">Verified Safe</span>
+            </div>
+          </div>
+        </section>
+
+        <!-- Tab Navigation -->
+        <nav class="tab-navigation" role="tablist" aria-label="Settings sections">
+          <button class="tab-button" role="tab" aria-selected="false" aria-controls="accounts-panel">
+            <span class="tab-button__icon"><i data-lucide="users" style="width:16px;height:16px"></i></span>
+            Accounts
+          </button>
+          <button class="tab-button tab-button--active" role="tab" aria-selected="true" aria-controls="security-panel">
+            <span class="tab-button__icon"><i data-lucide="shield-check" style="width:16px;height:16px"></i></span>
+            Security
+          </button>
+          <button class="tab-button" role="tab" aria-selected="false" aria-controls="settings-panel">
+            <span class="tab-button__icon"><i data-lucide="settings" style="width:16px;height:16px"></i></span>
+            Settings
+          </button>
+          <button class="tab-button" role="tab" aria-selected="false" aria-controls="about-panel">
+            <span class="tab-button__icon"><i data-lucide="info" style="width:16px;height:16px"></i></span>
+            About
+          </button>
+        </nav>
+
+        <!-- Security Panel Content -->
+        <div id="security-panel" role="tabpanel" aria-labelledby="security-tab">
+          <section class="section">
+
+            <!-- Security Score Hero -->
+            <div class="security-hero" role="img" aria-label="Security trust level: maximum. All checks passed.">
+              <div class="score-ring">
+                <svg viewBox="0 0 140 140" aria-hidden="true">
+                  <circle class="score-ring__track" cx="70" cy="70" r="60" />
+                  <circle class="score-ring__fill" cx="70" cy="70" r="60" />
+                </svg>
+                <div class="score-ring__label">
+                  <span class="score-ring__value">A+</span>
+                  <span class="score-ring__sublabel">Trust Level</span>
+                </div>
+              </div>
+              <h2 class="security-hero__title">All Security Checks Passed</h2>
+              <p class="security-hero__subtitle">
+                InboxKey operates entirely on your device. No data is transmitted to external servers, no analytics are collected, and all source code is publicly auditable.
+              </p>
+            </div>
+
+            <hr class="section-divider">
+
+            <!-- Section 1: Privacy Practices -->
+            <div class="audit-section" aria-labelledby="privacy-heading">
+              <div class="audit-section__header">
+                <div class="audit-section__icon audit-section__icon--green" aria-hidden="true">
+                  <i data-lucide="eye-off"></i>
+                </div>
+                <div>
+                  <h3 id="privacy-heading" class="audit-section__title">Privacy Practices</h3>
+                  <p class="audit-section__description">How InboxKey protects your personal data</p>
+                </div>
+              </div>
+              <div class="audit-list">
+                <div class="audit-item" data-reveal>
+                  <div class="audit-item__check audit-item__check--pass" aria-hidden="true"><i data-lucide="check"></i></div>
+                  <div class="audit-item__content">
+                    <p class="audit-item__title">100% Local Processing</p>
+                    <p class="audit-item__detail">All email parsing and code extraction happens entirely on your device. No servers, no cloud, no remote processing.</p>
+                  </div>
+                </div>
+                <div class="audit-item" data-reveal>
+                  <div class="audit-item__check audit-item__check--pass" aria-hidden="true"><i data-lucide="check"></i></div>
+                  <div class="audit-item__content">
+                    <p class="audit-item__title">Zero Data Collection</p>
+                    <p class="audit-item__detail">No tracking, no analytics, no telemetry. InboxKey does not phone home or communicate with any external services.</p>
+                  </div>
+                </div>
+                <div class="audit-item" data-reveal>
+                  <div class="audit-item__check audit-item__check--pass" aria-hidden="true"><i data-lucide="check"></i></div>
+                  <div class="audit-item__content">
+                    <p class="audit-item__title">Emails Stay on Device</p>
+                    <p class="audit-item__detail">Your email content is accessed locally through the Gmail API or IMAP protocol, parsed in-memory, and never stored beyond the active session.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <hr class="section-divider">
+
+            <!-- Section 2: Data Storage -->
+            <div class="audit-section" aria-labelledby="storage-heading">
+              <div class="audit-section__header">
+                <div class="audit-section__icon audit-section__icon--green" aria-hidden="true">
+                  <i data-lucide="database"></i>
+                </div>
+                <div>
+                  <h3 id="storage-heading" class="audit-section__title">Data Storage</h3>
+                  <p class="audit-section__description">How your settings and credentials are stored</p>
+                </div>
+              </div>
+              <div class="audit-list">
+                <div class="audit-item" data-reveal>
+                  <div class="audit-item__check audit-item__check--pass" aria-hidden="true"><i data-lucide="check"></i></div>
+                  <div class="audit-item__content">
+                    <p class="audit-item__title">Chrome Encrypted Storage</p>
+                    <p class="audit-item__detail">All preferences and tokens are stored in Chrome's built-in encrypted storage, protected by your operating system's credentials manager.</p>
+                  </div>
+                </div>
+                <div class="audit-item" data-reveal>
+                  <div class="audit-item__check audit-item__check--pass" aria-hidden="true"><i data-lucide="check"></i></div>
+                  <div class="audit-item__content">
+                    <p class="audit-item__title">No Persistent Email Storage</p>
+                    <p class="audit-item__detail">Verification codes are extracted in real-time and discarded after use. No email body content is ever written to disk.</p>
+                  </div>
+                </div>
+                <div class="audit-item" data-reveal>
+                  <div class="audit-item__check audit-item__check--pass" aria-hidden="true"><i data-lucide="check"></i></div>
+                  <div class="audit-item__content">
+                    <p class="audit-item__title">Minimal Data Footprint</p>
+                    <p class="audit-item__detail">Only your account connection status, display preferences, and domain blacklist are stored locally. All data is deletable from the Settings tab.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <hr class="section-divider">
+
+            <!-- Section 3: Encryption -->
+            <div class="audit-section" aria-labelledby="encryption-heading">
+              <div class="audit-section__header">
+                <div class="audit-section__icon audit-section__icon--green" aria-hidden="true">
+                  <i data-lucide="lock-keyhole"></i>
+                </div>
+                <div>
+                  <h3 id="encryption-heading" class="audit-section__title">Encryption</h3>
+                  <p class="audit-section__description">How credentials and tokens are secured</p>
+                </div>
+              </div>
+              <div class="audit-list">
+                <div class="audit-item" data-reveal>
+                  <div class="audit-item__check audit-item__check--pass" aria-hidden="true"><i data-lucide="check"></i></div>
+                  <div class="audit-item__content">
+                    <p class="audit-item__title">OAuth 2.0 with PKCE</p>
+                    <p class="audit-item__detail">Authentication uses industry-standard OAuth 2.0 with Proof Key for Code Exchange, preventing token interception attacks.</p>
+                  </div>
+                </div>
+                <div class="audit-item" data-reveal>
+                  <div class="audit-item__check audit-item__check--pass" aria-hidden="true"><i data-lucide="check"></i></div>
+                  <div class="audit-item__content">
+                    <p class="audit-item__title">OS-Level Credential Protection</p>
+                    <p class="audit-item__detail">OAuth tokens are protected by your operating system's native credential store (Windows DPAPI, macOS Keychain, Linux Secret Service).</p>
+                  </div>
+                </div>
+                <div class="audit-item" data-reveal>
+                  <div class="audit-item__check audit-item__check--pass" aria-hidden="true"><i data-lucide="check"></i></div>
+                  <div class="audit-item__content">
+                    <p class="audit-item__title">TLS-Only Communication</p>
+                    <p class="audit-item__detail">All API calls to Gmail and Outlook use TLS 1.2+ encryption. IMAP connections require SSL/STARTTLS.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <hr class="section-divider">
+
+            <!-- Section 4: Permissions Audit -->
+            <div class="audit-section" aria-labelledby="permissions-heading">
+              <div class="audit-section__header">
+                <div class="audit-section__icon audit-section__icon--blue" aria-hidden="true">
+                  <i data-lucide="scan-eye"></i>
+                </div>
+                <div>
+                  <h3 id="permissions-heading" class="audit-section__title">Permissions Audit</h3>
+                  <p class="audit-section__description">Every permission explained with its exact purpose</p>
+                </div>
+              </div>
+              <div class="permissions-grid">
+                <div class="permission-row" data-reveal>
+                  <div class="permission-row__icon" aria-hidden="true"><i data-lucide="shield-check"></i></div>
+                  <div class="permission-row__name"><code>identity</code></div>
+                  <div class="permission-row__reason">Sign in with your Google account to access Gmail API for reading verification emails.</div>
+                </div>
+                <div class="permission-row" data-reveal>
+                  <div class="permission-row__icon" aria-hidden="true"><i data-lucide="shield-check"></i></div>
+                  <div class="permission-row__name"><code>tabs</code></div>
+                  <div class="permission-row__reason">Detect when you are on a login or verification page so InboxKey can offer to autofill codes.</div>
+                </div>
+                <div class="permission-row" data-reveal>
+                  <div class="permission-row__icon" aria-hidden="true"><i data-lucide="shield-check"></i></div>
+                  <div class="permission-row__name"><code>activeTab</code></div>
+                  <div class="permission-row__reason">Access the current tab to find OTP input fields and insert verification codes when you click autofill.</div>
+                </div>
+                <div class="permission-row" data-reveal>
+                  <div class="permission-row__icon" aria-hidden="true"><i data-lucide="shield-check"></i></div>
+                  <div class="permission-row__name"><code>storage</code></div>
+                  <div class="permission-row__reason">Save your preferences (theme, automation settings, domain blacklist) locally in Chrome's encrypted storage.</div>
+                </div>
+                <div class="permission-row" data-reveal>
+                  <div class="permission-row__icon" aria-hidden="true"><i data-lucide="shield-check"></i></div>
+                  <div class="permission-row__name"><code>scripting</code></div>
+                  <div class="permission-row__reason">Inject the autofill chip into login pages to provide one-click code insertion into form fields.</div>
+                </div>
+                <div class="permission-row" data-reveal>
+                  <div class="permission-row__icon" aria-hidden="true"><i data-lucide="shield-check"></i></div>
+                  <div class="permission-row__name"><code>nativeMessaging</code></div>
+                  <div class="permission-row__reason">Communicate with the local InboxBridge helper app for IMAP account support (optional, only if installed).</div>
+                </div>
+              </div>
+            </div>
+
+            <hr class="section-divider">
+
+            <!-- Section 5: Open Source Verification -->
+            <div class="audit-section" aria-labelledby="opensource-heading">
+              <div class="audit-section__header">
+                <div class="audit-section__icon audit-section__icon--blue" aria-hidden="true">
+                  <i data-lucide="code-2"></i>
+                </div>
+                <div>
+                  <h3 id="opensource-heading" class="audit-section__title">Open Source Verification</h3>
+                  <p class="audit-section__description">Verify every claim by reviewing the source code</p>
+                </div>
+              </div>
+              <div class="audit-list">
+                <div class="audit-item" data-reveal>
+                  <div class="audit-item__check audit-item__check--info" aria-hidden="true"><i data-lucide="check"></i></div>
+                  <div class="audit-item__content">
+                    <p class="audit-item__title">Fully Open Source</p>
+                    <p class="audit-item__detail">Every line of code is publicly available on GitHub. You can audit, fork, or build from source at any time.</p>
+                  </div>
+                </div>
+                <div class="audit-item" data-reveal>
+                  <div class="audit-item__check audit-item__check--info" aria-hidden="true"><i data-lucide="check"></i></div>
+                  <div class="audit-item__content">
+                    <p class="audit-item__title">Verified Publisher</p>
+                    <p class="audit-item__detail">Published on the Chrome Web Store by a verified developer. The extension is reviewed by Google before each update.</p>
+                  </div>
+                </div>
+                <div class="audit-item" data-reveal>
+                  <div class="audit-item__check audit-item__check--info" aria-hidden="true"><i data-lucide="check"></i></div>
+                  <div class="audit-item__content">
+                    <p class="audit-item__title">Reproducible Builds</p>
+                    <p class="audit-item__detail">Build instructions are included in the repository so you can verify the published extension matches the source code.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Source Code CTA -->
+            <div class="source-cta">
+              <div class="source-cta__icon" aria-hidden="true">
+                <i data-lucide="github"></i>
+              </div>
+              <div class="source-cta__text">
+                <p class="source-cta__title">Verify It Yourself</p>
+                <p class="source-cta__detail">Review the full source code on GitHub</p>
+              </div>
+              <a href="https://github.com/inboxkey/extension" target="_blank" rel="noopener noreferrer" class="source-cta__link" aria-label="View InboxKey source code on GitHub">
+                View Source <i data-lucide="arrow-right" style="width:14px;height:14px"></i>
+              </a>
+            </div>
+
+            <!-- Contact Footer -->
+            <div class="security-contact">
+              <div class="security-contact__icon" aria-hidden="true">
+                <i data-lucide="mail"></i>
+              </div>
+              <div class="security-contact__text">
+                <p class="security-contact__title">Found a security issue?</p>
+                <p class="security-contact__detail">Report vulnerabilities responsibly at <a href="mailto:security@inboxkey.com" aria-label="Email security team at security@inboxkey.com">security@inboxkey.com</a></p>
+              </div>
+            </div>
+
+          </section>
+        </div>
+
+      </div>
+    </div>
+  </main>
+
+  <!-- ============================
+       DESIGN DECISIONS
+       ============================ -->
+  <script type="application/json" id="decisions">
+  [
+    "Audit-checklist layout - Each security feature is presented as a verified checklist item with a green checkmark, borrowing from compliance audit UIs. This pattern builds trust by implying rigorous review, making users feel their data is handled with institutional-grade care rather than casual promises.",
+    "Decorative trust score ring - The A+ score ring at the top is purely decorative (always maximum) but serves a critical psychological purpose: it anchors the page with a strong positive signal before users read the details. The animated ring fill draws attention and creates a moment of satisfaction, reinforcing confidence.",
+    "Permission-purpose pairing with code tags - Each Chrome permission is shown alongside its exact manifest key in a monospace code tag and a plain-language explanation. This dual representation serves both technical and non-technical users: developers can verify the manifest, while regular users understand in plain English why each permission exists.",
+    "Section icon color coding (green vs blue) - Green icons mark security guarantees users directly benefit from (privacy, storage, encryption). Blue icons mark informational/verification items (permissions, open source). This subtle distinction helps users quickly identify what protects them versus what they can independently verify.",
+    "Staggered reveal animation for audit items - Each checklist item fades in with a slight upward slide, staggered by 80ms. This creates a satisfying sequential reveal that mimics a real-time security scan completing, reinforcing the audit metaphor. The animation respects prefers-reduced-motion by disabling entirely.",
+    "Prominent GitHub CTA with action button - The open source verification section ends with a visually distinct call-to-action card that includes a direct link to GitHub. Placing it after the audit items ensures users who read through the security details can immediately verify claims, closing the trust loop.",
+    "Responsive permission grid collapse - On mobile, the three-column permission grid (icon + name + reason) collapses to a single column with the icon hidden, prioritizing the permission name and explanation. This ensures readability on small screens without losing the essential information.",
+    "Contact section as trust anchor - The security contact footer with a direct email address serves as a final trust signal. Providing a dedicated security reporting channel demonstrates mature security practices and gives users a clear action if they discover vulnerabilities."
+  ]
+  </script>
+
+  <script src="../shared/theme-switcher.js"></script>
+
+  <!-- Animate score ring and stagger reveal items on load -->
+  <script>
+  (function () {
+    'use strict';
+
+    // Animate score ring
+    window.addEventListener('load', function () {
+      var fill = document.querySelector('.score-ring__fill');
+      var value = document.querySelector('.score-ring__value');
+      var sublabel = document.querySelector('.score-ring__sublabel');
+
+      if (fill) {
+        // Trigger ring fill animation after brief delay
+        setTimeout(function () {
+          fill.classList.add('score-ring__fill--animated');
+        }, 300);
+      }
+
+      if (value) {
+        setTimeout(function () {
+          value.classList.add('score-ring__value--visible');
+        }, 300);
+      }
+
+      if (sublabel) {
+        setTimeout(function () {
+          sublabel.classList.add('score-ring__sublabel--visible');
+        }, 300);
+      }
+
+      // Staggered reveal for audit items and permission rows
+      var revealItems = document.querySelectorAll('[data-reveal]');
+      revealItems.forEach(function (item, index) {
+        setTimeout(function () {
+          item.classList.add('audit-item--revealed');
+          item.classList.add('permission-row--revealed');
+        }, 600 + (index * 80));
+      });
+    });
+
+    // Initialize Lucide icons
+    if (typeof lucide !== 'undefined') {
+      lucide.createIcons();
+    }
+  })();
+  </script>
+</body>
+</html>
