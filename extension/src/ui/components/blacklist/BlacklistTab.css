@@ -14,9 +14,9 @@
 /* Description */
 .blacklist-description {
   padding: var(--space-3, 12px);
-  background: var(--color-info-bg, #334155);
+  background: var(--color-bg-primary);
   border-radius: var(--radius-md, 6px);
-  border: 1px solid rgba(100, 116, 139, 0.3);
+  border: none;
 }
 
 .blacklist-description p {
@@ -60,18 +60,19 @@
   flex: 1;
   min-height: var(--min-tap-target, 44px);
   padding: var(--space-3, 12px);
-  border: 1px solid var(--color-border, #e5e7eb);
+  border: 1px solid var(--color-border);
   border-radius: var(--radius-md, 6px);
   font-size: var(--font-size-base, 16px);
   font-family: var(--font-system);
+  background: var(--surface-card);
   transition: border-color var(--duration-fast, 150ms) ease-out,
               box-shadow var(--duration-fast, 150ms) ease-out;
 }
 
 .blacklist-input:focus {
   outline: none;
-  border-color: var(--color-primary, #3B82F6);
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.12);
 }
 
 .blacklist-input[aria-invalid="true"] {
@@ -166,12 +167,14 @@
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: var(--space-2, 8px);
+  gap: var(--space-1, 4px);
   max-height: 300px;
   overflow-y: auto;
-  border: 1px solid var(--color-border, #e5e7eb);
-  border-radius: var(--radius-md, 6px);
-  padding: var(--space-2, 8px);
+  border: none;
+  border-radius: var(--radius-lg, 12px);
+  background: var(--surface-card);
+  box-shadow: var(--shadow-sm);
+  padding: var(--space-1, 4px);
 }
 
 .blacklist-item {
@@ -180,14 +183,14 @@
   justify-content: space-between;
   gap: var(--space-3, 12px);
   padding: var(--space-3, 12px);
-  background: var(--surface-card, #ffffff);
-  border: 1px solid var(--color-border, #e5e7eb);
-  border-radius: var(--radius-md, 6px);
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-md, 8px);
   transition: background var(--duration-fast, 150ms) ease-out;
 }
 
 .blacklist-item:hover {
-  background: var(--surface-card-muted, #f9fafb);
+  background: var(--color-bg-primary);
 }
 
 .blacklist-item-text {
@@ -219,12 +222,12 @@
 }
 
 .blacklist-remove-btn:hover {
-  background: var(--color-error-bg, #FEE2E2);
-  color: var(--color-error, #EF4444);
+  background: var(--color-error-light);
+  color: var(--color-error);
 }
 
 .blacklist-remove-btn:focus-visible {
-  outline: 2px solid var(--color-primary, #3B82F6);
+  outline: 2px solid var(--color-primary);
   outline-offset: 2px;
 }
 
@@ -253,12 +256,12 @@
 }
 
 .btn--primary {
-  background: var(--color-primary, #3B82F6);
+  background: var(--color-primary);
   color: white;
 }
 
 .btn--primary:hover:not(:disabled) {
-  background: var(--color-primary-hover, #2563EB);
+  opacity: 0.88;
 }
 
 .btn--primary:active:not(:disabled) {
@@ -266,13 +269,13 @@
 }
 
 .btn--secondary {
-  background: var(--surface-card, #ffffff);
-  color: var(--color-text-primary, #111827);
-  border: 1px solid var(--color-border, #e5e7eb);
+  background: var(--surface-card);
+  color: var(--color-text-primary);
+  box-shadow: var(--shadow-sm);
 }
 
 .btn--secondary:hover:not(:disabled) {
-  background: var(--surface-card-muted, #f9fafb);
+  box-shadow: var(--shadow-md);
 }
 
 .btn--text {

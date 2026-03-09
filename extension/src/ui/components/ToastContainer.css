@@ -15,8 +15,10 @@
   min-width: 280px;
   max-width: 360px;
   padding: var(--space-3) var(--space-4);
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-xl);
   box-shadow: var(--shadow-toast);
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
   pointer-events: auto;
   opacity: 0;
   transform: translateX(40px);

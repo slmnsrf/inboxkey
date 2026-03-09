@@ -11,6 +11,7 @@
  */
 
 import React from 'react'
+import { X } from 'lucide-react'
 import './BlacklistSearchFilter.css'
 
 interface BlacklistSearchFilterProps {
@@ -52,7 +53,7 @@ export function BlacklistSearchFilter({
           onClick={handleClear}
           aria-label="Clear search"
         >
-          ✕
+          <X size={14} />
         </button>
       )}
     </div>

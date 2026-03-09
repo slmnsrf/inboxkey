@@ -58,7 +58,7 @@ InboxKey is a Manifest V3 Chrome/Chromium extension that keeps verification-code
 │   │   │   │   ├── schema.ts
 │   │   │   │   ├── domain-preferences.ts
 │   │   │   │   └── ...
-│   │   │   ├── crypto/          # Encryption (AES-256-GCM)
+│   │   │   ├── crypto/          # Encryption (planned, not yet implemented)
 │   │   │   └── utils/           # Shared utilities
 │   │   ├── popup/               # Popup UI (React)
 │   │   ├── options/             # Settings page (React)
@@ -98,7 +98,7 @@ InboxKey is a Manifest V3 Chrome/Chromium extension that keeps verification-code
 ## Architecture Principles
 
 - **Layered microkernel.** Presentation → Application services → Domain logic → Infrastructure. Cross-layer access only through typed contracts; shared utilities stay below 350 LOC per file.
-- **Privacy-first zero trust.** No external servers, strict permission grants, encrypted-at-rest secrets, and explicit UI for open-source visibility plus "Buy me a coffee" support link.
+- **Privacy-first zero trust.** No external servers, strict permission grants, local-only storage (encryption at rest planned), and explicit UI for open-source visibility plus "Buy me a coffee" support link.
 - **Resilient MV3 runtime.** Every workflow tolerates service-worker restarts via idempotent requests, cached state, and defensive reconnect loops.
 - **Accessibility and maintainability.** UI surfaces use the design system tokens, ARIA semantics, keyboard flows, and predictable component boundaries.
 
@@ -115,8 +115,8 @@ InboxKey is a Manifest V3 Chrome/Chromium extension that keeps verification-code
 │                                    │ @inboxkey/extraction-core      │
 │                                    │ Provider adapters              │
 ├────────────────────────────────────┤
-│ Infrastructure                     │ Storage factory • KeyManager   │
-│                                    │ Encryption • Migration         │
+│ Infrastructure                     │ Storage factory                │
+│                                    │ Migration • Utilities          │
 └────────────────────────────────────┘
 ```
 
@@ -137,8 +137,7 @@ InboxKey is a Manifest V3 Chrome/Chromium extension that keeps verification-code
 - The watch-session controller coordinates timing windows, cache hydration, confidence scoring, and manual fallback data.
 
 ### Infrastructure Layer
-- Crypto (`lib/crypto`) manages master key lifecycle, AES-256-GCM encryption, and PBKDF2 derivation.
-- Storage (`lib/storage`) wraps `chrome.storage.local/session` and `indexedDB` with migrations, retention windows (codes 24h, links 7d), and selective encryption for sensitive fields.
+- Storage (`lib/storage`) wraps `chrome.storage.local/session` with migrations and retention windows (codes ephemeral via session storage). Encryption at rest is planned but not yet implemented; tokens and codes are currently stored in plaintext.
 - **Domain Preferences (`lib/storage/domain-preferences`):** Per-domain toggle allowing users to enable/disable InboxKey on specific sites. Uses eTLD+1 extraction for domain matching. Preferences stored in `chrome.storage.local` with a global default setting (`domainsEnabledByDefault`). Content scripts check domain state before executing autofill or watch session logic. UI toggle appears in popup footer with visual warning when disabled.
 - Shared utilities (`lib/utils`, `lib/cache`) provide memoized caches, logging, and delimited background tasks.
 
@@ -232,7 +231,7 @@ Integrated within Tier 1 (<0.05ms), distinguishes email-based codes (InboxKey ca
 ## Security & Privacy
 
 - **Local-only data path.** No remote services; OAuth tokens and parsed content never leave the device.
-- **Encryption.** Sensitive records use AES-256-GCM with per-user master keys derived via PBKDF2-SHA256 (600k iterations). Non-sensitive metadata stays plaintext for quick lookups.
+- **Storage.** Tokens stored in chrome.storage.local (plaintext). Verification codes are ephemeral (chrome.storage.session only, cleared on browser close). Encryption at rest (AES-256-GCM) is planned for a future release.
 - **Permissions.** Minimal manifest scopes: Gmail `gmail.readonly`, Outlook `Mail.Read`, `User.Read`, `offline_access`, identity, storage, and activeTab; all disclosed in Settings/About alongside license/source/support links.
 - **Safety blocks.** The extension never auto-launches password reset links, warns on risky actions, and preserves focus-visible keyboard navigation throughout.
 
@@ -256,7 +255,7 @@ Integrated within Tier 1 (<0.05ms), distinguishes email-based codes (InboxKey ca
 
 ## Testing & Validation
 
-- **Unit tests (Vitest + happy-dom).** Cover crypto primitives, detection heuristics, extraction pipelines, storage factories, and service orchestration.
+- **Unit tests (Vitest + happy-dom).** Cover detection heuristics, extraction pipelines, storage factories, and service orchestration.
 - **E2E tests (Playwright).** Validate watch sessions, popup workflows, magic-link handling, and performance metrics (≤50 ms popup open, 0.3 ms field detection).
 - **QA-OPS policy.** Risk-based levels per `qa-ops.md`; security-sensitive changes trigger full regression plus threat review.
 

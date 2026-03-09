@@ -8,6 +8,7 @@ import React, { useState, useEffect } from 'react'
 import { StorageFactory } from '@/lib/storage/storage-factory'
 import { useToast } from '@/ui/contexts/ToastContext'
 import { t } from '@/lib/i18n'
+import { ChevronDown, ChevronRight } from 'lucide-react'
 import { WarningIcon } from '@/ui/components/icons/StatusIcons'
 import type { AutomationLevel } from '@/lib/storage/schema'
 
@@ -127,7 +128,7 @@ export function AdvancedSettings() {
           aria-controls="advanced-settings-content"
         >
           <span className="advanced-settings-card__toggle-icon" aria-hidden="true">
-            {isExpanded ? '▼' : '▶'}
+            {isExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
           </span>
           <h3 id="advanced-heading">{t('settings_advanced_section')}</h3>
         </button>
