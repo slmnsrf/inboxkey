@@ -111,13 +111,23 @@ function OptionsApp() {
                 role="region"
                 aria-label={t('settings_trust_region_label')}
               >
-                <span className="trust-chip"><Puzzle size={14} /> {t('settings_trust_open_source')}</span>
-                <span className="trust-chip"><Lock size={14} /> {t('settings_trust_local_only')}</span>
-                <span className="trust-chip"><ShieldCheck size={14} /> {t('settings_trust_safe')}</span>
-                <span className="trust-banner__spacer" aria-hidden="true" />
-                <span className="trust-banner__note">
+                <p className="trust-banner__headline">
                   {t('settings_trust_summary')}
-                </span>
+                </p>
+                <div className="trust-banner__pillars">
+                  <div className="trust-pillar">
+                    <span className="trust-pillar__icon" aria-hidden="true"><Puzzle size={18} /></span>
+                    <span className="trust-pillar__label">{t('settings_trust_open_source')}</span>
+                  </div>
+                  <div className="trust-pillar">
+                    <span className="trust-pillar__icon" aria-hidden="true"><Lock size={18} /></span>
+                    <span className="trust-pillar__label">{t('settings_trust_local_only')}</span>
+                  </div>
+                  <div className="trust-pillar">
+                    <span className="trust-pillar__icon" aria-hidden="true"><ShieldCheck size={18} /></span>
+                    <span className="trust-pillar__label">{t('settings_trust_safe')}</span>
+                  </div>
+                </div>
               </section>
 
               <TabNavigation activeTab={activeTab} onTabChange={setActiveTab} />
