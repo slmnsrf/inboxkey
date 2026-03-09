@@ -6,6 +6,7 @@
  */
 
 import React from 'react'
+import { Coffee } from 'lucide-react'
 
 const BUY_ME_A_COFFEE_URL = 'https://buymeacoffee.com/inboxkey'
 
@@ -55,8 +56,8 @@ export function BuyMeACoffeeButton({
       data-coffee-color="#ffffff"
       {...anchorProps}
     >
-      <span className="buy-coffee-button__emoji" aria-hidden="true">
-        ☕
+      <span className="buy-coffee-button__icon" aria-hidden="true">
+        <Coffee size={16} />
       </span>
       <span className="buy-coffee-button__label">{label}</span>
       {children}

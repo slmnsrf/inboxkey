@@ -10,6 +10,7 @@ import { t } from '@/lib/i18n'
 import { useFocusTrap, useEscapeKey } from '@/ui/hooks/useFocusTrap'
 import { getNativeClient } from '@/lib/providers/imap-bridge/native-client'
 import { INBOXBRIDGE_RELEASES_URL } from '@/lib/constants'
+import { ExternalLink } from 'lucide-react'
 import { CheckIcon } from '../icons/StatusIcons'
 
 interface AddImapAccountModalProps {
@@ -403,7 +404,7 @@ export function AddImapAccountModal({
                   className="form-hint-link"
                   aria-label={t('accounts_imap_password_help_link_aria')}
                 >
-                  {t('accounts_imap_password_help_link')} <span aria-hidden="true">↗</span>
+                  {t('accounts_imap_password_help_link')} <ExternalLink size={12} aria-hidden="true" style={{ verticalAlign: 'middle' }} />
                 </a>
               </p>
             </div>

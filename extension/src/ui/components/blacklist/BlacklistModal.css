@@ -23,7 +23,7 @@
   padding: var(--space-3, 12px) var(--space-4, 16px);
   border: none;
   background: transparent;
-  color: var(--color-text-secondary, #6b7280);
+  color: var(--color-text-secondary, #636366);
   font-size: var(--font-size-base, 16px);
   font-weight: var(--font-weight-medium, 500);
   cursor: pointer;
@@ -35,17 +35,17 @@
 }
 
 .blacklist-tab:hover:not(.blacklist-tab--active) {
-  color: var(--color-text-primary, #111827);
+  color: var(--color-text-primary, #1C1C1E);
 }
 
 .blacklist-tab--active {
-  color: var(--color-primary, #3B82F6);
-  border-bottom-color: var(--color-primary, #3B82F6);
+  color: var(--color-primary, #007AFF);
+  border-bottom-color: var(--color-primary, #007AFF);
   font-weight: var(--font-weight-semibold, 600);
 }
 
 .blacklist-tab:focus-visible {
-  outline: 2px solid var(--color-primary, #3B82F6);
+  outline: 2px solid var(--color-primary, #007AFF);
   outline-offset: 2px;
   border-radius: var(--radius-md, 6px);
 }
