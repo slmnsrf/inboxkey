@@ -1,0 +1,957 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="status" content="Ideation">
+  <meta name="date" content="2026-03-09">
+  <meta name="category" content="settings">
+  <title>About Tab - InboxKey Prototype</title>
+  <link rel="stylesheet" href="../shared/tokens.css">
+
+  <!-- Lucide Icons CDN for prototype -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <style>
+    /* ============================
+       GLOBAL RESET
+       ============================ */
+
+    *, *::before, *::after { box-sizing: border-box; }
+    body { margin: 0; }
+
+    /* ============================
+       PAGE SHELL (mirrors options.css)
+       ============================ */
+
+    .options-container {
+      min-height: 100vh;
+      background: var(--color-bg-primary);
+      color: var(--color-text-primary);
+      font-family: var(--font-system);
+      font-size: var(--font-size-base);
+      line-height: var(--line-height-normal);
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    .options-shell {
+      max-width: 840px;
+      margin: 0 auto;
+      padding: var(--space-6);
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-6);
+    }
+
+    /* ============================
+       HEADER
+       ============================ */
+
+    .options-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding-bottom: var(--space-3);
+      border-bottom: 1px solid var(--color-border);
+    }
+
+    .options-header__identity {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+    }
+
+    .brand__icon {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 40px;
+      height: 40px;
+      background: var(--color-primary);
+      color: var(--color-text-inverse);
+      border-radius: var(--radius-lg);
+    }
+
+    .brand__title {
+      margin: 0;
+      font-size: var(--font-size-2xl);
+      font-weight: var(--font-weight-bold);
+      letter-spacing: -0.03em;
+    }
+
+    .privacy-line {
+      margin: 0;
+      font-size: var(--font-size-xs);
+      color: var(--color-text-tertiary);
+    }
+
+    .options-header__actions {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+    }
+
+    .support-link {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: var(--space-2) var(--space-3);
+      border-radius: var(--radius-full);
+      font-size: var(--font-size-xs);
+      font-weight: var(--font-weight-medium);
+      color: var(--color-text-secondary);
+      background: var(--surface-card);
+      border: 1px solid var(--color-border);
+      text-decoration: none;
+      transition: background var(--duration-fast) ease-out;
+    }
+
+    .support-link:hover {
+      background: var(--surface-card-muted);
+    }
+
+    .coffee-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-2);
+      padding: var(--space-2) var(--space-4);
+      border-radius: var(--radius-full);
+      font-size: var(--font-size-xs);
+      font-weight: var(--font-weight-semibold);
+      color: var(--color-support-text);
+      background: var(--color-support-bg);
+      border: 1px solid var(--color-support-border);
+      text-decoration: none;
+      cursor: pointer;
+      transition: filter var(--duration-fast) ease-out;
+    }
+
+    .coffee-btn:hover {
+      filter: brightness(0.95);
+    }
+
+    /* ============================
+       TRUST BANNER
+       ============================ */
+
+    .trust-banner {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: var(--space-3);
+      padding: var(--space-5) var(--space-6);
+      background: var(--surface-card);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-xl);
+      box-shadow: var(--shadow-sm);
+      text-align: center;
+    }
+
+    .trust-banner__headline {
+      margin: 0;
+      font-size: var(--font-size-sm);
+      color: var(--color-text-secondary);
+      font-weight: var(--font-weight-medium);
+    }
+
+    .trust-banner__pillars {
+      display: flex;
+      align-items: center;
+      gap: var(--space-6);
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .trust-pillar {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+    }
+
+    .trust-pillar__icon {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 28px;
+      height: 28px;
+      border-radius: var(--radius-md);
+      background: var(--color-primary-light);
+      color: var(--color-primary);
+    }
+
+    .trust-pillar__label {
+      font-size: var(--font-size-sm);
+      font-weight: var(--font-weight-medium);
+      color: var(--color-text-primary);
+      white-space: nowrap;
+    }
+
+    /* ============================
+       TAB NAVIGATION
+       ============================ */
+
+    .tab-navigation {
+      display: flex;
+      border-bottom: 1px solid var(--color-border);
+      gap: 0;
+    }
+
+    .tab-button {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-2);
+      padding: var(--space-3) var(--space-4);
+      border: none;
+      background: transparent;
+      color: var(--color-text-secondary);
+      font-family: var(--font-system);
+      font-size: var(--font-size-sm);
+      font-weight: var(--font-weight-medium);
+      cursor: pointer;
+      position: relative;
+      transition: color var(--duration-fast) ease-out;
+    }
+
+    .tab-button__icon {
+      display: flex;
+      align-items: center;
+      opacity: 0.7;
+    }
+
+    .tab-button:hover {
+      color: var(--color-text-primary);
+    }
+
+    .tab-button--active {
+      color: var(--color-primary);
+    }
+
+    .tab-button--active .tab-button__icon {
+      opacity: 1;
+    }
+
+    .tab-button--active::after {
+      content: '';
+      position: absolute;
+      bottom: -1px;
+      left: var(--space-4);
+      right: var(--space-4);
+      height: 2px;
+      background: var(--color-primary);
+      border-radius: 1px 1px 0 0;
+    }
+
+    /* ============================
+       SECTION CONTAINER
+       ============================ */
+
+    .section {
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-xl);
+      background: var(--surface-card);
+      box-shadow: var(--shadow-sm);
+      overflow: hidden;
+    }
+
+    /* ============================
+       ABOUT PAGE -- EDITORIAL LAYOUT
+       ============================ */
+
+    .about-page {
+      padding: var(--space-8) var(--space-6);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: var(--space-8);
+    }
+
+    /* --- Hero / Brand Statement --- */
+
+    .about-hero {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: var(--space-4);
+      text-align: center;
+      max-width: 520px;
+      animation: aboutFadeUp 600ms var(--easing-out) both;
+    }
+
+    .about-hero__logo {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 72px;
+      height: 72px;
+      background: var(--color-primary);
+      color: var(--color-text-inverse);
+      border-radius: var(--radius-xl);
+      box-shadow: var(--shadow-md);
+    }
+
+    .about-hero__name {
+      margin: 0;
+      font-size: 32px;
+      font-weight: var(--font-weight-bold);
+      letter-spacing: -0.04em;
+      color: var(--color-text-primary);
+      line-height: 1.1;
+    }
+
+    .about-hero__version {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-2);
+      padding: var(--space-1) var(--space-3);
+      border-radius: var(--radius-full);
+      background: var(--badge-bg);
+      border: 1px solid var(--badge-border);
+      font-size: var(--font-size-xs);
+      font-weight: var(--font-weight-medium);
+      color: var(--color-text-secondary);
+      font-family: var(--font-mono);
+    }
+
+    .about-hero__tagline {
+      margin: 0;
+      font-size: var(--font-size-lg);
+      color: var(--color-text-secondary);
+      font-weight: var(--font-weight-normal);
+      line-height: var(--line-height-normal);
+    }
+
+    /* --- Feature Highlights --- */
+
+    .about-features {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: var(--space-4);
+      width: 100%;
+      animation: aboutFadeUp 600ms 120ms var(--easing-out) both;
+    }
+
+    .about-feature {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: var(--space-3);
+      padding: var(--space-5) var(--space-4);
+      border-radius: var(--radius-lg);
+      background: var(--surface-card-muted);
+      border: 1px solid var(--color-border);
+      text-align: center;
+      transition: transform var(--duration-normal) var(--easing-out),
+                  box-shadow var(--duration-normal) var(--easing-out),
+                  border-color var(--duration-normal) var(--easing-out);
+    }
+
+    .about-feature:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-md);
+      border-color: var(--color-border-hover);
+    }
+
+    .about-feature__icon {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 44px;
+      height: 44px;
+      border-radius: var(--radius-lg);
+      background: var(--color-primary-light);
+      color: var(--color-primary);
+    }
+
+    .about-feature__title {
+      margin: 0;
+      font-size: var(--font-size-base);
+      font-weight: var(--font-weight-semibold);
+      color: var(--color-text-primary);
+    }
+
+    .about-feature__desc {
+      margin: 0;
+      font-size: var(--font-size-sm);
+      color: var(--color-text-secondary);
+      line-height: var(--line-height-normal);
+    }
+
+    /* --- Divider --- */
+
+    .about-divider {
+      width: 100%;
+      height: 1px;
+      background: var(--color-border);
+      border: none;
+      margin: 0;
+    }
+
+    /* --- Links Section --- */
+
+    .about-links {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-4);
+      width: 100%;
+      animation: aboutFadeUp 600ms 240ms var(--easing-out) both;
+    }
+
+    .about-links__title {
+      margin: 0;
+      font-size: var(--font-size-xs);
+      font-weight: var(--font-weight-semibold);
+      color: var(--color-text-tertiary);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .about-links__grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: var(--space-3);
+    }
+
+    .about-link-card {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+      padding: var(--space-3) var(--space-4);
+      border-radius: var(--radius-lg);
+      background: var(--surface-card-muted);
+      border: 1px solid var(--color-border);
+      text-decoration: none;
+      color: var(--color-text-primary);
+      transition: background var(--duration-fast) var(--easing-out),
+                  border-color var(--duration-fast) var(--easing-out),
+                  transform var(--duration-fast) var(--easing-out);
+    }
+
+    .about-link-card:hover {
+      background: var(--color-bg-secondary);
+      border-color: var(--color-border-hover);
+      transform: translateY(-1px);
+    }
+
+    .about-link-card:focus-visible {
+      outline: 2px solid var(--color-primary);
+      outline-offset: 2px;
+    }
+
+    .about-link-card__icon {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      width: 36px;
+      height: 36px;
+      border-radius: var(--radius-md);
+      background: var(--color-primary-light);
+      color: var(--color-primary);
+    }
+
+    .about-link-card__text {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      min-width: 0;
+    }
+
+    .about-link-card__label {
+      font-size: var(--font-size-sm);
+      font-weight: var(--font-weight-medium);
+      color: var(--color-text-primary);
+    }
+
+    .about-link-card__hint {
+      font-size: var(--font-size-xs);
+      color: var(--color-text-tertiary);
+    }
+
+    .about-link-card__arrow {
+      margin-left: auto;
+      flex-shrink: 0;
+      color: var(--color-text-tertiary);
+      transition: transform var(--duration-fast) var(--easing-out);
+    }
+
+    .about-link-card:hover .about-link-card__arrow {
+      transform: translateX(2px);
+    }
+
+    /* --- Support CTA Section --- */
+
+    .about-support {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: var(--space-4);
+      width: 100%;
+      padding: var(--space-6);
+      border-radius: var(--radius-lg);
+      background: var(--surface-card-muted);
+      border: 1px solid var(--color-border);
+      text-align: center;
+      animation: aboutFadeUp 600ms 360ms var(--easing-out) both;
+    }
+
+    .about-support__icon {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 48px;
+      height: 48px;
+      border-radius: var(--radius-full);
+      background: var(--color-support-bg);
+      font-size: 24px;
+      line-height: 1;
+    }
+
+    .about-support__heading {
+      margin: 0;
+      font-size: var(--font-size-xl);
+      font-weight: var(--font-weight-semibold);
+      color: var(--color-text-primary);
+    }
+
+    .about-support__message {
+      margin: 0;
+      font-size: var(--font-size-sm);
+      color: var(--color-text-secondary);
+      line-height: var(--line-height-normal);
+      max-width: 400px;
+    }
+
+    .about-support__cta {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-2);
+      padding: var(--space-3) var(--space-6);
+      border-radius: var(--radius-full);
+      font-size: var(--font-size-base);
+      font-weight: var(--font-weight-semibold);
+      color: var(--color-support-text);
+      background: var(--color-support-bg);
+      border: none;
+      text-decoration: none;
+      cursor: pointer;
+      box-shadow: var(--shadow-sm);
+      transition: transform var(--duration-fast) var(--easing-out),
+                  box-shadow var(--duration-fast) var(--easing-out);
+    }
+
+    .about-support__cta:hover {
+      transform: translateY(-1px);
+      box-shadow: var(--shadow-md);
+    }
+
+    .about-support__cta:active {
+      transform: translateY(0);
+    }
+
+    .about-support__cta:focus-visible {
+      outline: 2px solid var(--color-primary);
+      outline-offset: 2px;
+    }
+
+    .about-support__disclaimer {
+      margin: 0;
+      font-size: var(--font-size-xs);
+      color: var(--color-text-tertiary);
+      font-style: italic;
+    }
+
+    /* --- Footer / Credits --- */
+
+    .about-footer {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: var(--space-3);
+      width: 100%;
+      padding-top: var(--space-4);
+      border-top: 1px solid var(--color-border);
+      animation: aboutFadeUp 600ms 480ms var(--easing-out) both;
+    }
+
+    .about-footer__license {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-2);
+      padding: var(--space-1) var(--space-3);
+      border-radius: var(--radius-full);
+      background: var(--color-success-light);
+      font-size: var(--font-size-xs);
+      font-weight: var(--font-weight-medium);
+      color: var(--color-success-dark);
+    }
+
+    .about-footer__credits {
+      margin: 0;
+      font-size: var(--font-size-sm);
+      color: var(--color-text-secondary);
+      text-align: center;
+      line-height: var(--line-height-normal);
+    }
+
+    .about-footer__credits a {
+      color: var(--color-text-link);
+      text-decoration: none;
+    }
+
+    .about-footer__credits a:hover {
+      text-decoration: underline;
+    }
+
+    .about-footer__build {
+      margin: 0;
+      font-size: var(--font-size-xs);
+      color: var(--color-text-tertiary);
+      font-family: var(--font-mono);
+    }
+
+    /* --- Entrance Animations --- */
+
+    @keyframes aboutFadeUp {
+      from {
+        opacity: 0;
+        transform: translateY(12px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .about-hero,
+      .about-features,
+      .about-links,
+      .about-support,
+      .about-footer {
+        animation: none !important;
+      }
+    }
+
+    /* --- Responsive --- */
+
+    @media (max-width: 640px) {
+      .options-shell {
+        padding: var(--space-4);
+      }
+
+      .options-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: var(--space-3);
+      }
+
+      .options-header__actions {
+        width: 100%;
+        justify-content: flex-start;
+      }
+
+      .trust-banner__pillars {
+        gap: var(--space-3);
+      }
+
+      .about-page {
+        padding: var(--space-6) var(--space-4);
+        gap: var(--space-6);
+      }
+
+      .about-hero__name {
+        font-size: 26px;
+      }
+
+      .about-features {
+        grid-template-columns: 1fr;
+      }
+
+      .about-links__grid {
+        grid-template-columns: 1fr;
+      }
+
+      .about-support {
+        padding: var(--space-5) var(--space-4);
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ================================
+       PROTO TOOLBAR
+       ================================ -->
+  <div class="proto-toolbar">
+    <div class="proto-toolbar__left">
+      <span class="proto-toolbar__title">About Tab</span>
+      <span class="proto-toolbar__status" data-status="ideation">Ideation</span>
+      <span class="proto-toolbar__date">2026-03-09</span>
+    </div>
+    <div class="proto-toolbar__right">
+      <div class="proto-theme-toggle">
+        <button data-theme-btn="light" aria-pressed="true">Light</button>
+        <button data-theme-btn="dark" aria-pressed="false">Dark</button>
+      </div>
+      <button class="proto-decisions-toggle">Decisions</button>
+    </div>
+  </div>
+
+  <!-- ================================
+       DECISIONS PANEL
+       ================================ -->
+  <aside class="proto-decisions-panel" aria-label="Design decisions">
+    <button class="proto-decisions-close" aria-label="Close decisions panel">&times;</button>
+    <h3>Design Decisions</h3>
+    <ol></ol>
+  </aside>
+
+  <!-- ================================
+       PAGE CONTENT
+       ================================ -->
+  <div class="proto-canvas">
+    <div class="options-container">
+      <div class="options-shell">
+
+        <!-- HEADER -->
+        <header class="options-header" aria-labelledby="options-title">
+          <div class="options-header__identity">
+            <span class="brand__icon" aria-hidden="true">
+              <i data-lucide="key-round" style="width:24px;height:24px;"></i>
+            </span>
+            <div>
+              <h1 id="options-title" class="brand__title">InboxKey</h1>
+              <p class="privacy-line">100% local. Your data never leaves your device.</p>
+            </div>
+          </div>
+          <div class="options-header__actions">
+            <a class="support-link" href="#" aria-label="View source on GitHub">View Source</a>
+            <a class="coffee-btn" href="#" aria-label="Support InboxKey development">
+              <span>&#9749;</span>
+              <span>Buy me a coffee</span>
+            </a>
+          </div>
+        </header>
+
+        <!-- TRUST BANNER -->
+        <section class="trust-banner" role="region" aria-label="Trust indicators">
+          <p class="trust-banner__headline">Your privacy is our foundation, not an afterthought.</p>
+          <div class="trust-banner__pillars">
+            <div class="trust-pillar">
+              <span class="trust-pillar__icon" aria-hidden="true">
+                <i data-lucide="puzzle" style="width:16px;height:16px;"></i>
+              </span>
+              <span class="trust-pillar__label">Open Source</span>
+            </div>
+            <div class="trust-pillar">
+              <span class="trust-pillar__icon" aria-hidden="true">
+                <i data-lucide="lock" style="width:16px;height:16px;"></i>
+              </span>
+              <span class="trust-pillar__label">100% Local</span>
+            </div>
+            <div class="trust-pillar">
+              <span class="trust-pillar__icon" aria-hidden="true">
+                <i data-lucide="shield-check" style="width:16px;height:16px;"></i>
+              </span>
+              <span class="trust-pillar__label">Verified Safe</span>
+            </div>
+          </div>
+        </section>
+
+        <!-- TAB NAVIGATION -->
+        <nav class="tab-navigation" role="tablist" aria-label="Settings sections">
+          <button class="tab-button" role="tab" aria-selected="false" id="accounts-tab">
+            <span class="tab-button__icon" aria-hidden="true">
+              <i data-lucide="users" style="width:16px;height:16px;"></i>
+            </span>
+            Accounts
+          </button>
+          <button class="tab-button" role="tab" aria-selected="false" id="security-tab">
+            <span class="tab-button__icon" aria-hidden="true">
+              <i data-lucide="shield" style="width:16px;height:16px;"></i>
+            </span>
+            Security
+          </button>
+          <button class="tab-button" role="tab" aria-selected="false" id="settings-tab">
+            <span class="tab-button__icon" aria-hidden="true">
+              <i data-lucide="settings" style="width:16px;height:16px;"></i>
+            </span>
+            Settings
+          </button>
+          <button class="tab-button tab-button--active" role="tab" aria-selected="true" id="about-tab">
+            <span class="tab-button__icon" aria-hidden="true">
+              <i data-lucide="info" style="width:16px;height:16px;"></i>
+            </span>
+            About
+          </button>
+        </nav>
+
+        <!-- ABOUT TAB PANEL -->
+        <main>
+          <div id="about-panel" role="tabpanel" aria-labelledby="about-tab">
+            <section class="section">
+              <div class="about-page">
+
+                <!-- HERO / BRAND STATEMENT -->
+                <div class="about-hero">
+                  <div class="about-hero__logo" aria-hidden="true">
+                    <i data-lucide="key-round" style="width:36px;height:36px;"></i>
+                  </div>
+                  <h2 class="about-hero__name">InboxKey</h2>
+                  <span class="about-hero__version">
+                    <i data-lucide="tag" style="width:12px;height:12px;" aria-hidden="true"></i>
+                    v1.4.2 &middot; build a3f8c01e
+                  </span>
+                  <p class="about-hero__tagline">Built with privacy in mind. Your verification codes, detected locally, filled instantly.</p>
+                </div>
+
+                <!-- FEATURE HIGHLIGHTS -->
+                <div class="about-features" role="list" aria-label="Core principles">
+                  <div class="about-feature" role="listitem">
+                    <div class="about-feature__icon" aria-hidden="true">
+                      <i data-lucide="code-2" style="width:22px;height:22px;"></i>
+                    </div>
+                    <h3 class="about-feature__title">Open Source</h3>
+                    <p class="about-feature__desc">Every line of code is public. Inspect, audit, and verify exactly what runs on your machine.</p>
+                  </div>
+                  <div class="about-feature" role="listitem">
+                    <div class="about-feature__icon" aria-hidden="true">
+                      <i data-lucide="hard-drive" style="width:22px;height:22px;"></i>
+                    </div>
+                    <h3 class="about-feature__title">Local-Only</h3>
+                    <p class="about-feature__desc">No servers, no cloud, no sync. All email parsing happens entirely on your device.</p>
+                  </div>
+                  <div class="about-feature" role="listitem">
+                    <div class="about-feature__icon" aria-hidden="true">
+                      <i data-lucide="eye-off" style="width:22px;height:22px;"></i>
+                    </div>
+                    <h3 class="about-feature__title">No Tracking</h3>
+                    <p class="about-feature__desc">Zero analytics, zero telemetry, zero data collection. We literally cannot see your data.</p>
+                  </div>
+                </div>
+
+                <hr class="about-divider" aria-hidden="true">
+
+                <!-- LINKS SECTION -->
+                <div class="about-links">
+                  <h3 class="about-links__title">Resources</h3>
+                  <div class="about-links__grid">
+                    <a href="https://github.com/inboxkey/inboxkey" target="_blank" rel="noopener noreferrer" class="about-link-card">
+                      <span class="about-link-card__icon" aria-hidden="true">
+                        <i data-lucide="github" style="width:18px;height:18px;"></i>
+                      </span>
+                      <span class="about-link-card__text">
+                        <span class="about-link-card__label">GitHub Repository</span>
+                        <span class="about-link-card__hint">Source code, issues, contributions</span>
+                      </span>
+                      <span class="about-link-card__arrow" aria-hidden="true">
+                        <i data-lucide="arrow-up-right" style="width:14px;height:14px;"></i>
+                      </span>
+                    </a>
+                    <a href="https://github.com/inboxkey/inboxkey/issues/new" target="_blank" rel="noopener noreferrer" class="about-link-card">
+                      <span class="about-link-card__icon" aria-hidden="true">
+                        <i data-lucide="bug" style="width:18px;height:18px;"></i>
+                      </span>
+                      <span class="about-link-card__text">
+                        <span class="about-link-card__label">Report a Bug</span>
+                        <span class="about-link-card__hint">Found something wrong? Let us know</span>
+                      </span>
+                      <span class="about-link-card__arrow" aria-hidden="true">
+                        <i data-lucide="arrow-up-right" style="width:14px;height:14px;"></i>
+                      </span>
+                    </a>
+                    <a href="https://inboxkey.com/privacy" target="_blank" rel="noopener noreferrer" class="about-link-card">
+                      <span class="about-link-card__icon" aria-hidden="true">
+                        <i data-lucide="file-text" style="width:18px;height:18px;"></i>
+                      </span>
+                      <span class="about-link-card__text">
+                        <span class="about-link-card__label">Privacy Policy</span>
+                        <span class="about-link-card__hint">How we handle (or rather, don't) your data</span>
+                      </span>
+                      <span class="about-link-card__arrow" aria-hidden="true">
+                        <i data-lucide="arrow-up-right" style="width:14px;height:14px;"></i>
+                      </span>
+                    </a>
+                    <a href="https://github.com/inboxkey/inboxkey/blob/main/CHANGELOG.md" target="_blank" rel="noopener noreferrer" class="about-link-card">
+                      <span class="about-link-card__icon" aria-hidden="true">
+                        <i data-lucide="scroll-text" style="width:18px;height:18px;"></i>
+                      </span>
+                      <span class="about-link-card__text">
+                        <span class="about-link-card__label">Changelog</span>
+                        <span class="about-link-card__hint">What's new in each release</span>
+                      </span>
+                      <span class="about-link-card__arrow" aria-hidden="true">
+                        <i data-lucide="arrow-up-right" style="width:14px;height:14px;"></i>
+                      </span>
+                    </a>
+                  </div>
+                </div>
+
+                <hr class="about-divider" aria-hidden="true">
+
+                <!-- SUPPORT CTA -->
+                <div class="about-support">
+                  <div class="about-support__icon" aria-hidden="true">&#9749;</div>
+                  <h3 class="about-support__heading">Enjoying InboxKey?</h3>
+                  <p class="about-support__message">InboxKey is free and always will be. If it saves you time, consider buying a coffee to support ongoing development.</p>
+                  <a
+                    href="https://buymeacoffee.com/inboxkey"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="about-support__cta"
+                    aria-label="Support InboxKey by buying a coffee"
+                  >
+                    <span aria-hidden="true">&#9749;</span>
+                    Buy me a coffee
+                  </a>
+                  <p class="about-support__disclaimer">Totally optional. Never nags, never blocks features.</p>
+                </div>
+
+                <hr class="about-divider" aria-hidden="true">
+
+                <!-- FOOTER / CREDITS -->
+                <footer class="about-footer">
+                  <span class="about-footer__license">
+                    <i data-lucide="scale" style="width:12px;height:12px;" aria-hidden="true"></i>
+                    MIT License
+                  </span>
+                  <p class="about-footer__credits">
+                    Made with care by <a href="https://github.com/inboxkey" target="_blank" rel="noopener noreferrer">the InboxKey team</a>.
+                    <br>Verified publisher. Reproducible builds.
+                  </p>
+                  <p class="about-footer__build">v1.4.2+a3f8c01e</p>
+                </footer>
+
+              </div>
+            </section>
+          </div>
+        </main>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ================================
+       DESIGN DECISIONS
+       ================================ -->
+  <script type="application/json" id="decisions">
+  [
+    "Editorial brand page layout - The About page is structured as a centered, editorial-style brand statement rather than a flat info dump. This creates a premium feel that builds trust and makes the page enjoyable to read, reinforcing that InboxKey is a polished product.",
+    "Staggered entrance animations - Each section fades in with a subtle upward motion, staggered by 120ms increments. This creates a sense of intentional reveal without being distracting. Animations are fully disabled for prefers-reduced-motion.",
+    "Feature highlights as icon+text cards - Three core principles (Open Source, Local-Only, No Tracking) are displayed as hoverable cards in a 3-column grid. This makes them scannable and memorable compared to a plain bullet list, and each card reinforces the privacy-first identity.",
+    "Links as interactive cards with arrows - Resource links (GitHub, Bug Report, Privacy Policy, Changelog) use card-style affordances with icons, descriptions, and directional arrows rather than plain text links. This increases click confidence and helps users understand what each link leads to before clicking.",
+    "Support CTA prominence without pushiness - The Buy Me a Coffee section is visually prominent (large icon, heading, yellow CTA button) but explicitly states it is optional and never blocks features. This balances the goodwill support requirement with the non-naggy guardrail.",
+    "Version + build hash in hero and footer - Version info appears twice: prominently in the hero (as a styled badge) and again in the footer (as a monospace build string). The hero badge helps users quickly confirm their version, while the footer provides the full build hash for reproducibility verification.",
+    "MIT license badge in footer - License info uses a green success badge to signal openness and trustworthiness at a glance, positioned at the bottom to not distract from the main content but remain discoverable.",
+    "Full page shell context - The prototype includes the complete page shell (header, trust banner, tab navigation) to show how the About tab fits within the settings page. The About tab is marked active to provide realistic context for design review."
+  ]
+  </script>
+
+  <script src="../shared/theme-switcher.js"></script>
+  <script>
+    // Initialize Lucide icons
+    lucide.createIcons();
+  </script>
+</body>
+</html>
