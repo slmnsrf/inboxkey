@@ -37,7 +37,7 @@
 .error-banner--info {
   background: var(--color-info-bg, #DBEAFE); /* Light blue */
   color: var(--color-info-text, #1E3A8A); /* Dark blue (8.2:1 contrast) */
-  border-left-color: var(--color-primary, #3B82F6);
+  border-left-color: var(--color-primary, #007AFF);
 }
 
 /* Icon */

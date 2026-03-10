@@ -19,6 +19,7 @@ import { AdvancedSettings } from './ui/components/AdvancedSettings'
 import { BuyMeACoffeeButton } from './ui/components/BuyMeACoffeeButton'
 import { BlacklistManageButton } from './ui/components/blacklist/BlacklistManageButton'
 import { BlacklistModal } from './ui/components/blacklist/BlacklistModal'
+import { KeyRound, Puzzle, Lock, ShieldCheck } from 'lucide-react'
 import { t } from './lib/i18n'
 import './options.css'
 import './ui/components/security/SecurityInfo.css'
@@ -77,7 +78,7 @@ function OptionsApp() {
               <header className="options-header" aria-labelledby="options-title">
                 <div className="options-header__identity">
                   <span className="brand__icon" aria-hidden="true">
-                    🔑
+                    <KeyRound size={24} />
                   </span>
                   <div className="brand">
                     <h1 id="options-title" className="brand__title">
@@ -110,13 +111,23 @@ function OptionsApp() {
                 role="region"
                 aria-label={t('settings_trust_region_label')}
               >
-                <span className="trust-chip">🧩 {t('settings_trust_open_source')}</span>
-                <span className="trust-chip">🔒 {t('settings_trust_local_only')}</span>
-                <span className="trust-chip">🛡️ {t('settings_trust_safe')}</span>
-                <span className="trust-banner__spacer" aria-hidden="true" />
-                <span className="trust-banner__note">
+                <p className="trust-banner__headline">
                   {t('settings_trust_summary')}
-                </span>
+                </p>
+                <div className="trust-banner__pillars">
+                  <div className="trust-pillar">
+                    <span className="trust-pillar__icon" aria-hidden="true"><Puzzle size={18} /></span>
+                    <span className="trust-pillar__label">{t('settings_trust_open_source')}</span>
+                  </div>
+                  <div className="trust-pillar">
+                    <span className="trust-pillar__icon" aria-hidden="true"><Lock size={18} /></span>
+                    <span className="trust-pillar__label">{t('settings_trust_local_only')}</span>
+                  </div>
+                  <div className="trust-pillar">
+                    <span className="trust-pillar__icon" aria-hidden="true"><ShieldCheck size={18} /></span>
+                    <span className="trust-pillar__label">{t('settings_trust_safe')}</span>
+                  </div>
+                </div>
               </section>
 
               <TabNavigation activeTab={activeTab} onTabChange={setActiveTab} />

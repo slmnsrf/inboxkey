@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react'
+import { Info } from 'lucide-react'
 import { t } from '@/lib/i18n'
 import { getAccountStatus } from './account-status'
 import { Modal } from '../Modal'
@@ -59,7 +60,7 @@ export function GmailAccountRow({
           </span>
         )}
         <span className="imap-subtext" style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-1)' }}>
-          <span aria-hidden="true">ℹ️</span>
+          <Info size={14} aria-hidden="true" />
           {t('accounts_microcopy_gmail_limit')}
           <button
             type="button"

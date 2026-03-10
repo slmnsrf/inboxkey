@@ -23,7 +23,6 @@ import { OutlookAccountCard } from './accounts/OutlookAccountCard'
 import { ImapAccountCard } from './accounts/ImapAccountCard'
 import { RecentEmailsSection } from './accounts/RecentEmailsSection'
 import { AddImapAccountModal } from './accounts/AddImapAccountModal'
-import { getNativeClient } from '@/lib/providers/imap-bridge/native-client'
 
 import './accounts/AccountsPanel.css'
 
@@ -37,6 +36,8 @@ interface MailboxInfo {
   tokenExpiresAt?: number
   /** IMAP server host (only for IMAP providers) */
   imapServer?: string
+  /** IMAP server port (only for IMAP providers) */
+  imapPort?: number
 }
 
 type ConnectionStage = 'authenticating' | 'loading_profile' | 'saving' | null
@@ -287,12 +288,11 @@ export function AccountsPanel() {
     const mailbox = mailboxes.find((mb) => mb.id === mailboxId)
     if (!mailbox) return
 
-    // Extract IMAP metadata from mailbox (we'll need to store this)
-    // For now, we'll open the modal with just the email prefilled
+    // Use IMAP metadata from mailbox for reconnection
     setImapPrefillData({
       email: mailbox.email,
-      server: '', // TODO: Store server info in mailbox metadata
-      port: 993,
+      server: mailbox.imapServer || '',
+      port: mailbox.imapPort || 993,
       label: mailbox.email,
     })
     setShowAddImapModal(true)

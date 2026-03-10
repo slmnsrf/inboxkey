@@ -19,6 +19,7 @@ import {
   clearBlacklistedUrls,
   MAX_BLACKLIST_ENTRIES,
 } from '@/lib/utils/blacklist'
+import { Link, Search, X } from 'lucide-react'
 import { BlacklistSearchFilter } from './BlacklistSearchFilter'
 import './BlacklistTab.css'
 
@@ -180,7 +181,7 @@ export function BlacklistUrlTab() {
           {/* List or Empty State */}
           {urls.length === 0 ? (
             <div className="blacklist-empty">
-              <p className="blacklist-empty-icon">🔗</p>
+              <p className="blacklist-empty-icon"><Link size={24} /></p>
               <p className="blacklist-empty-text">No ignored URLs</p>
               <p className="blacklist-empty-hint">
                 Add URLs above to prevent InboxKey from working on specific pages
@@ -188,7 +189,7 @@ export function BlacklistUrlTab() {
             </div>
           ) : filteredUrls.length === 0 ? (
             <div className="blacklist-empty">
-              <div className="blacklist-empty-icon">🔍</div>
+              <div className="blacklist-empty-icon"><Search size={24} /></div>
               <p className="blacklist-empty-text">No matching URLs</p>
               <p className="blacklist-empty-hint">
                 Try adjusting your search or{' '}
@@ -216,7 +217,7 @@ export function BlacklistUrlTab() {
                     aria-label={`Remove ${url} from ignored URLs`}
                     data-testid={`url-remove-${url}`}
                   >
-                    ✕
+                    <X size={14} />
                   </button>
                 </li>
               ))}

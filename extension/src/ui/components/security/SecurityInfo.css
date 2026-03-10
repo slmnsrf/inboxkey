@@ -56,12 +56,15 @@
 }
 
 .feature-list li::before {
-  content: '✓';
+  content: '';
   position: absolute;
-  left: 0;
-  color: var(--color-success);
-  font-weight: bold;
-  font-size: var(--font-size-lg);
+  left: 2px;
+  top: 5px;
+  width: 5px;
+  height: 9px;
+  border: solid var(--color-success);
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
 }
 
 /* =========================
@@ -257,46 +260,6 @@
 /* =========================
    DARK MODE SPECIFIC FIXES
    ========================= */
-
-@media (prefers-color-scheme: dark) {
-  .security-section,
-  .permissions-section {
-    background: var(--surface-card);
-    border-color: var(--color-border);
-  }
-
-  .security-section:hover,
-  .permission-item:hover {
-    background: var(--surface-card-muted);
-  }
-
-  .feature-list li {
-    color: var(--color-text-primary);
-  }
-
-  .permission-item {
-    background: var(--color-bg-secondary);
-    border-color: var(--color-border);
-  }
-
-  .contact-section {
-    background: var(--color-bg-secondary);
-    border-color: var(--color-border);
-  }
-
-  .contact-section p {
-    color: var(--color-text-secondary);
-  }
-
-  .link-button {
-    background: var(--color-primary);
-    color: var(--color-text-inverse);
-  }
-
-  .link-button:hover {
-    background: var(--color-primary-hover);
-  }
-}
 
 [data-theme="dark"] {
   .security-section,

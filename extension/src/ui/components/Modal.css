@@ -17,20 +17,21 @@
   justify-content: center;
   z-index: 1000;
   padding: var(--space-4, 16px);
-  backdrop-filter: blur(2px);
-  animation: fadeIn 150ms ease-out;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  animation: fadeIn 200ms ease-out;
 }
 
 .modal-content {
   background: var(--surface-card, #ffffff);
-  border-radius: var(--radius-lg, 8px);
-  box-shadow: var(--shadow-xl, 0 20px 25px -5px rgba(0, 0, 0, 0.1));
+  border-radius: var(--radius-xl, 16px);
+  box-shadow: var(--shadow-xl);
   width: 100%;
   max-height: 90vh;
   display: flex;
   flex-direction: column;
-  border: 1px solid var(--color-border, #e5e7eb);
-  animation: slideUp 200ms cubic-bezier(0.16, 1, 0.3, 1);
+  border: 1px solid var(--color-border);
+  animation: slideUp 250ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 /* Size variants */
@@ -51,8 +52,8 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: var(--space-5, 24px) var(--space-5, 24px) var(--space-4, 16px);
-  border-bottom: 1px solid var(--color-border, #e5e7eb);
+  padding: var(--space-5, 24px) var(--space-6, 24px) var(--space-4, 16px);
+  border-bottom: 1px solid var(--color-border);
   flex-shrink: 0;
 }
 
@@ -60,7 +61,8 @@
   margin: 0;
   font-size: var(--font-size-xl, 20px);
   font-weight: var(--font-weight-semibold, 600);
-  color: var(--color-text-primary, #111827);
+  letter-spacing: -0.02em;
+  color: var(--color-text-primary);
 }
 
 .modal-close {
@@ -82,12 +84,12 @@
 }
 
 .modal-close:hover {
-  background: rgba(0, 0, 0, 0.05);
-  color: var(--color-text-primary, #111827);
+  background: var(--color-bg-primary);
+  color: var(--color-text-primary);
 }
 
 .modal-close:focus-visible {
-  outline: 2px solid var(--color-primary, #3B82F6);
+  outline: 2px solid var(--color-primary);
   outline-offset: 2px;
 }
 
@@ -104,8 +106,8 @@
   display: flex;
   gap: var(--space-3, 12px);
   justify-content: flex-end;
-  padding: var(--space-4, 16px) var(--space-5, 24px) var(--space-5, 24px);
-  border-top: 1px solid var(--color-border, #e5e7eb);
+  padding: var(--space-4, 16px) var(--space-6, 24px) var(--space-5, 24px);
+  border-top: 1px solid var(--color-border);
   flex-shrink: 0;
 }
 

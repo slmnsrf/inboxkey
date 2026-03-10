@@ -1,7 +1,15 @@
 import React from 'react'
+import { Users, Shield, Settings, Info } from 'lucide-react'
 import { t } from '@/lib/i18n'
 
 export type Tab = 'accounts' | 'security' | 'settings' | 'about'
+
+const TAB_ICONS: Record<Tab, React.ReactNode> = {
+  accounts: <Users size={16} />,
+  security: <Shield size={16} />,
+  settings: <Settings size={16} />,
+  about: <Info size={16} />,
+}
 
 interface TabNavigationProps {
   activeTab: Tab
@@ -40,53 +48,21 @@ export function TabNavigation({ activeTab, onTabChange }: TabNavigationProps) {
 
   return (
     <nav className="tab-navigation" role="tablist" onKeyDown={handleKeyDown}>
-      <button
-        role="tab"
-        aria-selected={activeTab === 'accounts'}
-        aria-controls="accounts-panel"
-        id="accounts-tab"
-        tabIndex={activeTab === 'accounts' ? 0 : -1}
-        className={`tab-button ${activeTab === 'accounts' ? 'tab-button--active' : ''}`}
-        onClick={() => onTabChange('accounts')}
-      >
-        {t('settings_tab_accounts')}
-      </button>
-
-      <button
-        role="tab"
-        aria-selected={activeTab === 'security'}
-        aria-controls="security-panel"
-        id="security-tab"
-        tabIndex={activeTab === 'security' ? 0 : -1}
-        className={`tab-button ${activeTab === 'security' ? 'tab-button--active' : ''}`}
-        onClick={() => onTabChange('security')}
-      >
-        {t('settings_tab_security')}
-      </button>
-
-      <button
-        role="tab"
-        aria-selected={activeTab === 'settings'}
-        aria-controls="settings-panel"
-        id="settings-tab"
-        tabIndex={activeTab === 'settings' ? 0 : -1}
-        className={`tab-button ${activeTab === 'settings' ? 'tab-button--active' : ''}`}
-        onClick={() => onTabChange('settings')}
-      >
-        {t('settings_tab_settings')}
-      </button>
-
-      <button
-        role="tab"
-        aria-selected={activeTab === 'about'}
-        aria-controls="about-panel"
-        id="about-tab"
-        tabIndex={activeTab === 'about' ? 0 : -1}
-        className={`tab-button ${activeTab === 'about' ? 'tab-button--active' : ''}`}
-        onClick={() => onTabChange('about')}
-      >
-        {t('settings_tab_about')}
-      </button>
+      {TABS.map((tab) => (
+        <button
+          key={tab}
+          role="tab"
+          aria-selected={activeTab === tab}
+          aria-controls={`${tab}-panel`}
+          id={`${tab}-tab`}
+          tabIndex={activeTab === tab ? 0 : -1}
+          className={`tab-button ${activeTab === tab ? 'tab-button--active' : ''}`}
+          onClick={() => onTabChange(tab)}
+        >
+          <span className="tab-button__icon" aria-hidden="true">{TAB_ICONS[tab]}</span>
+          {t(`settings_tab_${tab}`)}
+        </button>
+      ))}
     </nav>
   )
 }

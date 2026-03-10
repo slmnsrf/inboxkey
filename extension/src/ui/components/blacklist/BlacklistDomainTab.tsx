@@ -19,6 +19,7 @@ import {
   MAX_BLACKLIST_ENTRIES,
 } from '@/lib/utils/blacklist'
 import { BlacklistSearchFilter } from './BlacklistSearchFilter'
+import { X } from 'lucide-react'
 import { GlobeIcon } from '@/ui/components/icons/StatusIcons'
 import './BlacklistTab.css'
 
@@ -220,7 +221,7 @@ export function BlacklistDomainTab() {
                     aria-label={`Remove ${domain} from ignored domains`}
                     data-testid={`domain-remove-${domain}`}
                   >
-                    ✕
+                    <X size={14} />
                   </button>
                 </li>
               ))}
