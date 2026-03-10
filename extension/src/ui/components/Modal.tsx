@@ -24,6 +24,7 @@
  */
 
 import React, { useEffect } from 'react'
+import { X } from 'lucide-react'
 import { useFocusTrap, useEscapeKey } from '@/ui/hooks/useFocusTrap'
 import './Modal.css'
 
@@ -125,7 +126,7 @@ export function Modal({
               aria-label={`Close ${title} dialog`}
               data-testid="modal-close"
             >
-              ✕
+              <X size={18} />
             </button>
           )}
         </div>

@@ -327,6 +327,42 @@ body:has(.modal[aria-hidden="false"]) {
   }
 }
 
+/**
+ * Windows High Contrast (forced-colors) support.
+ * Restores visible borders on shadow-only elements since
+ * box-shadow and rgba borders are invisible in forced-colors mode.
+ */
+@media (forced-colors: active) {
+  .code-card,
+  .link-card,
+  .empty-state,
+  .section,
+  .accounts-section,
+  .provider-card,
+  .trust-banner,
+  .blacklist-list,
+  .blacklist-item,
+  .modal-content,
+  .toast {
+    border: 1px solid ButtonText;
+  }
+
+  .popup-quick-actions__button,
+  .btn,
+  .copy-button,
+  .action-button,
+  .icon-button {
+    border: 1px solid ButtonText;
+  }
+
+  .header-pill,
+  .trust-tag,
+  .time-pill,
+  .trust-chip {
+    border: 1px solid GrayText;
+  }
+}
+
 /* ========================================
    PRINT STYLES - No Focus Indicators
    ======================================== */

@@ -6,6 +6,7 @@
  */
 
 import React from 'react'
+import { Info } from 'lucide-react'
 import { t } from '@/lib/i18n'
 
 /**
@@ -37,7 +38,7 @@ export function SecurityBanner({ onSetupClick, onDismiss }: SecurityBannerProps)
       <div className="security-banner__content">
         <div className="security-banner__info">
           <span className="security-banner__icon" aria-hidden="true">
-            ℹ️
+            <Info size={16} />
           </span>
           <span className="security-banner__text">
             {t('security_banner_setup')}

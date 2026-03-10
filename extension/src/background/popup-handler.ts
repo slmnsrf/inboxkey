@@ -115,8 +115,9 @@ export class PopupMessageHandler {
 
             // Convert v2 candidates to StoredCode format for PopupCache (ephemeral only)
             const ephemeralCodes = candidates.flatMap(candidate => {
-              // Find mailbox for this provider
-              const mailbox = mailboxes.find(m => m.providerId === candidate.provider)
+              // Find mailbox by ID first (multi-account safe), fall back to provider match
+              const mailbox = mailboxes.find(m => m.id === candidate.mailboxId)
+                || mailboxes.find(m => m.providerId === candidate.provider)
               if (!mailbox) return []
 
               const results = []
@@ -130,7 +131,7 @@ export class PopupMessageHandler {
                   siteMatch: undefined,
                   mailboxId: mailbox.id,
                 })
-                console.log(`[PopupHandler] Found code: ${candidate.code.value}`)
+                console.log(`[PopupHandler] Found code: (redacted ${candidate.code.value.length} chars)`)
               }
 
               if (candidate.link) {
@@ -253,7 +254,7 @@ export class PopupMessageHandler {
             const storage = await StorageFactory.create()
             const mailboxes = await storage.getMailboxes()
 
-            // Return without sensitive tokens
+            // Return without sensitive tokens (include IMAP metadata for reconnect)
             return {
               success: true,
               mailboxes: mailboxes.map((m) => ({
@@ -263,6 +264,10 @@ export class PopupMessageHandler {
                 addedAt: m.addedAt,
                 lastSyncedAt: m.lastSyncedAt,
                 tokenExpiresAt: m.tokenExpiresAt,
+                ...(m.providerId === 'imap-bridge' ? {
+                  imapServer: m.imapServer,
+                  imapPort: m.imapPort,
+                } : {}),
               })),
             }
           } catch (error) {

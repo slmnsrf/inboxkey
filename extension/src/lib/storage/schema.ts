@@ -1,8 +1,8 @@
 /**
  * Storage schema definitions for InboxKey
  *
- * Sensitive fields (tokens, codes) are encrypted before storage.
- * Non-sensitive metadata remains plaintext for indexing/filtering.
+ * All data is stored in plaintext via chrome.storage.local/session.
+ * Encryption at rest is planned for a future release.
  */
 
 /**
@@ -42,8 +42,8 @@ export type ProviderId = "gmail" | "outlook" | "imap-bridge"
  * Mailbox account with OAuth tokens or IMAP credentials
  *
  * OAuth providers (Gmail, Outlook):
- * - accessToken: Required (encrypted before storage)
- * - refreshToken: Optional (encrypted before storage; Chrome Identity API handles refresh for Gmail)
+ * - accessToken: Required (stored in plaintext; encryption planned)
+ * - refreshToken: Optional (stored in plaintext; Chrome Identity API handles refresh for Gmail)
  * - tokenExpiresAt: Required
  * - IMAP fields: Must be undefined
  *
@@ -58,8 +58,8 @@ export interface Mailbox {
   email: string // Email address
 
   // OAuth fields (required for 'gmail', 'outlook'; must be undefined for 'imap-bridge')
-  accessToken?: string // Encrypted before storage
-  refreshToken?: string // Encrypted before storage (optional for Gmail)
+  accessToken?: string // Stored in plaintext; encryption planned
+  refreshToken?: string // Stored in plaintext; encryption planned (optional for Gmail)
   tokenExpiresAt?: number // Unix timestamp (ms)
 
   // IMAP fields (required for 'imap-bridge'; must be undefined for OAuth providers)
@@ -86,7 +86,7 @@ export interface Mailbox {
  * Stored verification code with metadata
  */
 export interface StoredCode {
-  code: string // The actual code (encrypted before storage)
+  code: string // The actual code (stored in plaintext; encryption planned)
   timestamp: number // Unix timestamp (ms)
   source: string // Email subject or sender
   siteMatch?: string // Domain that was matched (if any)

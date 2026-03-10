@@ -285,7 +285,7 @@ export class WatchSession {
   private async handleCodeFoundWithAutofill(
     codeResult: SessionCodeResult
   ): Promise<void> {
-    console.log("[WatchSession] Code found, attempting autofill:", codeResult.code)
+    console.log("[WatchSession] Code found, attempting autofill (redacted)")
 
     // Always call onCodeFound callback first
     this.callbacks.onCodeFound(codeResult)
@@ -395,7 +395,7 @@ export class WatchSession {
 
       // Show success notification with clipboard copy
       showNotification({
-        title: `Code ${codeResult.code} copied`,
+        title: 'Code copied to clipboard',
         message: "Paste into the field to continue",
         type: "success",
         duration: 5000,
@@ -508,7 +508,7 @@ export function startWatch(
   const session = new WatchSession(field, detectionResult, callbacks)
   activeWatch = session
   lastSessionCreated = now
-  session.start()
+  void session.start()
 
   return session
 }
