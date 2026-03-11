@@ -12,7 +12,9 @@ export const ATTRIBUTE_PATTERNS = {
   exact: /^(code|otp|token|pin|mfa|2fa|twofa|verify|verification)$/i,
 
   // Contains matches (still high confidence)
-  contains: /(?:code|otp|verify|token|pin|mfa|2fa|twofa|auth|sms)/i,
+  // NOTE: "token" removed from contains - too broad, catches developer dashboard
+  // fields like "tokenName", "token_description". Kept in exact match above.
+  contains: /(?:code|otp|verify|pin|mfa|2fa|twofa|auth|sms)/i,
 } as const
 
 /**
@@ -128,6 +130,12 @@ export const EXCLUSION_PATTERNS = {
   api_key: /api[\s\-_]?(key|secret)/i,
   access_token: /access[\s\-_]?token/i,
   refresh_token: /refresh[\s\-_]?token/i,
+
+  // Token management (developer dashboards)
+  token_name: /token[\s\-_]?name/i,
+  token_label: /token[\s\-_]?label/i,
+  token_description: /token[\s\-_]?(description|desc)/i,
+  personal_token: /personal[\s\-_]?(access[\s\-_]?)?token/i,
 
   // Referral & Social
   referral: /referral[\s\-_]?(code|link)/i,
