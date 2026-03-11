@@ -310,11 +310,60 @@ export function detectTier1(
   // Check autocomplete attribute (HTML standard) - highest confidence
   const autocomplete = input.getAttribute('autocomplete')?.toLowerCase()
   if (autocomplete && AUTOCOMPLETE_VALUES.includes(autocomplete as any)) {
-    // Layer 5: Context validation (check for password keywords and setup pages)
-    const contextResult = validateContext({
-      label: getLabelText(input),
+    // Extract text sources for channel + context validation
+    const labelText = getLabelText(input)
+    const nearbyText = getNearbyText(input)
+    const textSources: TextSources = {
+      label: labelText,
       placeholder: input.placeholder || '',
-      nearbyText: getNearbyText(input),
+      nearbyText,
+      ariaLabel: input.getAttribute('aria-label') || '',
+    }
+
+    // Channel gate: reject authenticator-only and SMS-only even with autocomplete
+    const signalClassification = classifyDeliveryChannel(textSources)
+
+    if (signalClassification.channel === 'authenticator') {
+      const hasEmailOption = signalClassification.allChannels?.includes('email')
+      if (!hasEmailOption) {
+        cooldown.markRejected(input)
+        return {
+          detected: false,
+          confidence: 0,
+          reason: 'Authenticator app detected via autocomplete branch (no email option)',
+          metadata: {
+            layer: 'signal-classifier-tier1',
+            channel: 'authenticator',
+            matchedKeywords: signalClassification.matchedKeywords,
+            language: signalClassification.language,
+          },
+        }
+      }
+    }
+
+    if (signalClassification.channel === 'sms') {
+      const hasEmailOption = signalClassification.allChannels?.includes('email')
+      if (!hasEmailOption) {
+        cooldown.markRejected(input)
+        return {
+          detected: false,
+          confidence: 0,
+          reason: 'SMS-only field detected via autocomplete branch (no email option)',
+          metadata: {
+            layer: 'signal-classifier-tier1',
+            channel: 'sms',
+            matchedKeywords: signalClassification.matchedKeywords,
+            language: signalClassification.language,
+          },
+        }
+      }
+    }
+
+    // Context validation (check for password keywords and setup pages)
+    const contextResult = validateContext({
+      label: labelText,
+      placeholder: input.placeholder || '',
+      nearbyText,
       ariaLabel: input.getAttribute('aria-label') || '',
       pageTitle: document.title || '',
     })
