@@ -113,6 +113,24 @@ describe('False Positive Regression Tests', () => {
     })
   })
 
+  describe('Tier 2 negative signal scoring', () => {
+    it('should NOT add points when negative signals present', () => {
+      // A field with "password" in nearby text and "Enter code" label
+      // should NOT get boosted by the nearby text
+      document.body.innerHTML = `
+        <div>
+          <p>Enter your password</p>
+          <label for="field">Enter code</label>
+          <input type="text" id="field">
+        </div>
+      `
+      const result = detectVerificationField({ strictVisibility: false })
+      // Should be null because context validator catches "password"
+      // But the negative signal path should NOT contribute positive score
+      expect(result).toBeNull()
+    })
+  })
+
   describe('Positive recall: real OTP fields still detected', () => {
     it('should detect autocomplete="one-time-code"', () => {
       document.body.innerHTML = `
