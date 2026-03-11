@@ -457,6 +457,25 @@ const SMS_PATTERNS = [
 ] as const
 
 /**
+ * Phone number patterns that indicate SMS delivery
+ * Matches masked/partial phone numbers commonly shown in verification UIs
+ * Examples: ***89, "ending in 1234", +90 *** *** **42, (555) ***-**12
+ */
+const PHONE_NUMBER_PATTERNS = [
+  // Masked phone: ***89, **1234, ***-**42 (preceded by context words)
+  /(?:sent|code|kod|código|kode|koodi).*(?:\*{2,}[\s\-]?\d{2,4})/i,
+  // "ending in NNNN" pattern
+  /(?:ending|ends)\s+(?:in|with)\s+\d{2,4}/i,
+  // International format with masking: +NN *** *** **NN
+  /\+\d{1,3}\s+\*[\s\-*\d]{5,}/i,
+  // US format with masking: (NNN) ***-**NN
+  /\(\d{3}\)\s*\*[\s\-*\d]{4,}/i,
+  // Turkish: "numarasına gönderildi" near masked numbers
+  /\*{2,}[\s\-]?\d{2,4}.*(?:numara|gönder)/i,
+  /(?:numara|gönder).*\*{2,}[\s\-]?\d{2,4}/i,
+] as const
+
+/**
  * Detect character set for performance optimization
  * Returns hint for which pattern sets to prioritize
  */
@@ -557,6 +576,17 @@ export function classifyDeliveryChannel(sources: TextSources): ChannelClassifica
     if (match) {
       detectedChannels.sms = match
       break
+    }
+  }
+
+  // Check phone number patterns (SMS evidence from masked/partial numbers)
+  if (!detectedChannels.sms) {
+    for (const pattern of PHONE_NUMBER_PATTERNS) {
+      const match = pattern.exec(combinedText)
+      if (match) {
+        detectedChannels.sms = match
+        break
+      }
     }
   }
 
