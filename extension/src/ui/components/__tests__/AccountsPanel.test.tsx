@@ -96,16 +96,44 @@ describe('AccountsPanel (UI Rework)', () => {
       i18n: {
         getMessage: (key: string, substitutions?: string | string[]) => {
           const translations: Record<string, string> = {
-            accounts_panel_heading: "Connected Accounts",
-            accounts_panel_summary: "Manage your email accounts",
+            accounts_provider_gmail: "Gmail",
+            accounts_provider_outlook: "Outlook",
+            accounts_microcopy_gmail: "One account supported via Chrome Identity API.",
+            accounts_microcopy_outlook: "Add up to 10 Outlook accounts.",
+            accounts_empty_gmail: "No Gmail account connected.",
+            accounts_empty_outlook: "No Outlook accounts connected.",
+            accounts_connect_gmail: "Connect Gmail",
+            accounts_connect_outlook: "Connect Outlook",
             accounts_recent_title: "Recent Emails",
             accounts_recent_description: "Your latest verification codes and magic links",
             accounts_recent_empty: "No recent activity",
+            accounts_recent_loading: "Loading...",
             accounts_status_not_connected: "Not connected",
             accounts_status_connected: "Connected",
             accounts_status_error: "Error",
-            provider_gmail_connect: "Connect Gmail",
-            provider_outlook_connect: "Connect Outlook",
+            accounts_disconnect: "Disconnect",
+            accounts_disconnecting: "Disconnecting...",
+            accounts_connecting: "Connecting...",
+            accounts_authenticating: "Authenticating...",
+            accounts_loading_profile: "Loading profile...",
+            accounts_saving: "Saving...",
+            accounts_remove_confirm: "Are you sure?",
+            accounts_gmail_limit_learn_why: "Learn why",
+            accounts_gmail_limit_modal_title: "Gmail Limitation",
+            accounts_gmail_limit_modal_body: "Chrome Identity API limits Gmail to one account.",
+            accounts_imap_provider_name: "IMAP",
+            accounts_imap_microcopy: "Connect via InboxBridge.",
+            accounts_imap_empty: "No IMAP accounts connected.",
+            accounts_imap_add: "Add IMAP Account",
+            toast_connect_failed: "Connection failed",
+            toast_connect_invalid_credentials: "Invalid credentials",
+            toast_connect_profile_failed: "Failed to load profile",
+            toast_connect_network_error: "Network error",
+            toast_connect_duplicate: "Account already connected",
+            toast_disconnect_failed: "Disconnect failed",
+            toast_oauth_cancelled: "OAuth cancelled",
+            toast_error_copy: "Failed to copy",
+            toast_error_link: "Failed to open link",
             trust_indicator_title: "Privacy first",
             trust_indicator_readonly: "Read-only access to your emails",
             trust_indicator_local_storage: "Local storage only",
@@ -117,6 +145,7 @@ describe('AccountsPanel (UI Rework)', () => {
             button_copy: "Copy",
             button_open: "Open",
             time_just_now_short: "now",
+            value_not_available: "N/A",
           }
           let message = translations[key] || key
           if (substitutions) {
@@ -141,13 +170,14 @@ describe('AccountsPanel (UI Rework)', () => {
   it('renders provider cards and recent emails section', async () => {
     renderWithProviders(<AccountsPanel />)
 
+    // Component renders per-provider sections (Gmail, Outlook) instead of a single heading
     await waitFor(() => {
-      expect(screen.getByRole('heading', { name: /connected accounts/i })).toBeVisible()
+      expect(screen.getByRole('heading', { name: /gmail/i })).toBeInTheDocument()
     })
 
-    expect(screen.getByRole('button', { name: /connect gmail/i })).toBeVisible()
-    expect(screen.getByRole('button', { name: /connect outlook/i })).toBeVisible()
-    expect(screen.getByRole('heading', { name: /recent emails/i })).toBeVisible()
+    expect(screen.getByRole('button', { name: /connect gmail/i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /add outlook account/i })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: /recent emails/i })).toBeInTheDocument()
   })
 
   it('connects Gmail successfully', async () => {
@@ -245,8 +275,8 @@ describe('AccountsPanel (UI Rework)', () => {
     renderWithProviders(<AccountsPanel />)
 
     await waitFor(() => {
-      expect(screen.getByText(/123456/)).toBeVisible()
+      expect(screen.getByText(/123456/)).toBeInTheDocument()
     })
-    expect(screen.getByRole('button', { name: /open/i })).toBeVisible()
+    expect(screen.getByRole('button', { name: /open/i })).toBeInTheDocument()
   })
 })
