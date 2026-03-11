@@ -147,6 +147,29 @@ const CATEGORY_PATTERNS: Record<string, RegExp[]> = {
  * @param combinedText - All text sources combined
  * @returns Intent classification result
  */
+// Email-delivery signals that override non-email-intent blocking.
+// When the context text indicates the code was sent via email,
+// categories like "payment" or "booking" should not block detection.
+const EMAIL_DELIVERY_SIGNALS = [
+  /\b(?:sent?\s+(?:to\s+)?(?:your\s+)?(?:e[\s\-]?mail|inbox))\b/i,
+  /\b(?:check\s+(?:your\s+)?(?:e[\s\-]?mail|inbox))\b/i,
+  /\b(?:e[\s\-]?mail(?:ed)?\s+(?:you|a?\s*code|verification))\b/i,
+  /\b(?:verification\s+(?:e[\s\-]?mail|code\s+(?:via|from|to)\s+(?:your\s+)?e[\s\-]?mail))\b/i,
+  /\b(?:code\s+(?:was\s+)?sent\s+to)\b/i,
+  // German
+  /(?:an\s+(?:Ihre|deine)\s+E[\s\-]?Mail[\s\-]?(?:Adresse)?|per\s+E[\s\-]?Mail\s+(?:gesendet|geschickt))/i,
+  // Turkish
+  /(?:e[\s\-]?posta(?:n(?:ı|i)z)?a?\s+(?:g(?:ö|o)nder|yollad)|gelen\s+kutunu(?:z)?u?\s+kontrol)/i,
+  // French
+  /(?:envoy(?:é|e)\s+(?:à|a)\s+(?:votre|ton)\s+e[\s\-]?mail|v(?:é|e)rifi(?:er|ez)\s+(?:votre|ton)\s+(?:bo(?:î|i)te|e[\s\-]?mail))/i,
+  // Spanish
+  /(?:enviado\s+a\s+(?:tu|su)\s+(?:correo|email)|verifica\s+(?:tu|su)\s+(?:correo|bandeja))/i,
+]
+
+function hasEmailDeliverySignal(text: string): boolean {
+  return EMAIL_DELIVERY_SIGNALS.some(pattern => pattern.test(text))
+}
+
 export function classifyNonEmailIntent(combinedText: string): NonEmailIntentResult {
   if (!combinedText || combinedText.trim().length === 0) {
     return { blocked: false, category: null, matchedKeywords: [], confidence: 0 }
@@ -156,6 +179,11 @@ export function classifyNonEmailIntent(combinedText: string): NonEmailIntentResu
     for (const pattern of patterns) {
       const match = pattern.exec(combinedText)
       if (match) {
+        // If the same text also contains email-delivery signals,
+        // this is likely a code delivered via email (e.g. "bank verification code sent to your email")
+        if (hasEmailDeliverySignal(combinedText)) {
+          return { blocked: false, category: null, matchedKeywords: [], confidence: 0 }
+        }
         return {
           blocked: true,
           category,
