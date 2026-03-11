@@ -147,6 +147,26 @@ function getNearbyText(input: HTMLInputElement): string {
 }
 
 /**
+ * Resolve aria-describedby text
+ *
+ * aria-describedby can reference multiple IDs (space-separated).
+ * Each referenced element's text content is resolved and joined.
+ *
+ * @param input - Input field to resolve aria-describedby from
+ * @returns Combined text from all referenced elements
+ */
+function getAriaDescribedbyText(input: HTMLInputElement): string {
+  const describedby = input.getAttribute('aria-describedby')
+  if (!describedby) return ''
+
+  return describedby
+    .split(/\s+/)
+    .map(id => input.ownerDocument?.getElementById(id)?.textContent?.trim() || '')
+    .filter(Boolean)
+    .join(' ')
+}
+
+/**
  * Tier 1: Fast-path detection with 6-layer defense
  *
  * Defense layers applied in order:
@@ -310,12 +330,63 @@ export function detectTier1(
   // Check autocomplete attribute (HTML standard) - highest confidence
   const autocomplete = input.getAttribute('autocomplete')?.toLowerCase()
   if (autocomplete && AUTOCOMPLETE_VALUES.includes(autocomplete as any)) {
-    // Layer 5: Context validation (check for password keywords and setup pages)
-    const contextResult = validateContext({
-      label: getLabelText(input),
+    // Extract text sources for channel + context validation
+    const labelText = getLabelText(input)
+    const nearbyText = getNearbyText(input)
+    const textSources: TextSources = {
+      label: labelText,
       placeholder: input.placeholder || '',
-      nearbyText: getNearbyText(input),
+      nearbyText,
       ariaLabel: input.getAttribute('aria-label') || '',
+      ariaDescribedby: getAriaDescribedbyText(input),
+    }
+
+    // Channel gate: reject authenticator-only and SMS-only even with autocomplete
+    const signalClassification = classifyDeliveryChannel(textSources)
+
+    if (signalClassification.channel === 'authenticator') {
+      const hasEmailOption = signalClassification.allChannels?.includes('email')
+      if (!hasEmailOption) {
+        cooldown.markRejected(input)
+        return {
+          detected: false,
+          confidence: 0,
+          reason: 'Authenticator app detected via autocomplete branch (no email option)',
+          metadata: {
+            layer: 'signal-classifier-tier1',
+            channel: 'authenticator',
+            matchedKeywords: signalClassification.matchedKeywords,
+            language: signalClassification.language,
+          },
+        }
+      }
+    }
+
+    if (signalClassification.channel === 'sms') {
+      const hasEmailOption = signalClassification.allChannels?.includes('email')
+      if (!hasEmailOption) {
+        cooldown.markRejected(input)
+        return {
+          detected: false,
+          confidence: 0,
+          reason: 'SMS-only field detected via autocomplete branch (no email option)',
+          metadata: {
+            layer: 'signal-classifier-tier1',
+            channel: 'sms',
+            matchedKeywords: signalClassification.matchedKeywords,
+            language: signalClassification.language,
+          },
+        }
+      }
+    }
+
+    // Context validation (check for password keywords and setup pages)
+    const contextResult = validateContext({
+      label: labelText,
+      placeholder: input.placeholder || '',
+      nearbyText,
+      ariaLabel: input.getAttribute('aria-label') || '',
+      ariaDescribedby: getAriaDescribedbyText(input),
       pageTitle: document.title || '',
     })
 
@@ -357,6 +428,7 @@ export function detectTier1(
       placeholder: input.placeholder || '',
       nearbyText,
       ariaLabel: input.getAttribute('aria-label') || '',
+      ariaDescribedby: getAriaDescribedbyText(input),
     }
 
     const signalClassification = classifyDeliveryChannel(textSources)
@@ -411,6 +483,7 @@ export function detectTier1(
       placeholder: input.placeholder || '',
       nearbyText,
       ariaLabel: input.getAttribute('aria-label') || '',
+      ariaDescribedby: getAriaDescribedbyText(input),
       pageTitle: document.title || '',
     })
 
@@ -448,6 +521,7 @@ export function detectTier1(
       placeholder: input.placeholder || '',
       nearbyText,
       ariaLabel: input.getAttribute('aria-label') || '',
+      ariaDescribedby: getAriaDescribedbyText(input),
     }
 
     const signalClassification = classifyDeliveryChannel(textSources)
@@ -500,6 +574,7 @@ export function detectTier1(
       placeholder: input.placeholder || '',
       nearbyText,
       ariaLabel: input.getAttribute('aria-label') || '',
+      ariaDescribedby: getAriaDescribedbyText(input),
       pageTitle: document.title || '',
     })
 
@@ -543,6 +618,7 @@ export function detectTier1(
       placeholder: input.placeholder || '',
       nearbyText,
       ariaLabel: input.getAttribute('aria-label') || '',
+      ariaDescribedby: getAriaDescribedbyText(input),
     }
 
     const signalClassification = classifyDeliveryChannel(textSources)
@@ -595,6 +671,7 @@ export function detectTier1(
       placeholder: input.placeholder || '',
       nearbyText,
       ariaLabel: input.getAttribute('aria-label') || '',
+      ariaDescribedby: getAriaDescribedbyText(input),
       pageTitle: document.title || '',
     })
 

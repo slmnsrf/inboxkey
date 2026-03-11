@@ -292,26 +292,28 @@ describe("SessionController", () => {
       await controller.initialize()
       // V2: Polls use PopupCache, not mockGetRecentCodes
 
+      // V2: Use timeoutSeconds=10 to get 3 polls at [0, 5000, 10000]
       await controller.startSession({
         tabId: 1,
         url: "https://example.com",
         expected: {},
-        timeoutSeconds: 0.2,
+        timeoutSeconds: 10,
       })
 
       expect(onStarted).toHaveBeenCalledWith(
         expect.objectContaining({ status: "active" })
       )
 
+      // First poll at t=0
       await vi.advanceTimersByTimeAsync(0)
       await vi.advanceTimersByTimeAsync(1)
       expect(onUpdated).toHaveBeenCalledWith(
         expect.objectContaining({ status: "active" })
       )
 
-      // Complete remaining polls: t=100ms, t=200ms
-      await vi.advanceTimersByTimeAsync(99)
-      await vi.advanceTimersByTimeAsync(100)
+      // Complete remaining polls: t=5000, t=10000
+      await vi.advanceTimersByTimeAsync(4999)
+      await vi.advanceTimersByTimeAsync(5000)
 
       expect(onCompleted).toHaveBeenCalledWith(
         expect.objectContaining({ status: "timedout" }),
@@ -328,11 +330,12 @@ describe("SessionController", () => {
       await controller.initialize()
       // V2: Polls use PopupCache, not mockGetRecentCodes
 
+      // V2: Use timeoutSeconds=10 to get 3 polls at [0, 5000, 10000]
       await controller.startSession({
         tabId: 1,
         url: "https://example.com",
         expected: {},
-        timeoutSeconds: 0.2,
+        timeoutSeconds: 10,
       })
 
       // Initial poll happens immediately (pollTimes[0] = 0ms)
@@ -340,12 +343,12 @@ describe("SessionController", () => {
       await vi.advanceTimersByTimeAsync(1)
       expect(mockPopupCacheManager.getCache).toHaveBeenCalledTimes(1)
 
-      // Second poll at 100ms (50% of 200ms timeout)
-      await vi.advanceTimersByTimeAsync(99)
+      // Second poll at 5000ms
+      await vi.advanceTimersByTimeAsync(4999)
       expect(mockPopupCacheManager.getCache).toHaveBeenCalledTimes(2)
 
-      // Third poll at 200ms (100% of 200ms timeout)
-      await vi.advanceTimersByTimeAsync(100)
+      // Third poll at 10000ms
+      await vi.advanceTimersByTimeAsync(5000)
       expect(mockPopupCacheManager.getCache).toHaveBeenCalledTimes(3)
     })
 
@@ -419,11 +422,12 @@ describe("SessionController", () => {
         .mockRejectedValueOnce(new Error("Temporary failure"))
         .mockResolvedValue({ codes: [], links: [] })
 
+      // V2: Use timeoutSeconds=10 to get 3 polls at [0, 5000, 10000]
       await controller.startSession({
         tabId: 1,
         url: "https://example.com",
         expected: {},
-        timeoutSeconds: 0.2,
+        timeoutSeconds: 10,
       })
 
       // All 3 polls: t=0 (fails), t=5000, t=10000
@@ -484,20 +488,21 @@ describe("SessionController", () => {
       await controller.initialize()
       // V2: Polls use PopupCache, not mockGetRecentCodes
 
+      // V2: Use timeoutSeconds=10 to get 3 polls at [0, 5000, 10000]
       await controller.startSession({
         tabId: 1,
         url: "https://example.com",
         expected: {},
-        timeoutSeconds: 0.2,
+        timeoutSeconds: 10,
       })
 
-      // Execute all 3 polls: t=0, t=100ms (50% of 200ms), t=200ms (100% of 200ms)
+      // Execute all 3 polls: t=0, t=5000, t=10000
       await vi.advanceTimersByTimeAsync(0)
       await vi.advanceTimersByTimeAsync(1)
-      await vi.advanceTimersByTimeAsync(99)
-      await vi.advanceTimersByTimeAsync(100)
+      await vi.advanceTimersByTimeAsync(4999)
+      await vi.advanceTimersByTimeAsync(5000)
 
-      // All 3 polls should execute (pollTimesMs = [0, 100, 200])
+      // All 3 polls should execute (pollTimesMs = [0, 5000, 10000])
       expect(mockPopupCacheManager.getCache).toHaveBeenCalledTimes(3)
       expect(onCompleted).toHaveBeenCalledWith(
         expect.anything(),
@@ -505,7 +510,7 @@ describe("SessionController", () => {
       )
 
       // No more polls after timeout
-      await vi.advanceTimersByTimeAsync(1000)
+      await vi.advanceTimersByTimeAsync(10000)
       expect(mockPopupCacheManager.getCache).toHaveBeenCalledTimes(3)
     })
   })
@@ -661,11 +666,12 @@ describe("SessionController", () => {
       await controller.initialize()
       // V2: Polls use PopupCache, not mockGetRecentCodes
 
+      // V2: Use timeoutSeconds=10 to get 3 polls at [0, 5000, 10000]
       const session = await controller.startSession({
         tabId: 1,
         url: "https://example.com",
         expected: {},
-        timeoutSeconds: 0.2,
+        timeoutSeconds: 10,
       })
 
       // Note: handleAlarm() removed - SessionPoller handles alarms internally
@@ -729,11 +735,12 @@ describe("SessionController", () => {
       await controller.initialize()
       // V2: Polls use PopupCache, not mockGetRecentCodes
 
+      // V2: Use timeoutSeconds=10 to get 3 polls at [0, 5000, 10000]
       const session = await controller.startSession({
         tabId: 1,
         url: "https://example.com",
         expected: {},
-        timeoutSeconds: 0.2,
+        timeoutSeconds: 10,
       })
 
       // Note: handleAlarm() removed - SessionPoller handles alarms internally
@@ -741,7 +748,7 @@ describe("SessionController", () => {
 
       // Verify alarm naming follows the expected format: session-poll-${id}-${index}
       const alarmCalls = vi.mocked(chrome.alarms.create).mock.calls
-      expect(alarmCalls.length).toBe(3) // 3 poll times
+      expect(alarmCalls.length).toBe(3) // 3 poll times at [0, 5000, 10000]
 
       alarmCalls.forEach((call, index) => {
         const [alarmName] = call

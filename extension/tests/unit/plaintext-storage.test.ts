@@ -181,7 +181,7 @@ describe("PlaintextStorage", () => {
         ValidationError
       )
       await expect(storage.addMailbox(invalidMailbox)).rejects.toThrow(
-        "Invalid mailbox ID format"
+        "Invalid mailbox schema"
       )
     })
 
@@ -193,7 +193,7 @@ describe("PlaintextStorage", () => {
         ValidationError
       )
       await expect(storage.addMailbox(invalidMailbox)).rejects.toThrow(
-        "Invalid provider ID"
+        "Invalid mailbox schema"
       )
     })
 
@@ -203,7 +203,7 @@ describe("PlaintextStorage", () => {
         ValidationError
       )
       await expect(storage.addMailbox(invalidMailbox)).rejects.toThrow(
-        "Invalid email format"
+        "Invalid mailbox schema"
       )
     })
 
@@ -213,7 +213,7 @@ describe("PlaintextStorage", () => {
         ValidationError
       )
       await expect(storage.addMailbox(invalidMailbox)).rejects.toThrow(
-        "Access token cannot be empty"
+        "Invalid mailbox schema"
       )
     })
 
@@ -494,20 +494,35 @@ describe("PlaintextStorage", () => {
     })
 
     it("should validate provider IDs", async () => {
-      const providers: Array<Mailbox["providerId"]> = [
-        "gmail",
-        "outlook",
-        "imap-bridge",
-      ]
+      // Gmail: OAuth without refresh token (chrome.identity handles refresh)
+      const gmailMailbox = createTestMailbox({
+        providerId: "gmail",
+        email: "gmail@example.com",
+        id: crypto.randomUUID(),
+      })
+      await expect(storage.addMailbox(gmailMailbox)).resolves.not.toThrow()
 
-      for (const providerId of providers) {
-        const mailbox = createTestMailbox({
-          providerId,
-          email: `${providerId}@example.com`,
-          id: crypto.randomUUID(),
-        })
-        await expect(storage.addMailbox(mailbox)).resolves.not.toThrow()
+      // Outlook: OAuth with refresh token required
+      const outlookMailbox = createTestMailbox({
+        providerId: "outlook",
+        email: "outlook@example.com",
+        id: crypto.randomUUID(),
+        refreshToken: "outlook-refresh-token",
+      })
+      await expect(storage.addMailbox(outlookMailbox)).resolves.not.toThrow()
+
+      // IMAP Bridge: requires IMAP-specific fields, no OAuth fields
+      const imapMailbox: Mailbox = {
+        id: crypto.randomUUID(),
+        providerId: "imap-bridge",
+        email: "imap@example.com",
+        imapServer: "imap.example.com",
+        imapPort: 993,
+        imapAccountId: "acc_test123",
+        addedAt: Date.now(),
+        lastSyncedAt: Date.now(),
       }
+      await expect(storage.addMailbox(imapMailbox)).resolves.not.toThrow()
     })
 
     it("should validate email formats", async () => {
@@ -528,9 +543,7 @@ describe("PlaintextStorage", () => {
 
       for (const email of invalidEmails) {
         const mailbox = createTestMailbox({ email })
-        await expect(storage.addMailbox(mailbox)).rejects.toThrow(
-          "Invalid email format"
-        )
+        await expect(storage.addMailbox(mailbox)).rejects.toThrow(ValidationError)
       }
     })
 
@@ -573,8 +586,9 @@ describe("PlaintextStorage", () => {
     it("should return default settings if none exist", async () => {
       const settings = await storage.getSettings()
       expect(settings.autoFillEnabled).toBe(true)
-      expect(settings.lockEnabled).toBe(false)
-      expect(settings.lockTimeoutMinutes).toBe(15)
+      expect(settings.notificationsEnabled).toBe(true)
+      expect(settings.allowedDomains).toEqual([])
+      expect(settings.deniedDomains).toEqual([])
     })
 
     it("should update settings", async () => {
@@ -594,7 +608,7 @@ describe("PlaintextStorage", () => {
 
     it("should validate settings structure", async () => {
       await expect(
-        storage.updateSettings({ lockTimeoutMinutes: -1 } as any)
+        storage.updateSettings({ autoFillEnabled: "not-a-boolean" } as any)
       ).rejects.toThrow(ValidationError)
     })
 
@@ -617,7 +631,6 @@ describe("PlaintextStorage", () => {
   describe("Session State Operations", () => {
     it("should return default session state if none exists", async () => {
       const state = await storage.getSessionState()
-      expect(state.isLocked).toBe(false)
       expect(state.activeWatchSessions).toEqual([])
     })
 
@@ -645,7 +658,7 @@ describe("PlaintextStorage", () => {
 
     it("should validate session state structure", async () => {
       await expect(
-        storage.updateSessionState({ isLocked: "true" } as any)
+        storage.updateSessionState({ activeWatchSessions: "not-an-array" } as any)
       ).rejects.toThrow(ValidationError)
     })
 

@@ -47,6 +47,7 @@ describe('PopupCacheManager', () => {
       const cache = await cacheManager.getCache()
 
       expect(cache).toEqual({
+        items: [],
         codes: [],
         magicLinks: [],
         lastSync: 0,
@@ -191,9 +192,9 @@ describe('PopupCacheManager', () => {
           siteMatch: 'example.com',
         },
         {
-          code: 'magic-link:https://example.com/reset?token=xyz789',
+          code: 'magic-link:https://example.com/login?token=xyz789',
           timestamp: Date.now() - 1000,
-          source: 'test@example.com - Reset Password',
+          source: 'test@example.com - Login Link',
           used: false,
           siteMatch: 'example.com',
         },
@@ -210,12 +211,12 @@ describe('PopupCacheManager', () => {
       )
       expect(cache.magicLinks[0].type).toBe('verify')
       expect(cache.magicLinks[1].url).toBe(
-        'https://example.com/reset?token=xyz789'
+        'https://example.com/login?token=xyz789'
       )
-      expect(cache.magicLinks[1].type).toBe('reset')
+      expect(cache.magicLinks[1].type).toBe('login')
     })
 
-    it('should keep only last 3 magic links', async () => {
+    it('should keep only MAX_ITEMS magic links in unified cache', async () => {
       await cacheManager.initialize()
 
       const storedCodes: StoredCode[] = Array.from({ length: 5 }, (_, i) => ({
@@ -229,9 +230,10 @@ describe('PopupCacheManager', () => {
 
       const cache = await cacheManager.getCache()
 
-      expect(cache.magicLinks).toHaveLength(3)
+      // V2 uses MAX_ITEMS=5 for unified list (codes + links combined)
+      expect(cache.magicLinks).toHaveLength(5)
       expect(cache.magicLinks[0].url).toContain('link0')
-      expect(cache.magicLinks[2].url).toContain('link2')
+      expect(cache.magicLinks[4].url).toContain('link4')
     })
 
     it('should determine magic link type from URL patterns', async () => {
@@ -251,21 +253,9 @@ describe('PopupCacheManager', () => {
           used: false,
         },
         {
-          code: 'magic-link:https://example.com/reset?token=3',
-          timestamp: Date.now(),
-          source: 'reset',
-          used: false,
-        },
-        {
           code: 'magic-link:https://example.com/confirm?token=4',
           timestamp: Date.now(),
           source: 'confirm',
-          used: false,
-        },
-        {
-          code: 'magic-link:https://example.com/password?token=5',
-          timestamp: Date.now(),
-          source: 'password',
           used: false,
         },
       ]
@@ -274,9 +264,12 @@ describe('PopupCacheManager', () => {
 
       const cache = await cacheManager.getCache()
 
+      // V2 filters out 'reset' type links (HIDDEN_LINK_TYPES)
+      // /confirm maps to 'verify' type
+      expect(cache.magicLinks).toHaveLength(3)
       expect(cache.magicLinks[0].type).toBe('login')
       expect(cache.magicLinks[1].type).toBe('verify')
-      expect(cache.magicLinks[2].type).toBe('reset')
+      expect(cache.magicLinks[2].type).toBe('verify') // /confirm -> verify
     })
 
     it('should not add duplicate magic links', async () => {
@@ -537,19 +530,13 @@ describe('PopupCacheManager', () => {
     it('should handle typical email polling update', async () => {
       await cacheManager.initialize()
 
-      const firstBatch: StoredCode[] = [
-        {
-          code: '123456',
-          timestamp: Date.now(),
-          source: 'gmail:user@gmail.com - GitHub verification',
-          used: false,
-          siteMatch: 'github.com',
-        },
-      ]
-
-      await cacheManager.updateWithNewCodes(firstBatch, 1)
-
-      const secondBatch: StoredCode[] = [
+      // V2 pipeline replaces the cache on each call (processes the full
+      // stored codes list from storage, not incremental batches).
+      // Pass both codes in a single update to verify they are processed.
+      // Place the most recent code first in input so priority sort
+      // keeps it first (both codes have equal priority scores within
+      // the same recency bracket).
+      const allCodes: StoredCode[] = [
         {
           code: '789012',
           timestamp: Date.now(),
@@ -557,14 +544,21 @@ describe('PopupCacheManager', () => {
           used: false,
           siteMatch: 'twitter.com',
         },
+        {
+          code: '123456',
+          timestamp: Date.now() - 1000,
+          source: 'gmail:user@gmail.com - GitHub verification',
+          used: false,
+          siteMatch: 'github.com',
+        },
       ]
 
-      await cacheManager.updateWithNewCodes(secondBatch, 1)
+      await cacheManager.updateWithNewCodes(allCodes, 1)
 
       const cache = await cacheManager.getCache()
 
       expect(cache.codes).toHaveLength(2)
-      expect(cache.codes[0].code).toBe('789012') // Most recent first
+      expect(cache.codes[0].code).toBe('789012') // Most recent first (input order preserved at equal priority)
       expect(cache.codes[1].code).toBe('123456')
     })
 

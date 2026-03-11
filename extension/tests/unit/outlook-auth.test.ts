@@ -51,13 +51,14 @@ describe('OutlookAuth', () => {
       expect(url.searchParams.get('response_mode')).toBe('query')
     })
 
-    it('should NOT include access_type or prompt parameters (Microsoft-specific)', async () => {
+    it('should NOT include access_type but should include prompt=select_account for multi-account support', async () => {
       const result = await outlookAuth.startAuth()
       const url = new URL(result.authUrl)
 
-      // Microsoft doesn't use these Google-specific parameters
+      // Microsoft doesn't use the Google-specific access_type parameter
       expect(url.searchParams.get('access_type')).toBeNull()
-      expect(url.searchParams.get('prompt')).toBeNull()
+      // prompt=select_account forces the account picker for multi-account support
+      expect(url.searchParams.get('prompt')).toBe('select_account')
     })
 
     it('should include code_challenge in URL', async () => {

@@ -1,0 +1,1701 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="status" content="Ideation">
+  <meta name="date" content="2026-03-09">
+  <meta name="category" content="popup">
+  <title>Popup Panel - InboxKey Prototype</title>
+  <link rel="stylesheet" href="../shared/tokens.css">
+
+  <!-- Lucide Icons CDN -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <style>
+    /* ============================
+       PROTOTYPE CONTROLS
+       ============================ */
+
+    .proto-state-controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--space-3);
+      align-items: center;
+    }
+
+    .proto-state-controls label {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-2);
+      font-size: var(--font-size-xs);
+      color: var(--color-text-secondary);
+      cursor: pointer;
+    }
+
+    .proto-state-controls input[type="radio"] {
+      accent-color: var(--color-primary);
+    }
+
+    .proto-separator {
+      width: 1px;
+      height: 20px;
+      background: var(--color-border);
+    }
+
+    /* ============================
+       PAGE SHELL
+       ============================ */
+
+    *, *::before, *::after { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      background: var(--color-bg-primary);
+      font-family: var(--font-system);
+    }
+
+    .popup-stage {
+      display: flex;
+      justify-content: center;
+      padding: var(--space-8) var(--space-4);
+      min-height: calc(100vh - 48px);
+      align-items: flex-start;
+    }
+
+    /* ============================
+       POPUP CONTAINER (400px fixed)
+       ============================ */
+
+    .popup-container {
+      width: 400px;
+      min-height: 400px;
+      max-height: 600px;
+      background: var(--surface-card);
+      color: var(--color-text-primary);
+      display: flex;
+      flex-direction: column;
+      border-radius: var(--radius-xl);
+      border: 1px solid var(--color-border);
+      box-shadow: var(--shadow-lg);
+      overflow: hidden;
+      position: relative;
+    }
+
+    /* ============================
+       HEADER
+       ============================ */
+
+    .popup-header {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      padding: var(--space-4) var(--space-4) var(--space-3);
+      background: rgba(255, 255, 255, 0.8);
+      border-bottom: 1px solid var(--color-border);
+      backdrop-filter: saturate(180%) blur(20px);
+      -webkit-backdrop-filter: saturate(180%) blur(20px);
+    }
+
+    [data-theme="dark"] .popup-header {
+      background: rgba(28, 28, 30, 0.8);
+    }
+
+    .popup-header__row {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: var(--space-4);
+    }
+
+    .popup-header__title-group {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-1);
+    }
+
+    .popup-title {
+      font-size: var(--font-size-lg);
+      font-weight: var(--font-weight-semibold);
+      margin: 0;
+      letter-spacing: -0.02em;
+      color: var(--color-text-primary);
+    }
+
+    .popup-header__pills {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-2);
+      flex-wrap: wrap;
+    }
+
+    .header-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-1);
+      padding: 3px 10px;
+      border-radius: var(--radius-full);
+      border: none;
+      background: var(--color-bg-primary);
+      font-size: 11px;
+      font-weight: var(--font-weight-medium);
+      color: var(--color-text-tertiary);
+      line-height: 1.3;
+      transition: color 2.5s ease-out;
+    }
+
+    .header-pill--success {
+      color: var(--color-success);
+    }
+
+    .popup-header__actions {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-2);
+    }
+
+    .icon-button {
+      width: 34px;
+      height: 34px;
+      border-radius: var(--radius-md);
+      border: none;
+      background: var(--color-bg-primary);
+      color: var(--color-text-tertiary);
+      display: grid;
+      place-items: center;
+      cursor: pointer;
+      transition: background var(--duration-fast) var(--easing-out),
+        color var(--duration-fast) var(--easing-out),
+        transform var(--duration-fast) var(--easing-out);
+    }
+
+    .icon-button svg {
+      width: 18px;
+      height: 18px;
+    }
+
+    .icon-button:hover:not(:disabled) {
+      background: var(--color-bg-secondary);
+      color: var(--color-text-secondary);
+    }
+
+    .icon-button:active:not(:disabled) {
+      transform: scale(0.97);
+    }
+
+    .icon-button:focus-visible {
+      outline: 2px solid var(--color-primary);
+      outline-offset: 2px;
+    }
+
+    .icon-button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .icon-button--refresh.is-active svg {
+      animation: spin 1s linear infinite;
+    }
+
+    .icon-button--settings svg {
+      width: 19px;
+      height: 19px;
+    }
+
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
+    /* ============================
+       MAIN CONTENT
+       ============================ */
+
+    .popup-main {
+      flex: 1;
+      padding: var(--space-4);
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-3);
+      overflow-y: auto;
+      background: var(--color-bg-primary);
+    }
+
+    /* ============================
+       QUICK ACTIONS
+       ============================ */
+
+    .popup-quick-actions {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: var(--space-2);
+    }
+
+    .popup-quick-actions__button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: var(--space-2);
+      padding: 11px 16px;
+      font-size: var(--font-size-sm);
+      font-weight: var(--font-weight-semibold);
+      border-radius: var(--radius-lg);
+      border: none;
+      cursor: pointer;
+      font-family: var(--font-system);
+      transition: transform var(--duration-fast) var(--easing-out),
+        background var(--duration-fast) var(--easing-out),
+        opacity var(--duration-fast) var(--easing-out);
+    }
+
+    .popup-quick-actions__button--primary {
+      background: var(--color-primary);
+      color: var(--color-text-inverse);
+    }
+
+    .popup-quick-actions__button--primary:hover:not(:disabled) {
+      opacity: 0.88;
+    }
+
+    .popup-quick-actions__button--secondary {
+      background: var(--surface-card);
+      color: var(--color-primary);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .popup-quick-actions__button--secondary:hover:not(:disabled) {
+      box-shadow: var(--shadow-md);
+    }
+
+    .popup-quick-actions__button:active:not(:disabled) {
+      transform: scale(0.98);
+    }
+
+    .popup-quick-actions__button:focus-visible {
+      outline: 2px solid var(--color-primary);
+      outline-offset: 2px;
+    }
+
+    .popup-quick-actions__button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    /* ============================
+       SECTION TITLES
+       ============================ */
+
+    .popup-section {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-2);
+    }
+
+    .popup-section__title {
+      margin: 0;
+      font-size: 11px;
+      font-weight: var(--font-weight-semibold);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--color-text-tertiary);
+    }
+
+    /* ============================
+       CODE & LINK CARDS
+       ============================ */
+
+    .card-list {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-2);
+    }
+
+    .code-card,
+    .link-card {
+      padding: var(--space-3) var(--space-4);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      background: var(--surface-card);
+      box-shadow: var(--shadow-sm);
+      transition: box-shadow var(--duration-fast) var(--easing-out),
+        transform var(--duration-fast) var(--easing-out);
+    }
+
+    .code-card:hover,
+    .link-card:hover {
+      box-shadow: var(--shadow-md);
+      transform: translateY(-1px);
+    }
+
+    [data-theme="dark"] .code-card,
+    [data-theme="dark"] .link-card {
+      background: var(--color-bg-secondary);
+      box-shadow: none;
+    }
+
+    .code-card__body {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-2);
+      min-width: 0;
+    }
+
+    .link-card {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: var(--space-3);
+    }
+
+    .link-card__body {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-2);
+      min-width: 0;
+    }
+
+    .link-card__actions {
+      align-self: stretch;
+      display: flex;
+      align-items: center;
+    }
+
+    /* Subtle type tints */
+    .card-list--unified .code-card {
+      background: linear-gradient(to right, var(--surface-card), rgba(0, 122, 255, 0.02));
+    }
+
+    .card-list--unified .link-card {
+      background: linear-gradient(to right, var(--surface-card), rgba(34, 197, 94, 0.02));
+    }
+
+    [data-theme="dark"] .card-list--unified .code-card {
+      background: linear-gradient(to right, var(--surface-card), rgba(0, 122, 255, 0.04));
+    }
+
+    [data-theme="dark"] .card-list--unified .link-card {
+      background: linear-gradient(to right, var(--surface-card), rgba(34, 197, 94, 0.04));
+    }
+
+    /* Meta grid inside cards */
+    .meta-grid {
+      display: grid;
+      grid-template-columns: 64px minmax(0, 1fr);
+      gap: 6px 12px;
+    }
+
+    .meta-grid__label {
+      font-size: 10px;
+      font-weight: var(--font-weight-semibold);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--color-text-tertiary);
+    }
+
+    .meta-grid__value {
+      font-size: var(--font-size-sm);
+      color: var(--color-text-secondary);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .meta-grid__value--code {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+      border-top: 1px dashed var(--color-border);
+      padding-top: 6px;
+      margin-top: 6px;
+    }
+
+    .meta-grid__label:has(+ .meta-grid__value--code) {
+      border-top: 1px dashed var(--color-border);
+      padding-top: 6px;
+      margin-top: 6px;
+    }
+
+    /* Time pill */
+    .time-pill {
+      display: inline-flex;
+      align-items: center;
+      padding: 2px 8px;
+      border-radius: var(--radius-full);
+      border: none;
+      background: var(--color-bg-primary);
+      font-size: 11px;
+      color: var(--color-text-tertiary);
+      letter-spacing: 0.02em;
+      flex-shrink: 0;
+      white-space: nowrap;
+    }
+
+    .card-head {
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      min-height: 20px;
+    }
+
+    /* Code pill */
+    .code-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-2);
+      padding: 10px 14px;
+      border-radius: var(--radius-lg);
+      border: none;
+      background: var(--color-bg-primary);
+      font-family: var(--font-mono);
+      font-size: 18px;
+      font-weight: var(--font-weight-semibold);
+      letter-spacing: 0.2em;
+      color: var(--color-text-primary);
+      cursor: pointer;
+      transition: background var(--duration-fast) var(--easing-out),
+        color var(--duration-fast) var(--easing-out),
+        transform var(--duration-fast) var(--easing-out);
+    }
+
+    .code-pill:hover:not(:disabled) {
+      background: var(--color-bg-secondary);
+      transform: translateY(-1px);
+    }
+
+    .code-pill:active:not(:disabled) {
+      transform: scale(0.98);
+    }
+
+    .code-pill:focus-visible {
+      outline: 2px solid var(--color-primary);
+      outline-offset: 2px;
+    }
+
+    .code-pill__text {
+      letter-spacing: 0.18em;
+      transition: color 1.5s ease-out;
+    }
+
+    .code-pill--copied .code-pill__text {
+      color: var(--color-success);
+      transition: color 0s;
+    }
+
+    /* Copy button */
+    .copy-button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: var(--space-1);
+      min-width: 70px;
+      padding: 7px 14px;
+      border-radius: var(--radius-md);
+      border: none;
+      font-size: var(--font-size-sm);
+      font-weight: var(--font-weight-semibold);
+      font-family: var(--font-system);
+      cursor: pointer;
+      background: var(--color-primary);
+      color: var(--color-text-inverse);
+      transition: opacity var(--duration-fast) var(--easing-out),
+        transform var(--duration-fast) var(--easing-out);
+      flex-shrink: 0;
+    }
+
+    .copy-button:hover:not(:disabled) {
+      opacity: 0.88;
+    }
+
+    .copy-button:active:not(:disabled) {
+      transform: scale(0.98);
+    }
+
+    .copy-button:focus-visible {
+      outline: 2px solid var(--color-primary);
+      outline-offset: 2px;
+    }
+
+    .copy-button--success {
+      background: var(--color-success);
+    }
+
+    /* Action button (for links) */
+    .action-button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 88px;
+      padding: 10px 14px;
+      border-radius: var(--radius-lg);
+      border: 1px solid transparent;
+      font-size: var(--font-size-sm);
+      font-weight: var(--font-weight-semibold);
+      font-family: var(--font-system);
+      cursor: pointer;
+      transition: background var(--duration-fast) var(--easing-out),
+        border-color var(--duration-fast) var(--easing-out),
+        color 1.5s ease-out,
+        transform var(--duration-fast) var(--easing-out);
+    }
+
+    .action-button--primary {
+      background: var(--color-primary);
+      color: var(--color-text-inverse);
+    }
+
+    .action-button--primary:hover:not(:disabled) {
+      background: var(--color-primary-hover);
+    }
+
+    .action-button--secondary {
+      background: transparent;
+      color: var(--color-text-primary);
+      border-color: var(--color-border);
+    }
+
+    .action-button--secondary:hover:not(:disabled) {
+      background: var(--surface-card);
+    }
+
+    .action-button:focus-visible {
+      outline: 2px solid var(--color-primary);
+      outline-offset: 2px;
+    }
+
+    /* Provider badge */
+    .provider-badge {
+      display: inline-block;
+      padding: 2px var(--space-2);
+      font-size: 11px;
+      font-weight: var(--font-weight-medium);
+      border-radius: 3px;
+      white-space: nowrap;
+    }
+
+    .provider-badge[data-provider="gmail"] {
+      background: var(--color-gmail);
+      color: white;
+    }
+
+    .provider-badge[data-provider="outlook"] {
+      background: var(--color-outlook);
+      color: white;
+    }
+
+    .provider-badge[data-provider="imap"] {
+      background: var(--color-imap);
+      color: white;
+    }
+
+    /* Countdown timer */
+    .countdown {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 11px;
+      color: var(--color-text-tertiary);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .countdown svg {
+      width: 12px;
+      height: 12px;
+    }
+
+    .countdown--urgent {
+      color: var(--color-error);
+    }
+
+    .countdown--warning {
+      color: var(--color-warning);
+    }
+
+    /* ============================
+       EMPTY STATE
+       ============================ */
+
+    .empty-state {
+      padding: var(--space-6) var(--space-5);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      text-align: center;
+      color: var(--color-text-tertiary);
+      font-size: var(--font-size-sm);
+      background: var(--surface-card);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .empty-state__icon {
+      margin-bottom: var(--space-3);
+      color: var(--color-text-tertiary);
+      opacity: 0.5;
+    }
+
+    .empty-state__icon svg {
+      width: 40px;
+      height: 40px;
+    }
+
+    .empty-state-title {
+      margin: 0 0 var(--space-1);
+      font-weight: var(--font-weight-semibold);
+      color: var(--color-text-secondary);
+    }
+
+    .empty-state-message {
+      margin: 0;
+      color: var(--color-text-tertiary);
+      font-size: var(--font-size-xs);
+      line-height: var(--line-height-normal);
+    }
+
+    /* ============================
+       NO ACCOUNTS STATE
+       ============================ */
+
+    .no-accounts {
+      padding: var(--space-6) var(--space-5);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      text-align: center;
+      background: var(--surface-card);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .no-accounts__icon {
+      margin-bottom: var(--space-3);
+      color: var(--color-primary);
+      opacity: 0.6;
+    }
+
+    .no-accounts__icon svg {
+      width: 40px;
+      height: 40px;
+    }
+
+    .no-accounts__title {
+      margin: 0 0 var(--space-2);
+      font-size: var(--font-size-base);
+      font-weight: var(--font-weight-semibold);
+      color: var(--color-text-primary);
+    }
+
+    .no-accounts__message {
+      margin: 0 0 var(--space-4);
+      font-size: var(--font-size-sm);
+      color: var(--color-text-tertiary);
+      line-height: var(--line-height-normal);
+    }
+
+    .no-accounts__button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: var(--space-2);
+      height: var(--min-tap-target);
+      padding: 0 var(--space-5);
+      border-radius: var(--radius-md);
+      border: none;
+      background: var(--color-primary);
+      color: var(--color-text-inverse);
+      font-size: var(--font-size-base);
+      font-weight: var(--font-weight-medium);
+      font-family: var(--font-system);
+      cursor: pointer;
+      transition: opacity var(--duration-fast) var(--easing-out);
+    }
+
+    .no-accounts__button:hover {
+      opacity: 0.88;
+    }
+
+    .no-accounts__button:focus-visible {
+      outline: 2px solid var(--color-primary);
+      outline-offset: 2px;
+    }
+
+    /* ============================
+       BLACKLISTED STATE
+       ============================ */
+
+    .blacklisted-banner {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-3);
+      padding: var(--space-4);
+      border: 1px solid var(--color-warning);
+      border-radius: var(--radius-lg);
+      background: var(--color-warning-light);
+    }
+
+    [data-theme="dark"] .blacklisted-banner {
+      background: rgba(255, 214, 10, 0.1);
+      border-color: rgba(255, 214, 10, 0.3);
+    }
+
+    .blacklisted-banner__header {
+      display: flex;
+      align-items: flex-start;
+      gap: var(--space-3);
+    }
+
+    .blacklisted-banner__icon {
+      flex-shrink: 0;
+      color: var(--color-warning-dark);
+    }
+
+    [data-theme="dark"] .blacklisted-banner__icon {
+      color: var(--color-warning);
+    }
+
+    .blacklisted-banner__icon svg {
+      width: 20px;
+      height: 20px;
+    }
+
+    .blacklisted-banner__text {
+      flex: 1;
+    }
+
+    .blacklisted-banner__title {
+      margin: 0 0 var(--space-1);
+      font-size: var(--font-size-sm);
+      font-weight: var(--font-weight-semibold);
+      color: var(--color-warning-dark);
+    }
+
+    [data-theme="dark"] .blacklisted-banner__title {
+      color: var(--color-warning);
+    }
+
+    .blacklisted-banner__domain {
+      font-family: var(--font-mono);
+      font-size: var(--font-size-xs);
+      color: var(--color-text-secondary);
+    }
+
+    .blacklisted-banner__action {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding-top: var(--space-2);
+      border-top: 1px solid var(--color-warning);
+    }
+
+    [data-theme="dark"] .blacklisted-banner__action {
+      border-color: rgba(255, 214, 10, 0.2);
+    }
+
+    .blacklisted-banner__action-label {
+      font-size: var(--font-size-sm);
+      font-weight: var(--font-weight-medium);
+      color: var(--color-text-primary);
+    }
+
+    /* Toggle switch */
+    .toggle {
+      position: relative;
+      width: 46px;
+      height: 24px;
+      display: inline-block;
+    }
+
+    .toggle input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+      position: absolute;
+    }
+
+    .slider {
+      position: absolute;
+      inset: 0;
+      background: var(--color-gray-300);
+      border-radius: var(--radius-full);
+      transition: background 150ms ease-out;
+      cursor: pointer;
+    }
+
+    .slider::before {
+      content: "";
+      position: absolute;
+      width: 20px;
+      height: 20px;
+      top: 2px;
+      left: 2px;
+      background: white;
+      border-radius: 50%;
+      box-shadow: var(--shadow-sm);
+      transition: transform 150ms ease-out;
+    }
+
+    .toggle input:checked + .slider {
+      background: var(--color-primary);
+    }
+
+    .toggle input:checked + .slider::before {
+      transform: translateX(22px);
+    }
+
+    .toggle input:focus-visible + .slider {
+      outline: 2px solid var(--color-primary);
+      outline-offset: 2px;
+    }
+
+    /* ============================
+       LOADING SKELETON
+       ============================ */
+
+    .popup-loading {
+      flex: 1;
+      padding: var(--space-4);
+      background: var(--color-bg-primary);
+    }
+
+    .skeleton {
+      background: linear-gradient(90deg,
+        var(--color-bg-primary) 25%,
+        var(--color-bg-secondary) 50%,
+        var(--color-bg-primary) 75%);
+      background-size: 200% 100%;
+      animation: loading 1.8s ease-in-out infinite;
+      border-radius: var(--radius-lg);
+    }
+
+    @keyframes loading {
+      0% { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+
+    .skeleton--header {
+      height: 60px;
+      margin-bottom: var(--space-4);
+    }
+
+    .skeleton--quick-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: var(--space-2);
+      margin-bottom: var(--space-4);
+    }
+
+    .skeleton--quick-actions > div {
+      height: 42px;
+    }
+
+    .skeleton--card {
+      height: 80px;
+      margin-bottom: var(--space-2);
+    }
+
+    .skeleton--small {
+      height: 36px;
+    }
+
+    /* ============================
+       FOOTER
+       ============================ */
+
+    .popup-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: var(--space-3);
+      padding: var(--space-3) var(--space-4);
+      border-top: 1px solid var(--color-border);
+      background: rgba(255, 255, 255, 0.8);
+      backdrop-filter: saturate(180%) blur(20px);
+      -webkit-backdrop-filter: saturate(180%) blur(20px);
+      font-size: var(--font-size-sm);
+      color: var(--color-text-secondary);
+    }
+
+    [data-theme="dark"] .popup-footer {
+      background: rgba(28, 28, 30, 0.8);
+    }
+
+    .popup-footer__trust {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+      flex-wrap: wrap;
+    }
+
+    .trust-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 3px 8px;
+      border-radius: var(--radius-full);
+      border: none;
+      background: var(--color-bg-primary);
+      font-size: 10px;
+      font-weight: var(--font-weight-medium);
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: var(--color-text-tertiary);
+    }
+
+    .trust-tag svg {
+      width: 10px;
+      height: 10px;
+    }
+
+    .popup-footer__support {
+      margin-left: auto;
+    }
+
+    .buy-coffee-button--popup {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-1);
+      padding: 6px 12px;
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--color-border);
+      background: transparent;
+      color: var(--color-text-secondary);
+      font-size: var(--font-size-sm);
+      font-weight: var(--font-weight-medium);
+      font-family: var(--font-system);
+      text-decoration: none;
+      cursor: pointer;
+      transition: background var(--duration-fast) var(--easing-out),
+        border-color var(--duration-fast) var(--easing-out),
+        color var(--duration-fast) var(--easing-out);
+      box-shadow: none;
+    }
+
+    .buy-coffee-button--popup:hover {
+      background: var(--surface-card-muted);
+      border-color: var(--color-border-hover);
+      color: var(--color-text-primary);
+    }
+
+    .buy-coffee-button--popup:focus-visible {
+      outline: 2px solid var(--color-primary);
+      outline-offset: 2px;
+    }
+
+    /* ============================
+       DOMAIN TOGGLE (in footer)
+       ============================ */
+
+    .domain-toggle-inline {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+    }
+
+    .domain-toggle-inline__label {
+      font-size: var(--font-size-xs);
+      color: var(--color-text-secondary);
+    }
+
+    .domain-toggle-inline__domain {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--color-text-tertiary);
+    }
+
+    .mini-toggle {
+      position: relative;
+      width: 32px;
+      height: 18px;
+      display: inline-block;
+      flex-shrink: 0;
+    }
+
+    .mini-toggle input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+      position: absolute;
+    }
+
+    .mini-toggle .slider {
+      position: absolute;
+      inset: 0;
+      background: var(--color-gray-300);
+      border-radius: var(--radius-full);
+      transition: background 150ms ease-out;
+      cursor: pointer;
+    }
+
+    .mini-toggle .slider::before {
+      width: 14px;
+      height: 14px;
+      top: 2px;
+      left: 2px;
+    }
+
+    .mini-toggle input:checked + .slider::before {
+      transform: translateX(14px);
+    }
+
+    /* ============================
+       STATE TRANSITIONS
+       ============================ */
+
+    .state-panel {
+      display: none;
+      opacity: 0;
+      transition: opacity var(--duration-normal) var(--easing-out);
+    }
+
+    .state-panel.active {
+      display: flex;
+      flex-direction: column;
+      opacity: 1;
+      animation: fadeIn var(--duration-normal) var(--easing-out);
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ============================
+       REDUCED MOTION
+       ============================ */
+
+    @media (prefers-reduced-motion: reduce) {
+      .skeleton {
+        animation: none;
+        background: var(--color-bg-secondary);
+      }
+
+      .state-panel.active {
+        animation: none;
+      }
+
+      .code-card:hover,
+      .link-card:hover,
+      .code-pill:hover:not(:disabled) {
+        transform: none;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ============================
+       PROTOTYPE TOOLBAR
+       ============================ -->
+  <div class="proto-toolbar">
+    <div class="proto-toolbar__left">
+      <span class="proto-toolbar__title">Popup Panel</span>
+      <span class="proto-toolbar__status" data-status="ideation">Ideation</span>
+      <span class="proto-toolbar__date">2026-03-09</span>
+    </div>
+    <div class="proto-toolbar__right">
+      <div class="proto-state-controls">
+        <label><input type="radio" name="state" value="populated" checked> Populated</label>
+        <label><input type="radio" name="state" value="empty"> Empty</label>
+        <label><input type="radio" name="state" value="loading"> Loading</label>
+        <label><input type="radio" name="state" value="no-accounts"> No Accounts</label>
+        <label><input type="radio" name="state" value="blacklisted"> Blacklisted</label>
+      </div>
+      <div class="proto-separator"></div>
+      <div class="proto-theme-toggle">
+        <button data-theme-btn="light" aria-pressed="true">Light</button>
+        <button data-theme-btn="dark" aria-pressed="false">Dark</button>
+      </div>
+      <button class="proto-decisions-toggle">Decisions</button>
+    </div>
+  </div>
+
+  <!-- ============================
+       DECISIONS PANEL
+       ============================ -->
+  <div class="proto-decisions-panel">
+    <button class="proto-decisions-close" aria-label="Close decisions">&times;</button>
+    <h3>Design Decisions</h3>
+    <ol></ol>
+  </div>
+
+  <!-- ============================
+       POPUP STAGE
+       ============================ -->
+  <main class="proto-canvas">
+    <div class="popup-stage">
+      <div class="popup-container" aria-label="InboxKey">
+
+        <!-- ========================================
+             STATE: POPULATED
+             ======================================== -->
+        <div class="state-panel active" data-state="populated">
+          <!-- Header -->
+          <header class="popup-header">
+            <div class="popup-header__row">
+              <div class="popup-header__title-group">
+                <h1 class="popup-title">InboxKey</h1>
+                <div class="popup-header__pills" role="status">
+                  <span class="header-pill">2 mailboxes</span>
+                  <span class="header-pill">Synced 12s ago</span>
+                </div>
+              </div>
+              <div class="popup-header__actions">
+                <button type="button" class="icon-button icon-button--refresh" aria-label="Sync now" title="Sync now">
+                  <i data-lucide="refresh-cw"></i>
+                </button>
+                <button type="button" class="icon-button icon-button--settings" aria-label="Settings" title="Settings">
+                  <i data-lucide="settings"></i>
+                </button>
+              </div>
+            </div>
+          </header>
+
+          <!-- Main -->
+          <div class="popup-main" aria-live="polite">
+            <!-- Quick actions -->
+            <div class="popup-quick-actions" role="group" aria-label="Quick actions">
+              <button type="button" class="popup-quick-actions__button popup-quick-actions__button--primary" onclick="demoCopy(this)">
+                Paste Best Code
+              </button>
+              <button type="button" class="popup-quick-actions__button popup-quick-actions__button--secondary">
+                Open Last Link
+              </button>
+            </div>
+
+            <!-- Recent items -->
+            <div class="popup-section">
+              <h2 class="popup-section__title">Recent</h2>
+              <div class="card-list card-list--unified">
+
+                <!-- Code card 1 (domain match) -->
+                <div class="code-card" tabindex="0">
+                  <div class="code-card__body">
+                    <div class="card-head">
+                      <span class="time-pill">32s ago</span>
+                    </div>
+                    <div class="meta-grid">
+                      <span class="meta-grid__label">From</span>
+                      <span class="meta-grid__value">
+                        <span class="provider-badge" data-provider="gmail">Gmail</span>
+                        noreply@github.com
+                      </span>
+                      <span class="meta-grid__label">Subject</span>
+                      <span class="meta-grid__value">Your verification code</span>
+                      <span class="meta-grid__label">Code</span>
+                      <span class="meta-grid__value meta-grid__value--code">
+                        <button type="button" class="code-pill" onclick="demoCopyCode(this, '847 293')" aria-label="Copy code 847 293">
+                          <span class="code-pill__text">847 293</span>
+                        </button>
+                        <button type="button" class="copy-button" onclick="demoCopyBtn(this)">
+                          <i data-lucide="copy" style="width:14px;height:14px"></i>
+                          Copy
+                        </button>
+                        <span class="countdown">
+                          <i data-lucide="clock" style="width:12px;height:12px"></i>
+                          <span class="countdown__value" data-expires="268">4:28</span>
+                        </span>
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Code card 2 -->
+                <div class="code-card" tabindex="0">
+                  <div class="code-card__body">
+                    <div class="card-head">
+                      <span class="time-pill">2m ago</span>
+                    </div>
+                    <div class="meta-grid">
+                      <span class="meta-grid__label">From</span>
+                      <span class="meta-grid__value">
+                        <span class="provider-badge" data-provider="outlook">Outlook</span>
+                        security@microsoft.com
+                      </span>
+                      <span class="meta-grid__label">Subject</span>
+                      <span class="meta-grid__value">Microsoft account security code</span>
+                      <span class="meta-grid__label">Code</span>
+                      <span class="meta-grid__value meta-grid__value--code">
+                        <button type="button" class="code-pill" onclick="demoCopyCode(this, '5841')" aria-label="Copy code 5841">
+                          <span class="code-pill__text">5841</span>
+                        </button>
+                        <button type="button" class="copy-button" onclick="demoCopyBtn(this)">
+                          <i data-lucide="copy" style="width:14px;height:14px"></i>
+                          Copy
+                        </button>
+                        <span class="countdown countdown--warning">
+                          <i data-lucide="clock" style="width:12px;height:12px"></i>
+                          <span class="countdown__value" data-expires="58">0:58</span>
+                        </span>
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Magic link card -->
+                <div class="link-card" tabindex="0">
+                  <div class="link-card__body">
+                    <div class="card-head">
+                      <span class="time-pill">5m ago</span>
+                    </div>
+                    <div class="meta-grid">
+                      <span class="meta-grid__label">From</span>
+                      <span class="meta-grid__value">
+                        <span class="provider-badge" data-provider="gmail">Gmail</span>
+                        login@slack.com
+                      </span>
+                      <span class="meta-grid__label">Link</span>
+                      <span class="meta-grid__value" style="font-family: var(--font-mono); font-size: 12px; color: var(--color-text-tertiary);">
+                        slack.com/confirm/...
+                      </span>
+                    </div>
+                  </div>
+                  <div class="link-card__actions">
+                    <button type="button" class="action-button action-button--secondary" onclick="demoOpenLink(this)">
+                      <i data-lucide="external-link" style="width:14px;height:14px"></i>
+                      Open
+                    </button>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+          </div>
+
+          <!-- Footer -->
+          <footer class="popup-footer">
+            <div class="popup-footer__trust">
+              <span class="trust-tag">
+                <i data-lucide="shield-check"></i>
+                Local Only
+              </span>
+              <span class="trust-tag">
+                <i data-lucide="eye-off"></i>
+                Read-Only
+              </span>
+            </div>
+            <div class="popup-footer__support">
+              <a href="#" class="buy-coffee-button--popup" aria-label="Support InboxKey">
+                <span style="font-size: var(--font-size-sm); line-height: 1;">&#9749;</span>
+                Support
+              </a>
+            </div>
+          </footer>
+        </div>
+
+        <!-- ========================================
+             STATE: EMPTY
+             ======================================== -->
+        <div class="state-panel" data-state="empty">
+          <header class="popup-header">
+            <div class="popup-header__row">
+              <div class="popup-header__title-group">
+                <h1 class="popup-title">InboxKey</h1>
+                <div class="popup-header__pills" role="status">
+                  <span class="header-pill">2 mailboxes</span>
+                  <span class="header-pill">Synced just now</span>
+                </div>
+              </div>
+              <div class="popup-header__actions">
+                <button type="button" class="icon-button icon-button--refresh" aria-label="Sync now" title="Sync now">
+                  <i data-lucide="refresh-cw"></i>
+                </button>
+                <button type="button" class="icon-button icon-button--settings" aria-label="Settings" title="Settings">
+                  <i data-lucide="settings"></i>
+                </button>
+              </div>
+            </div>
+          </header>
+
+          <div class="popup-main">
+            <div class="popup-quick-actions" role="group" aria-label="Quick actions">
+              <button type="button" class="popup-quick-actions__button popup-quick-actions__button--primary" disabled>
+                Paste Best Code
+              </button>
+              <button type="button" class="popup-quick-actions__button popup-quick-actions__button--secondary" disabled>
+                Open Last Link
+              </button>
+            </div>
+
+            <div class="empty-state" role="status">
+              <div class="empty-state__icon">
+                <i data-lucide="inbox"></i>
+              </div>
+              <p class="empty-state-title">No verification emails</p>
+              <p class="empty-state-message">
+                When you receive a verification code or magic link,<br>
+                it will appear here automatically.
+              </p>
+            </div>
+          </div>
+
+          <footer class="popup-footer">
+            <div class="popup-footer__trust">
+              <span class="trust-tag">
+                <i data-lucide="shield-check"></i>
+                Local Only
+              </span>
+              <span class="trust-tag">
+                <i data-lucide="eye-off"></i>
+                Read-Only
+              </span>
+            </div>
+            <div class="popup-footer__support">
+              <a href="#" class="buy-coffee-button--popup" aria-label="Support InboxKey">
+                <span style="font-size: var(--font-size-sm); line-height: 1;">&#9749;</span>
+                Support
+              </a>
+            </div>
+          </footer>
+        </div>
+
+        <!-- ========================================
+             STATE: LOADING
+             ======================================== -->
+        <div class="state-panel" data-state="loading">
+          <header class="popup-header">
+            <div class="popup-header__row">
+              <div class="popup-header__title-group">
+                <h1 class="popup-title">InboxKey</h1>
+                <div class="popup-header__pills" role="status">
+                  <span class="header-pill">
+                    <span class="skeleton" style="width: 60px; height: 12px; display: inline-block; border-radius: 4px;"></span>
+                  </span>
+                </div>
+              </div>
+              <div class="popup-header__actions">
+                <button type="button" class="icon-button icon-button--refresh is-active" aria-label="Syncing..." title="Syncing..." disabled>
+                  <i data-lucide="refresh-cw"></i>
+                </button>
+                <button type="button" class="icon-button icon-button--settings" aria-label="Settings" title="Settings">
+                  <i data-lucide="settings"></i>
+                </button>
+              </div>
+            </div>
+          </header>
+
+          <div class="popup-loading" aria-label="Loading verification data" role="status">
+            <div class="skeleton--quick-actions">
+              <div class="skeleton"></div>
+              <div class="skeleton"></div>
+            </div>
+            <div class="skeleton skeleton--small" style="width: 60px; margin-bottom: var(--space-3);"></div>
+            <div class="skeleton skeleton--card"></div>
+            <div class="skeleton skeleton--card"></div>
+            <div class="skeleton skeleton--card" style="height: 60px;"></div>
+          </div>
+
+          <footer class="popup-footer">
+            <div class="popup-footer__trust">
+              <span class="trust-tag">
+                <i data-lucide="shield-check"></i>
+                Local Only
+              </span>
+              <span class="trust-tag">
+                <i data-lucide="eye-off"></i>
+                Read-Only
+              </span>
+            </div>
+            <div class="popup-footer__support">
+              <a href="#" class="buy-coffee-button--popup" aria-label="Support InboxKey">
+                <span style="font-size: var(--font-size-sm); line-height: 1;">&#9749;</span>
+                Support
+              </a>
+            </div>
+          </footer>
+        </div>
+
+        <!-- ========================================
+             STATE: NO ACCOUNTS
+             ======================================== -->
+        <div class="state-panel" data-state="no-accounts">
+          <header class="popup-header">
+            <div class="popup-header__row">
+              <div class="popup-header__title-group">
+                <h1 class="popup-title">InboxKey</h1>
+                <div class="popup-header__pills" role="status">
+                  <span class="header-pill">0 mailboxes</span>
+                </div>
+              </div>
+              <div class="popup-header__actions">
+                <button type="button" class="icon-button icon-button--settings" aria-label="Settings" title="Settings">
+                  <i data-lucide="settings"></i>
+                </button>
+              </div>
+            </div>
+          </header>
+
+          <div class="popup-main">
+            <div class="no-accounts" role="status">
+              <div class="no-accounts__icon">
+                <i data-lucide="mail-plus"></i>
+              </div>
+              <p class="no-accounts__title">Connect a mailbox to get started</p>
+              <p class="no-accounts__message">
+                Link your Gmail, Outlook, or IMAP account so InboxKey can
+                find your verification codes automatically.
+              </p>
+              <button type="button" class="no-accounts__button">
+                <i data-lucide="plus" style="width:16px;height:16px"></i>
+                Add Account
+              </button>
+            </div>
+          </div>
+
+          <footer class="popup-footer">
+            <div class="popup-footer__trust">
+              <span class="trust-tag">
+                <i data-lucide="shield-check"></i>
+                Local Only
+              </span>
+              <span class="trust-tag">
+                <i data-lucide="eye-off"></i>
+                Read-Only
+              </span>
+            </div>
+            <div class="popup-footer__support">
+              <a href="#" class="buy-coffee-button--popup" aria-label="Support InboxKey">
+                <span style="font-size: var(--font-size-sm); line-height: 1;">&#9749;</span>
+                Support
+              </a>
+            </div>
+          </footer>
+        </div>
+
+        <!-- ========================================
+             STATE: BLACKLISTED
+             ======================================== -->
+        <div class="state-panel" data-state="blacklisted">
+          <header class="popup-header">
+            <div class="popup-header__row">
+              <div class="popup-header__title-group">
+                <h1 class="popup-title">InboxKey</h1>
+                <div class="popup-header__pills" role="status">
+                  <span class="header-pill">2 mailboxes</span>
+                  <span class="header-pill">Synced 12s ago</span>
+                </div>
+              </div>
+              <div class="popup-header__actions">
+                <button type="button" class="icon-button icon-button--refresh" aria-label="Sync now" title="Sync now">
+                  <i data-lucide="refresh-cw"></i>
+                </button>
+                <button type="button" class="icon-button icon-button--settings" aria-label="Settings" title="Settings">
+                  <i data-lucide="settings"></i>
+                </button>
+              </div>
+            </div>
+          </header>
+
+          <div class="popup-main">
+            <div class="blacklisted-banner" role="alert">
+              <div class="blacklisted-banner__header">
+                <div class="blacklisted-banner__icon">
+                  <i data-lucide="shield-off"></i>
+                </div>
+                <div class="blacklisted-banner__text">
+                  <p class="blacklisted-banner__title">Autofill paused on this site</p>
+                  <p class="blacklisted-banner__domain">accounts.google.com</p>
+                </div>
+              </div>
+              <div class="blacklisted-banner__action">
+                <span class="blacklisted-banner__action-label">Enable autofill here</span>
+                <label class="toggle" aria-label="Enable autofill on this domain">
+                  <input type="checkbox">
+                  <span class="slider"></span>
+                </label>
+              </div>
+            </div>
+
+            <div class="popup-quick-actions" role="group" aria-label="Quick actions">
+              <button type="button" class="popup-quick-actions__button popup-quick-actions__button--primary" onclick="demoCopy(this)">
+                Paste Best Code
+              </button>
+              <button type="button" class="popup-quick-actions__button popup-quick-actions__button--secondary">
+                Open Last Link
+              </button>
+            </div>
+
+            <div class="popup-section">
+              <h2 class="popup-section__title">Recent</h2>
+              <div class="card-list card-list--unified">
+                <div class="code-card" tabindex="0">
+                  <div class="code-card__body">
+                    <div class="card-head">
+                      <span class="time-pill">1m ago</span>
+                    </div>
+                    <div class="meta-grid">
+                      <span class="meta-grid__label">From</span>
+                      <span class="meta-grid__value">
+                        <span class="provider-badge" data-provider="gmail">Gmail</span>
+                        noreply@google.com
+                      </span>
+                      <span class="meta-grid__label">Code</span>
+                      <span class="meta-grid__value meta-grid__value--code">
+                        <button type="button" class="code-pill" onclick="demoCopyCode(this, '392 817')" aria-label="Copy code 392 817">
+                          <span class="code-pill__text">392 817</span>
+                        </button>
+                        <button type="button" class="copy-button" onclick="demoCopyBtn(this)">
+                          <i data-lucide="copy" style="width:14px;height:14px"></i>
+                          Copy
+                        </button>
+                        <span class="countdown">
+                          <i data-lucide="clock" style="width:12px;height:12px"></i>
+                          <span class="countdown__value" data-expires="540">9:00</span>
+                        </span>
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <footer class="popup-footer">
+            <div class="popup-footer__trust">
+              <span class="trust-tag">
+                <i data-lucide="shield-check"></i>
+                Local Only
+              </span>
+              <span class="trust-tag">
+                <i data-lucide="eye-off"></i>
+                Read-Only
+              </span>
+            </div>
+            <div class="popup-footer__support">
+              <a href="#" class="buy-coffee-button--popup" aria-label="Support InboxKey">
+                <span style="font-size: var(--font-size-sm); line-height: 1;">&#9749;</span>
+                Support
+              </a>
+            </div>
+          </footer>
+        </div>
+
+      </div>
+    </div>
+  </main>
+
+  <!-- ============================
+       DESIGN DECISIONS
+       ============================ -->
+  <script type="application/json" id="decisions">
+  [
+    "Quick actions as top-level buttons - Paste Best Code and Open Last Link sit above the card list because 80%+ of popup sessions are grab-and-go. Placing one-tap actions before the list reduces interaction to zero scrolling for the most common use case.",
+    "Domain-first best-code logic - When multiple codes exist, the popup promotes the one matching the active browser tab domain. This eliminates user decision-making by pre-selecting the contextually correct code, falling back to most-recent when no domain match exists.",
+    "Countdown timers on code cards - Verification codes are time-sensitive by nature. Inline countdown timers (with warning/urgent color states below 60s) give users confidence the code is still valid without requiring them to check the source email.",
+    "Frosted glass header and footer - Using backdrop-filter blur keeps the header/footer anchored and readable while allowing the scrollable content area to peek through, reinforcing spatial context in the constrained 400x600 popup viewport.",
+    "Trust tags over trust cards - Compact pill-shaped trust indicators (Local Only, Read-Only) in the footer earn visibility without consuming vertical space. In a 400px-wide popup, every pixel matters, so trust signals are compressed into the chrome rather than given dedicated cards.",
+    "Unified card list with subtle type tints - Instead of separate Code and Link sections (which waste space with redundant section titles), all items share one chronological list. A subtle right-edge gradient tint (blue for codes, green for links) differentiates types without visual noise.",
+    "Copy feedback via text color transition - Rather than a toast notification (which would obscure cards in the small popup), copy success is communicated by flashing the code text green then fading back. This keeps the user's eye on the code they just copied.",
+    "Blacklisted state inline with content - The blacklisted banner appears at the top of the main content area (not as a modal or full takeover) so users can still copy codes manually while the autofill is paused. The toggle provides immediate re-enablement."
+  ]
+  </script>
+
+  <!-- Shared theme switcher -->
+  <script src="../shared/theme-switcher.js"></script>
+
+  <!-- Prototype interactivity -->
+  <script>
+    (function () {
+      'use strict';
+
+      // Initialize Lucide icons
+      lucide.createIcons();
+
+      // State switcher
+      var stateRadios = document.querySelectorAll('input[name="state"]');
+      var statePanels = document.querySelectorAll('.state-panel');
+
+      function switchState(stateName) {
+        statePanels.forEach(function (panel) {
+          panel.classList.remove('active');
+        });
+        var target = document.querySelector('[data-state="' + stateName + '"]');
+        if (target) {
+          target.classList.add('active');
+          // Re-init lucide for newly visible elements
+          lucide.createIcons();
+        }
+      }
+
+      stateRadios.forEach(function (radio) {
+        radio.addEventListener('change', function () {
+          if (this.checked) {
+            switchState(this.value);
+          }
+        });
+      });
+
+      // Countdown timers
+      var countdowns = document.querySelectorAll('.countdown__value');
+      setInterval(function () {
+        countdowns.forEach(function (el) {
+          var remaining = parseInt(el.getAttribute('data-expires'), 10);
+          if (remaining > 0) {
+            remaining--;
+            el.setAttribute('data-expires', remaining);
+            var minutes = Math.floor(remaining / 60);
+            var seconds = remaining % 60;
+            el.textContent = minutes + ':' + (seconds < 10 ? '0' : '') + seconds;
+
+            // Color states
+            var container = el.closest('.countdown');
+            if (container) {
+              container.classList.remove('countdown--urgent', 'countdown--warning');
+              if (remaining <= 30) {
+                container.classList.add('countdown--urgent');
+              } else if (remaining <= 60) {
+                container.classList.add('countdown--warning');
+              }
+            }
+          } else {
+            el.textContent = 'Expired';
+            var container = el.closest('.countdown');
+            if (container) {
+              container.classList.add('countdown--urgent');
+            }
+          }
+        });
+      }, 1000);
+    })();
+
+    // Demo interaction handlers (global scope for onclick)
+    function demoCopy(btn) {
+      var originalText = btn.textContent;
+      btn.textContent = 'Copied!';
+      btn.style.opacity = '0.7';
+      setTimeout(function () {
+        btn.textContent = originalText;
+        btn.style.opacity = '';
+      }, 1500);
+    }
+
+    function demoCopyCode(pill, code) {
+      pill.classList.add('code-pill--copied');
+      setTimeout(function () {
+        pill.classList.remove('code-pill--copied');
+      }, 1500);
+      // Also copy to clipboard if available
+      if (navigator.clipboard) {
+        navigator.clipboard.writeText(code.replace(/\s/g, '')).catch(function () {});
+      }
+    }
+
+    function demoCopyBtn(btn) {
+      var original = btn.innerHTML;
+      btn.classList.add('copy-button--success');
+      btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> Copied';
+      setTimeout(function () {
+        btn.classList.remove('copy-button--success');
+        btn.innerHTML = original;
+        lucide.createIcons();
+      }, 1500);
+    }
+
+    function demoOpenLink(btn) {
+      var original = btn.innerHTML;
+      btn.style.color = 'var(--color-success)';
+      btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> Opened';
+      setTimeout(function () {
+        btn.style.color = '';
+        btn.innerHTML = original;
+        lucide.createIcons();
+      }, 2000);
+    }
+  </script>
+
+</body>
+</html>

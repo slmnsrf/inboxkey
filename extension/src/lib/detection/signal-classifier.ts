@@ -36,6 +36,8 @@ const EMAIL_PATTERNS = [
   /sent\s*(?:to|via).*(?:e-?mail|inbox)/i,
   /check.*(?:e-?mail|inbox)/i,
   /code.*(?:in|from|via).*(?:e-?mail|inbox)/i,
+  // Masked or full email addresses as email evidence (j***@gmail.com, user@company.com)
+  /[\w][\w.*]*@[\w.-]+\.\w{2,}/i,
 
   // Spanish
   /\b(?:correo\s*electr[oó]nico|correo|buz[oó]n)\b/i,
@@ -324,6 +326,7 @@ const SMS_PATTERNS = [
   // English
   /\b(?:sms|text\s*message|mobile\s*(?:phone|number)?)\b/i,
   /sent\s*(?:to|via).*(?:sms|text|mobile|phone)/i,
+  /\bphone\s*number\b/i,
   /code.*(?:via|from|in).*(?:sms|text|mobile)/i,
   /check.*(?:sms|text\s*message|mobile)/i,
 
@@ -358,9 +361,10 @@ const SMS_PATTERNS = [
   /code.*(?:via|per).*(?:sms|mobiel)/i,
 
   // Turkish (telefon = phone, kısa mesaj = SMS, mesaj = message)
-  /\b(?:k[ıi]sa\s*mesaj|sms|telefon(?:unuz(?:a|dan)?)?)\b/i,
-  /(?:cep\s*)?telefon(?:unuz)?(?:a|dan)/i,
+  /\b(?:k[ıi]sa\s*mesaj|sms|telefon(?:un(?:uz)?(?:a|dan)?)?)\b/i,
+  /(?:cep\s*)?telefon(?:un(?:uz)?)?(?:a|dan)/i,
   /kod.*(?:telefon|mesaj|sms)/i,
+  /(?:telefon|mesaj|sms).*(?:kod|kodu)/i,
 
   // Polish
   /\b(?:sms|wiadomo[sś][cć]\s*tekstowa|telefon\s*kom[oó]rkowy)\b/i,
@@ -456,6 +460,26 @@ const SMS_PATTERNS = [
 ] as const
 
 /**
+ * Phone number patterns that indicate SMS delivery
+ * Matches masked/partial phone numbers commonly shown in verification UIs
+ * Examples: ***89, "ending in 1234", +90 *** *** **42, (555) ***-**12
+ */
+const PHONE_NUMBER_PATTERNS = [
+  // Masked phone: ***89, **1234, ***-**42 (preceded by context words)
+  // Constrained to 40 chars max gap, stops at sentence boundaries
+  /(?:sent|code|kod|código|kode|koodi)[^.!?\n]{0,40}(?:\*{2,}[\s\-]?\d{2,4})/i,
+  // "ending in NNNN" pattern - requires phone/SMS context to avoid card masking
+  /(?:phone|number|mobile|cell|sms|tel).*(?:ending|ends)\s+(?:in|with)\s+\d{2,4}/i,
+  // International format with masking: +NN *** *** **NN
+  /\+\d{1,3}\s+\*[\s\-*\d]{5,}/i,
+  // US format with masking: (NNN) ***-**NN
+  /\(\d{3}\)\s*\*[\s\-*\d]{4,}/i,
+  // Turkish: "numarasına gönderildi" near masked numbers
+  /\*{2,}[\s\-]?\d{2,4}.*(?:numara|gönder)/i,
+  /(?:numara|gönder).*\*{2,}[\s\-]?\d{2,4}/i,
+] as const
+
+/**
  * Detect character set for performance optimization
  * Returns hint for which pattern sets to prioritize
  */
@@ -514,6 +538,7 @@ export function classifyDeliveryChannel(sources: TextSources): ChannelClassifica
     sources.placeholder,
     sources.nearbyText,
     sources.ariaLabel,
+    sources.ariaDescribedby,
   ]
     .filter(Boolean)
     .join(' ')
@@ -556,6 +581,17 @@ export function classifyDeliveryChannel(sources: TextSources): ChannelClassifica
     if (match) {
       detectedChannels.sms = match
       break
+    }
+  }
+
+  // Check phone number patterns (SMS evidence from masked/partial numbers)
+  if (!detectedChannels.sms) {
+    for (const pattern of PHONE_NUMBER_PATTERNS) {
+      const match = pattern.exec(combinedText)
+      if (match) {
+        detectedChannels.sms = match
+        break
+      }
     }
   }
 

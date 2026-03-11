@@ -1,0 +1,1186 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="status" content="Ideation">
+  <meta name="date" content="2026-03-09">
+  <meta name="category" content="settings">
+  <title>Accounts Compact - InboxKey Prototype</title>
+  <link rel="stylesheet" href="../shared/tokens.css">
+
+  <!-- Lucide Icons CDN for prototype -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <style>
+    /* ============================
+       PROTOTYPE CONTROLS
+       ============================ */
+
+    .proto-state-controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--space-3);
+      align-items: center;
+    }
+
+    .proto-state-controls label {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-2);
+      font-size: var(--font-size-xs);
+      color: var(--color-text-secondary);
+      cursor: pointer;
+    }
+
+    .proto-state-controls select {
+      padding: 2px var(--space-2);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-sm);
+      background: var(--surface-card);
+      color: var(--color-text-primary);
+      font-size: var(--font-size-xs);
+      font-family: var(--font-system);
+    }
+
+    .proto-separator {
+      width: 1px;
+      height: 20px;
+      background: var(--color-border);
+    }
+
+    /* ============================
+       RESET & PAGE SHELL
+       ============================ */
+
+    *, *::before, *::after { box-sizing: border-box; }
+    body { margin: 0; }
+
+    .options-container {
+      min-height: 100vh;
+      background: var(--color-bg-primary);
+      color: var(--color-text-primary);
+      font-family: var(--font-system);
+      font-size: var(--font-size-sm);
+      line-height: var(--line-height-normal);
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    .options-shell {
+      max-width: 780px;
+      margin: 0 auto;
+      padding: var(--space-4) var(--space-5);
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-3);
+    }
+
+    /* ============================
+       HEADER (compact)
+       ============================ */
+
+    .options-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding-bottom: var(--space-2);
+      border-bottom: 1px solid var(--color-border);
+    }
+
+    .options-header__identity {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+    }
+
+    .brand__icon {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 28px;
+      height: 28px;
+      background: var(--color-primary);
+      color: var(--color-text-inverse);
+      border-radius: var(--radius-md);
+    }
+
+    .brand__title {
+      margin: 0;
+      font-size: var(--font-size-lg);
+      font-weight: var(--font-weight-bold);
+      letter-spacing: -0.03em;
+    }
+
+    .brand__version {
+      font-size: var(--font-size-xs);
+      color: var(--color-text-tertiary);
+      font-weight: var(--font-weight-normal);
+      margin-left: var(--space-1);
+    }
+
+    .options-header__actions {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+    }
+
+    .header-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: var(--space-1);
+      padding: var(--space-1) var(--space-2);
+      border-radius: var(--radius-sm);
+      font-size: 11px;
+      font-weight: var(--font-weight-medium);
+      font-family: var(--font-system);
+      color: var(--color-text-secondary);
+      background: transparent;
+      border: 1px solid var(--color-border);
+      text-decoration: none;
+      cursor: pointer;
+      transition: background var(--duration-fast) ease-out;
+      min-height: 26px;
+    }
+
+    .header-btn:hover {
+      background: var(--surface-card-muted);
+      color: var(--color-text-primary);
+    }
+
+    .header-btn--coffee {
+      color: var(--color-support-text);
+      background: var(--color-support-bg);
+      border-color: var(--color-support-border);
+    }
+
+    .header-btn--coffee:hover {
+      filter: brightness(0.95);
+      background: var(--color-support-bg);
+    }
+
+    /* ============================
+       TRUST BAR (single line)
+       ============================ */
+
+    .trust-bar {
+      display: flex;
+      align-items: center;
+      gap: var(--space-4);
+      padding: var(--space-1) var(--space-3);
+      background: var(--surface-card);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-sm);
+      font-size: 11px;
+      color: var(--color-text-tertiary);
+    }
+
+    .trust-bar__item {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-1);
+      white-space: nowrap;
+    }
+
+    .trust-bar__item i {
+      color: var(--color-primary);
+      opacity: 0.7;
+    }
+
+    .trust-bar__divider {
+      width: 1px;
+      height: 12px;
+      background: var(--color-border);
+      flex-shrink: 0;
+    }
+
+    /* ============================
+       TAB NAVIGATION (icon-only compact)
+       ============================ */
+
+    .tab-navigation {
+      display: flex;
+      gap: 0;
+      border-bottom: 1px solid var(--color-border);
+    }
+
+    .tab-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 36px;
+      height: 32px;
+      border: none;
+      background: transparent;
+      color: var(--color-text-tertiary);
+      cursor: pointer;
+      position: relative;
+      transition: color var(--duration-fast) ease-out, background var(--duration-fast) ease-out;
+      border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+    }
+
+    .tab-btn:hover {
+      color: var(--color-text-secondary);
+      background: var(--surface-card-muted);
+    }
+
+    .tab-btn--active {
+      color: var(--color-primary);
+      background: var(--surface-card);
+    }
+
+    .tab-btn--active::after {
+      content: '';
+      position: absolute;
+      bottom: -1px;
+      left: 4px;
+      right: 4px;
+      height: 2px;
+      background: var(--color-primary);
+      border-radius: 1px 1px 0 0;
+    }
+
+    .tab-btn:focus-visible {
+      outline: 2px solid var(--color-primary);
+      outline-offset: -2px;
+    }
+
+    /* ============================
+       CONTENT PANEL
+       ============================ */
+
+    .content-panel {
+      background: var(--surface-card);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+    }
+
+    .panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: var(--space-2) var(--space-3);
+      border-bottom: 1px solid var(--color-border);
+      background: var(--surface-card-muted);
+    }
+
+    .panel-header__title {
+      margin: 0;
+      font-size: var(--font-size-xs);
+      font-weight: var(--font-weight-semibold);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--color-text-tertiary);
+    }
+
+    .panel-header__meta {
+      font-size: 11px;
+      color: var(--color-text-tertiary);
+    }
+
+    /* ============================
+       UNIFIED ACCOUNT LIST
+       ============================ */
+
+    .account-list {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .account-item {
+      display: grid;
+      grid-template-columns: 4px 1fr auto auto;
+      align-items: center;
+      gap: 0;
+      min-height: 40px;
+      border-bottom: 1px solid var(--color-border);
+      transition: background var(--duration-fast) ease-out;
+    }
+
+    .account-item:last-child {
+      border-bottom: none;
+    }
+
+    .account-item:hover {
+      background: var(--surface-card-muted);
+    }
+
+    /* Provider accent border */
+    .account-item__accent {
+      width: 4px;
+      align-self: stretch;
+      border-radius: 0;
+    }
+
+    .account-item__accent--gmail { background: var(--color-gmail); }
+    .account-item__accent--outlook { background: var(--color-outlook); }
+    .account-item__accent--imap { background: var(--color-gray-400); }
+
+    /* Account info */
+    .account-item__info {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+      padding: var(--space-2) var(--space-3);
+      min-width: 0;
+    }
+
+    .account-item__provider {
+      font-size: 11px;
+      font-weight: var(--font-weight-semibold);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--color-text-tertiary);
+      width: 52px;
+      flex-shrink: 0;
+    }
+
+    .account-item__email {
+      font-size: var(--font-size-sm);
+      font-weight: var(--font-weight-medium);
+      color: var(--color-text-primary);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      min-width: 0;
+    }
+
+    /* Status label */
+    .account-item__status {
+      padding: 0 var(--space-3);
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+      flex-shrink: 0;
+    }
+
+    .status-label {
+      font-size: 11px;
+      font-weight: var(--font-weight-medium);
+      white-space: nowrap;
+    }
+
+    .status-label--online {
+      color: var(--color-success-dark);
+    }
+
+    .status-label--synced {
+      color: var(--color-text-tertiary);
+      font-size: 10px;
+    }
+
+    .status-label--error {
+      color: var(--color-error-dark);
+    }
+
+    .status-label--disconnected {
+      color: var(--color-text-tertiary);
+    }
+
+    /* Actions menu button */
+    .account-item__actions {
+      padding: 0 var(--space-2) 0 0;
+      flex-shrink: 0;
+    }
+
+    .menu-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 28px;
+      height: 28px;
+      border: 1px solid transparent;
+      border-radius: var(--radius-sm);
+      background: transparent;
+      color: var(--color-text-tertiary);
+      cursor: pointer;
+      font-family: var(--font-system);
+      transition: background var(--duration-fast) ease-out,
+                  border-color var(--duration-fast) ease-out,
+                  color var(--duration-fast) ease-out;
+    }
+
+    .menu-btn:hover {
+      background: var(--color-bg-secondary);
+      border-color: var(--color-border);
+      color: var(--color-text-primary);
+    }
+
+    .menu-btn:focus-visible {
+      outline: 2px solid var(--color-primary);
+      outline-offset: 1px;
+    }
+
+    /* Empty row (not connected) */
+    .account-item--empty {
+      opacity: 0.6;
+    }
+
+    .account-item--empty:hover {
+      opacity: 1;
+    }
+
+    .account-item__empty-text {
+      font-size: var(--font-size-xs);
+      color: var(--color-text-tertiary);
+      font-style: italic;
+    }
+
+    .connect-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-1);
+      padding: 2px var(--space-2);
+      border: 1px solid var(--color-primary);
+      border-radius: var(--radius-sm);
+      background: transparent;
+      color: var(--color-primary);
+      font-family: var(--font-system);
+      font-size: 11px;
+      font-weight: var(--font-weight-medium);
+      cursor: pointer;
+      transition: background var(--duration-fast) ease-out;
+      min-height: 24px;
+      white-space: nowrap;
+    }
+
+    .connect-btn:hover {
+      background: var(--color-primary);
+      color: var(--color-text-inverse);
+    }
+
+    .connect-btn:focus-visible {
+      outline: 2px solid var(--color-primary);
+      outline-offset: 2px;
+    }
+
+    /* ============================
+       ADD IMAP FOOTER ROW
+       ============================ */
+
+    .list-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: var(--space-1) var(--space-3);
+      border-top: 1px solid var(--color-border);
+      background: var(--surface-card-muted);
+    }
+
+    .list-footer__hint {
+      font-size: 10px;
+      color: var(--color-text-tertiary);
+      margin: 0;
+    }
+
+    .add-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-1);
+      padding: 2px var(--space-2);
+      border: none;
+      border-radius: var(--radius-sm);
+      background: transparent;
+      color: var(--color-primary);
+      font-family: var(--font-system);
+      font-size: 11px;
+      font-weight: var(--font-weight-medium);
+      cursor: pointer;
+      min-height: 24px;
+      transition: background var(--duration-fast) ease-out;
+    }
+
+    .add-btn:hover {
+      background: var(--color-primary-light);
+    }
+
+    .add-btn:focus-visible {
+      outline: 2px solid var(--color-primary);
+      outline-offset: 2px;
+    }
+
+    /* ============================
+       RECENT EMAILS TABLE
+       ============================ */
+
+    .recent-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: var(--font-size-xs);
+    }
+
+    .recent-table thead {
+      background: var(--surface-card-muted);
+    }
+
+    .recent-table th {
+      padding: var(--space-1) var(--space-3);
+      text-align: left;
+      font-size: 10px;
+      font-weight: var(--font-weight-semibold);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--color-text-tertiary);
+      border-bottom: 1px solid var(--color-border);
+      white-space: nowrap;
+    }
+
+    .recent-table td {
+      padding: var(--space-2) var(--space-3);
+      border-bottom: 1px solid var(--color-border);
+      color: var(--color-text-primary);
+      vertical-align: middle;
+    }
+
+    .recent-table tbody tr:last-child td {
+      border-bottom: none;
+    }
+
+    .recent-table tbody tr {
+      transition: background var(--duration-fast) ease-out;
+    }
+
+    .recent-table tbody tr:hover {
+      background: var(--surface-card-muted);
+    }
+
+    .recent-type {
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      padding: 1px 6px;
+      border-radius: var(--radius-sm);
+      font-size: 10px;
+      font-weight: var(--font-weight-semibold);
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+
+    .recent-type--code {
+      background: var(--color-primary-light);
+      color: var(--color-primary);
+    }
+
+    .recent-type--link {
+      background: var(--color-success-light);
+      color: var(--color-success-dark);
+    }
+
+    .recent-code-value {
+      font-family: var(--font-mono);
+      font-size: var(--font-size-sm);
+      font-weight: var(--font-weight-semibold);
+      letter-spacing: 0.06em;
+      color: var(--color-text-primary);
+    }
+
+    .recent-link-value {
+      font-size: var(--font-size-xs);
+      color: var(--color-text-link);
+      text-decoration: underline;
+      text-decoration-color: transparent;
+      transition: text-decoration-color var(--duration-fast) ease-out;
+      cursor: pointer;
+    }
+
+    .recent-link-value:hover {
+      text-decoration-color: currentColor;
+    }
+
+    .recent-provider {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .recent-provider__dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .recent-provider__dot--gmail { background: var(--color-gmail); }
+    .recent-provider__dot--outlook { background: var(--color-outlook); }
+    .recent-provider__dot--imap { background: var(--color-gray-400); }
+
+    .recent-time {
+      color: var(--color-text-tertiary);
+      white-space: nowrap;
+    }
+
+    /* ============================
+       STAGGER ENTRANCE ANIMATION
+       ============================ */
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(6px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .stagger-enter {
+      animation: fadeIn 250ms cubic-bezier(0.16, 1, 0.3, 1) both;
+    }
+
+    .stagger-enter:nth-child(1) { animation-delay: 0ms; }
+    .stagger-enter:nth-child(2) { animation-delay: 40ms; }
+    .stagger-enter:nth-child(3) { animation-delay: 80ms; }
+    .stagger-enter:nth-child(4) { animation-delay: 120ms; }
+    .stagger-enter:nth-child(5) { animation-delay: 160ms; }
+    .stagger-enter:nth-child(6) { animation-delay: 200ms; }
+    .stagger-enter:nth-child(7) { animation-delay: 240ms; }
+    .stagger-enter:nth-child(8) { animation-delay: 280ms; }
+
+    @media (prefers-reduced-motion: reduce) {
+      .stagger-enter {
+        animation: none;
+      }
+    }
+
+    /* ============================
+       RESPONSIVE
+       ============================ */
+
+    @media (max-width: 640px) {
+      .options-shell {
+        padding: var(--space-3);
+        gap: var(--space-2);
+      }
+
+      .options-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: var(--space-2);
+      }
+
+      .trust-bar {
+        flex-wrap: wrap;
+        gap: var(--space-2);
+      }
+
+      .trust-bar__divider {
+        display: none;
+      }
+
+      .account-item {
+        grid-template-columns: 4px 1fr auto;
+        min-height: 48px;
+      }
+
+      .account-item__provider {
+        display: none;
+      }
+
+      .account-item__status .status-label--synced {
+        display: none;
+      }
+
+      .account-item__actions {
+        display: none;
+      }
+
+      .recent-table th:nth-child(4),
+      .recent-table td:nth-child(4) {
+        display: none;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .recent-table th:nth-child(3),
+      .recent-table td:nth-child(3) {
+        display: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- ========================================
+       PROTOTYPE TOOLBAR
+       ======================================== -->
+  <div class="proto-toolbar">
+    <div class="proto-toolbar__left">
+      <span class="proto-toolbar__title">Accounts Compact</span>
+      <span class="proto-toolbar__status" data-status="ideation">Ideation</span>
+      <span class="proto-toolbar__date">2026-03-09</span>
+    </div>
+    <div class="proto-toolbar__right">
+      <div class="proto-state-controls">
+        <label>
+          State:
+          <select id="ctrl-state">
+            <option value="mixed" selected>Mixed</option>
+            <option value="all-connected">All Connected</option>
+            <option value="all-disconnected">All Disconnected</option>
+          </select>
+        </label>
+        <label>
+          Recent:
+          <select id="ctrl-recent">
+            <option value="populated" selected>Populated</option>
+            <option value="empty">Empty</option>
+          </select>
+        </label>
+      </div>
+      <div class="proto-separator"></div>
+      <div class="proto-theme-toggle">
+        <button data-theme-btn="light" aria-pressed="true">Light</button>
+        <button data-theme-btn="dark" aria-pressed="false">Dark</button>
+      </div>
+      <button class="proto-decisions-toggle">Decisions</button>
+    </div>
+  </div>
+
+  <!-- ========================================
+       DECISIONS PANEL
+       ======================================== -->
+  <div class="proto-decisions-panel">
+    <button class="proto-decisions-close">&times;</button>
+    <h3>Design Decisions</h3>
+    <ol></ol>
+  </div>
+
+  <!-- ========================================
+       PROTOTYPE CANVAS
+       ======================================== -->
+  <main class="proto-canvas">
+    <div class="options-container">
+      <div class="options-shell">
+
+        <!-- HEADER (compact) -->
+        <header class="options-header stagger-enter">
+          <div class="options-header__identity">
+            <span class="brand__icon" aria-hidden="true">
+              <i data-lucide="key-round" style="width:16px;height:16px"></i>
+            </span>
+            <h1 class="brand__title">InboxKey<span class="brand__version">v1.2.0</span></h1>
+          </div>
+          <div class="options-header__actions">
+            <a href="#" class="header-btn" title="View source code on GitHub">
+              <i data-lucide="code-2" style="width:12px;height:12px" aria-hidden="true"></i>
+              Source
+            </a>
+            <a href="#" class="header-btn header-btn--coffee" title="Support InboxKey development">
+              <span aria-hidden="true">&#9749;</span>
+              Coffee
+            </a>
+          </div>
+        </header>
+
+        <!-- TRUST BAR (single line) -->
+        <div class="trust-bar stagger-enter" role="status">
+          <span class="trust-bar__item">
+            <i data-lucide="lock" style="width:11px;height:11px" aria-hidden="true"></i>
+            Local-only processing
+          </span>
+          <span class="trust-bar__divider" aria-hidden="true"></span>
+          <span class="trust-bar__item">
+            <i data-lucide="puzzle" style="width:11px;height:11px" aria-hidden="true"></i>
+            Open source
+          </span>
+          <span class="trust-bar__divider" aria-hidden="true"></span>
+          <span class="trust-bar__item">
+            <i data-lucide="shield-check" style="width:11px;height:11px" aria-hidden="true"></i>
+            Zero data collection
+          </span>
+        </div>
+
+        <!-- TAB NAVIGATION (icon-only) -->
+        <nav class="tab-navigation stagger-enter" role="tablist" aria-label="Settings tabs">
+          <button class="tab-btn tab-btn--active" role="tab" aria-selected="true" title="Accounts">
+            <i data-lucide="users" style="width:16px;height:16px" aria-hidden="true"></i>
+          </button>
+          <button class="tab-btn" role="tab" aria-selected="false" title="Security">
+            <i data-lucide="shield" style="width:16px;height:16px" aria-hidden="true"></i>
+          </button>
+          <button class="tab-btn" role="tab" aria-selected="false" title="Settings">
+            <i data-lucide="settings" style="width:16px;height:16px" aria-hidden="true"></i>
+          </button>
+          <button class="tab-btn" role="tab" aria-selected="false" title="About">
+            <i data-lucide="info" style="width:16px;height:16px" aria-hidden="true"></i>
+          </button>
+        </nav>
+
+        <!-- ACCOUNTS PANEL: unified list -->
+        <div class="content-panel stagger-enter" id="accounts-panel">
+          <div class="panel-header">
+            <h2 class="panel-header__title">Connected Accounts</h2>
+            <span class="panel-header__meta" id="account-count">4 accounts</span>
+          </div>
+
+          <div class="account-list" id="account-list">
+            <!-- Gmail row -->
+            <div class="account-item" id="row-gmail" data-provider="gmail">
+              <div class="account-item__accent account-item__accent--gmail" aria-hidden="true"></div>
+              <div class="account-item__info">
+                <span class="account-item__provider">Gmail</span>
+                <span class="account-item__email">user@gmail.com</span>
+              </div>
+              <div class="account-item__status">
+                <span class="status-label status-label--online">Online</span>
+                <span class="status-label status-label--synced">2 min ago</span>
+              </div>
+              <div class="account-item__actions">
+                <button class="menu-btn" title="Account actions" aria-label="Actions for user@gmail.com">
+                  <i data-lucide="more-horizontal" style="width:14px;height:14px"></i>
+                </button>
+              </div>
+            </div>
+
+            <!-- Outlook row -->
+            <div class="account-item" id="row-outlook" data-provider="outlook">
+              <div class="account-item__accent account-item__accent--outlook" aria-hidden="true"></div>
+              <div class="account-item__info">
+                <span class="account-item__provider">Outlook</span>
+                <span class="account-item__email">user@outlook.com</span>
+              </div>
+              <div class="account-item__status">
+                <span class="status-label status-label--online">Online</span>
+                <span class="status-label status-label--synced">5 min ago</span>
+              </div>
+              <div class="account-item__actions">
+                <button class="menu-btn" title="Account actions" aria-label="Actions for user@outlook.com">
+                  <i data-lucide="more-horizontal" style="width:14px;height:14px"></i>
+                </button>
+              </div>
+            </div>
+
+            <!-- IMAP row 1 -->
+            <div class="account-item" id="row-imap1" data-provider="imap">
+              <div class="account-item__accent account-item__accent--imap" aria-hidden="true"></div>
+              <div class="account-item__info">
+                <span class="account-item__provider">IMAP</span>
+                <span class="account-item__email">hello@protonmail.com</span>
+              </div>
+              <div class="account-item__status">
+                <span class="status-label status-label--online">Online</span>
+                <span class="status-label status-label--synced">1 min ago</span>
+              </div>
+              <div class="account-item__actions">
+                <button class="menu-btn" title="Account actions" aria-label="Actions for hello@protonmail.com">
+                  <i data-lucide="more-horizontal" style="width:14px;height:14px"></i>
+                </button>
+              </div>
+            </div>
+
+            <!-- IMAP row 2 (error) -->
+            <div class="account-item" id="row-imap2" data-provider="imap">
+              <div class="account-item__accent account-item__accent--imap" aria-hidden="true"></div>
+              <div class="account-item__info">
+                <span class="account-item__provider">IMAP</span>
+                <span class="account-item__email">me@fastmail.com</span>
+              </div>
+              <div class="account-item__status">
+                <span class="status-label status-label--error">Sync failed</span>
+              </div>
+              <div class="account-item__actions">
+                <button class="menu-btn" title="Account actions" aria-label="Actions for me@fastmail.com">
+                  <i data-lucide="more-horizontal" style="width:14px;height:14px"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Disconnected rows (hidden by default, shown by state toggle) -->
+          <div class="account-list" id="disconnected-list" style="display:none">
+            <div class="account-item account-item--empty" data-provider="gmail">
+              <div class="account-item__accent account-item__accent--gmail" aria-hidden="true"></div>
+              <div class="account-item__info">
+                <span class="account-item__provider">Gmail</span>
+                <span class="account-item__empty-text">No account connected</span>
+              </div>
+              <div class="account-item__status">
+                <span class="status-label status-label--disconnected">Disconnected</span>
+              </div>
+              <div class="account-item__actions">
+                <button class="connect-btn">Connect</button>
+              </div>
+            </div>
+            <div class="account-item account-item--empty" data-provider="outlook">
+              <div class="account-item__accent account-item__accent--outlook" aria-hidden="true"></div>
+              <div class="account-item__info">
+                <span class="account-item__provider">Outlook</span>
+                <span class="account-item__empty-text">No account connected</span>
+              </div>
+              <div class="account-item__status">
+                <span class="status-label status-label--disconnected">Disconnected</span>
+              </div>
+              <div class="account-item__actions">
+                <button class="connect-btn">Connect</button>
+              </div>
+            </div>
+            <div class="account-item account-item--empty" data-provider="imap">
+              <div class="account-item__accent account-item__accent--imap" aria-hidden="true"></div>
+              <div class="account-item__info">
+                <span class="account-item__provider">IMAP</span>
+                <span class="account-item__empty-text">No IMAP accounts</span>
+              </div>
+              <div class="account-item__status">
+                <span class="status-label status-label--disconnected">Disconnected</span>
+              </div>
+              <div class="account-item__actions">
+                <button class="connect-btn">Add IMAP</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Mixed disconnected rows (hidden by default) -->
+          <div class="account-list" id="mixed-list" style="display:none">
+            <!-- Gmail connected -->
+            <div class="account-item" data-provider="gmail">
+              <div class="account-item__accent account-item__accent--gmail" aria-hidden="true"></div>
+              <div class="account-item__info">
+                <span class="account-item__provider">Gmail</span>
+                <span class="account-item__email">user@gmail.com</span>
+              </div>
+              <div class="account-item__status">
+                <span class="status-label status-label--online">Online</span>
+                <span class="status-label status-label--synced">2 min ago</span>
+              </div>
+              <div class="account-item__actions">
+                <button class="menu-btn" title="Account actions" aria-label="Actions for user@gmail.com">
+                  <i data-lucide="more-horizontal" style="width:14px;height:14px"></i>
+                </button>
+              </div>
+            </div>
+            <!-- Outlook connected -->
+            <div class="account-item" data-provider="outlook">
+              <div class="account-item__accent account-item__accent--outlook" aria-hidden="true"></div>
+              <div class="account-item__info">
+                <span class="account-item__provider">Outlook</span>
+                <span class="account-item__email">user@outlook.com</span>
+              </div>
+              <div class="account-item__status">
+                <span class="status-label status-label--online">Online</span>
+                <span class="status-label status-label--synced">5 min ago</span>
+              </div>
+              <div class="account-item__actions">
+                <button class="menu-btn" title="Account actions" aria-label="Actions for user@outlook.com">
+                  <i data-lucide="more-horizontal" style="width:14px;height:14px"></i>
+                </button>
+              </div>
+            </div>
+            <!-- IMAP 1 online -->
+            <div class="account-item" data-provider="imap">
+              <div class="account-item__accent account-item__accent--imap" aria-hidden="true"></div>
+              <div class="account-item__info">
+                <span class="account-item__provider">IMAP</span>
+                <span class="account-item__email">hello@protonmail.com</span>
+              </div>
+              <div class="account-item__status">
+                <span class="status-label status-label--online">Online</span>
+                <span class="status-label status-label--synced">1 min ago</span>
+              </div>
+              <div class="account-item__actions">
+                <button class="menu-btn" title="Account actions" aria-label="Actions for hello@protonmail.com">
+                  <i data-lucide="more-horizontal" style="width:14px;height:14px"></i>
+                </button>
+              </div>
+            </div>
+            <!-- IMAP 2 error -->
+            <div class="account-item" data-provider="imap">
+              <div class="account-item__accent account-item__accent--imap" aria-hidden="true"></div>
+              <div class="account-item__info">
+                <span class="account-item__provider">IMAP</span>
+                <span class="account-item__email">me@fastmail.com</span>
+              </div>
+              <div class="account-item__status">
+                <span class="status-label status-label--error">Sync failed</span>
+              </div>
+              <div class="account-item__actions">
+                <button class="menu-btn" title="Account actions" aria-label="Actions for me@fastmail.com">
+                  <i data-lucide="more-horizontal" style="width:14px;height:14px"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="list-footer">
+            <p class="list-footer__hint">IMAP requires InboxBridge companion</p>
+            <button class="add-btn" id="add-imap-btn">
+              <i data-lucide="plus" style="width:12px;height:12px" aria-hidden="true"></i>
+              Add IMAP
+            </button>
+          </div>
+        </div>
+
+        <!-- RECENT EMAILS: compact table -->
+        <div class="content-panel stagger-enter" id="recent-panel">
+          <div class="panel-header">
+            <h2 class="panel-header__title">Recent Extractions</h2>
+            <span class="panel-header__meta">Last 24h</span>
+          </div>
+
+          <div id="recent-populated">
+            <table class="recent-table">
+              <thead>
+                <tr>
+                  <th>Type</th>
+                  <th>Value</th>
+                  <th>Source</th>
+                  <th>Provider</th>
+                  <th>Time</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><span class="recent-type recent-type--code">Code</span></td>
+                  <td><span class="recent-code-value">847 293</span></td>
+                  <td>GitHub (noreply@github.com)</td>
+                  <td>
+                    <span class="recent-provider">
+                      <span class="recent-provider__dot recent-provider__dot--gmail" aria-hidden="true"></span>
+                      Gmail
+                    </span>
+                  </td>
+                  <td><span class="recent-time">2 min ago</span></td>
+                </tr>
+                <tr>
+                  <td><span class="recent-type recent-type--code">Code</span></td>
+                  <td><span class="recent-code-value">519 084</span></td>
+                  <td>Stripe (verify@stripe.com)</td>
+                  <td>
+                    <span class="recent-provider">
+                      <span class="recent-provider__dot recent-provider__dot--outlook" aria-hidden="true"></span>
+                      Outlook
+                    </span>
+                  </td>
+                  <td><span class="recent-time">18 min ago</span></td>
+                </tr>
+                <tr>
+                  <td><span class="recent-type recent-type--link">Link</span></td>
+                  <td><span class="recent-link-value">confirm-login.example.com/...</span></td>
+                  <td>Notion (team@makenotion.com)</td>
+                  <td>
+                    <span class="recent-provider">
+                      <span class="recent-provider__dot recent-provider__dot--imap" aria-hidden="true"></span>
+                      IMAP
+                    </span>
+                  </td>
+                  <td><span class="recent-time">1 hr ago</span></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div id="recent-empty" style="display:none">
+            <div style="padding: var(--space-6) var(--space-4); text-align: center; color: var(--color-text-tertiary); font-size: var(--font-size-xs);">
+              <i data-lucide="inbox" style="width:20px;height:20px;margin-bottom:var(--space-2);opacity:0.5" aria-hidden="true"></i>
+              <p style="margin:0">No recent extractions. Codes and links will appear here once detected.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- FOOTER MICROCOPY -->
+        <p class="stagger-enter" style="margin:0;font-size:10px;color:var(--color-text-tertiary);text-align:center;padding:var(--space-1) 0">
+          All email processing happens locally. Nothing leaves your device.
+        </p>
+
+      </div>
+    </div>
+  </main>
+
+  <!-- ========================================
+       DESIGN DECISIONS
+       ======================================== -->
+  <script type="application/json" id="decisions">
+  [
+    "Unified flat list over provider sections - A single list with colored left-border accents replaces separate Gmail/Outlook/IMAP sections. This maximizes information density and reduces vertical scrolling, which is the primary goal of the compact/industrial variation. Users can still distinguish providers instantly via the 4px accent color.",
+    "Text status labels over chips - Status is conveyed with plain text labels (Online, Sync failed, Disconnected) instead of styled chips with dots. This removes visual noise and suits the utilitarian aesthetic. Color alone differentiates states: green for online, red for errors, gray for disconnected.",
+    "Icon-only tab navigation - Tabs show only Lucide icons with labels exposed via title attribute on hover. This compresses the navigation bar from ~180px to ~144px width while maintaining discoverability through tooltips and the active state indicator.",
+    "Collapsed actions into overflow menu - Individual account action buttons (Reconnect, Disconnect) are hidden behind a '...' (more-horizontal) menu button. This keeps rows visually clean and uniform, matching the VS Code/DevOps dashboard pattern where actions are secondary to status visibility.",
+    "Trust banner reduced to single-line bar - The trust pillars (Local-only, Open source, Zero data collection) are compressed into a single-line horizontal bar with minimal padding. Trust information remains visible and accessible but does not compete with the primary accounts content for attention.",
+    "Compact table for recent emails - Recent extractions use a proper HTML table with column headers (Type, Value, Source, Provider, Time) instead of stacked cards. This is significantly more information-dense and scannable, suitable for power users who want quick reference without visual embellishment.",
+    "Inline connect buttons for empty states - Instead of centered empty-state illustrations with descriptive text, disconnected providers show a simple row with italic 'No account connected' text and an inline 'Connect' button. This eliminates wasted whitespace and keeps the list structure consistent regardless of state.",
+    "Tighter spacing scale - The entire layout uses space-2 to space-3 gaps where the default prototype uses space-4 to space-6. Font sizes are reduced (11px labels, xs body text). This achieves roughly 40% higher information density while maintaining AA contrast ratios and minimum tap target compliance on interactive elements."
+  ]
+  </script>
+
+  <!-- Shared theme switcher -->
+  <script src="../shared/theme-switcher.js"></script>
+
+  <!-- State controls logic -->
+  <script>
+    (function () {
+      'use strict';
+
+      // Wait for Lucide icons to be available
+      document.addEventListener('DOMContentLoaded', function () {
+        if (typeof lucide !== 'undefined') {
+          lucide.createIcons();
+        }
+      });
+
+      // Also try immediately in case DOMContentLoaded already fired
+      if (typeof lucide !== 'undefined') {
+        lucide.createIcons();
+      }
+
+      // State control: account states
+      var ctrlState = document.getElementById('ctrl-state');
+      var ctrlRecent = document.getElementById('ctrl-recent');
+
+      var accountList = document.getElementById('account-list');
+      var disconnectedList = document.getElementById('disconnected-list');
+      var mixedList = document.getElementById('mixed-list');
+      var accountCount = document.getElementById('account-count');
+      var listFooter = document.querySelector('.list-footer');
+
+      var recentPopulated = document.getElementById('recent-populated');
+      var recentEmpty = document.getElementById('recent-empty');
+
+      function applyState() {
+        var state = ctrlState.value;
+
+        accountList.style.display = 'none';
+        disconnectedList.style.display = 'none';
+        mixedList.style.display = 'none';
+
+        if (state === 'all-connected') {
+          accountList.style.display = 'flex';
+          accountCount.textContent = '4 accounts';
+          listFooter.style.display = 'flex';
+        } else if (state === 'all-disconnected') {
+          disconnectedList.style.display = 'flex';
+          accountCount.textContent = '0 accounts';
+          listFooter.style.display = 'flex';
+        } else {
+          // mixed (default)
+          mixedList.style.display = 'flex';
+          accountCount.textContent = '4 accounts';
+          listFooter.style.display = 'flex';
+        }
+
+        // Re-create lucide icons for newly visible elements
+        if (typeof lucide !== 'undefined') {
+          lucide.createIcons();
+        }
+      }
+
+      function applyRecent() {
+        var recent = ctrlRecent.value;
+        recentPopulated.style.display = recent === 'populated' ? 'block' : 'none';
+        recentEmpty.style.display = recent === 'empty' ? 'block' : 'none';
+
+        if (typeof lucide !== 'undefined') {
+          lucide.createIcons();
+        }
+      }
+
+      ctrlState.addEventListener('change', applyState);
+      ctrlRecent.addEventListener('change', applyRecent);
+
+      // Initialize
+      applyState();
+      applyRecent();
+    })();
+  </script>
+</body>
+</html>
