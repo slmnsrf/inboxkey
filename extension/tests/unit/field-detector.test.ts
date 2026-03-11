@@ -216,7 +216,7 @@ describe('FieldDetector', () => {
       // Wait for debounce (100ms)
       await new Promise((resolve) => setTimeout(resolve, 150))
 
-      expect(callback).toHaveBeenCalledWith(input)
+      expect(callback).toHaveBeenCalledWith(input, expect.objectContaining({ field: input }))
     })
 
     it('should debounce mutations within 100ms window', async () => {
@@ -300,7 +300,7 @@ describe('FieldDetector', () => {
       await new Promise((resolve) => setTimeout(resolve, 150))
 
       // Should detect the nested input
-      expect(callback).toHaveBeenCalledWith(input)
+      expect(callback).toHaveBeenCalledWith(input, expect.objectContaining({ field: input }))
     })
 
     it('should filter out hidden and disabled fields', async () => {

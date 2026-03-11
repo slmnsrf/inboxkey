@@ -390,7 +390,7 @@ export class FieldDetector {
   private detectedFields: WeakSet<HTMLInputElement> = new WeakSet()
   private debounceTimer: number | null = null
   private pendingMutations: Set<HTMLInputElement> = new Set()
-  private callback: ((field: HTMLInputElement) => void) | null = null
+  private callback: ((field: HTMLInputElement, result: DetectionResult) => void) | null = null
   private cooldown: CooldownRegistry
 
   constructor() {
@@ -467,7 +467,7 @@ export class FieldDetector {
    *
    * @param callback - Called when a new verification field is detected
    */
-  startObserving(callback: (field: HTMLInputElement) => void): void {
+  startObserving(callback: (field: HTMLInputElement, result: DetectionResult) => void): void {
     if (this.observer) {
       console.warn('[FieldDetector] Already observing, stopping previous observer')
       this.stopObserving()
@@ -614,6 +614,7 @@ export class FieldDetector {
 
     // Try to detect verification fields
     for (const input of visibleInputs) {
+      const startTime = performance.now()
       console.log('[FieldDetector] Attempting detection on input:', {
         maxLength: input.maxLength,
         type: input.type,
@@ -632,8 +633,10 @@ export class FieldDetector {
       })
 
       if (tier1Result.detected) {
+        const executionTime = performance.now() - startTime
+        const result = tier1ToDetectionResult(input, tier1Result, executionTime)
         this.detectedFields.add(input)
-        this.callback?.(input)
+        this.callback?.(input, result)
         console.log('[FieldDetector] Field detected via Tier1, callback invoked')
         continue
       }
@@ -658,8 +661,10 @@ export class FieldDetector {
         })
 
         if (tier2Result.detected) {
+          const executionTime = performance.now() - startTime
+          const result = tier2ToDetectionResult(input, tier2Result, executionTime)
           this.detectedFields.add(input)
-          this.callback?.(input)
+          this.callback?.(input, result)
           console.log('[FieldDetector] Field detected via Tier2, callback invoked')
         } else {
           console.log('[FieldDetector] Tier2 failed - field rejected')

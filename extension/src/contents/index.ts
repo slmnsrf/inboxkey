@@ -170,7 +170,7 @@ export function clearProcessedFields(): void {
   function startDynamicDetection(): void {
     console.log('[InboxKey] Starting dynamic field detection...')
 
-    const pendingFields = new Set<HTMLInputElement>()
+    const pendingFields = new Map<HTMLInputElement, DetectionResult>()
     let debounceTimer: number | null = null
     let callbackCount = 0  // Track how many times observer fires
 
@@ -187,7 +187,7 @@ export function clearProcessedFields(): void {
       }
     }, 500)
 
-    detector.startObserving(async (field: HTMLInputElement) => {
+    detector.startObserving(async (field: HTMLInputElement, detectionResult: DetectionResult) => {
       callbackCount++
       console.log(`[InboxKey] ⚡ Dynamic detection callback #${callbackCount} fired for field:`, {
         id: field.id,
@@ -197,8 +197,8 @@ export function clearProcessedFields(): void {
         role: field.getAttribute('role')
       })
 
-      // Add to pending batch
-      pendingFields.add(field)
+      // Add to pending batch (latest result wins for same field)
+      pendingFields.set(field, detectionResult)
 
       // Clear existing timer
       if (debounceTimer !== null) {
@@ -207,11 +207,11 @@ export function clearProcessedFields(): void {
 
       // Wait 50ms to batch rapid injections (e.g., 5 inputs injected together)
       debounceTimer = window.setTimeout(async () => {
-        const fields = Array.from(pendingFields)
+        const entries = Array.from(pendingFields.entries())
         pendingFields.clear()
 
-        console.log(`[InboxKey] 📦 Processing batch of ${fields.length} field(s)`)
-        console.log('[InboxKey] 📦 Field IDs in batch:', fields.map(f => f.id || f.name || '?'))
+        console.log(`[InboxKey] 📦 Processing batch of ${entries.length} field(s)`)
+        console.log('[InboxKey] 📦 Field IDs in batch:', entries.map(([f]) => f.id || f.name || '?'))
 
         // Check automation level
         try {
@@ -226,8 +226,8 @@ export function clearProcessedFields(): void {
           console.error('[InboxKey] Failed to check automation level:', error)
         }
 
-        // Evaluate each batched field directly (no full-page rescan)
-        for (const f of fields) {
+        // Process each batched field using the result from the observer
+        for (const [f, observerResult] of entries) {
           // Detect if this field is part of a split-input group
           const group = detectSplitInputGroup(f)
           const representative = group?.representative || f
@@ -249,15 +249,10 @@ export function clearProcessedFields(): void {
             continue
           }
 
-          // Evaluate the specific field through Tier 1 -> Tier 2
-          const result = detector.evaluateField(representative, { strictVisibility: true })
-
-          if (result) {
-            console.log('[InboxKey] ✓ Field detected, calling handleDetectedField()')
-            handleDetectedField(representative, result)
-          } else {
-            console.log('[InboxKey] ✗ Field not detected as verification input')
-          }
+          // Use the detection result from the observer directly
+          // No re-evaluation needed - avoids cooldown coupling
+          console.log('[InboxKey] ✓ Field detected, calling handleDetectedField()')
+          handleDetectedField(representative, observerResult)
         }
       }, 50)  // 50ms debounce window
     })

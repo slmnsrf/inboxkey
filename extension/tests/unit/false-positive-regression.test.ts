@@ -267,6 +267,28 @@ describe('False Positive Regression Tests', () => {
       expect(result).not.toBeNull()
     })
 
+    it('should detect split-input OTP inside a form (multi-input penalty exempt)', () => {
+      // Regression: split-input boxes inside <form> triggered multi-input penalty
+      // because the 6 OTP boxes counted as 6 visible text inputs (>= 4 threshold).
+      // Split-input groups must be exempt from this penalty.
+      document.body.innerHTML = `
+        <form>
+          <p>Enter your verification code</p>
+          <div>
+            <input maxlength="1" type="text" value="">
+            <input maxlength="1" type="text" value="">
+            <input maxlength="1" type="text" value="">
+            <input maxlength="1" type="text" value="">
+            <input maxlength="1" type="text" value="">
+            <input maxlength="1" type="text" value="">
+          </div>
+          <button type="submit">Verify</button>
+        </form>
+      `
+      const result = detectVerificationField({ strictVisibility: false })
+      expect(result).not.toBeNull()
+    })
+
     it('should detect email+authenticator hybrid as eligible', () => {
       document.body.innerHTML = `
         <div>
