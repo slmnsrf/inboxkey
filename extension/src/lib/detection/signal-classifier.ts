@@ -536,6 +536,7 @@ export function classifyDeliveryChannel(sources: TextSources): ChannelClassifica
     sources.placeholder,
     sources.nearbyText,
     sources.ariaLabel,
+    sources.ariaDescribedby,
   ]
     .filter(Boolean)
     .join(' ')

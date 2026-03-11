@@ -22,6 +22,8 @@ export interface TextSources {
   nearbyText: string
   /** ARIA label attribute (optional for backward compatibility) */
   ariaLabel?: string
+  /** ARIA describedby resolved text (optional) */
+  ariaDescribedby?: string
   /** Page title for setup page detection (optional) */
   pageTitle?: string
 }

@@ -147,6 +147,26 @@ function getNearbyText(input: HTMLInputElement): string {
 }
 
 /**
+ * Resolve aria-describedby text
+ *
+ * aria-describedby can reference multiple IDs (space-separated).
+ * Each referenced element's text content is resolved and joined.
+ *
+ * @param input - Input field to resolve aria-describedby from
+ * @returns Combined text from all referenced elements
+ */
+function getAriaDescribedbyText(input: HTMLInputElement): string {
+  const describedby = input.getAttribute('aria-describedby')
+  if (!describedby) return ''
+
+  return describedby
+    .split(/\s+/)
+    .map(id => input.ownerDocument?.getElementById(id)?.textContent?.trim() || '')
+    .filter(Boolean)
+    .join(' ')
+}
+
+/**
  * Tier 1: Fast-path detection with 6-layer defense
  *
  * Defense layers applied in order:
@@ -318,6 +338,7 @@ export function detectTier1(
       placeholder: input.placeholder || '',
       nearbyText,
       ariaLabel: input.getAttribute('aria-label') || '',
+      ariaDescribedby: getAriaDescribedbyText(input),
     }
 
     // Channel gate: reject authenticator-only and SMS-only even with autocomplete
@@ -406,6 +427,7 @@ export function detectTier1(
       placeholder: input.placeholder || '',
       nearbyText,
       ariaLabel: input.getAttribute('aria-label') || '',
+      ariaDescribedby: getAriaDescribedbyText(input),
     }
 
     const signalClassification = classifyDeliveryChannel(textSources)
@@ -497,6 +519,7 @@ export function detectTier1(
       placeholder: input.placeholder || '',
       nearbyText,
       ariaLabel: input.getAttribute('aria-label') || '',
+      ariaDescribedby: getAriaDescribedbyText(input),
     }
 
     const signalClassification = classifyDeliveryChannel(textSources)
@@ -592,6 +615,7 @@ export function detectTier1(
       placeholder: input.placeholder || '',
       nearbyText,
       ariaLabel: input.getAttribute('aria-label') || '',
+      ariaDescribedby: getAriaDescribedbyText(input),
     }
 
     const signalClassification = classifyDeliveryChannel(textSources)
