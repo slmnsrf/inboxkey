@@ -36,7 +36,9 @@ InboxKey is a Manifest V3 Chrome/Chromium extension that keeps verification-code
 │   │   │   │   ├── url-pattern-validator.ts # Layer 3 (Tier 1): URL pattern validation
 │   │   │   │   ├── patterns.ts          # Detection patterns & keywords
 │   │   │   │   ├── context-validator.ts # Multilingual validation (21 langs)
-│   │   │   │   ├── types.ts             # Shared type definitions (TextSources, ChannelClassification)
+│   │   │   │   ├── non-email-contexts.ts # Non-email intent classifier (8 categories)
+│   │   │   │   ├── trigger-policy.ts    # Trigger decision function (channel + intent + score)
+│   │   │   │   ├── types.ts             # Shared type definitions (TextSources, ChannelClassification, DecisionTrace)
 │   │   │   │   ├── cooldown-registry.ts # Field cooldown tracking
 │   │   │   │   └── split-input-detector.ts # Split-input group detection (183 LOC)
 │   │   │   ├── matching/        # Code matching (v2 algorithm)
@@ -162,7 +164,8 @@ InboxKey is a Manifest V3 Chrome/Chromium extension that keeps verification-code
   4. Autocomplete + attribute matching (`one-time-code`, `name/id` patterns: `code|otp|token|pin|mfa`)
   5. Signal classifier (reject authenticator/SMS fields; Option 7 hybrid detection for email+authenticator scenarios)
   6. Context validation (multilingual negative keywords: `SETUP_PAGE_PATTERNS`, password/login detection in 21 languages)
-- **Tier 2 (Deep ~0.45ms):** Label analysis (4 sources), placeholder text, nearby text with proximity scoring, form context, split-input group detection
+- **Tier 2 (Deep ~0.45ms):** Label analysis (4 sources), placeholder text, nearby text with proximity scoring, channel gate (SMS/authenticator rejection), non-email intent classifier (8 categories: developer, address, payment, booking, product, telecom, government, account_setup), multi-input form penalty (-20 for 4+ text inputs), form context, split-input group detection
+- **evaluateField():** Single-field Tier 1 -> Tier 2 pipeline for dynamic detection (avoids full-page rescan)
 
 **Trigger Strategy** (`extension/src/contents/index.ts`)
 
@@ -210,7 +213,7 @@ Minimum threshold: 100 points
 
 Integrated within Tier 1 (<0.05ms), distinguishes email-based codes (InboxKey can help) from authenticator/SMS codes:
 
-- **21-language keyword detection:** EMAIL_PATTERNS, SMS_PATTERNS, AUTHENTICATOR_PATTERNS covering Latin, Cyrillic, Arabic, Devanagari, CJK character sets
+- **21-language keyword detection:** EMAIL_PATTERNS, SMS_PATTERNS, AUTHENTICATOR_PATTERNS covering Latin, Cyrillic, Arabic, Devanagari, CJK character sets; phone number masking patterns (6 regexes) as SMS evidence
 - **Option 7 - Hybrid Channel Detection:** Scans ALL patterns (no short-circuit) to build `allChannels` array and `channelConfidences` object
   - Authenticator + Email → DETECT as 'email' (confidence 0.85) - allows InboxKey to help when email codes available
   - Authenticator only → REJECT
