@@ -95,5 +95,31 @@ describe('Trigger Policy', () => {
       })
       expect(result.action).toBe('trigger')
     })
+
+    it('should use normal threshold for unknown channel with email option', () => {
+      const result = shouldAutoTrigger({
+        channel: 'unknown',
+        hasEmailOption: true,
+        nonEmailCategory: null,
+        otpScore: 75,
+        threshold: 70,
+      })
+      expect(result.action).toBe('trigger')
+      expect(result.reason).toContain('Email-eligible')
+    })
+  })
+
+  describe('Email below threshold', () => {
+    it('should block email channel when OTP score below threshold', () => {
+      const result = shouldAutoTrigger({
+        channel: 'email',
+        hasEmailOption: true,
+        nonEmailCategory: null,
+        otpScore: 50,
+        threshold: 70,
+      })
+      expect(result.action).toBe('block')
+      expect(result.reason).toContain('OTP score')
+    })
   })
 })
