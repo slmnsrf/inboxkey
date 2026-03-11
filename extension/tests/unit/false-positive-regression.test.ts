@@ -52,6 +52,30 @@ describe('False Positive Regression Tests', () => {
     })
   })
 
+  describe('Example 3: Authenticator app with autocomplete="one-time-code"', () => {
+    it('should NOT detect authenticator-only field even with autocomplete', () => {
+      document.body.innerHTML = `
+        <div>
+          <p>Enter the code from your authenticator app</p>
+          <input type="text" autocomplete="one-time-code" name="code">
+        </div>
+      `
+      const result = detectVerificationField({ strictVisibility: false })
+      expect(result).toBeNull()
+    })
+
+    it('should STILL detect email+authenticator hybrid with autocomplete', () => {
+      document.body.innerHTML = `
+        <div>
+          <p>Enter the code from your email or authenticator app</p>
+          <input type="text" autocomplete="one-time-code" name="code">
+        </div>
+      `
+      const result = detectVerificationField({ strictVisibility: false })
+      expect(result).not.toBeNull()
+    })
+  })
+
   describe('Positive recall: real OTP fields still detected', () => {
     it('should detect autocomplete="one-time-code"', () => {
       document.body.innerHTML = `
