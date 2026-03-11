@@ -7,7 +7,7 @@ import { extractDomain, isDomainEnabled } from '@/lib/utils/domain'
 import { findSubmitButton } from './submit-button-finder'
 import { logAutoSubmitFailure } from '@/lib/storage/telemetry'
 import { detectSplitInputGroup } from '@/lib/detection/split-input-detector'
-import { COLOR_SUCCESS, COLOR_SUCCESS_BG } from '~lib/design-tokens'
+import { COLOR_SUCCESS, COLOR_SUCCESS_BG } from '@/lib/design-tokens'
 
 export interface AutofillOptions {
   code: string
