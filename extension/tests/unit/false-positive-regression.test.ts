@@ -76,6 +76,43 @@ describe('False Positive Regression Tests', () => {
     })
   })
 
+  describe('Example 4 & 6: SMS-only fields reaching Tier 2', () => {
+    it('should NOT detect Turkish SMS code field', () => {
+      document.body.innerHTML = `
+        <div>
+          <p>Cep telefonunuza gelen kodu girin</p>
+          <label for="smsCode">SMS Kodu</label>
+          <input type="text" id="smsCode" maxlength="6" inputmode="numeric">
+        </div>
+      `
+      const result = detectVerificationField({ strictVisibility: false })
+      expect(result).toBeNull()
+    })
+
+    it('should NOT detect iyzico SMS verification field', () => {
+      document.body.innerHTML = `
+        <div>
+          <p>Telefonunuza gönderilen SMS kodunu giriniz</p>
+          <input type="text" maxlength="6" inputmode="numeric">
+        </div>
+      `
+      const result = detectVerificationField({ strictVisibility: false })
+      expect(result).toBeNull()
+    })
+
+    it('should NOT detect English SMS-only field via Tier 2 scoring', () => {
+      document.body.innerHTML = `
+        <div>
+          <p>We sent a verification code to your phone number ending in **89</p>
+          <label for="code">Enter code</label>
+          <input type="text" id="smscode" maxlength="6">
+        </div>
+      `
+      const result = detectVerificationField({ strictVisibility: false })
+      expect(result).toBeNull()
+    })
+  })
+
   describe('Positive recall: real OTP fields still detected', () => {
     it('should detect autocomplete="one-time-code"', () => {
       document.body.innerHTML = `
