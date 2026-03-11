@@ -9,6 +9,7 @@
  */
 
 import type { TextSources } from './types'
+import { classifyNonEmailIntent } from './non-email-contexts'
 
 /**
  * Result of context validation with multilingual negative keyword detection
@@ -647,6 +648,17 @@ export function validateContext(textSources: TextSources): ContextValidationResu
       matchedNegatives: ['commercial-context-detected'],
       language: null,
       confidence: 0.5, // Medium penalty (not as severe as password)
+    }
+  }
+
+  // PRIORITY 3.5: Check non-email intent contexts (developer, address, payment, etc.)
+  const intentResult = classifyNonEmailIntent(combinedText)
+  if (intentResult.blocked) {
+    return {
+      pass: false,
+      matchedNegatives: [`non-email-intent:${intentResult.category}`],
+      language: null,
+      confidence: 0.3,
     }
   }
 
