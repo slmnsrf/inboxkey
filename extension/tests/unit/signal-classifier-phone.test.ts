@@ -62,5 +62,32 @@ describe('Signal Classifier - Phone Number Detection', () => {
       })
       expect(result.channel).toBe('unknown')
     })
+
+    it('should NOT detect "card ending in 4242" as SMS', () => {
+      const result = classifyDeliveryChannel({
+        label: '',
+        placeholder: '',
+        nearbyText: 'Payment with card ending in 4242',
+      })
+      expect(result.channel).toBe('unknown')
+    })
+
+    it('should NOT detect "promo code" near card masking as SMS', () => {
+      const result = classifyDeliveryChannel({
+        label: '',
+        placeholder: '',
+        nearbyText: 'Enter promo code. Visa ****1234',
+      })
+      expect(result.channel).toBe('unknown')
+    })
+
+    it('should NOT detect "account ending in 5678" as SMS', () => {
+      const result = classifyDeliveryChannel({
+        label: '',
+        placeholder: '',
+        nearbyText: 'Your account ending in 5678',
+      })
+      expect(result.channel).toBe('unknown')
+    })
   })
 })

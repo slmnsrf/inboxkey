@@ -463,9 +463,10 @@ const SMS_PATTERNS = [
  */
 const PHONE_NUMBER_PATTERNS = [
   // Masked phone: ***89, **1234, ***-**42 (preceded by context words)
-  /(?:sent|code|kod|código|kode|koodi).*(?:\*{2,}[\s\-]?\d{2,4})/i,
-  // "ending in NNNN" pattern
-  /(?:ending|ends)\s+(?:in|with)\s+\d{2,4}/i,
+  // Constrained to 40 chars max gap, stops at sentence boundaries
+  /(?:sent|code|kod|código|kode|koodi)[^.!?\n]{0,40}(?:\*{2,}[\s\-]?\d{2,4})/i,
+  // "ending in NNNN" pattern - requires phone/SMS context to avoid card masking
+  /(?:phone|number|mobile|cell|sms|tel).*(?:ending|ends)\s+(?:in|with)\s+\d{2,4}/i,
   // International format with masking: +NN *** *** **NN
   /\+\d{1,3}\s+\*[\s\-*\d]{5,}/i,
   // US format with masking: (NNN) ***-**NN
