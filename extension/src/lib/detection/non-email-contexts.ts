@@ -150,20 +150,25 @@ const CATEGORY_PATTERNS: Record<string, RegExp[]> = {
 // Email-delivery signals that override non-email-intent blocking.
 // When the context text indicates the code was sent via email,
 // categories like "payment" or "booking" should not block detection.
+//
+// These use flexible gaps (.{0,60}) between keywords to handle real phrasings
+// like "sent an activation code to your email" where words intervene.
 const EMAIL_DELIVERY_SIGNALS = [
-  /\b(?:sent?\s+(?:to\s+)?(?:your\s+)?(?:e[\s\-]?mail|inbox))\b/i,
-  /\b(?:check\s+(?:your\s+)?(?:e[\s\-]?mail|inbox))\b/i,
-  /\b(?:e[\s\-]?mail(?:ed)?\s+(?:you|a?\s*code|verification))\b/i,
-  /\b(?:verification\s+(?:e[\s\-]?mail|code\s+(?:via|from|to)\s+(?:your\s+)?e[\s\-]?mail))\b/i,
-  /\b(?:code\s+(?:was\s+)?sent\s+to)\b/i,
+  // "sent ... email/inbox" or "... to/from/via your email"
+  /\bsent?.{0,60}(?:your\s+)?(?:e[\s\-]?mail|inbox)\b/i,
+  /\b(?:to|from|via)\s+(?:your\s+)?(?:e[\s\-]?mail|inbox)\b/i,
+  /\b(?:check|open)\s+(?:your\s+)?(?:e[\s\-]?mail|inbox)\b/i,
+  /\be[\s\-]?mail(?:ed)?\s+(?:you|a?\s*code|verification)\b/i,
+  // Masked or full email address (j***@company.com, user@gmail.com)
+  /[\w][\w.*]*@[\w.-]+\.\w{2,}/i,
   // German
-  /(?:an\s+(?:Ihre|deine)\s+E[\s\-]?Mail[\s\-]?(?:Adresse)?|per\s+E[\s\-]?Mail\s+(?:gesendet|geschickt))/i,
+  /(?:an\s+(?:Ihre|deine)\s+E[\s\-]?Mail|per\s+E[\s\-]?Mail|E[\s\-]?Mail[\s\-]?Adresse)/i,
   // Turkish
-  /(?:e[\s\-]?posta(?:n(?:ı|i)z)?a?\s+(?:g(?:ö|o)nder|yollad)|gelen\s+kutunu(?:z)?u?\s+kontrol)/i,
+  /(?:e[\s\-]?posta|gelen\s+kutu)/i,
   // French
-  /(?:envoy(?:é|e)\s+(?:à|a)\s+(?:votre|ton)\s+e[\s\-]?mail|v(?:é|e)rifi(?:er|ez)\s+(?:votre|ton)\s+(?:bo(?:î|i)te|e[\s\-]?mail))/i,
+  /(?:(?:à|a)\s+(?:votre|ton)\s+(?:e[\s\-]?mail|bo(?:î|i)te)|par\s+(?:e[\s\-]?mail|courriel))/i,
   // Spanish
-  /(?:enviado\s+a\s+(?:tu|su)\s+(?:correo|email)|verifica\s+(?:tu|su)\s+(?:correo|bandeja))/i,
+  /(?:(?:a|en)\s+(?:tu|su)\s+(?:correo|email|bandeja))/i,
 ]
 
 function hasEmailDeliverySignal(text: string): boolean {

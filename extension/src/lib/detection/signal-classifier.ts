@@ -36,6 +36,8 @@ const EMAIL_PATTERNS = [
   /sent\s*(?:to|via).*(?:e-?mail|inbox)/i,
   /check.*(?:e-?mail|inbox)/i,
   /code.*(?:in|from|via).*(?:e-?mail|inbox)/i,
+  // Masked or full email addresses as email evidence (j***@gmail.com, user@company.com)
+  /[\w][\w.*]*@[\w.-]+\.\w{2,}/i,
 
   // Spanish
   /\b(?:correo\s*electr[oó]nico|correo|buz[oó]n)\b/i,
