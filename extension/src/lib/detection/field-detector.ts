@@ -292,7 +292,8 @@ export function detectVerificationField(options?: {
     // - layer='context': rejected due to negative keywords (21 languages)
     // - NO metadata: Tier1 found nothing → defer to Tier2 for deep scan
     if (tier1Result.metadata?.layer === 'attribute' ||
-        tier1Result.metadata?.layer === 'context') {
+        tier1Result.metadata?.layer === 'context' ||
+        tier1Result.metadata?.layer === 'signal-classifier-tier1') {
       continue
     }
   }
@@ -454,6 +455,9 @@ export class FieldDetector {
         }
       }
     }
+
+    // Sort by confidence descending (highest confidence first)
+    results.sort((a, b) => b.confidence - a.confidence)
 
     return results
   }
@@ -637,7 +641,8 @@ export class FieldDetector {
       // Try Tier 2 if Tier 1 didn't reject
       const shouldTryTier2 = (
         tier1Result.metadata?.layer !== 'attribute' &&
-        tier1Result.metadata?.layer !== 'context'
+        tier1Result.metadata?.layer !== 'context' &&
+        tier1Result.metadata?.layer !== 'signal-classifier-tier1'
       )
 
       console.log('[FieldDetector] Should try Tier2?', shouldTryTier2,
@@ -665,6 +670,54 @@ export class FieldDetector {
     }
 
     console.log('[FieldDetector] processPendingMutations complete')
+  }
+
+  /**
+   * Evaluate a single field through the Tier 1 -> Tier 2 pipeline
+   *
+   * Unlike detectExisting() which scans all inputs, this evaluates
+   * one specific field. Used by the dynamic detection path to avoid
+   * rescanning the entire page on mutation.
+   *
+   * @param field - The specific input field to evaluate
+   * @param options - Detection options
+   * @returns Detection result or null if not a verification field
+   */
+  evaluateField(
+    field: HTMLInputElement,
+    options?: { strictVisibility?: boolean }
+  ): DetectionResult | null {
+    const startTime = performance.now()
+
+    // Try Tier 1
+    const tier1Result = detectTier1(field, this.cooldown)
+
+    if (tier1Result.detected) {
+      const executionTime = performance.now() - startTime
+      this.detectedFields.add(field)
+      return tier1ToDetectionResult(field, tier1Result, executionTime)
+    }
+
+    // Skip Tier 2 if Tier 1 made a definitive rejection
+    if (
+      tier1Result.metadata?.layer === 'attribute' ||
+      tier1Result.metadata?.layer === 'context' ||
+      tier1Result.metadata?.layer === 'signal-classifier-tier1' ||
+      tier1Result.metadata?.layer === 'url-pattern'
+    ) {
+      return null
+    }
+
+    // Try Tier 2
+    const tier2Result = detectTier2(field, this.cooldown)
+
+    if (tier2Result.detected) {
+      const executionTime = performance.now() - startTime
+      this.detectedFields.add(field)
+      return tier2ToDetectionResult(field, tier2Result, executionTime)
+    }
+
+    return null
   }
 
   /**
