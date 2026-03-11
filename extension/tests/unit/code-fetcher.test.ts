@@ -106,7 +106,7 @@ describe('Code Fetcher', () => {
       expect(result?.code).toBe('222222')
     })
 
-    it('should reject codes older than 5 minutes', () => {
+    it('should still match codes older than 5 minutes if domain matches', () => {
       const now = Date.now()
       const codes: StoredCode[] = [
         {
@@ -119,7 +119,11 @@ describe('Code Fetcher', () => {
 
       const result = findBestMatchingCode(codes, 'https://example.com', now)
 
-      expect(result).toBeNull()
+      // V2: Uses exponential recency decay (not hard 5-min cutoff).
+      // Domain match contributes 100 points, which far exceeds the
+      // 10-point minimum threshold even with negligible recency.
+      expect(result).not.toBeNull()
+      expect(result?.code).toBe('123456')
     })
 
     it('should handle codes with no siteMatch', () => {
@@ -306,8 +310,10 @@ describe('Code Fetcher', () => {
 
       const result = findBestMatchingCode(codes, 'https://example.com', now)
 
-      // Should either reject or handle gracefully (score = 0 for future)
-      expect(result).toBeNull()
+      // V2: recencyBoost clamps negative age to 0 (max boost), so future
+      // timestamps with domain match will score high and be accepted.
+      expect(result).not.toBeNull()
+      expect(result?.code).toBe('123456')
     })
   })
 
@@ -344,7 +350,6 @@ describe('Code Fetcher', () => {
         type: 'FETCH_CODE',
         url: 'https://example.com',
         timestamp: expect.any(Number),
-          source: 'test@example.com',
         pollNumber: 1,
       })
     })
@@ -458,7 +463,7 @@ describe('Code Fetcher', () => {
       expect(result).not.toBeNull()
     })
 
-    it('should not match different TLD', () => {
+    it('should match codes with shared domain token across TLDs', () => {
       const now = Date.now()
       const codes: StoredCode[] = [
         {
@@ -472,10 +477,32 @@ describe('Code Fetcher', () => {
 
       const result = findBestMatchingCode(codes, 'https://example.org', now)
 
+      // V2: tokenOverlap detects shared "example" token between example.com
+      // and example.org, giving 0.6 affinity. Combined with recency boost,
+      // this exceeds the acceptance threshold.
+      expect(result).not.toBeNull()
+      expect(result?.code).toBe('123456')
+    })
+
+    it('should not match completely unrelated domains', () => {
+      const now = Date.now()
+      const codes: StoredCode[] = [
+        {
+          code: '123456',
+          timestamp: now - 6 * 60 * 1000, // 6 minutes ago (low recency)
+          source: 'noreply@totally-different.com',
+          siteMatch: 'totally-different.com',
+          used: false,
+        },
+      ]
+
+      const result = findBestMatchingCode(codes, 'https://mysite.org', now)
+
+      // No domain match, no token overlap, low recency - below threshold
       expect(result).toBeNull()
     })
 
-    it('should not match different domain', () => {
+    it('should return recent code even without domain match', () => {
       const now = Date.now()
       const codes: StoredCode[] = [
         {
@@ -489,7 +516,11 @@ describe('Code Fetcher', () => {
 
       const result = findBestMatchingCode(codes, 'https://other.com', now)
 
-      expect(result).toBeNull()
+      // V2: A very recent code (1s old) gets ~50 recency points, which exceeds
+      // the 10-point acceptance threshold even without domain match.
+      // Token overlap from source "test@example.com" may also contribute.
+      expect(result).not.toBeNull()
+      expect(result?.code).toBe('123456')
     })
 
     it('should handle multi-level subdomains', () => {
@@ -583,23 +614,26 @@ describe('Code Fetcher', () => {
         {
           code: '111111',
           timestamp: now - 1000,
-          source: 'test@example.com',
-          siteMatch: 'example.com', // +100 points
-          used: true, // -50 points = 50 total
+          source: 'noreply@example.com',
+          siteMatch: 'example.com', // +100 domain points
+          used: true, // -50 points
         },
         {
           code: '222222',
           timestamp: now - 1000,
-          source: 'test@example.com',
-          siteMatch: undefined, // +~50 points for recency
-          used: false, // 50 total
+          source: 'noreply@unrelated.com', // No token overlap with example.com
+          siteMatch: undefined, // +0 domain points
+          used: false,
         },
       ]
 
       const result = findBestMatchingCode(codes, 'https://example.com', now)
 
-      // Both have similar scores, but unused should win slightly
-      expect(result?.code).toBe('111111') // Domain match still slightly wins
+      // V2 scoring:
+      // 111111: domain=100 + recency~50 + used=-50 = ~100
+      // 222222: domain=0 + recency~50 + used=0 = ~50
+      // Domain match still wins despite used penalty
+      expect(result?.code).toBe('111111')
     })
 
     it('should require minimum score of 10', () => {

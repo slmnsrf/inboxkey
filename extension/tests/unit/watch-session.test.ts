@@ -5,6 +5,43 @@
 
 import { beforeEach, describe, expect, it, vi, afterEach } from "vitest"
 import { Window } from "happy-dom"
+
+// Mock dependencies BEFORE importing the module under test
+vi.mock("../../src/lib/utils/blacklist", () => ({
+  isBlacklisted: vi.fn().mockResolvedValue(false),
+  addBlacklistedUrl: vi.fn().mockResolvedValue({ success: true }),
+}))
+
+vi.mock("../../src/lib/utils/domain", () => ({
+  extractDomain: vi.fn().mockReturnValue("example.com"),
+  isDomainEnabled: vi.fn().mockResolvedValue(true),
+}))
+
+vi.mock("../../src/lib/storage/storage-factory", () => ({
+  StorageFactory: {
+    create: vi.fn().mockResolvedValue({
+      getSettings: vi.fn().mockResolvedValue({
+        sessionTimeoutSeconds: 20,
+      }),
+    }),
+  },
+}))
+
+vi.mock("../../src/contents/notification", () => ({
+  showNotification: vi.fn(),
+}))
+
+vi.mock("../../src/contents/session-chip", () => ({
+  showSessionChip: vi.fn().mockResolvedValue({
+    update: vi.fn(),
+    hide: vi.fn(),
+  }),
+}))
+
+vi.mock("../../src/contents/autofill", () => ({
+  findAndClickSubmitButton: vi.fn().mockResolvedValue(false),
+}))
+
 import {
   WatchSession,
   startWatch,
@@ -28,6 +65,17 @@ interface MockPort {
   }
 }
 
+/**
+ * Flush pending microtasks (resolved promises) so async code
+ * inside start() / handlePortMessage can complete.
+ * Multiple ticks are needed because async handlers chain multiple awaits.
+ */
+const flushMicrotasks = async () => {
+  for (let i = 0; i < 10; i++) {
+    await new Promise((r) => setTimeout(r, 0))
+  }
+}
+
 describe("WatchSession", () => {
   let windowRef: Window
   let documentRef: Document
@@ -40,6 +88,13 @@ describe("WatchSession", () => {
     documentRef = windowRef.document
     global.window = windowRef as unknown as Window & typeof globalThis
     global.document = documentRef
+
+    // Provide window.location.href for the blacklist/domain checks
+    Object.defineProperty(window, "location", {
+      value: { href: "https://example.com/login" },
+      writable: true,
+      configurable: true,
+    })
 
     messageListeners.length = 0
     disconnectListeners.length = 0
@@ -75,6 +130,7 @@ describe("WatchSession", () => {
     ;(chrome.runtime.connect as unknown as ReturnType<typeof vi.fn>).mockReturnValue(
       port
     )
+    ;(chrome.runtime.sendMessage as unknown as ReturnType<typeof vi.fn>).mockResolvedValue(undefined)
   })
 
   afterEach(() => {
@@ -90,15 +146,19 @@ describe("WatchSession", () => {
     executionTime: 0.5,
   })
 
-  const emitPortMessage = (msg: unknown) => {
-    messageListeners.forEach((listener) => listener(msg))
+  const emitPortMessage = async (msg: unknown) => {
+    // handlePortMessage is async -- collect and await all returned promises
+    const promises = messageListeners.map((listener) => listener(msg))
+    await Promise.all(promises)
+    // Extra flush for any chained async work (e.g. showSessionChip, updateBadge)
+    await flushMicrotasks()
   }
 
   const emitDisconnect = () => {
     disconnectListeners.forEach((listener) => listener())
   }
 
-  it("should open runtime port and send start message", () => {
+  it("should open runtime port and send start message", async () => {
     const field = documentRef.createElement("input")
     documentRef.body.appendChild(field)
 
@@ -106,7 +166,7 @@ describe("WatchSession", () => {
     const onCodeFound = vi.fn()
 
     const session = new WatchSession(field, detection, { onCodeFound })
-    session.start()
+    await session.start()
 
     expect(chrome.runtime.connect).toHaveBeenCalledWith({
       name: "watch-session",
@@ -118,7 +178,7 @@ describe("WatchSession", () => {
     )
   })
 
-  it("should invoke callback when SESSION_CODE_FOUND arrives", () => {
+  it("should invoke callback when SESSION_CODE_FOUND arrives", async () => {
     const field = documentRef.createElement("input")
     documentRef.body.appendChild(field)
 
@@ -126,14 +186,14 @@ describe("WatchSession", () => {
     const onCodeFound = vi.fn()
 
     const session = new WatchSession(field, detection, { onCodeFound })
-    session.start()
+    await session.start()
 
-    emitPortMessage({
+    await emitPortMessage({
       type: "SESSION_STARTED",
       session: { id: "session-1" },
     })
 
-    emitPortMessage({
+    await emitPortMessage({
       type: "SESSION_CODE_FOUND",
       code: { code: "123456", source: "UnitTest", timestamp: Date.now() },
     })
@@ -145,7 +205,7 @@ describe("WatchSession", () => {
     expect(port.disconnect).toHaveBeenCalled()
   })
 
-  it("should stop session when stopActiveWatch called", () => {
+  it("should stop session when stopActiveWatch called", async () => {
     const field = documentRef.createElement("input")
     documentRef.body.appendChild(field)
 
@@ -153,7 +213,10 @@ describe("WatchSession", () => {
     const onCodeFound = vi.fn()
 
     const session = startWatch(field, detection, { onCodeFound })
-    emitPortMessage({
+    // startWatch calls void session.start(), flush so it completes
+    await flushMicrotasks()
+
+    await emitPortMessage({
       type: "SESSION_STARTED",
       session: { id: "session-stop" },
     })
@@ -167,7 +230,7 @@ describe("WatchSession", () => {
     expect(getActiveWatch()).toBeNull()
   })
 
-  it("should handle timeout notification", () => {
+  it("should handle timeout notification", async () => {
     const field = documentRef.createElement("input")
     documentRef.body.appendChild(field)
     const detection = createDetectionResult(field)
@@ -179,14 +242,14 @@ describe("WatchSession", () => {
       onCodeFound,
       onTimeout,
     })
-    session.start()
+    await session.start()
 
-    emitPortMessage({
+    await emitPortMessage({
       type: "SESSION_STARTED",
       session: { id: "session-timeout" },
     })
 
-    emitPortMessage({
+    await emitPortMessage({
       type: "SESSION_TIMED_OUT",
       sessionId: "session-timeout",
     })
@@ -195,17 +258,17 @@ describe("WatchSession", () => {
     expect(onCodeFound).not.toHaveBeenCalled()
   })
 
-  it("should clean up on port disconnect", () => {
+  it("should clean up on port disconnect", async () => {
     const field = documentRef.createElement("input")
     documentRef.body.appendChild(field)
     const detection = createDetectionResult(field)
     const onCodeFound = vi.fn()
 
     const session = new WatchSession(field, detection, { onCodeFound })
-    session.start()
+    await session.start()
 
     // Mark as completed first to simulate proper cleanup
-    emitPortMessage({
+    await emitPortMessage({
       type: "SESSION_STARTED",
       session: { id: "test" },
     })
@@ -217,14 +280,14 @@ describe("WatchSession", () => {
     expect(session.isActive()).toBe(true)
   })
 
-  it("should set up keepalive timer on start", () => {
+  it("should set up keepalive timer on start", async () => {
     const field = documentRef.createElement("input")
     documentRef.body.appendChild(field)
     const detection = createDetectionResult(field)
     const onCodeFound = vi.fn()
 
     const session = new WatchSession(field, detection, { onCodeFound })
-    session.start()
+    await session.start()
 
     // Should send START_SESSION immediately
     expect(port.postMessage).toHaveBeenCalledWith(
@@ -235,7 +298,7 @@ describe("WatchSession", () => {
     // The interval is set up and will fire in real usage
   })
 
-  it("should handle SESSION_CANCELED message", () => {
+  it("should handle SESSION_CANCELED message", async () => {
     const field = documentRef.createElement("input")
     documentRef.body.appendChild(field)
     const detection = createDetectionResult(field)
@@ -246,14 +309,14 @@ describe("WatchSession", () => {
       onCodeFound,
       onCanceled,
     })
-    session.start()
+    await session.start()
 
-    emitPortMessage({
+    await emitPortMessage({
       type: "SESSION_STARTED",
       session: { id: "session-cancel" },
     })
 
-    emitPortMessage({
+    await emitPortMessage({
       type: "SESSION_CANCELED",
       sessionId: "session-cancel",
     })
@@ -263,7 +326,7 @@ describe("WatchSession", () => {
     expect(session.isActive()).toBe(false)
   })
 
-  it("should ignore duplicate completion messages", () => {
+  it("should ignore duplicate completion messages", async () => {
     const field = documentRef.createElement("input")
     documentRef.body.appendChild(field)
     const detection = createDetectionResult(field)
@@ -271,9 +334,9 @@ describe("WatchSession", () => {
     const onTimeout = vi.fn()
 
     const session = new WatchSession(field, detection, { onCodeFound, onTimeout })
-    session.start()
+    await session.start()
 
-    emitPortMessage({
+    await emitPortMessage({
       type: "SESSION_CODE_FOUND",
       code: { code: "123456", source: "Test", timestamp: Date.now() },
     })
@@ -281,91 +344,91 @@ describe("WatchSession", () => {
     expect(onCodeFound).toHaveBeenCalledTimes(1)
 
     // Try to send another message after completion
-    emitPortMessage({
+    await emitPortMessage({
       type: "SESSION_TIMED_OUT",
     })
 
     expect(onTimeout).not.toHaveBeenCalled()
   })
 
-  it("should handle PONG messages", () => {
+  it("should handle PONG messages", async () => {
     const field = documentRef.createElement("input")
     documentRef.body.appendChild(field)
     const detection = createDetectionResult(field)
     const onCodeFound = vi.fn()
 
     const session = new WatchSession(field, detection, { onCodeFound })
-    session.start()
+    await session.start()
 
     // Should not throw or cause issues
-    emitPortMessage({ type: "PONG" })
+    await emitPortMessage({ type: "PONG" })
     expect(session.isActive()).toBe(true)
   })
 
-  it("should handle SESSION_UPDATE messages", () => {
+  it("should handle SESSION_UPDATE messages", async () => {
     const field = documentRef.createElement("input")
     documentRef.body.appendChild(field)
     const detection = createDetectionResult(field)
     const onCodeFound = vi.fn()
 
     const session = new WatchSession(field, detection, { onCodeFound })
-    session.start()
+    await session.start()
 
-    emitPortMessage({ type: "SESSION_UPDATE", pollsCompleted: 1 })
+    await emitPortMessage({ type: "SESSION_UPDATE", pollsCompleted: 1 })
     expect(session.isActive()).toBe(true)
   })
 
-  it("should handle SERVER_KEEPALIVE messages", () => {
+  it("should handle SERVER_KEEPALIVE messages", async () => {
     const field = documentRef.createElement("input")
     documentRef.body.appendChild(field)
     const detection = createDetectionResult(field)
     const onCodeFound = vi.fn()
 
     const session = new WatchSession(field, detection, { onCodeFound })
-    session.start()
+    await session.start()
 
-    emitPortMessage({ type: "SERVER_KEEPALIVE" })
+    await emitPortMessage({ type: "SERVER_KEEPALIVE" })
     expect(session.isActive()).toBe(true)
   })
 
-  it("should ignore unknown message types", () => {
+  it("should ignore unknown message types", async () => {
     const field = documentRef.createElement("input")
     documentRef.body.appendChild(field)
     const detection = createDetectionResult(field)
     const onCodeFound = vi.fn()
 
     const session = new WatchSession(field, detection, { onCodeFound })
-    session.start()
+    await session.start()
 
     const consoleSpy = vi.spyOn(console, "warn").mockImplementation(() => {})
 
-    emitPortMessage({ type: "UNKNOWN_TYPE" })
+    await emitPortMessage({ type: "UNKNOWN_TYPE" })
     expect(consoleSpy).toHaveBeenCalled()
     expect(session.isActive()).toBe(true)
 
     consoleSpy.mockRestore()
   })
 
-  it("should ignore malformed messages", () => {
+  it("should ignore malformed messages", async () => {
     const field = documentRef.createElement("input")
     documentRef.body.appendChild(field)
     const detection = createDetectionResult(field)
     const onCodeFound = vi.fn()
 
     const session = new WatchSession(field, detection, { onCodeFound })
-    session.start()
+    await session.start()
 
     // Should not throw
-    emitPortMessage(null)
-    emitPortMessage(undefined)
-    emitPortMessage("string")
-    emitPortMessage(123)
-    emitPortMessage({ noType: "test" })
+    await emitPortMessage(null)
+    await emitPortMessage(undefined)
+    await emitPortMessage("string")
+    await emitPortMessage(123)
+    await emitPortMessage({ noType: "test" })
 
     expect(session.isActive()).toBe(true)
   })
 
-  it("should prevent starting session twice", () => {
+  it("should prevent starting session twice", async () => {
     const field = documentRef.createElement("input")
     documentRef.body.appendChild(field)
     const detection = createDetectionResult(field)
@@ -374,8 +437,9 @@ describe("WatchSession", () => {
     const consoleSpy = vi.spyOn(console, "warn").mockImplementation(() => {})
 
     const session = new WatchSession(field, detection, { onCodeFound })
-    session.start()
-    session.start() // Try to start again
+    await session.start()
+    // Second start() returns early synchronously because this.port is already set
+    await session.start()
 
     expect(consoleSpy).toHaveBeenCalledWith(
       "[WatchSession] Session already started"
@@ -384,7 +448,7 @@ describe("WatchSession", () => {
     consoleSpy.mockRestore()
   })
 
-  it("should derive expected shape from input field", () => {
+  it("should derive expected shape from input field", async () => {
     const field = documentRef.createElement("input")
     field.maxLength = 6
     field.inputMode = "numeric"
@@ -394,7 +458,7 @@ describe("WatchSession", () => {
     const onCodeFound = vi.fn()
 
     const session = new WatchSession(field, detection, { onCodeFound })
-    session.start()
+    await session.start()
 
     expect(port.postMessage).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -407,7 +471,7 @@ describe("WatchSession", () => {
     )
   })
 
-  it("should detect numeric input from type=number", () => {
+  it("should detect numeric input from type=number", async () => {
     const field = documentRef.createElement("input")
     field.type = "number"
     documentRef.body.appendChild(field)
@@ -416,7 +480,7 @@ describe("WatchSession", () => {
     const onCodeFound = vi.fn()
 
     const session = new WatchSession(field, detection, { onCodeFound })
-    session.start()
+    await session.start()
 
     expect(port.postMessage).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -427,7 +491,7 @@ describe("WatchSession", () => {
     )
   })
 
-  it("should detect numeric input from inputMode=tel", () => {
+  it("should detect numeric input from inputMode=tel", async () => {
     const field = documentRef.createElement("input")
     field.inputMode = "tel"
     documentRef.body.appendChild(field)
@@ -436,7 +500,7 @@ describe("WatchSession", () => {
     const onCodeFound = vi.fn()
 
     const session = new WatchSession(field, detection, { onCodeFound })
-    session.start()
+    await session.start()
 
     expect(port.postMessage).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -447,7 +511,7 @@ describe("WatchSession", () => {
     )
   })
 
-  it("should default to alnum charset when no hints", () => {
+  it("should default to alnum charset when no hints", async () => {
     const field = documentRef.createElement("input")
     documentRef.body.appendChild(field)
 
@@ -455,7 +519,7 @@ describe("WatchSession", () => {
     const onCodeFound = vi.fn()
 
     const session = new WatchSession(field, detection, { onCodeFound })
-    session.start()
+    await session.start()
 
     expect(port.postMessage).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -466,7 +530,7 @@ describe("WatchSession", () => {
     )
   })
 
-  it("should use size attribute when maxLength not set", () => {
+  it("should use size attribute when maxLength not set", async () => {
     const field = documentRef.createElement("input")
     field.size = 8
     documentRef.body.appendChild(field)
@@ -475,7 +539,7 @@ describe("WatchSession", () => {
     const onCodeFound = vi.fn()
 
     const session = new WatchSession(field, detection, { onCodeFound })
-    session.start()
+    await session.start()
 
     expect(port.postMessage).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -498,7 +562,7 @@ describe("WatchSession", () => {
     expect(session.getDetectionResult()).toBe(detection)
   })
 
-  it("should call onSessionStarted callback", () => {
+  it("should call onSessionStarted callback", async () => {
     const field = documentRef.createElement("input")
     documentRef.body.appendChild(field)
     const detection = createDetectionResult(field)
@@ -509,9 +573,9 @@ describe("WatchSession", () => {
       onCodeFound,
       onSessionStarted,
     })
-    session.start()
+    await session.start()
 
-    emitPortMessage({
+    await emitPortMessage({
       type: "SESSION_STARTED",
       session: { id: "test-session-id" },
     })
@@ -519,16 +583,16 @@ describe("WatchSession", () => {
     expect(onSessionStarted).toHaveBeenCalledWith("test-session-id")
   })
 
-  it("should send STOP_SESSION when stopped with active sessionId", () => {
+  it("should send STOP_SESSION when stopped with active sessionId", async () => {
     const field = documentRef.createElement("input")
     documentRef.body.appendChild(field)
     const detection = createDetectionResult(field)
     const onCodeFound = vi.fn()
 
     const session = new WatchSession(field, detection, { onCodeFound })
-    session.start()
+    await session.start()
 
-    emitPortMessage({
+    await emitPortMessage({
       type: "SESSION_STARTED",
       session: { id: "session-to-stop" },
     })
@@ -539,14 +603,14 @@ describe("WatchSession", () => {
     expect(port.disconnect).toHaveBeenCalled()
   })
 
-  it("should not send STOP_SESSION when stopped without sessionId", () => {
+  it("should not send STOP_SESSION when stopped without sessionId", async () => {
     const field = documentRef.createElement("input")
     documentRef.body.appendChild(field)
     const detection = createDetectionResult(field)
     const onCodeFound = vi.fn()
 
     const session = new WatchSession(field, detection, { onCodeFound })
-    session.start()
+    await session.start()
 
     session.stop()
 
@@ -555,7 +619,7 @@ describe("WatchSession", () => {
     expect(port.disconnect).toHaveBeenCalled()
   })
 
-  it("should wrap ping sending in try-catch", () => {
+  it("should wrap ping sending in try-catch", async () => {
     // This test verifies the error handling logic exists
     // Actually testing interval timing is challenging with mocked timers
     const field = documentRef.createElement("input")
@@ -564,7 +628,7 @@ describe("WatchSession", () => {
     const onCodeFound = vi.fn()
 
     const session = new WatchSession(field, detection, { onCodeFound })
-    session.start()
+    await session.start()
 
     // Verify session started successfully (error handling is in place)
     expect(port.postMessage).toHaveBeenCalledWith(
@@ -572,7 +636,7 @@ describe("WatchSession", () => {
     )
   })
 
-  it("should clear keepalive timer on cleanup", () => {
+  it("should clear keepalive timer on cleanup", async () => {
     vi.useFakeTimers()
     const field = documentRef.createElement("input")
     documentRef.body.appendChild(field)
@@ -580,7 +644,7 @@ describe("WatchSession", () => {
     const onCodeFound = vi.fn()
 
     const session = new WatchSession(field, detection, { onCodeFound })
-    session.start()
+    await session.start()
 
     session.stop()
 
@@ -591,7 +655,9 @@ describe("WatchSession", () => {
     vi.useRealTimers()
   })
 
-  it("should replace active watch when starting new session", () => {
+  it("should replace active watch when starting new session", async () => {
+    vi.useFakeTimers()
+
     const field1 = documentRef.createElement("input")
     const field2 = documentRef.createElement("input")
     documentRef.body.appendChild(field1)
@@ -602,14 +668,21 @@ describe("WatchSession", () => {
     const onCodeFound = vi.fn()
 
     const session1 = startWatch(field1, detection1, { onCodeFound })
+    await vi.advanceTimersByTimeAsync(0)
     expect(getActiveWatch()).toBe(session1)
 
+    // Advance past the rate limit (1000ms)
+    vi.advanceTimersByTime(1100)
+
     const session2 = startWatch(field2, detection2, { onCodeFound })
+    await vi.advanceTimersByTimeAsync(0)
     expect(getActiveWatch()).toBe(session2)
     expect(getActiveWatch()).not.toBe(session1)
+
+    vi.useRealTimers()
   })
 
-  it("should correctly identify watched fields", () => {
+  it("should correctly identify watched fields", async () => {
     const field1 = documentRef.createElement("input")
     const field2 = documentRef.createElement("input")
     documentRef.body.appendChild(field1)
@@ -619,18 +692,20 @@ describe("WatchSession", () => {
     const onCodeFound = vi.fn()
 
     startWatch(field1, detection, { onCodeFound })
+    await flushMicrotasks()
 
     expect(isFieldWatched(field1)).toBe(true)
     expect(isFieldWatched(field2)).toBe(false)
   })
 
-  it("should clear active watch reference on cleanup", () => {
+  it("should clear active watch reference on cleanup", async () => {
     const field = documentRef.createElement("input")
     documentRef.body.appendChild(field)
     const detection = createDetectionResult(field)
     const onCodeFound = vi.fn()
 
     const session = startWatch(field, detection, { onCodeFound })
+    await flushMicrotasks()
     expect(getActiveWatch()).toBe(session)
 
     emitDisconnect()

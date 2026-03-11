@@ -78,7 +78,7 @@ describe('session-chip', () => {
 
       const chip = document.querySelector('.inboxkey-chip') as HTMLElement
       // happy-dom returns hex colors as set in JS
-      expect(chip.style.backgroundColor).toBe('#3B82F6')
+      expect(chip.style.backgroundColor).toBe('#2563EB')
       // Style injected via <style> tag, not inline
       expect(chip.className).toBe('inboxkey-chip')
 
@@ -194,7 +194,7 @@ describe('session-chip', () => {
 
       const icon = document.querySelector('.inboxkey-chip-icon') as HTMLSpanElement
       expect(icon).not.toBeNull()
-      expect(icon.textContent).toBe('✓')
+      expect(icon.textContent).toBe('OK')
       expect(icon.style.display).not.toBe('none')
 
       chipHandle.hide()
@@ -443,11 +443,18 @@ describe('session-chip', () => {
     })
 
     it('should clean up event listeners on hide', async () => {
+      vi.useFakeTimers()
+
       const chipHandle = await showSessionChip(testField)
       chipHandle.hide()
 
+      // Fast-forward through animation duration so chip is removed from DOM
+      vi.advanceTimersByTime(300)
+
       // Chip should be removed
       expect(document.querySelector('.inboxkey-chip')).toBeNull()
+
+      vi.useRealTimers()
     })
   })
 

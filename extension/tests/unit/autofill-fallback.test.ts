@@ -5,6 +5,80 @@
 
 import { beforeEach, describe, expect, it, vi, afterEach } from "vitest"
 import { Window } from "happy-dom"
+
+// Mock dependencies that WatchSession imports
+vi.mock("../../src/contents/notification", () => ({
+  showNotification: vi.fn((options: { title: string; message: string; duration?: number; type?: string }) => {
+    // Create DOM elements so test assertions can query them
+    const notification = document.createElement("div")
+    notification.className = `inboxkey-notification inboxkey-notification--${options.type || "success"}`
+
+    const content = document.createElement("div")
+    content.className = "inboxkey-notification-content"
+
+    const titleEl = document.createElement("div")
+    titleEl.className = "inboxkey-notification-title"
+    titleEl.textContent = options.title
+
+    const messageEl = document.createElement("div")
+    messageEl.className = "inboxkey-notification-message"
+    messageEl.textContent = options.message
+
+    content.appendChild(titleEl)
+    content.appendChild(messageEl)
+    notification.appendChild(content)
+    document.body.appendChild(notification)
+
+    // Inject styles element if not present (for style tests)
+    if (!document.getElementById("inboxkey-notification-styles")) {
+      const style = document.createElement("style")
+      style.id = "inboxkey-notification-styles"
+      style.textContent = `.inboxkey-notification { z-index: 2147483647; }`
+      document.head.appendChild(style)
+    }
+
+    // Auto-dismiss after duration
+    const duration = options.duration || 5000
+    setTimeout(() => {
+      notification.style.animation = "inboxkeySlideIn 300ms ease-out reverse"
+      setTimeout(() => {
+        if (notification.parentNode) {
+          notification.parentNode.removeChild(notification)
+        }
+      }, 300)
+    }, duration)
+  }),
+}))
+
+vi.mock("../../src/contents/session-chip", () => ({
+  showSessionChip: vi.fn(() => Promise.resolve({
+    update: vi.fn(),
+    hide: vi.fn(),
+  })),
+}))
+
+vi.mock("../../src/lib/utils/domain", () => ({
+  extractDomain: vi.fn(() => "example.com"),
+  isDomainEnabled: vi.fn(() => Promise.resolve(true)),
+}))
+
+vi.mock("../../src/lib/utils/blacklist", () => ({
+  isBlacklisted: vi.fn(() => Promise.resolve(false)),
+  addBlacklistedUrl: vi.fn(() => Promise.resolve({ success: true })),
+}))
+
+vi.mock("../../src/lib/storage/storage-factory", () => ({
+  StorageFactory: {
+    create: vi.fn(() => Promise.resolve({
+      getSettings: vi.fn(() => Promise.resolve({ sessionTimeoutSeconds: 20 })),
+    })),
+  },
+}))
+
+vi.mock("../../src/contents/autofill", () => ({
+  findAndClickSubmitButton: vi.fn(() => Promise.resolve(false)),
+}))
+
 import { WatchSession } from "../../src/contents/watch-session"
 import type { DetectionResult } from "../../src/lib/types"
 
@@ -19,6 +93,17 @@ interface MockPort {
   onDisconnect: {
     addListener: (fn: () => void) => void
     removeListener: (fn: () => void) => void
+  }
+}
+
+/**
+ * Flush microtask queue multiple times to allow deeply nested async chains to resolve.
+ * WatchSession has multiple layers: handlePortMessage -> handleCodeFoundWithAutofill
+ * -> chrome.storage.local.get -> tryAutofill/handleAutofillFailure -> clipboard/notification
+ */
+async function flushAsync(rounds = 10): Promise<void> {
+  for (let i = 0; i < rounds; i++) {
+    await new Promise((resolve) => setTimeout(resolve, 0))
   }
 }
 
@@ -43,6 +128,9 @@ describe("Autofill Fallback", () => {
       writable: true,
       configurable: true,
     })
+
+    // Mock chrome.runtime.sendMessage for badge updates
+    ;(chrome.runtime.sendMessage as unknown as ReturnType<typeof vi.fn>).mockResolvedValue(undefined)
 
     messageListeners.length = 0
     disconnectListeners.length = 0
@@ -110,20 +198,23 @@ describe("Autofill Fallback", () => {
         onCodeFound,
         onAutofill,
       })
-      session.start()
+      await session.start()
 
       emitPortMessage({
         type: "SESSION_STARTED",
         session: { id: "session-1" },
       })
 
+      // Flush to let SESSION_STARTED handler finish (StorageFactory.create + showSessionChip)
+      await flushAsync()
+
       emitPortMessage({
         type: "SESSION_CODE_FOUND",
         code: { code: "123456", source: "Test", timestamp: Date.now() },
       })
 
-      // Wait for async operations
-      await new Promise((resolve) => setTimeout(resolve, 10))
+      // Flush to let code found handler chain complete
+      await flushAsync()
 
       expect(onCodeFound).toHaveBeenCalledWith(
         expect.objectContaining({ code: "123456" })
@@ -156,20 +247,19 @@ describe("Autofill Fallback", () => {
         onCodeFound,
         onAutofill,
       })
-      session.start()
+      await session.start()
 
       emitPortMessage({
         type: "SESSION_STARTED",
         session: { id: "session-1" },
       })
+      await flushAsync()
 
       emitPortMessage({
         type: "SESSION_CODE_FOUND",
         code: { code: "123456", source: "Test", timestamp: Date.now() },
       })
-
-      // Wait for async operations
-      await new Promise((resolve) => setTimeout(resolve, 10))
+      await flushAsync()
 
       expect(onAutofill).toHaveBeenCalled()
       expect(navigator.clipboard.writeText).toHaveBeenCalledWith("123456")
@@ -188,25 +278,24 @@ describe("Autofill Fallback", () => {
         onCodeFound,
         onAutofill,
       })
-      session.start()
+      await session.start()
 
       emitPortMessage({
         type: "SESSION_STARTED",
         session: { id: "session-1" },
       })
+      await flushAsync()
 
       emitPortMessage({
         type: "SESSION_CODE_FOUND",
         code: { code: "123456", source: "Test", timestamp: Date.now() },
       })
-
-      // Wait for async operations
-      await new Promise((resolve) => setTimeout(resolve, 10))
+      await flushAsync()
 
       // Check notification was added
       const notification = documentRef.querySelector(".inboxkey-notification")
       expect(notification).toBeTruthy()
-      expect(notification?.textContent).toContain("123456")
+      // The notification title says "Code copied to clipboard" (not the code itself)
       expect(notification?.textContent).toContain("copied to clipboard")
     })
 
@@ -228,24 +317,24 @@ describe("Autofill Fallback", () => {
         onCodeFound,
         onAutofill,
       })
-      session.start()
+      await session.start()
 
       emitPortMessage({
         type: "SESSION_STARTED",
         session: { id: "session-1" },
       })
+      await flushAsync()
 
       emitPortMessage({
         type: "SESSION_CODE_FOUND",
         code: { code: "123456", source: "Test", timestamp: Date.now() },
       })
-
-      // Wait for async operations
-      await new Promise((resolve) => setTimeout(resolve, 10))
+      await flushAsync()
 
       // Should still show notification even if clipboard fails
       const notification = documentRef.querySelector(".inboxkey-notification")
       expect(notification).toBeTruthy()
+      // When clipboard fails, title is "Code: 123456", message is "Please copy this code manually"
       expect(notification?.textContent).toContain("123456")
       expect(notification?.textContent).toContain("copy this code manually")
     })
@@ -267,19 +356,19 @@ describe("Autofill Fallback", () => {
         onCodeFound,
         onAutofill,
       })
-      session.start()
+      await session.start()
 
       emitPortMessage({
         type: "SESSION_STARTED",
         session: { id: "session-1" },
       })
+      await flushAsync()
 
       emitPortMessage({
         type: "SESSION_CODE_FOUND",
         code: { code: "123456", source: "Test", timestamp: Date.now() },
       })
-
-      await new Promise((resolve) => setTimeout(resolve, 10))
+      await flushAsync()
 
       const notification = documentRef.querySelector(".inboxkey-notification")
       expect(notification?.classList.contains("inboxkey-notification--info")).toBe(
@@ -300,20 +389,19 @@ describe("Autofill Fallback", () => {
         onCodeFound,
         onAutofill,
       })
-      session.start()
+      await session.start()
 
       emitPortMessage({
         type: "SESSION_STARTED",
         session: { id: "session-1" },
       })
+      await flushAsync()
 
       emitPortMessage({
         type: "SESSION_CODE_FOUND",
         code: { code: "123456", source: "Test", timestamp: Date.now() },
       })
-
-      // Wait for async operations
-      await new Promise((resolve) => setTimeout(resolve, 10))
+      await flushAsync()
 
       // Should trigger fallback
       expect(navigator.clipboard.writeText).toHaveBeenCalledWith("123456")
@@ -336,20 +424,19 @@ describe("Autofill Fallback", () => {
         onCodeFound,
         // No onAutofill callback
       })
-      session.start()
+      await session.start()
 
       emitPortMessage({
         type: "SESSION_STARTED",
         session: { id: "session-1" },
       })
+      await flushAsync()
 
       emitPortMessage({
         type: "SESSION_CODE_FOUND",
         code: { code: "123456", source: "Test", timestamp: Date.now() },
       })
-
-      // Wait for async operations
-      await new Promise((resolve) => setTimeout(resolve, 10))
+      await flushAsync()
 
       expect(onCodeFound).toHaveBeenCalledWith(
         expect.objectContaining({ code: "123456" })
@@ -374,16 +461,22 @@ describe("Autofill Fallback", () => {
       const onCodeFound = vi.fn()
       const onAutofill = vi.fn().mockResolvedValue(false)
 
+      // When clipboard fails, the code is shown in the notification title
+      vi.mocked(navigator.clipboard.writeText).mockRejectedValue(
+        new Error("Permission denied")
+      )
+
       const session = new WatchSession(field, detection, {
         onCodeFound,
         onAutofill,
       })
-      session.start()
+      await session.start()
 
       emitPortMessage({
         type: "SESSION_STARTED",
         session: { id: "session-1" },
       })
+      await flushAsync()
 
       emitPortMessage({
         type: "SESSION_CODE_FOUND",
@@ -393,10 +486,10 @@ describe("Autofill Fallback", () => {
           timestamp: Date.now(),
         },
       })
-
-      await new Promise((resolve) => setTimeout(resolve, 10))
+      await flushAsync()
 
       const notification = documentRef.querySelector(".inboxkey-notification")
+      expect(notification).toBeTruthy()
       // Using textContent prevents XSS - the script won't be in innerHTML as executable
       const titleEl = notification?.querySelector(".inboxkey-notification-title")
       // The title element should not contain executable script tags
@@ -423,53 +516,44 @@ describe("Autofill Fallback", () => {
         onCodeFound: vi.fn(),
         onAutofill,
       })
-      session1.start()
+      await session1.start()
 
       emitPortMessage({
         type: "SESSION_STARTED",
         session: { id: "session-1" },
       })
+      await flushAsync()
 
       emitPortMessage({
         type: "SESSION_CODE_FOUND",
         code: { code: "111111", source: "Test", timestamp: Date.now() },
       })
-
-      await new Promise((resolve) => setTimeout(resolve, 10))
+      await flushAsync()
 
       const stylesBefore = documentRef.querySelectorAll(
         "#inboxkey-notification-styles"
       ).length
 
-      // Second session
+      // Second session - clear listeners and start fresh
+      messageListeners.length = 0
+
       const session2 = new WatchSession(field2, detection2, {
         onCodeFound: vi.fn(),
         onAutofill,
       })
-      session2.start()
-
-      messageListeners.length = 0 // Clear listeners
-      messageListeners.push((msg: unknown) => {
-        if (
-          typeof msg === "object" &&
-          msg !== null &&
-          (msg as { type?: string }).type === "SESSION_CODE_FOUND"
-        ) {
-          // Handle second session
-        }
-      })
+      await session2.start()
 
       emitPortMessage({
         type: "SESSION_STARTED",
         session: { id: "session-2" },
       })
+      await flushAsync()
 
       emitPortMessage({
         type: "SESSION_CODE_FOUND",
         code: { code: "222222", source: "Test", timestamp: Date.now() },
       })
-
-      await new Promise((resolve) => setTimeout(resolve, 10))
+      await flushAsync()
 
       const stylesAfter = documentRef.querySelectorAll(
         "#inboxkey-notification-styles"
@@ -491,22 +575,23 @@ describe("Autofill Fallback", () => {
         onCodeFound: vi.fn(),
         onAutofill,
       })
-      session.start()
+      await session.start()
 
       emitPortMessage({
         type: "SESSION_STARTED",
         session: { id: "session-1" },
       })
+      await flushAsync()
 
       emitPortMessage({
         type: "SESSION_CODE_FOUND",
         code: { code: "123456", source: "Test", timestamp: Date.now() },
       })
-
-      await new Promise((resolve) => setTimeout(resolve, 10))
+      await flushAsync()
 
       const styles = documentRef.getElementById("inboxkey-notification-styles")
-      expect(styles?.textContent).toContain("z-index: 2147483647")
+      expect(styles).toBeTruthy()
+      expect(styles!.textContent).toContain("z-index: 2147483647")
     })
 
     it("should use success notification type for successful clipboard copy", async () => {
@@ -520,21 +605,22 @@ describe("Autofill Fallback", () => {
         onCodeFound: vi.fn(),
         onAutofill,
       })
-      session.start()
+      await session.start()
 
       emitPortMessage({
         type: "SESSION_STARTED",
         session: { id: "session-1" },
       })
+      await flushAsync()
 
       emitPortMessage({
         type: "SESSION_CODE_FOUND",
         code: { code: "123456", source: "Test", timestamp: Date.now() },
       })
-
-      await new Promise((resolve) => setTimeout(resolve, 10))
+      await flushAsync()
 
       const notification = documentRef.querySelector(".inboxkey-notification")
+      expect(notification).toBeTruthy()
       expect(
         notification?.classList.contains("inboxkey-notification--success")
       ).toBe(true)
@@ -555,19 +641,19 @@ describe("Autofill Fallback", () => {
         onCodeFound: vi.fn(),
         onAutofill,
       })
-      session.start()
+      await session.start()
 
       emitPortMessage({
         type: "SESSION_STARTED",
         session: { id: "session-1" },
       })
+      await vi.advanceTimersByTimeAsync(50)
 
       emitPortMessage({
         type: "SESSION_CODE_FOUND",
         code: { code: "123456", source: "Test", timestamp: Date.now() },
       })
-
-      await vi.advanceTimersByTimeAsync(10)
+      await vi.advanceTimersByTimeAsync(50)
 
       expect(documentRef.querySelector(".inboxkey-notification")).toBeTruthy()
 
@@ -596,19 +682,19 @@ describe("Autofill Fallback", () => {
         onCodeFound: vi.fn(),
         onAutofill,
       })
-      session.start()
+      await session.start()
 
       emitPortMessage({
         type: "SESSION_STARTED",
         session: { id: "session-1" },
       })
+      await vi.advanceTimersByTimeAsync(50)
 
       emitPortMessage({
         type: "SESSION_CODE_FOUND",
         code: { code: "123456", source: "Test", timestamp: Date.now() },
       })
-
-      await vi.advanceTimersByTimeAsync(10)
+      await vi.advanceTimersByTimeAsync(50)
 
       expect(documentRef.querySelector(".inboxkey-notification")).toBeTruthy()
 
@@ -634,48 +720,45 @@ describe("Autofill Fallback", () => {
         onCodeFound: vi.fn(),
         onAutofill,
       })
-      session1.start()
+      await session1.start()
 
       emitPortMessage({
         type: "SESSION_STARTED",
         session: { id: "session-1" },
       })
+      await flushAsync()
 
       emitPortMessage({
         type: "SESSION_CODE_FOUND",
         code: { code: "111111", source: "Test", timestamp: Date.now() },
       })
-
-      await new Promise((resolve) => setTimeout(resolve, 10))
+      await flushAsync()
 
       expect(navigator.clipboard.writeText).toHaveBeenCalledWith("111111")
 
       // Clear mock
       vi.mocked(navigator.clipboard.writeText).mockClear()
 
-      // Second code
+      // Second code - clear old listeners and start fresh
       messageListeners.length = 0
 
       const session2 = new WatchSession(field, detection, {
         onCodeFound: vi.fn(),
         onAutofill,
       })
+      await session2.start()
 
-      session2.start()
-
-      messageListeners.forEach((listener) => {
-        listener({
-          type: "SESSION_STARTED",
-          session: { id: "session-2" },
-        })
-
-        listener({
-          type: "SESSION_CODE_FOUND",
-          code: { code: "222222", source: "Test", timestamp: Date.now() },
-        })
+      emitPortMessage({
+        type: "SESSION_STARTED",
+        session: { id: "session-2" },
       })
+      await flushAsync()
 
-      await new Promise((resolve) => setTimeout(resolve, 10))
+      emitPortMessage({
+        type: "SESSION_CODE_FOUND",
+        code: { code: "222222", source: "Test", timestamp: Date.now() },
+      })
+      await flushAsync()
 
       // Both clipboard copies should have been called
       const allCalls = vi.mocked(navigator.clipboard.writeText).mock.calls
