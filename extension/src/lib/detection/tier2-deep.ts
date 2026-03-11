@@ -9,6 +9,8 @@
 
 import type { CooldownRegistry } from './cooldown-registry'
 import { validateContext } from './context-validator'
+import { classifyDeliveryChannel } from './signal-classifier'
+import type { TextSources } from './types'
 import {
   getLabelMatchStrength,
   getPlaceholderMatchStrength,
@@ -338,7 +340,7 @@ export interface Tier2Result {
     placeholderMatch?: string
     formContext?: FormContext
     buttonIntent?: ButtonIntent
-    layer: 'label' | 'placeholder' | 'structural' | 'context' | 'split-input'
+    layer: 'label' | 'placeholder' | 'structural' | 'context' | 'split-input' | 'channel-gate'
   }
 }
 
@@ -617,6 +619,46 @@ export function detectTier2(
       score,
       reason: `Score ${score} below threshold ${THRESHOLD} (${scoreBreakdown.join(', ')})`,
       metadata: { layer: 'label' },
+    }
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  // Channel Gate: Reject SMS-only and authenticator-only fields
+  // ═══════════════════════════════════════════════════════════════
+  const channelTextSources: TextSources = {
+    label: labelText,
+    placeholder,
+    nearbyText,
+    ariaLabel: input.getAttribute('aria-label') || '',
+  }
+
+  const channelResult = classifyDeliveryChannel(channelTextSources)
+
+  if (channelResult.channel === 'authenticator') {
+    const hasEmailOption = channelResult.allChannels?.includes('email')
+    if (!hasEmailOption) {
+      cooldown.markRejected(input)
+      return {
+        detected: false,
+        confidence: 0,
+        score,
+        reason: `Authenticator-only field (channel gate): ${channelResult.matchedKeywords.join(', ')}`,
+        metadata: { layer: 'channel-gate' },
+      }
+    }
+  }
+
+  if (channelResult.channel === 'sms') {
+    const hasEmailOption = channelResult.allChannels?.includes('email')
+    if (!hasEmailOption) {
+      cooldown.markRejected(input)
+      return {
+        detected: false,
+        confidence: 0,
+        score,
+        reason: `SMS-only field (channel gate): ${channelResult.matchedKeywords.join(', ')}`,
+        metadata: { layer: 'channel-gate' },
+      }
     }
   }
 

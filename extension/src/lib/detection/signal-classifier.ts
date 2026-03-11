@@ -324,6 +324,7 @@ const SMS_PATTERNS = [
   // English
   /\b(?:sms|text\s*message|mobile\s*(?:phone|number)?)\b/i,
   /sent\s*(?:to|via).*(?:sms|text|mobile|phone)/i,
+  /\bphone\s*number\b/i,
   /code.*(?:via|from|in).*(?:sms|text|mobile)/i,
   /check.*(?:sms|text\s*message|mobile)/i,
 
