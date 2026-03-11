@@ -113,8 +113,13 @@ describe('ToastContainer', () => {
     const container = screen.getByTestId('toast-container')
     expect(container).toBeInTheDocument()
 
-    // The LiveRegion component has the aria-live attribute
-    const liveRegion = screen.getByRole('status')
-    expect(liveRegion).toHaveAttribute('aria-live', 'polite')
+    // The LiveRegion component has the aria-live attribute.
+    // Multiple elements may have role="status" (e.g., toast + live region),
+    // so we query all and verify at least one has aria-live="polite".
+    const liveRegions = screen.getAllByRole('status')
+    const politeRegion = liveRegions.find(
+      (el) => el.getAttribute('aria-live') === 'polite'
+    )
+    expect(politeRegion).toBeDefined()
   })
 })

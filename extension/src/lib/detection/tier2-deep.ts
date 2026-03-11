@@ -9,6 +9,9 @@
 
 import type { CooldownRegistry } from './cooldown-registry'
 import { validateContext } from './context-validator'
+import { classifyDeliveryChannel } from './signal-classifier'
+import { classifyNonEmailIntent } from './non-email-contexts'
+import type { TextSources } from './types'
 import {
   getLabelMatchStrength,
   getPlaceholderMatchStrength,
@@ -52,7 +55,7 @@ const HIGH_CONFIDENCE_KEYWORDS = new RegExp(
 /**
  * P2: Negative signal keywords for score penalty
  *
- * When nearby text contains these keywords, penalize score to max 5 points.
+ * When nearby text contains these keywords, block all nearby text scoring (0 points).
  * Prevents false positives on password/email fields with "code" in nearby text.
  */
 const NEGATIVE_SIGNALS = /\b(password|email.?address|username|phone.?number)\b/i
@@ -338,7 +341,7 @@ export interface Tier2Result {
     placeholderMatch?: string
     formContext?: FormContext
     buttonIntent?: ButtonIntent
-    layer: 'label' | 'placeholder' | 'structural' | 'context' | 'split-input'
+    layer: 'label' | 'placeholder' | 'structural' | 'context' | 'split-input' | 'channel-gate' | 'non-email-intent'
   }
 }
 
@@ -479,6 +482,26 @@ function getNearbyText(input: HTMLInputElement, isSplitInput: boolean = false): 
 }
 
 /**
+ * Resolve aria-describedby text
+ *
+ * aria-describedby can reference multiple IDs (space-separated).
+ * Each referenced element's text content is resolved and joined.
+ *
+ * @param input - Input field to resolve aria-describedby from
+ * @returns Combined text from all referenced elements
+ */
+function getAriaDescribedbyText(input: HTMLInputElement): string {
+  const describedby = input.getAttribute('aria-describedby')
+  if (!describedby) return ''
+
+  return describedby
+    .split(/\s+/)
+    .map(id => input.ownerDocument?.getElementById(id)?.textContent?.trim() || '')
+    .filter(Boolean)
+    .join(' ')
+}
+
+/**
  * Tier 2: Deep DOM traversal detection with 4-layer defense
  *
  * Called when Tier 1 fails to find high-confidence matches.
@@ -579,9 +602,9 @@ export function detectTier2(
     const hasNegativeSignal = NEGATIVE_SIGNALS.test(nearbyText)
 
     if (hasNegativeSignal) {
-      // Penalty: Contains password/email/username keywords
-      score += 5
-      scoreBreakdown.push('nearby:5 (negative-signal)')
+      // Negative signal: do NOT add any points from nearby text
+      // The field has password/email/username context - nearby text is not helpful
+      scoreBreakdown.push('nearby:0 (negative-signal-blocked)')
     } else if (hasHighConfidence) {
       // High confidence: Contains verification/code keywords in 21 languages
       score += 20
@@ -617,6 +640,92 @@ export function detectTier2(
       score,
       reason: `Score ${score} below threshold ${THRESHOLD} (${scoreBreakdown.join(', ')})`,
       metadata: { layer: 'label' },
+    }
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  // Channel Gate: Reject SMS-only and authenticator-only fields
+  // ═══════════════════════════════════════════════════════════════
+  const channelTextSources: TextSources = {
+    label: labelText,
+    placeholder,
+    nearbyText,
+    ariaLabel: input.getAttribute('aria-label') || '',
+    ariaDescribedby: getAriaDescribedbyText(input),
+  }
+
+  const channelResult = classifyDeliveryChannel(channelTextSources)
+
+  if (channelResult.channel === 'authenticator') {
+    const hasEmailOption = channelResult.allChannels?.includes('email')
+    if (!hasEmailOption) {
+      cooldown.markRejected(input)
+      return {
+        detected: false,
+        confidence: 0,
+        score,
+        reason: `Authenticator-only field (channel gate): ${channelResult.matchedKeywords.join(', ')}`,
+        metadata: { layer: 'channel-gate' },
+      }
+    }
+  }
+
+  if (channelResult.channel === 'sms') {
+    const hasEmailOption = channelResult.allChannels?.includes('email')
+    if (!hasEmailOption) {
+      cooldown.markRejected(input)
+      return {
+        detected: false,
+        confidence: 0,
+        score,
+        reason: `SMS-only field (channel gate): ${channelResult.matchedKeywords.join(', ')}`,
+        metadata: { layer: 'channel-gate' },
+      }
+    }
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  // Non-Email Intent Check
+  // ═══════════════════════════════════════════════════════════════
+  const ariaDescribedby = getAriaDescribedbyText(input)
+  const combinedContextText = [labelText, placeholder, nearbyText, ariaDescribedby].filter(Boolean).join(' ')
+  const intentResult = classifyNonEmailIntent(combinedContextText)
+
+  if (intentResult.blocked) {
+    cooldown.markRejected(input)
+    return {
+      detected: false,
+      confidence: 0,
+      score,
+      reason: `Non-email context (${intentResult.category}): ${intentResult.matchedKeywords.join(', ')}`,
+      metadata: { layer: 'non-email-intent' },
+    }
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  // Multi-Input Form Penalty
+  // Exempt split-input groups: their multiple boxes ARE the OTP widget
+  // ═══════════════════════════════════════════════════════════════
+  if (!isSplitInput) {
+    const form = input.closest('form')
+    if (form) {
+      const textInputs = form.querySelectorAll<HTMLInputElement>(
+        'input[type="text"], input[type="tel"], input[type="number"], input:not([type])'
+      )
+      const visibleTextInputs = Array.from(textInputs).filter(i => !i.disabled && i.type !== 'hidden')
+      if (visibleTextInputs.length >= 4) {
+        score -= 20
+        scoreBreakdown.push('multi-input-penalty:-20')
+        if (score < THRESHOLD) {
+          return {
+            detected: false,
+            confidence: score / THRESHOLD,
+            score,
+            reason: `Multi-input form penalty dropped score below threshold (${scoreBreakdown.join(', ')})`,
+            metadata: { layer: 'structural' },
+          }
+        }
+      }
     }
   }
 

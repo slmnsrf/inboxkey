@@ -1,0 +1,1011 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="status" content="Ideation">
+  <meta name="date" content="2026-03-09">
+  <meta name="category" content="settings">
+  <title>Accounts (Minimal) - InboxKey Prototype</title>
+  <link rel="stylesheet" href="../shared/tokens.css">
+
+  <!-- Lucide Icons CDN for prototype -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <style>
+    /* ============================
+       PROTOTYPE CONTROLS
+       ============================ */
+
+    .proto-state-controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--space-3);
+      align-items: center;
+    }
+
+    .proto-state-controls label {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-2);
+      font-size: var(--font-size-xs);
+      color: var(--color-text-secondary);
+      cursor: pointer;
+    }
+
+    .proto-state-controls select {
+      padding: 2px var(--space-2);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-sm);
+      background: var(--surface-card);
+      color: var(--color-text-primary);
+      font-size: var(--font-size-xs);
+      font-family: var(--font-system);
+    }
+
+    .proto-separator {
+      width: 1px;
+      height: 20px;
+      background: var(--color-border);
+    }
+
+    /* ============================
+       RESET & BASE
+       ============================ */
+
+    *, *::before, *::after { box-sizing: border-box; }
+    body { margin: 0; }
+
+    .page {
+      min-height: 100vh;
+      background: var(--surface-page);
+      color: var(--color-text-primary);
+      font-family: var(--font-system);
+      font-size: var(--font-size-base);
+      line-height: var(--line-height-normal);
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    .page-inner {
+      max-width: 680px;
+      margin: 0 auto;
+      padding: var(--space-10) var(--space-6) var(--space-12);
+    }
+
+    /* ============================
+       HEADER -- typographic, no box
+       ============================ */
+
+    .page-header {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: var(--space-3);
+      padding-bottom: var(--space-6);
+    }
+
+    .page-header__left {
+      display: flex;
+      align-items: baseline;
+      gap: var(--space-3);
+    }
+
+    .page-title {
+      margin: 0;
+      font-size: var(--font-size-3xl);
+      font-weight: var(--font-weight-bold);
+      letter-spacing: -0.04em;
+      line-height: var(--line-height-tight);
+    }
+
+    .page-version {
+      font-size: var(--font-size-xs);
+      color: var(--color-text-tertiary);
+      font-weight: var(--font-weight-normal);
+    }
+
+    .page-header__actions {
+      display: flex;
+      align-items: center;
+      gap: var(--space-4);
+    }
+
+    .header-link {
+      font-size: var(--font-size-sm);
+      color: var(--color-text-tertiary);
+      text-decoration: none;
+      transition: color var(--duration-fast) ease-out;
+    }
+
+    .header-link:hover {
+      color: var(--color-text-primary);
+    }
+
+    .header-link:focus-visible {
+      outline: 2px solid var(--color-primary);
+      outline-offset: 2px;
+    }
+
+    .coffee-link {
+      font-size: var(--font-size-sm);
+      color: var(--color-text-tertiary);
+      text-decoration: none;
+      transition: color var(--duration-fast) ease-out;
+    }
+
+    .coffee-link:hover {
+      color: var(--color-text-primary);
+    }
+
+    .coffee-link:focus-visible {
+      outline: 2px solid var(--color-primary);
+      outline-offset: 2px;
+    }
+
+    /* Privacy line -- replaces trust banner entirely */
+    .privacy-note {
+      margin: 0;
+      font-size: var(--font-size-xs);
+      color: var(--color-text-tertiary);
+      padding-bottom: var(--space-8);
+      letter-spacing: 0.02em;
+    }
+
+    /* ============================
+       TAB NAVIGATION -- underline only
+       ============================ */
+
+    .tab-nav {
+      display: flex;
+      gap: var(--space-6);
+      border-bottom: 1px solid var(--color-border);
+      margin-bottom: var(--space-10);
+    }
+
+    .tab-nav__item {
+      padding: var(--space-3) 0;
+      border: none;
+      background: transparent;
+      color: var(--color-text-tertiary);
+      font-family: var(--font-system);
+      font-size: var(--font-size-sm);
+      font-weight: var(--font-weight-medium);
+      cursor: pointer;
+      position: relative;
+      letter-spacing: 0.01em;
+      transition: color var(--duration-fast) ease-out;
+    }
+
+    .tab-nav__item:hover {
+      color: var(--color-text-primary);
+    }
+
+    .tab-nav__item:focus-visible {
+      outline: 2px solid var(--color-primary);
+      outline-offset: 2px;
+    }
+
+    .tab-nav__item--active {
+      color: var(--color-text-primary);
+      font-weight: var(--font-weight-semibold);
+    }
+
+    .tab-nav__item--active::after {
+      content: '';
+      position: absolute;
+      bottom: -1px;
+      left: 0;
+      right: 0;
+      height: 1px;
+      background: var(--color-text-primary);
+    }
+
+    /* ============================
+       CONTENT AREA
+       ============================ */
+
+    .content {
+      display: grid;
+      gap: 0;
+    }
+
+    /* ============================
+       PROVIDER SECTION -- typographic
+       No cards, no borders, no shadows.
+       Just headings, text, and thin rules.
+       ============================ */
+
+    .provider {
+      padding-top: var(--space-10);
+      padding-bottom: var(--space-10);
+      border-bottom: 1px solid var(--color-border);
+    }
+
+    .provider:first-child {
+      padding-top: 0;
+    }
+
+    .provider__name {
+      margin: 0 0 var(--space-1) 0;
+      font-size: var(--font-size-xl);
+      font-weight: var(--font-weight-bold);
+      letter-spacing: -0.02em;
+      line-height: var(--line-height-tight);
+    }
+
+    .provider__description {
+      margin: 0 0 var(--space-6) 0;
+      font-size: var(--font-size-sm);
+      color: var(--color-text-tertiary);
+    }
+
+    /* Key-value pairs grid */
+    .kv-grid {
+      display: grid;
+      grid-template-columns: 120px 1fr;
+      gap: var(--space-2) var(--space-6);
+      align-items: baseline;
+    }
+
+    .kv-label {
+      font-size: var(--font-size-sm);
+      color: var(--color-text-tertiary);
+      font-weight: var(--font-weight-normal);
+    }
+
+    .kv-value {
+      font-size: var(--font-size-sm);
+      color: var(--color-text-primary);
+      font-weight: var(--font-weight-medium);
+    }
+
+    /* Status as colored text */
+    .status-text--connected {
+      color: var(--color-success-dark);
+    }
+
+    .status-text--disconnected {
+      color: var(--color-text-tertiary);
+    }
+
+    .status-text--connecting {
+      color: var(--color-text-tertiary);
+      font-style: italic;
+    }
+
+    .status-text--error {
+      color: var(--color-error-dark);
+    }
+
+    /* Action links -- text links, not buttons */
+    .action-links {
+      display: flex;
+      gap: var(--space-4);
+      margin-top: var(--space-4);
+    }
+
+    .action-link {
+      font-size: var(--font-size-sm);
+      color: var(--color-primary);
+      background: none;
+      border: none;
+      padding: 0;
+      cursor: pointer;
+      font-family: var(--font-system);
+      font-weight: var(--font-weight-medium);
+      text-decoration: none;
+      transition: color var(--duration-fast) ease-out;
+    }
+
+    .action-link:hover {
+      color: var(--color-primary-hover);
+    }
+
+    .action-link:focus-visible {
+      outline: 2px solid var(--color-primary);
+      outline-offset: 2px;
+    }
+
+    .action-link--danger {
+      color: var(--color-error-dark);
+    }
+
+    .action-link--danger:hover {
+      color: var(--color-error-hover);
+    }
+
+    /* Primary CTA -- the only filled button on the page */
+    .cta {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-2);
+      margin-top: var(--space-4);
+      padding: var(--space-2) var(--space-5);
+      border-radius: var(--radius-md);
+      background: var(--color-primary);
+      color: var(--color-text-inverse);
+      font-family: var(--font-system);
+      font-size: var(--font-size-sm);
+      font-weight: var(--font-weight-medium);
+      border: none;
+      cursor: pointer;
+      min-height: var(--min-tap-target);
+      transition: background var(--duration-fast) ease-out;
+      text-decoration: none;
+    }
+
+    .cta:hover {
+      background: var(--color-primary-hover);
+    }
+
+    .cta:focus-visible {
+      outline: 2px solid var(--color-primary);
+      outline-offset: 2px;
+    }
+
+    /* Empty state -- quiet paragraph */
+    .empty-message {
+      margin: 0;
+      color: var(--color-text-tertiary);
+      font-size: var(--font-size-sm);
+      line-height: var(--line-height-normal);
+    }
+
+    /* Error message */
+    .error-message {
+      margin: 0 0 var(--space-2) 0;
+      color: var(--color-error-dark);
+      font-size: var(--font-size-sm);
+    }
+
+    /* ============================
+       IMAP ACCOUNT LIST -- simple rows
+       ============================ */
+
+    .imap-accounts {
+      display: grid;
+      gap: var(--space-6);
+    }
+
+    .imap-account {
+      padding-bottom: var(--space-6);
+      border-bottom: 1px solid var(--color-border);
+    }
+
+    .imap-account:last-child {
+      border-bottom: none;
+      padding-bottom: 0;
+    }
+
+    .imap-account__email {
+      margin: 0 0 var(--space-1) 0;
+      font-size: var(--font-size-base);
+      font-weight: var(--font-weight-semibold);
+      color: var(--color-text-primary);
+    }
+
+    .imap-account__detail {
+      margin: 0;
+      font-size: var(--font-size-xs);
+      color: var(--color-text-tertiary);
+    }
+
+    .imap-add-row {
+      margin-top: var(--space-4);
+    }
+
+    .imap-cap {
+      font-size: var(--font-size-xs);
+      color: var(--color-text-tertiary);
+      font-weight: var(--font-weight-normal);
+      margin-left: var(--space-2);
+    }
+
+    /* ============================
+       RECENT EMAILS -- text list, no cards
+       ============================ */
+
+    .recent-section {
+      padding-top: var(--space-10);
+      padding-bottom: var(--space-10);
+    }
+
+    .recent-header {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: var(--space-3);
+      margin-bottom: var(--space-6);
+    }
+
+    .recent-title {
+      margin: 0;
+      font-size: var(--font-size-xl);
+      font-weight: var(--font-weight-bold);
+      letter-spacing: -0.02em;
+    }
+
+    /* Filter links -- text only */
+    .filter-links {
+      display: flex;
+      gap: var(--space-4);
+    }
+
+    .filter-link {
+      font-size: var(--font-size-sm);
+      color: var(--color-text-tertiary);
+      background: none;
+      border: none;
+      padding: 0;
+      cursor: pointer;
+      font-family: var(--font-system);
+      font-weight: var(--font-weight-medium);
+      transition: color var(--duration-fast) ease-out;
+      text-decoration: none;
+    }
+
+    .filter-link:hover {
+      color: var(--color-text-primary);
+    }
+
+    .filter-link:focus-visible {
+      outline: 2px solid var(--color-primary);
+      outline-offset: 2px;
+    }
+
+    .filter-link--active {
+      color: var(--color-text-primary);
+      text-decoration: underline;
+      text-underline-offset: 3px;
+    }
+
+    /* Email rows -- just text */
+    .recent-list {
+      display: grid;
+      gap: 0;
+    }
+
+    .recent-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: var(--space-3);
+      align-items: baseline;
+      padding: var(--space-4) 0;
+      border-bottom: 1px solid var(--color-border);
+    }
+
+    .recent-row:last-child {
+      border-bottom: none;
+    }
+
+    .recent-row__content {
+      min-width: 0;
+    }
+
+    .recent-row__subject {
+      margin: 0;
+      font-size: var(--font-size-base);
+      font-weight: var(--font-weight-semibold);
+      color: var(--color-text-primary);
+      line-height: var(--line-height-tight);
+    }
+
+    .recent-row__meta {
+      margin: var(--space-1) 0 0 0;
+      font-size: var(--font-size-xs);
+      color: var(--color-text-tertiary);
+    }
+
+    .recent-row__right {
+      text-align: right;
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: var(--space-1);
+    }
+
+    .recent-row__code {
+      font-family: var(--font-mono);
+      font-size: var(--font-size-lg);
+      font-weight: var(--font-weight-semibold);
+      color: var(--color-text-primary);
+      letter-spacing: 0.06em;
+    }
+
+    .recent-row__action {
+      font-size: var(--font-size-xs);
+      color: var(--color-primary);
+      background: none;
+      border: none;
+      padding: 0;
+      cursor: pointer;
+      font-family: var(--font-system);
+      font-weight: var(--font-weight-medium);
+      transition: color var(--duration-fast) ease-out;
+    }
+
+    .recent-row__action:hover {
+      color: var(--color-primary-hover);
+    }
+
+    .recent-row__action:focus-visible {
+      outline: 2px solid var(--color-primary);
+      outline-offset: 2px;
+    }
+
+    .recent-row__time {
+      font-size: var(--font-size-xs);
+      color: var(--color-text-tertiary);
+      white-space: nowrap;
+    }
+
+    /* ============================
+       ENTRANCE ANIMATION -- opacity only
+       ============================ */
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    .content > * {
+      animation: fadeIn 400ms var(--easing-out) both;
+    }
+
+    .content > *:nth-child(1) { animation-delay: 0ms; }
+    .content > *:nth-child(2) { animation-delay: 80ms; }
+    .content > *:nth-child(3) { animation-delay: 160ms; }
+    .content > *:nth-child(4) { animation-delay: 240ms; }
+
+    @media (prefers-reduced-motion: reduce) {
+      .content > * {
+        animation: none;
+      }
+    }
+
+    /* ============================
+       RESPONSIVE
+       ============================ */
+
+    @media (max-width: 600px) {
+      .page-inner {
+        padding: var(--space-6) var(--space-4) var(--space-10);
+      }
+
+      .page-header {
+        flex-direction: column;
+        gap: var(--space-2);
+      }
+
+      .page-header__actions {
+        gap: var(--space-3);
+      }
+
+      .tab-nav {
+        gap: var(--space-4);
+        margin-bottom: var(--space-8);
+      }
+
+      .kv-grid {
+        grid-template-columns: 100px 1fr;
+        gap: var(--space-1) var(--space-4);
+      }
+
+      .provider {
+        padding-top: var(--space-8);
+        padding-bottom: var(--space-8);
+      }
+
+      .recent-header {
+        flex-direction: column;
+        gap: var(--space-3);
+      }
+
+      .recent-row {
+        grid-template-columns: 1fr;
+        gap: var(--space-2);
+      }
+
+      .recent-row__right {
+        align-items: flex-start;
+        flex-direction: row;
+        gap: var(--space-3);
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- ========================================
+       PROTOTYPE TOOLBAR
+       ======================================== -->
+  <div class="proto-toolbar">
+    <div class="proto-toolbar__left">
+      <span class="proto-toolbar__title">Accounts (Minimal)</span>
+      <span class="proto-toolbar__status" data-status="ideation">Ideation</span>
+      <span class="proto-toolbar__date">2026-03-09</span>
+    </div>
+    <div class="proto-toolbar__right">
+      <div class="proto-state-controls">
+        <label>
+          Gmail:
+          <select id="ctrl-gmail">
+            <option value="connected" selected>Connected</option>
+            <option value="disconnected">Disconnected</option>
+            <option value="connecting">Connecting...</option>
+            <option value="error">Error</option>
+          </select>
+        </label>
+        <label>
+          Outlook:
+          <select id="ctrl-outlook">
+            <option value="connected">Connected</option>
+            <option value="disconnected" selected>Disconnected</option>
+            <option value="connecting">Connecting...</option>
+          </select>
+        </label>
+        <label>
+          IMAP:
+          <select id="ctrl-imap">
+            <option value="2accounts" selected>2 accounts</option>
+            <option value="0accounts">No accounts</option>
+            <option value="1account">1 account</option>
+          </select>
+        </label>
+        <label>
+          Recent:
+          <select id="ctrl-recent">
+            <option value="populated" selected>Populated</option>
+            <option value="empty">Empty</option>
+          </select>
+        </label>
+      </div>
+      <div class="proto-separator"></div>
+      <div class="proto-theme-toggle">
+        <button data-theme-btn="light" aria-pressed="true">Light</button>
+        <button data-theme-btn="dark" aria-pressed="false">Dark</button>
+      </div>
+      <button class="proto-decisions-toggle">Decisions</button>
+    </div>
+  </div>
+
+  <!-- ========================================
+       DECISIONS PANEL
+       ======================================== -->
+  <div class="proto-decisions-panel">
+    <button class="proto-decisions-close">&times;</button>
+    <h3>Design Decisions</h3>
+    <ol></ol>
+  </div>
+
+  <!-- ========================================
+       PROTOTYPE CANVAS
+       ======================================== -->
+  <main class="proto-canvas">
+    <div class="page">
+      <div class="page-inner">
+
+        <!-- HEADER -->
+        <header class="page-header">
+          <div class="page-header__left">
+            <h1 class="page-title">InboxKey</h1>
+            <span class="page-version">v1.0</span>
+          </div>
+          <div class="page-header__actions">
+            <a href="#" class="header-link">Source</a>
+            <a href="#" class="coffee-link">&#9749; Support</a>
+          </div>
+        </header>
+
+        <!-- Privacy note replaces trust banner -->
+        <p class="privacy-note">All data stays on your device. Open source. No servers.</p>
+
+        <!-- TAB NAVIGATION -- underline only -->
+        <nav class="tab-nav" role="tablist">
+          <button class="tab-nav__item tab-nav__item--active" role="tab" aria-selected="true">Accounts</button>
+          <button class="tab-nav__item" role="tab" aria-selected="false">Security</button>
+          <button class="tab-nav__item" role="tab" aria-selected="false">Settings</button>
+          <button class="tab-nav__item" role="tab" aria-selected="false">About</button>
+        </nav>
+
+        <!-- CONTENT -->
+        <div class="content" id="content">
+
+          <!-- ========================
+               GMAIL
+               ======================== -->
+          <section class="provider" id="gmail-section">
+            <h2 class="provider__name">Gmail</h2>
+            <p class="provider__description">Chrome's built-in identity. Limited to 1 account.</p>
+
+            <!-- Connected state -->
+            <div id="gmail-connected">
+              <div class="kv-grid">
+                <span class="kv-label">Account</span>
+                <span class="kv-value">user@gmail.com</span>
+                <span class="kv-label">Status</span>
+                <span class="kv-value status-text--connected">Connected</span>
+                <span class="kv-label">Last sync</span>
+                <span class="kv-value">2 minutes ago</span>
+              </div>
+              <div class="action-links">
+                <button class="action-link">Reconnect</button>
+                <button class="action-link action-link--danger">Disconnect</button>
+              </div>
+            </div>
+
+            <!-- Disconnected state -->
+            <div id="gmail-disconnected" style="display:none">
+              <p class="empty-message">No Gmail account connected. Connect to autofill verification codes from your inbox.</p>
+              <button class="cta">Connect Gmail</button>
+            </div>
+
+            <!-- Connecting state -->
+            <div id="gmail-connecting" style="display:none">
+              <div class="kv-grid">
+                <span class="kv-label">Status</span>
+                <span class="kv-value status-text--connecting">Authenticating with Google...</span>
+              </div>
+            </div>
+
+            <!-- Error state -->
+            <div id="gmail-error" style="display:none">
+              <p class="error-message">Connection failed: OAuth credentials are not configured. <a href="#" class="action-link" style="font-size:inherit">Learn more</a></p>
+              <button class="cta">Retry Connection</button>
+            </div>
+          </section>
+
+          <!-- ========================
+               OUTLOOK
+               ======================== -->
+          <section class="provider" id="outlook-section">
+            <h2 class="provider__name">Outlook</h2>
+            <p class="provider__description">Microsoft 365 and Outlook.com via secure PKCE authentication.</p>
+
+            <!-- Connected state -->
+            <div id="outlook-connected" style="display:none">
+              <div class="kv-grid">
+                <span class="kv-label">Account</span>
+                <span class="kv-value">user@outlook.com</span>
+                <span class="kv-label">Status</span>
+                <span class="kv-value status-text--connected">Connected</span>
+                <span class="kv-label">Last sync</span>
+                <span class="kv-value">5 minutes ago</span>
+              </div>
+              <div class="action-links">
+                <button class="action-link">Reconnect</button>
+                <button class="action-link action-link--danger">Disconnect</button>
+              </div>
+            </div>
+
+            <!-- Disconnected state -->
+            <div id="outlook-disconnected">
+              <div class="kv-grid">
+                <span class="kv-label">Status</span>
+                <span class="kv-value status-text--disconnected">Not connected</span>
+              </div>
+              <button class="cta">Connect Outlook</button>
+            </div>
+
+            <!-- Connecting state -->
+            <div id="outlook-connecting" style="display:none">
+              <div class="kv-grid">
+                <span class="kv-label">Status</span>
+                <span class="kv-value status-text--connecting">Opening Microsoft sign-in...</span>
+              </div>
+            </div>
+          </section>
+
+          <!-- ========================
+               IMAP
+               ======================== -->
+          <section class="provider" id="imap-section">
+            <h2 class="provider__name">IMAP<span class="imap-cap" id="imap-counter">2 / 10</span></h2>
+            <p class="provider__description">Any email provider via IMAP. Requires the InboxBridge desktop companion.</p>
+
+            <!-- 2 accounts state -->
+            <div id="imap-2accounts">
+              <div class="imap-accounts">
+                <div class="imap-account">
+                  <p class="imap-account__email">hello@protonmail.com</p>
+                  <p class="imap-account__detail">imap.protonmail.ch:993 -- Synced 1 min ago</p>
+                  <div class="action-links" style="margin-top:var(--space-2)">
+                    <button class="action-link">Refresh</button>
+                    <button class="action-link action-link--danger">Remove</button>
+                  </div>
+                </div>
+                <div class="imap-account">
+                  <p class="imap-account__email">me@fastmail.com</p>
+                  <p class="imap-account__detail" style="color:var(--color-warning-dark)">imap.fastmail.com:993 -- Last sync failed</p>
+                  <div class="action-links" style="margin-top:var(--space-2)">
+                    <button class="action-link">Reconnect</button>
+                    <button class="action-link action-link--danger">Remove</button>
+                  </div>
+                </div>
+              </div>
+              <div class="imap-add-row">
+                <button class="action-link" id="imap-add-btn">+ Add account</button>
+              </div>
+            </div>
+
+            <!-- 1 account state -->
+            <div id="imap-1account" style="display:none">
+              <div class="imap-accounts">
+                <div class="imap-account" style="border-bottom:none;padding-bottom:0">
+                  <p class="imap-account__email">hello@protonmail.com</p>
+                  <p class="imap-account__detail">imap.protonmail.ch:993 -- Synced 1 min ago</p>
+                  <div class="action-links" style="margin-top:var(--space-2)">
+                    <button class="action-link">Refresh</button>
+                    <button class="action-link action-link--danger">Remove</button>
+                  </div>
+                </div>
+              </div>
+              <div class="imap-add-row">
+                <button class="action-link" id="imap-add-btn-1">+ Add account</button>
+              </div>
+            </div>
+
+            <!-- 0 accounts state -->
+            <div id="imap-0accounts" style="display:none">
+              <p class="empty-message">No IMAP accounts connected. Works with ProtonMail, Fastmail, Yahoo, and more.</p>
+              <button class="cta">Add IMAP Account</button>
+            </div>
+          </section>
+
+          <!-- ========================
+               RECENT EMAILS
+               ======================== -->
+          <section class="recent-section" id="recent-section">
+
+            <!-- Populated state -->
+            <div id="recent-populated">
+              <div class="recent-header">
+                <h2 class="recent-title">Recent</h2>
+                <div class="filter-links" role="tablist">
+                  <button class="filter-link filter-link--active" role="tab" aria-pressed="true">All</button>
+                  <button class="filter-link" role="tab" aria-pressed="false">Codes</button>
+                  <button class="filter-link" role="tab" aria-pressed="false">Links</button>
+                </div>
+              </div>
+
+              <div class="recent-list">
+                <div class="recent-row">
+                  <div class="recent-row__content">
+                    <p class="recent-row__subject">[GitHub] Please verify your device</p>
+                    <p class="recent-row__meta">noreply@github.com -- Gmail -- 2 min ago</p>
+                  </div>
+                  <div class="recent-row__right">
+                    <span class="recent-row__code">847 291</span>
+                    <button class="recent-row__action">Copy</button>
+                  </div>
+                </div>
+
+                <div class="recent-row">
+                  <div class="recent-row__content">
+                    <p class="recent-row__subject">Sign-in attempt from new device</p>
+                    <p class="recent-row__meta">no-reply@accounts.google.com -- Gmail -- 15 min ago</p>
+                  </div>
+                  <div class="recent-row__right">
+                    <button class="recent-row__action">Open link</button>
+                  </div>
+                </div>
+
+                <div class="recent-row">
+                  <div class="recent-row__content">
+                    <p class="recent-row__subject">Verify your email address</p>
+                    <p class="recent-row__meta">noreply@discord.com -- Outlook -- 1 hour ago</p>
+                  </div>
+                  <div class="recent-row__right">
+                    <span class="recent-row__code">396 482</span>
+                    <button class="recent-row__action">Copy</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Empty state -->
+            <div id="recent-empty" style="display:none">
+              <div class="recent-header">
+                <h2 class="recent-title">Recent</h2>
+              </div>
+              <p class="empty-message">No verification emails yet. They will appear here when detected.</p>
+            </div>
+          </section>
+
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- ========================================
+       DESIGN DECISIONS (MANDATORY)
+       ======================================== -->
+  <script type="application/json" id="decisions">
+  [
+    "Zero-container typographic hierarchy - All visual structure is created through font size, weight, and spacing alone. No cards, no box shadows, no background-color containers for sections. This is a deliberate inversion of the card-based accounts.html to test whether pure typography can carry the same information density.",
+    "Thin horizontal rules as section dividers - 1px solid var(--color-border) lines separate provider sections. This is the only structural element on the page. The approach mirrors editorial/document design (newspapers, Stripe docs) where rules create rhythm without visual weight.",
+    "Key-value grid for account details - Connected accounts display as label:value pairs in a CSS grid (120px label column + 1fr value column). This reduces visual noise compared to account-row cards while keeping the same information. The grid alignment creates an implicit structure that the eye follows without explicit containers.",
+    "Status as colored text, not chips - 'Connected' in success-dark green, 'Not connected' in tertiary gray, errors in error-dark red. No background-color badges, no dots. The color alone carries the semantic meaning. This is more restrained than status chips but equally scannable because the surrounding context is so minimal.",
+    "Text-link actions instead of buttons - Reconnect, Disconnect, Remove are styled as inline text links (color: primary, no background). Only primary CTAs (Connect Gmail, Add IMAP Account) use filled buttons. This creates a clear action hierarchy: CTA = commitment, link = secondary action. The contrast between the two is more stark than in the card-based version.",
+    "Privacy note as small text, not banner - The trust banner is replaced by a single line of xs text below the page title: 'All data stays on your device. Open source. No servers.' This treats privacy as a quiet given rather than a marketing statement. The information is still present but does not compete with the functional content.",
+    "Underline-only tab active state - Active tab uses text-primary color + a 1px bottom border matching the tab's full width. No background fill, no colored accent. The underline sits directly on the navigation rule line, creating a seamless connection. This is more restrained than the primary-colored indicator in the card-based version.",
+    "Opacity-only entrance animation - Elements fade in (opacity 0 to 1) with 80ms stagger, no translateY. This respects the 'document, not app' aesthetic. Transform-based animation implies physics and spatiality; opacity-only implies revelation. Disabled entirely for prefers-reduced-motion.",
+    "Recent emails as text rows, not cards - Each email is a simple grid row with subject, meta, and code/action. Separated by 1px rules. The verification code is displayed in monospace at font-size-lg, right-aligned. Copy/Open are text-link actions. The information density is higher than card-based because there is no padding overhead.",
+    "Generous vertical whitespace (space-10 between sections) - Provider sections use 40px top/bottom padding. This is twice the spacing of the card-based version. In the absence of containers, whitespace is the primary grouping mechanism. The page breathes. Each provider feels like its own zone."
+  ]
+  </script>
+
+  <!-- ========================================
+       SCRIPTS
+       ======================================== -->
+  <script src="../shared/theme-switcher.js"></script>
+  <script>
+    // Initialize Lucide icons
+    lucide.createIcons();
+
+    // ==============================
+    // State Controllers
+    // ==============================
+
+    var ctrlGmail = document.getElementById('ctrl-gmail');
+    var ctrlOutlook = document.getElementById('ctrl-outlook');
+    var ctrlImap = document.getElementById('ctrl-imap');
+    var ctrlRecent = document.getElementById('ctrl-recent');
+
+    function updateGmail() {
+      var v = ctrlGmail.value;
+
+      document.getElementById('gmail-connected').style.display = v === 'connected' ? '' : 'none';
+      document.getElementById('gmail-disconnected').style.display = v === 'disconnected' ? '' : 'none';
+      document.getElementById('gmail-connecting').style.display = v === 'connecting' ? '' : 'none';
+      document.getElementById('gmail-error').style.display = v === 'error' ? '' : 'none';
+    }
+
+    function updateOutlook() {
+      var v = ctrlOutlook.value;
+
+      document.getElementById('outlook-connected').style.display = v === 'connected' ? '' : 'none';
+      document.getElementById('outlook-disconnected').style.display = v === 'disconnected' ? '' : 'none';
+      document.getElementById('outlook-connecting').style.display = v === 'connecting' ? '' : 'none';
+    }
+
+    function updateImap() {
+      var v = ctrlImap.value;
+      var counter = document.getElementById('imap-counter');
+
+      document.getElementById('imap-2accounts').style.display = v === '2accounts' ? '' : 'none';
+      document.getElementById('imap-1account').style.display = v === '1account' ? '' : 'none';
+      document.getElementById('imap-0accounts').style.display = v === '0accounts' ? '' : 'none';
+
+      if (v === '2accounts') { counter.textContent = '2 / 10'; }
+      else if (v === '1account') { counter.textContent = '1 / 10'; }
+      else { counter.textContent = '0 / 10'; }
+    }
+
+    function updateRecent() {
+      var v = ctrlRecent.value;
+      document.getElementById('recent-populated').style.display = v === 'populated' ? '' : 'none';
+      document.getElementById('recent-empty').style.display = v === 'empty' ? '' : 'none';
+    }
+
+    ctrlGmail.addEventListener('change', updateGmail);
+    ctrlOutlook.addEventListener('change', updateOutlook);
+    ctrlImap.addEventListener('change', updateImap);
+    ctrlRecent.addEventListener('change', updateRecent);
+
+    // Filter link toggle (Recent section)
+    document.querySelectorAll('.filter-link').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        btn.closest('.filter-links').querySelectorAll('.filter-link').forEach(function (b) {
+          b.classList.remove('filter-link--active');
+          b.setAttribute('aria-pressed', 'false');
+        });
+        btn.classList.add('filter-link--active');
+        btn.setAttribute('aria-pressed', 'true');
+      });
+    });
+  </script>
+</body>
+</html>

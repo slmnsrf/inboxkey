@@ -1,0 +1,281 @@
+import { describe, it, expect, beforeEach } from 'vitest'
+import { Window } from 'happy-dom'
+import { detectVerificationField, resetCooldownRegistry } from '../../src/lib/detection/field-detector'
+
+describe('False Positive Regression Tests', () => {
+  let window: Window
+  let document: Document
+
+  beforeEach(() => {
+    window = new Window()
+    document = window.document
+    global.document = document as any
+    global.window = window as any
+    global.performance = window.performance as any
+    resetCooldownRegistry()
+  })
+
+  describe('Example 1 & 2: Developer token name fields', () => {
+    it('should NOT detect Railway tokenName field', () => {
+      document.body.innerHTML = `
+        <form>
+          <label for="tokenName">Token Name</label>
+          <input type="text" id="tokenName" name="tokenName" placeholder="My API Token">
+        </form>
+      `
+      const result = detectVerificationField({ strictVisibility: false })
+      expect(result).toBeNull()
+    })
+
+    it('should NOT detect Supabase tokenName field', () => {
+      document.body.innerHTML = `
+        <form>
+          <label for="tokenName">Name</label>
+          <input type="text" id="tokenName" name="tokenName"
+                 placeholder="Provide a name for your token">
+        </form>
+      `
+      const result = detectVerificationField({ strictVisibility: false })
+      expect(result).toBeNull()
+    })
+
+    it('should NOT detect generic token management field', () => {
+      document.body.innerHTML = `
+        <div>
+          <h2>Personal Access Tokens</h2>
+          <label for="token_description">Token Description</label>
+          <input type="text" id="token_description" name="token_description">
+        </div>
+      `
+      const result = detectVerificationField({ strictVisibility: false })
+      expect(result).toBeNull()
+    })
+  })
+
+  describe('Example 3: Authenticator app with autocomplete="one-time-code"', () => {
+    it('should NOT detect authenticator-only field even with autocomplete', () => {
+      document.body.innerHTML = `
+        <div>
+          <p>Enter the code from your authenticator app</p>
+          <input type="text" autocomplete="one-time-code" name="code">
+        </div>
+      `
+      const result = detectVerificationField({ strictVisibility: false })
+      expect(result).toBeNull()
+    })
+
+    it('should STILL detect email+authenticator hybrid with autocomplete', () => {
+      document.body.innerHTML = `
+        <div>
+          <p>Enter the code from your email or authenticator app</p>
+          <input type="text" autocomplete="one-time-code" name="code">
+        </div>
+      `
+      const result = detectVerificationField({ strictVisibility: false })
+      expect(result).not.toBeNull()
+    })
+  })
+
+  describe('Example 4 & 6: SMS-only fields reaching Tier 2', () => {
+    it('should NOT detect Turkish SMS code field', () => {
+      document.body.innerHTML = `
+        <div>
+          <p>Cep telefonunuza gelen kodu girin</p>
+          <label for="smsCode">SMS Kodu</label>
+          <input type="text" id="smsCode" maxlength="6" inputmode="numeric">
+        </div>
+      `
+      const result = detectVerificationField({ strictVisibility: false })
+      expect(result).toBeNull()
+    })
+
+    it('should NOT detect iyzico SMS verification field', () => {
+      document.body.innerHTML = `
+        <div>
+          <p>Telefonunuza gönderilen SMS kodunu giriniz</p>
+          <input type="text" maxlength="6" inputmode="numeric">
+        </div>
+      `
+      const result = detectVerificationField({ strictVisibility: false })
+      expect(result).toBeNull()
+    })
+
+    it('should NOT detect English SMS-only field via Tier 2 scoring', () => {
+      document.body.innerHTML = `
+        <div>
+          <p>We sent a verification code to your phone number ending in **89</p>
+          <label for="code">Enter code</label>
+          <input type="text" id="smscode" maxlength="6">
+        </div>
+      `
+      const result = detectVerificationField({ strictVisibility: false })
+      expect(result).toBeNull()
+    })
+  })
+
+  describe('Tier 2 negative signal scoring', () => {
+    it('should NOT add points when negative signals present', () => {
+      // A field with "password" in nearby text and "Enter code" label
+      // should NOT get boosted by the nearby text
+      document.body.innerHTML = `
+        <div>
+          <p>Enter your password</p>
+          <label for="field">Enter code</label>
+          <input type="text" id="field">
+        </div>
+      `
+      const result = detectVerificationField({ strictVisibility: false })
+      // Should be null because context validator catches "password"
+      // But the negative signal path should NOT contribute positive score
+      expect(result).toBeNull()
+    })
+  })
+
+  describe('Turkish SMS informal phrasing', () => {
+    it('should detect "telefonuna gelen" as SMS (informal possessive)', async () => {
+      const { classifyDeliveryChannel } = await import('../../src/lib/detection/signal-classifier')
+      const result = classifyDeliveryChannel({
+        label: '',
+        placeholder: '',
+        nearbyText: 'Telefonuna gelen kodu gir',
+      })
+      expect(result.channel).toBe('sms')
+    })
+
+    it('should detect "telefonunuza gönderilen" as SMS (formal)', async () => {
+      const { classifyDeliveryChannel } = await import('../../src/lib/detection/signal-classifier')
+      const result = classifyDeliveryChannel({
+        label: '',
+        placeholder: '',
+        nearbyText: 'Telefonunuza gönderilen SMS kodunu giriniz',
+      })
+      expect(result.channel).toBe('sms')
+    })
+  })
+
+  describe('Positive recall: real OTP fields still detected', () => {
+    it('should detect autocomplete="one-time-code"', () => {
+      document.body.innerHTML = `
+        <input type="text" autocomplete="one-time-code">
+      `
+      const result = detectVerificationField({ strictVisibility: false })
+      expect(result).not.toBeNull()
+      expect(result!.confidence).toBeGreaterThanOrEqual(95)
+    })
+
+    it('should detect name="otp"', () => {
+      document.body.innerHTML = `
+        <input type="text" name="otp">
+      `
+      const result = detectVerificationField({ strictVisibility: false })
+      expect(result).not.toBeNull()
+    })
+
+    it('should detect name="verificationCode"', () => {
+      document.body.innerHTML = `
+        <input type="text" name="verificationCode">
+      `
+      const result = detectVerificationField({ strictVisibility: false })
+      expect(result).not.toBeNull()
+    })
+  })
+
+  describe('Example 5: Postal/ZIP code field', () => {
+    it('should NOT detect postal code in business form', () => {
+      document.body.innerHTML = `
+        <form>
+          <label for="company">Company Name</label>
+          <input type="text" id="company" name="company">
+          <label for="address">Address</label>
+          <input type="text" id="address" name="address">
+          <label for="postal">Postal Code</label>
+          <input type="text" id="postal" name="postal" maxlength="6">
+          <label for="city">City</label>
+          <input type="text" id="city" name="city">
+        </form>
+      `
+      const result = detectVerificationField({ strictVisibility: false })
+      expect(result).toBeNull()
+    })
+  })
+
+  // ═══════════════════════════════════════════════════════════════
+  // Category-Level Negative Fixtures
+  // ═══════════════════════════════════════════════════════════════
+
+  describe('Category: Address/Postal forms', () => {
+    it('should NOT detect in multi-field address form', () => {
+      document.body.innerHTML = `
+        <form>
+          <input type="text" name="street" placeholder="Street Address">
+          <input type="text" name="city" placeholder="City">
+          <input type="text" name="state" placeholder="State">
+          <input type="text" name="zipcode" maxlength="5" placeholder="ZIP Code">
+          <input type="text" name="country" placeholder="Country">
+        </form>
+      `
+      const result = detectVerificationField({ strictVisibility: false })
+      expect(result).toBeNull()
+    })
+  })
+
+  describe('Category: Payment/Banking', () => {
+    it('should NOT detect bank verification code', () => {
+      document.body.innerHTML = `
+        <div>
+          <p>Enter the code from your banking app to confirm the transaction</p>
+          <input type="text" maxlength="6" inputmode="numeric">
+        </div>
+      `
+      const result = detectVerificationField({ strictVisibility: false })
+      expect(result).toBeNull()
+    })
+  })
+
+  // ═══════════════════════════════════════════════════════════════
+  // Positive Recall: Must Still Detect
+  // ═══════════════════════════════════════════════════════════════
+
+  describe('Positive recall: email OTP flows', () => {
+    it('should detect email verification code field', () => {
+      document.body.innerHTML = `
+        <div>
+          <p>We sent a verification code to your email</p>
+          <label for="code">Enter code</label>
+          <input type="text" id="code" name="code" maxlength="6" inputmode="numeric">
+        </div>
+      `
+      const result = detectVerificationField({ strictVisibility: false })
+      expect(result).not.toBeNull()
+    })
+
+    it('should detect split-input OTP field', () => {
+      document.body.innerHTML = `
+        <div>
+          <p>Enter your verification code</p>
+          <div>
+            <input maxlength="1" type="text" value="">
+            <input maxlength="1" type="text" value="">
+            <input maxlength="1" type="text" value="">
+            <input maxlength="1" type="text" value="">
+            <input maxlength="1" type="text" value="">
+            <input maxlength="1" type="text" value="">
+          </div>
+        </div>
+      `
+      const result = detectVerificationField({ strictVisibility: false })
+      expect(result).not.toBeNull()
+    })
+
+    it('should detect email+authenticator hybrid as eligible', () => {
+      document.body.innerHTML = `
+        <div>
+          <p>Enter the code from your email or authenticator app</p>
+          <input type="text" name="code" maxlength="6">
+        </div>
+      `
+      const result = detectVerificationField({ strictVisibility: false })
+      expect(result).not.toBeNull()
+    })
+  })
+})

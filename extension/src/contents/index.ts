@@ -226,11 +226,7 @@ export function clearProcessedFields(): void {
           console.error('[InboxKey] Failed to check automation level:', error)
         }
 
-        // Detect all batched fields at once (call detectExisting ONCE, not per field)
-        const results = detector.detectExisting({ strictVisibility: true })
-        console.log('[InboxKey] 🔍 detectExisting() found', results.length, 'results')
-
-        // Process batched fields
+        // Evaluate each batched field directly (no full-page rescan)
         for (const f of fields) {
           // Detect if this field is part of a split-input group
           const group = detectSplitInputGroup(f)
@@ -250,17 +246,17 @@ export function clearProcessedFields(): void {
             console.log('[InboxKey] ✅ Added representative to global Set (size:', globalProcessedRepresentatives?.size, ')')
           } else {
             console.log('[InboxKey] ⚠️  Representative no longer in DOM, skipping')
-            continue  // Don't process dead DOM nodes
+            continue
           }
 
-          // Find detection result for the representative field
-          const result = results.find((r) => r.field === representative)
+          // Evaluate the specific field through Tier 1 -> Tier 2
+          const result = detector.evaluateField(representative, { strictVisibility: true })
 
           if (result) {
-            console.log('[InboxKey] ✓ Found detection result, calling handleDetectedField()')
+            console.log('[InboxKey] ✓ Field detected, calling handleDetectedField()')
             handleDetectedField(representative, result)
           } else {
-            console.log('[InboxKey] ✗ No detection result found for representative')
+            console.log('[InboxKey] ✗ Field not detected as verification input')
           }
         }
       }, 50)  // 50ms debounce window

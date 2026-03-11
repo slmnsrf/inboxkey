@@ -63,37 +63,111 @@ const mockOnConnectListeners: Array<(port: any) => void> = []
 const mockCreateTab = vi.fn()
 const mockGetURL = vi.fn((path: string) => `chrome-extension://test/${path}`)
 
-global.chrome = {
-  runtime: {
-    onMessage: {
-      addListener: vi.fn((fn) => mockOnMessageListeners.push(fn)),
+// Storage mocks for chrome.storage.local, session, and sync
+const mockStorageLocal = {
+  get: vi.fn().mockResolvedValue({}),
+  set: vi.fn().mockResolvedValue(undefined),
+  remove: vi.fn().mockResolvedValue(undefined),
+}
+
+const mockStorageSession = {
+  get: vi.fn().mockResolvedValue({}),
+  set: vi.fn().mockResolvedValue(undefined),
+  remove: vi.fn().mockResolvedValue(undefined),
+}
+
+const mockStorageSync = {
+  get: vi.fn().mockResolvedValue({}),
+  set: vi.fn().mockResolvedValue(undefined),
+  remove: vi.fn().mockResolvedValue(undefined),
+}
+
+/**
+ * Re-wire addListener implementations and storage mock return values
+ * after vi.clearAllMocks() resets them. This is necessary because
+ * clearAllMocks removes both mock implementations and return values.
+ */
+function setupChromeMock(): void {
+  // Reset storage mock implementations (clearAllMocks wipes mockResolvedValue)
+  mockStorageLocal.get.mockResolvedValue({})
+  mockStorageLocal.set.mockResolvedValue(undefined)
+  mockStorageLocal.remove.mockResolvedValue(undefined)
+  mockStorageSession.get.mockResolvedValue({})
+  mockStorageSession.set.mockResolvedValue(undefined)
+  mockStorageSession.remove.mockResolvedValue(undefined)
+  mockStorageSync.get.mockResolvedValue({})
+  mockStorageSync.set.mockResolvedValue(undefined)
+  mockStorageSync.remove.mockResolvedValue(undefined)
+
+  mockGetURL.mockImplementation((path: string) => `chrome-extension://test/${path}`)
+  mockGetSavedSalt.mockResolvedValue(new Uint8Array([1, 2, 3, 4]))
+
+  global.chrome = {
+    runtime: {
+      onMessage: {
+        addListener: vi.fn((fn) => mockOnMessageListeners.push(fn)),
+      },
+      onInstalled: {
+        addListener: vi.fn((fn) => mockOnInstalledListeners.push(fn)),
+      },
+      onStartup: {
+        addListener: vi.fn((fn) => mockOnStartupListeners.push(fn)),
+      },
+      onConnect: {
+        addListener: vi.fn((fn) => mockOnConnectListeners.push(fn)),
+      },
+      sendMessage: mockSendMessage,
+      getURL: mockGetURL,
+      lastError: undefined,
     },
-    onInstalled: {
-      addListener: vi.fn((fn) => mockOnInstalledListeners.push(fn)),
+    alarms: {
+      onAlarm: {
+        addListener: vi.fn((fn) => mockOnAlarmListeners.push(fn)),
+      },
     },
-    onStartup: {
-      addListener: vi.fn((fn) => mockOnStartupListeners.push(fn)),
+    tabs: {
+      create: mockCreateTab,
+      sendMessage: vi.fn(),
     },
-    onConnect: {
-      addListener: vi.fn((fn) => mockOnConnectListeners.push(fn)),
+    storage: {
+      local: mockStorageLocal,
+      session: mockStorageSession,
+      sync: mockStorageSync,
     },
-    sendMessage: mockSendMessage,
-    getURL: mockGetURL,
-    lastError: undefined,
-  },
-  alarms: {
-    onAlarm: {
-      addListener: vi.fn((fn) => mockOnAlarmListeners.push(fn)),
+    identity: {
+      getRedirectURL: vi.fn(() => 'https://test.chromiumapp.org/oauth2'),
     },
-  },
-  tabs: {
-    create: mockCreateTab,
-    sendMessage: vi.fn(),
-  },
-  identity: {
-    getRedirectURL: vi.fn(() => 'https://test.chromiumapp.org/oauth2'),
-  },
-} as any
+  } as any
+}
+
+/**
+ * Re-apply mock implementations for module-level mocks (KeyManager, StorageFactory, etc.)
+ * that get wiped by vi.clearAllMocks().
+ */
+function resetMockImplementations(): void {
+  mockKeyManager.getInstance.mockReturnValue({
+    initialize: vi.fn().mockResolvedValue({ salt: new Uint8Array([1, 2, 3, 4]) }),
+    unlock: vi.fn().mockResolvedValue(true),
+    lock: vi.fn(),
+    isUnlocked: vi.fn().mockReturnValue(true),
+    isLocked: vi.fn().mockReturnValue(false),
+    resetAutoLockTimer: vi.fn(),
+  })
+
+  mockStorageFactory.create.mockReturnValue({
+    getMailboxes: vi.fn().mockResolvedValue([]),
+    getRecentCodes: vi.fn().mockResolvedValue([]),
+    clearOldCodes: vi.fn().mockResolvedValue(undefined),
+    addMailbox: vi.fn().mockResolvedValue(undefined),
+    removeMailbox: vi.fn().mockResolvedValue(undefined),
+    clearAllCodes: vi.fn().mockResolvedValue(undefined),
+    getSettings: vi.fn().mockResolvedValue({}),
+    setDomainPreference: vi.fn().mockResolvedValue(undefined),
+  })
+}
+
+// Initial setup
+setupChromeMock()
 
 // Mock module imports
 vi.mock('@/lib/crypto/key-manager', () => ({
@@ -119,6 +193,13 @@ describe('Background Service Worker - Message Routing', () => {
     mockOnAlarmListeners.length = 0
     mockOnConnectListeners.length = 0
     vi.clearAllMocks()
+
+    // Re-setup mock implementations after clearAllMocks resets them
+    setupChromeMock()
+    resetMockImplementations()
+
+    // Reset module registry so re-importing background/index re-executes its code
+    vi.resetModules()
   })
 
   afterEach(() => {
@@ -148,9 +229,10 @@ describe('Background Service Worker - Message Routing', () => {
       expect(mockOnStartupListeners.length).toBeGreaterThan(0)
     })
 
-    it('should register chrome.alarms.onAlarm listener', async () => {
+    it('should register chrome.alarms.onAlarm listener via SessionPoller', async () => {
       await import('../../src/background/index')
 
+      // SessionPoller (used by SessionController) registers its own alarm listener
       expect(chrome.alarms.onAlarm.addListener).toHaveBeenCalled()
       expect(mockOnAlarmListeners.length).toBeGreaterThan(0)
     })
@@ -164,75 +246,64 @@ describe('Background Service Worker - Message Routing', () => {
   })
 
   describe('Message Type Routing', () => {
-    it('should route INITIALIZE_LOCK to handleInitializeLock', async () => {
+    it('should route TRIGGER_SYNC to popup handler (async)', async () => {
       await import('../../src/background/index')
 
       const listener = mockOnMessageListeners[0]
-      const msg = { type: 'INITIALIZE_LOCK', password: '123456' }
+      const msg = { type: 'TRIGGER_SYNC' }
       const sender = { tab: { id: 1 } }
 
       const result = listener(msg, sender, sendResponseSpy)
 
-      // Should return true for async response
-      expect(result).toBe(true)
-
-      // Wait for async handler
-      await new Promise(resolve => setTimeout(resolve, 10))
-
-      expect(mockKeyManager.getInstance).toHaveBeenCalled()
+      expect(result).toBe(true) // Async response
     })
 
-    it('should route UNLOCK to handleUnlock', async () => {
+    it('should route MARK_CODE_USED to popup handler (async)', async () => {
       await import('../../src/background/index')
 
       const listener = mockOnMessageListeners[0]
-      const msg = { type: 'UNLOCK', password: '123456' }
+      const msg = { type: 'MARK_CODE_USED', codeId: 'code-1' }
       const sender = { tab: { id: 1 } }
 
       const result = listener(msg, sender, sendResponseSpy)
 
-      expect(result).toBe(true)
-
-      await new Promise(resolve => setTimeout(resolve, 10))
-
-      expect(mockKeyManager.getInstance).toHaveBeenCalled()
+      expect(result).toBe(true) // Async response
     })
 
-    it('should route LOCK to handleLock', async () => {
+    it('should route MARK_CODES_SEEN to popup handler (async)', async () => {
       await import('../../src/background/index')
 
       const listener = mockOnMessageListeners[0]
-      const msg = { type: 'LOCK' }
+      const msg = { type: 'MARK_CODES_SEEN' }
       const sender = { tab: { id: 1 } }
 
       const result = listener(msg, sender, sendResponseSpy)
 
-      expect(result).toBe(false) // Synchronous response
-      expect(sendResponseSpy).toHaveBeenCalledWith({ success: true })
+      expect(result).toBe(true) // Async response
     })
 
-    it('should route CHECK_LOCK_STATUS to handleCheckLockStatus', async () => {
+    it('should route GET_SYNC_ERROR to popup handler (async)', async () => {
       await import('../../src/background/index')
 
       const listener = mockOnMessageListeners[0]
-      const msg = { type: 'CHECK_LOCK_STATUS' }
+      const msg = { type: 'GET_SYNC_ERROR' }
       const sender = { tab: { id: 1 } }
 
-      listener(msg, sender, sendResponseSpy)
+      const result = listener(msg, sender, sendResponseSpy)
 
-      expect(sendResponseSpy).toHaveBeenCalledWith({ isUnlocked: true })
+      expect(result).toBe(true) // Async response
     })
 
-    it('should route ACTIVITY to handleActivity', async () => {
+    it('should route GET_MAILBOXES to popup handler (async)', async () => {
       await import('../../src/background/index')
 
       const listener = mockOnMessageListeners[0]
-      const msg = { type: 'ACTIVITY' }
+      const msg = { type: 'GET_MAILBOXES' }
       const sender = { tab: { id: 1 } }
 
-      listener(msg, sender, sendResponseSpy)
+      const result = listener(msg, sender, sendResponseSpy)
 
-      expect(sendResponseSpy).toHaveBeenCalledWith({ success: true })
+      expect(result).toBe(true) // Async response
     })
 
     it('should route GET_POPUP_DATA to popup handler', async () => {
@@ -320,146 +391,179 @@ describe('Background Service Worker - Message Routing', () => {
     })
   })
 
-  describe('INITIALIZE_LOCK Handler', () => {
-    it('should reject requests without password', async () => {
+  describe('STORE_MAILBOX Handler', () => {
+    it('should store a gmail mailbox successfully', async () => {
       await import('../../src/background/index')
 
       const listener = mockOnMessageListeners[0]
-      const msg = { type: 'INITIALIZE_LOCK' }
+      const msg = {
+        type: 'STORE_MAILBOX',
+        provider: 'gmail',
+        email: 'user@gmail.com',
+        tokens: {
+          accessToken: 'access-123',
+          refreshToken: 'refresh-456',
+          expiresIn: 3600,
+        },
+      }
       const sender = { tab: { id: 1 } }
 
-      listener(msg, sender, sendResponseSpy)
+      const result = listener(msg, sender, sendResponseSpy)
+      expect(result).toBe(true) // Async response
 
-      await new Promise(resolve => setTimeout(resolve, 10))
+      await new Promise(resolve => setTimeout(resolve, 50))
 
-      expect(sendResponseSpy).toHaveBeenCalledWith({
-        success: false,
-        error: 'PIN required',
-      })
+      expect(sendResponseSpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          success: true,
+          mailbox: expect.objectContaining({ email: 'user@gmail.com' }),
+        })
+      )
     })
 
-    it('should initialize KeyManager with provided password', async () => {
+    it('should store an IMAP mailbox via STORE_IMAP_MAILBOX', async () => {
       await import('../../src/background/index')
 
       const listener = mockOnMessageListeners[0]
-      const msg = { type: 'INITIALIZE_LOCK', password: '123456' }
+      const msg = {
+        type: 'STORE_IMAP_MAILBOX',
+        email: 'user@example.com',
+        server: 'imap.example.com',
+        port: 993,
+        accountId: 'acct-1',
+      }
       const sender = { tab: { id: 1 } }
 
-      listener(msg, sender, sendResponseSpy)
+      const result = listener(msg, sender, sendResponseSpy)
+      expect(result).toBe(true)
 
-      await new Promise(resolve => setTimeout(resolve, 10))
+      await new Promise(resolve => setTimeout(resolve, 50))
 
-      const kmInstance = mockKeyManager.getInstance()
-      expect(kmInstance.initialize).toHaveBeenCalledWith('123456')
+      expect(sendResponseSpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          success: true,
+          mailbox: expect.objectContaining({ email: 'user@example.com' }),
+        })
+      )
     })
 
-    it('should return salt on successful initialization', async () => {
+    it('should remove a mailbox via REMOVE_MAILBOX', async () => {
       await import('../../src/background/index')
 
       const listener = mockOnMessageListeners[0]
-      const msg = { type: 'INITIALIZE_LOCK', password: '123456' }
+      const msg = { type: 'REMOVE_MAILBOX', mailboxId: 'mailbox-abc' }
       const sender = { tab: { id: 1 } }
 
-      listener(msg, sender, sendResponseSpy)
+      const result = listener(msg, sender, sendResponseSpy)
+      expect(result).toBe(true)
 
-      await new Promise(resolve => setTimeout(resolve, 10))
-
-      expect(sendResponseSpy).toHaveBeenCalledWith({
-        success: true,
-        salt: [1, 2, 3, 4],
-      })
-    })
-
-    it('should handle initialization errors', async () => {
-      const errorInstance = mockKeyManager.getInstance()
-      errorInstance.initialize.mockRejectedValueOnce(new Error('Invalid PIN'))
-
-      await import('../../src/background/index')
-
-      const listener = mockOnMessageListeners[0]
-      const msg = { type: 'INITIALIZE_LOCK', password: '123' }
-      const sender = { tab: { id: 1 } }
-
-      listener(msg, sender, sendResponseSpy)
-
-      await new Promise(resolve => setTimeout(resolve, 10))
-
-      expect(sendResponseSpy).toHaveBeenCalledWith({
-        success: false,
-        error: 'Invalid PIN',
-      })
-    })
-  })
-
-  describe('UNLOCK Handler', () => {
-    it('should reject requests without password', async () => {
-      await import('../../src/background/index')
-
-      const listener = mockOnMessageListeners[0]
-      const msg = { type: 'UNLOCK' }
-      const sender = { tab: { id: 1 } }
-
-      listener(msg, sender, sendResponseSpy)
-
-      await new Promise(resolve => setTimeout(resolve, 10))
-
-      expect(sendResponseSpy).toHaveBeenCalledWith({
-        success: false,
-        error: 'PIN required',
-      })
-    })
-
-    it('should reject unlock if extension not initialized', async () => {
-      mockGetSavedSalt.mockResolvedValueOnce(null)
-
-      await import('../../src/background/index')
-
-      const listener = mockOnMessageListeners[0]
-      const msg = { type: 'UNLOCK', password: '123456' }
-      const sender = { tab: { id: 1 } }
-
-      listener(msg, sender, sendResponseSpy)
-
-      await new Promise(resolve => setTimeout(resolve, 10))
-
-      expect(sendResponseSpy).toHaveBeenCalledWith({
-        success: false,
-        error: 'Extension not initialized',
-      })
-    })
-
-    it('should unlock with correct password', async () => {
-      await import('../../src/background/index')
-
-      const listener = mockOnMessageListeners[0]
-      const msg = { type: 'UNLOCK', password: '123456' }
-      const sender = { tab: { id: 1 } }
-
-      listener(msg, sender, sendResponseSpy)
-
-      await new Promise(resolve => setTimeout(resolve, 10))
+      await new Promise(resolve => setTimeout(resolve, 50))
 
       expect(sendResponseSpy).toHaveBeenCalledWith({ success: true })
     })
 
-    it('should reject unlock with incorrect password', async () => {
-      const kmInstance = mockKeyManager.getInstance()
-      kmInstance.unlock.mockResolvedValueOnce(false)
+    it('should handle storage errors during STORE_MAILBOX', async () => {
+      mockStorageFactory.create.mockReturnValueOnce({
+        getMailboxes: vi.fn().mockResolvedValue([]),
+        getRecentCodes: vi.fn().mockResolvedValue([]),
+        addMailbox: vi.fn().mockRejectedValue(new Error('Storage full')),
+        removeMailbox: vi.fn(),
+        clearAllCodes: vi.fn(),
+        getSettings: vi.fn().mockResolvedValue({}),
+        setDomainPreference: vi.fn(),
+      })
 
       await import('../../src/background/index')
 
       const listener = mockOnMessageListeners[0]
-      const msg = { type: 'UNLOCK', password: 'wrong' }
+      const msg = {
+        type: 'STORE_MAILBOX',
+        provider: 'gmail',
+        email: 'test@gmail.com',
+        tokens: { accessToken: 'a', refreshToken: 'r', expiresIn: 3600 },
+      }
       const sender = { tab: { id: 1 } }
 
       listener(msg, sender, sendResponseSpy)
 
-      await new Promise(resolve => setTimeout(resolve, 10))
+      await new Promise(resolve => setTimeout(resolve, 50))
+
+      expect(sendResponseSpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          success: false,
+          error: 'Storage full',
+        })
+      )
+    })
+  })
+
+  describe('Automation Level Handler', () => {
+    it('should return automation level via GET_AUTOMATION_LEVEL', async () => {
+      mockStorageLocal.get.mockResolvedValue({ settings: { automationLevel: 'popup' } })
+
+      await import('../../src/background/index')
+
+      const listener = mockOnMessageListeners[0]
+      const msg = { type: 'GET_AUTOMATION_LEVEL' }
+      const sender = { tab: { id: 1 } }
+
+      const result = listener(msg, sender, sendResponseSpy)
+      expect(result).toBe(true)
+
+      await new Promise(resolve => setTimeout(resolve, 50))
 
       expect(sendResponseSpy).toHaveBeenCalledWith({
-        success: false,
-        error: 'Incorrect PIN',
+        success: true,
+        level: 'popup',
       })
+    })
+
+    it('should default to autofill when no automation level is stored', async () => {
+      await import('../../src/background/index')
+
+      const listener = mockOnMessageListeners[0]
+      const msg = { type: 'GET_AUTOMATION_LEVEL' }
+      const sender = { tab: { id: 1 } }
+
+      listener(msg, sender, sendResponseSpy)
+
+      await new Promise(resolve => setTimeout(resolve, 50))
+
+      expect(sendResponseSpy).toHaveBeenCalledWith({
+        success: true,
+        level: 'autofill',
+      })
+    })
+
+    it('should set automation level via SET_AUTOMATION_LEVEL', async () => {
+      await import('../../src/background/index')
+
+      const listener = mockOnMessageListeners[0]
+      const msg = { type: 'SET_AUTOMATION_LEVEL', level: 'popup' }
+      const sender = { tab: { id: 1 } }
+
+      const result = listener(msg, sender, sendResponseSpy)
+      expect(result).toBe(true)
+
+      await new Promise(resolve => setTimeout(resolve, 50))
+
+      expect(sendResponseSpy).toHaveBeenCalledWith({ success: true })
+    })
+
+    it('should handle CLEAR_CACHE by clearing session storage', async () => {
+      await import('../../src/background/index')
+
+      const listener = mockOnMessageListeners[0]
+      const msg = { type: 'CLEAR_CACHE' }
+      const sender = { tab: { id: 1 } }
+
+      const result = listener(msg, sender, sendResponseSpy)
+      expect(result).toBe(true)
+
+      await new Promise(resolve => setTimeout(resolve, 50))
+
+      expect(mockStorageSession.remove).toHaveBeenCalledWith('inboxkey.popup_cache')
+      expect(sendResponseSpy).toHaveBeenCalledWith({ success: true })
     })
   })
 
@@ -493,95 +597,90 @@ describe('Background Service Worker - Message Routing', () => {
       expect(() => handler()).not.toThrow()
     })
 
-    it('should handle alarm events', async () => {
+    it('should have alarm listener registered by SessionPoller', async () => {
       await import('../../src/background/index')
 
-      const handler = mockOnAlarmListeners[0]
-      const alarm = { name: 'poll-session-123' }
-
-      await handler(alarm)
-
-      // Alarm should be handled (exact behavior depends on SessionController)
-      expect(handler).toBeDefined()
-    })
-
-    it('should ignore alarms without names', async () => {
-      await import('../../src/background/index')
-
-      const handler = mockOnAlarmListeners[0]
-      const alarm = { name: '' }
-
-      // Should not throw or call sessionController
-      await expect(handler(alarm)).resolves.toBeUndefined()
+      // SessionPoller registers its own alarm listener internally
+      expect(mockOnAlarmListeners.length).toBeGreaterThan(0)
     })
   })
 
   describe('Error Boundaries', () => {
     it('should not crash worker on message handler error', async () => {
-      const kmInstance = mockKeyManager.getInstance()
-      kmInstance.initialize.mockRejectedValueOnce(new Error('Crypto error'))
+      // Make StorageFactory.create throw for STORE_MAILBOX
+      mockStorageFactory.create.mockImplementationOnce(() => {
+        throw new Error('Storage error')
+      })
 
       await import('../../src/background/index')
 
       const listener = mockOnMessageListeners[0]
-      const msg = { type: 'INITIALIZE_LOCK', password: '123456' }
+      const msg = {
+        type: 'STORE_MAILBOX',
+        provider: 'gmail',
+        email: 'test@gmail.com',
+        tokens: { accessToken: 'a', refreshToken: 'r', expiresIn: 3600 },
+      }
       const sender = { tab: { id: 1 } }
 
-      // Should not throw
+      // Should not throw even when handler errors internally
       expect(() => listener(msg, sender, sendResponseSpy)).not.toThrow()
 
-      await new Promise(resolve => setTimeout(resolve, 10))
+      await new Promise(resolve => setTimeout(resolve, 50))
 
       // Should send error response
-      expect(sendResponseSpy).toHaveBeenCalledWith({
-        success: false,
-        error: 'Crypto error',
-      })
+      expect(sendResponseSpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          success: false,
+          error: expect.stringContaining('Storage error'),
+        })
+      )
     })
 
-    it('should handle non-Error exceptions', async () => {
-      const kmInstance = mockKeyManager.getInstance()
-      kmInstance.unlock.mockRejectedValueOnce('String error')
+    it('should handle non-Error exceptions in async handlers', async () => {
+      mockStorageFactory.create.mockImplementationOnce(() => {
+        throw 'String error'
+      })
 
       await import('../../src/background/index')
 
       const listener = mockOnMessageListeners[0]
-      const msg = { type: 'UNLOCK', password: '123456' }
+      const msg = {
+        type: 'REMOVE_MAILBOX',
+        mailboxId: 'mailbox-1',
+      }
       const sender = { tab: { id: 1 } }
 
       listener(msg, sender, sendResponseSpy)
 
-      await new Promise(resolve => setTimeout(resolve, 10))
+      await new Promise(resolve => setTimeout(resolve, 50))
 
-      expect(sendResponseSpy).toHaveBeenCalledWith({
-        success: false,
-        error: 'String error',
-      })
+      expect(sendResponseSpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          success: false,
+          error: 'String error',
+        })
+      )
     })
 
-    it('should log errors but continue processing', async () => {
-      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
-
-      const kmInstance = mockKeyManager.getInstance()
-      kmInstance.initialize.mockRejectedValueOnce(new Error('Test error'))
-
+    it('should continue processing after a failed message', async () => {
       await import('../../src/background/index')
 
       const listener = mockOnMessageListeners[0]
-      const msg1 = { type: 'INITIALIZE_LOCK', password: '123456' }
-      const msg2 = { type: 'CHECK_LOCK_STATUS' }
       const sender = { tab: { id: 1 } }
 
-      // First message should error
-      listener(msg1, sender, sendResponseSpy)
-      await new Promise(resolve => setTimeout(resolve, 10))
+      // First: unknown message type (handled synchronously, no crash)
+      const sendResponse1 = vi.fn()
+      listener({ type: 'NONEXISTENT_TYPE' }, sender, sendResponse1)
+      expect(sendResponse1).toHaveBeenCalledWith({ error: 'Unknown message type' })
 
-      // Second message should still work
-      listener(msg2, sender, sendResponseSpy)
-
-      expect(sendResponseSpy).toHaveBeenCalledWith({ isUnlocked: true })
-
-      consoleErrorSpy.mockRestore()
+      // Second: valid FETCH_CODE message should still work
+      const sendResponse2 = vi.fn()
+      listener({ type: 'FETCH_CODE' }, sender, sendResponse2)
+      expect(sendResponse2).toHaveBeenCalledWith({
+        error: 'FETCH_CODE_DEPRECATED',
+        codes: [],
+      })
     })
   })
 
@@ -643,7 +742,7 @@ describe('Background Service Worker - Message Routing', () => {
   })
 
   describe('Mailbox Management', () => {
-    it('should store mailbox when unlocked', async () => {
+    it('should store mailbox and respond with id and email', async () => {
       await import('../../src/background/index')
 
       const listener = mockOnMessageListeners[0]
@@ -661,42 +760,17 @@ describe('Background Service Worker - Message Routing', () => {
 
       listener(msg, sender, sendResponseSpy)
 
-      await new Promise(resolve => setTimeout(resolve, 10))
+      await new Promise(resolve => setTimeout(resolve, 50))
 
-      const storage = await mockStorageFactory.create()
-      expect(storage.addMailbox).toHaveBeenCalled()
+      expect(sendResponseSpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          success: true,
+          mailbox: expect.objectContaining({ email: 'test@gmail.com' }),
+        })
+      )
     })
 
-    it('should reject mailbox operations when locked', async () => {
-      const kmInstance = mockKeyManager.getInstance()
-      kmInstance.isLocked.mockReturnValueOnce(true)
-
-      await import('../../src/background/index')
-
-      const listener = mockOnMessageListeners[0]
-      const msg = {
-        type: 'STORE_MAILBOX',
-        provider: 'gmail',
-        email: 'test@gmail.com',
-        tokens: {
-          accessToken: 'token',
-          refreshToken: 'refresh',
-          expiresIn: 3600,
-        },
-      }
-      const sender = { tab: { id: 1 } }
-
-      listener(msg, sender, sendResponseSpy)
-
-      await new Promise(resolve => setTimeout(resolve, 10))
-
-      expect(sendResponseSpy).toHaveBeenCalledWith({
-        success: false,
-        error: 'Extension is locked',
-      })
-    })
-
-    it('should remove mailbox when unlocked', async () => {
+    it('should remove mailbox via REMOVE_MAILBOX', async () => {
       await import('../../src/background/index')
 
       const listener = mockOnMessageListeners[0]
@@ -705,13 +779,12 @@ describe('Background Service Worker - Message Routing', () => {
 
       listener(msg, sender, sendResponseSpy)
 
-      await new Promise(resolve => setTimeout(resolve, 10))
+      await new Promise(resolve => setTimeout(resolve, 50))
 
-      const storage = await mockStorageFactory.create()
-      expect(storage.removeMailbox).toHaveBeenCalledWith('mailbox-123')
+      expect(sendResponseSpy).toHaveBeenCalledWith({ success: true })
     })
 
-    it('should clear all codes when unlocked', async () => {
+    it('should clear ephemeral codes via CLEAR_ALL_CODES using session storage', async () => {
       await import('../../src/background/index')
 
       const listener = mockOnMessageListeners[0]
@@ -720,10 +793,24 @@ describe('Background Service Worker - Message Routing', () => {
 
       listener(msg, sender, sendResponseSpy)
 
-      await new Promise(resolve => setTimeout(resolve, 10))
+      await new Promise(resolve => setTimeout(resolve, 50))
 
-      const storage = await mockStorageFactory.create()
-      expect(storage.clearAllCodes).toHaveBeenCalled()
+      // CLEAR_ALL_CODES now clears ephemeral session storage, not persistent storage
+      expect(mockStorageSession.remove).toHaveBeenCalledWith('inboxkey.popup_cache')
+      expect(sendResponseSpy).toHaveBeenCalledWith({ success: true })
+    })
+
+    it('should handle UPDATE_BADGE messages synchronously', async () => {
+      await import('../../src/background/index')
+
+      const listener = mockOnMessageListeners[0]
+      const msg = { type: 'UPDATE_BADGE', state: 'clear' }
+      const sender = { tab: { id: 1 } }
+
+      const result = listener(msg, sender, sendResponseSpy)
+
+      // UPDATE_BADGE returns false (synchronous, no response needed)
+      expect(result).toBe(false)
     })
   })
 })

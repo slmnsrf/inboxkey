@@ -1,0 +1,1497 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="status" content="Ideation">
+  <meta name="date" content="2026-03-09">
+  <meta name="category" content="settings">
+  <title>Accounts Panel - InboxKey Prototype</title>
+  <link rel="stylesheet" href="../shared/tokens.css">
+
+  <!-- Lucide Icons CDN for prototype -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <style>
+    /* ============================
+       PROTOTYPE CONTROLS
+       ============================ */
+
+    .proto-state-controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--space-3);
+      align-items: center;
+    }
+
+    .proto-state-controls label {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-2);
+      font-size: var(--font-size-xs);
+      color: var(--color-text-secondary);
+      cursor: pointer;
+    }
+
+    .proto-state-controls select {
+      padding: 2px var(--space-2);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-sm);
+      background: var(--surface-card);
+      color: var(--color-text-primary);
+      font-size: var(--font-size-xs);
+      font-family: var(--font-system);
+    }
+
+    .proto-separator {
+      width: 1px;
+      height: 20px;
+      background: var(--color-border);
+    }
+
+    /* ============================
+       PAGE SHELL (mirrors options.css)
+       ============================ */
+
+    *, *::before, *::after { box-sizing: border-box; }
+    body { margin: 0; }
+
+    .options-container {
+      min-height: 100vh;
+      background: var(--color-bg-primary);
+      color: var(--color-text-primary);
+      font-family: var(--font-system);
+      font-size: var(--font-size-base);
+      line-height: var(--line-height-normal);
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    .options-shell {
+      max-width: 840px;
+      margin: 0 auto;
+      padding: var(--space-6);
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-6);
+    }
+
+    /* ============================
+       HEADER
+       ============================ */
+
+    .options-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding-bottom: var(--space-3);
+      border-bottom: 1px solid var(--color-border);
+    }
+
+    .options-header__identity {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+    }
+
+    .brand__icon {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 40px;
+      height: 40px;
+      background: var(--color-primary);
+      color: var(--color-text-inverse);
+      border-radius: var(--radius-lg);
+    }
+
+    .brand__title {
+      margin: 0;
+      font-size: var(--font-size-2xl);
+      font-weight: var(--font-weight-bold);
+      letter-spacing: -0.03em;
+    }
+
+    .privacy-line {
+      margin: 0;
+      font-size: var(--font-size-xs);
+      color: var(--color-text-tertiary);
+      letter-spacing: var(--letter-spacing-wide);
+    }
+
+    .options-header__actions {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+    }
+
+    .support-link {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: var(--space-2) var(--space-3);
+      border-radius: var(--radius-full);
+      font-size: var(--font-size-xs);
+      font-weight: var(--font-weight-medium);
+      color: var(--color-text-secondary);
+      background: var(--surface-card);
+      border: 1px solid var(--color-border);
+      text-decoration: none;
+      transition: background var(--duration-fast) ease-out;
+    }
+
+    .support-link:hover {
+      background: var(--surface-card-muted);
+    }
+
+    .coffee-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-2);
+      padding: var(--space-2) var(--space-4);
+      border-radius: var(--radius-full);
+      font-size: var(--font-size-xs);
+      font-weight: var(--font-weight-semibold);
+      color: var(--color-support-text);
+      background: var(--color-support-bg);
+      border: 1px solid var(--color-support-border);
+      text-decoration: none;
+      cursor: pointer;
+      transition: filter var(--duration-fast) ease-out;
+    }
+
+    .coffee-btn:hover {
+      filter: brightness(0.95);
+    }
+
+    /* ============================
+       TRUST BANNER
+       ============================ */
+
+    .trust-banner {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: var(--space-3);
+      padding: var(--space-5) var(--space-6);
+      background: var(--surface-card);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-xl);
+      box-shadow: var(--shadow-sm);
+      text-align: center;
+    }
+
+    .trust-banner__headline {
+      margin: 0;
+      font-size: var(--font-size-sm);
+      color: var(--color-text-secondary);
+      font-weight: var(--font-weight-medium);
+    }
+
+    .trust-banner__pillars {
+      display: flex;
+      align-items: center;
+      gap: var(--space-6);
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .trust-pillar {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+    }
+
+    .trust-pillar__icon {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 28px;
+      height: 28px;
+      border-radius: var(--radius-md);
+      background: var(--color-primary-light);
+      color: var(--color-primary);
+    }
+
+    .trust-pillar__label {
+      font-size: var(--font-size-sm);
+      font-weight: var(--font-weight-medium);
+      color: var(--color-text-primary);
+      white-space: nowrap;
+    }
+
+    /* ============================
+       TAB NAVIGATION
+       ============================ */
+
+    .tab-navigation {
+      display: flex;
+      border-bottom: 1px solid var(--color-border);
+      gap: 0;
+    }
+
+    .tab-button {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-2);
+      padding: var(--space-3) var(--space-4);
+      border: none;
+      background: transparent;
+      color: var(--color-text-secondary);
+      font-family: var(--font-system);
+      font-size: var(--font-size-sm);
+      font-weight: var(--font-weight-medium);
+      cursor: pointer;
+      position: relative;
+      transition: color var(--duration-fast) ease-out;
+    }
+
+    .tab-button__icon {
+      display: flex;
+      align-items: center;
+      opacity: 0.7;
+    }
+
+    .tab-button:hover {
+      color: var(--color-text-primary);
+    }
+
+    .tab-button--active {
+      color: var(--color-primary);
+    }
+
+    .tab-button--active .tab-button__icon {
+      opacity: 1;
+    }
+
+    .tab-button--active::after {
+      content: '';
+      position: absolute;
+      bottom: -1px;
+      left: var(--space-4);
+      right: var(--space-4);
+      height: 2px;
+      background: var(--color-primary);
+      border-radius: 1px 1px 0 0;
+    }
+
+    /* ============================
+       SECTION (accounts container)
+       ============================ */
+
+    .section {
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-xl);
+      background: var(--surface-card);
+      box-shadow: var(--shadow-sm);
+      overflow: hidden;
+    }
+
+    /* ============================
+       ACCOUNTS PANEL
+       ============================ */
+
+    .accounts-panel {
+      display: grid;
+      gap: var(--space-5);
+      padding: var(--space-5);
+    }
+
+    /* ============================
+       PROVIDER CARD (Gmail / Outlook / IMAP)
+       ============================ */
+
+    .accounts-section {
+      display: grid;
+      gap: var(--space-4);
+      padding: var(--space-5);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      background: var(--surface-card);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .accounts-section__header {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: baseline;
+      gap: var(--space-2);
+      justify-content: space-between;
+    }
+
+    .accounts-section__title {
+      margin: 0;
+      font-size: var(--font-size-xl);
+      font-weight: var(--font-weight-semibold);
+      letter-spacing: -0.02em;
+      color: var(--color-text-primary);
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+    }
+
+    .accounts-section__description {
+      margin: 0;
+      color: var(--color-text-secondary);
+      font-size: var(--font-size-sm);
+    }
+
+    .provider-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .provider-dot--gmail { background: var(--color-gmail); }
+    .provider-dot--outlook { background: var(--color-outlook); }
+    .provider-dot--imap { background: var(--color-gray-400); }
+
+    /* ============================
+       ACCOUNT ROW
+       ============================ */
+
+    .account-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--space-3);
+      padding: var(--space-3) var(--space-4);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+      background: var(--surface-card-muted);
+      transition: border-color var(--duration-fast) ease-out;
+    }
+
+    .account-row:hover {
+      border-color: var(--color-border-hover);
+    }
+
+    .account-row__info {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .account-row__email {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+      font-weight: var(--font-weight-medium);
+      color: var(--color-text-primary);
+    }
+
+    .account-row__meta {
+      font-size: var(--font-size-xs);
+      color: var(--color-text-tertiary);
+    }
+
+    .account-row__actions {
+      display: flex;
+      gap: var(--space-2);
+      flex-shrink: 0;
+    }
+
+    /* Status dot */
+    .status-dot {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .status-dot--online { background: var(--color-success); }
+    .status-dot--offline { background: var(--color-error); }
+    .status-dot--warning { background: var(--color-warning); }
+
+    /* Status chip */
+    .status-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-1);
+      padding: 2px var(--space-3);
+      border-radius: var(--radius-full);
+      font-size: var(--font-size-xs);
+      font-weight: var(--font-weight-medium);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .status-chip--connected {
+      color: var(--color-success-dark);
+      background: rgba(16, 185, 129, 0.12);
+    }
+
+    .status-chip--disconnected {
+      color: var(--color-text-tertiary);
+      background: var(--surface-card-muted);
+      border: 1px solid var(--color-border);
+    }
+
+    /* ============================
+       EMPTY STATE (no account connected)
+       ============================ */
+
+    .empty-slot {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: var(--space-3);
+      padding: var(--space-6) var(--space-4);
+      border: 1px dashed var(--color-border-strong);
+      border-radius: var(--radius-md);
+      text-align: center;
+      color: var(--color-text-secondary);
+      background: var(--surface-card-muted);
+    }
+
+    .empty-slot__icon {
+      width: 48px;
+      height: 48px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: var(--radius-lg);
+      background: var(--color-bg-secondary);
+      color: var(--color-text-tertiary);
+    }
+
+    .empty-slot__text {
+      margin: 0;
+      font-size: var(--font-size-sm);
+      max-width: 280px;
+    }
+
+    /* ============================
+       BUTTONS
+       ============================ */
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: var(--space-2);
+      padding: var(--space-2) var(--space-4);
+      border-radius: var(--radius-md);
+      font-family: var(--font-system);
+      font-size: var(--font-size-sm);
+      font-weight: var(--font-weight-medium);
+      cursor: pointer;
+      border: none;
+      transition: background var(--duration-fast) ease-out,
+                  border-color var(--duration-fast) ease-out,
+                  color var(--duration-fast) ease-out;
+      min-height: 36px;
+      text-decoration: none;
+    }
+
+    .btn:focus-visible {
+      outline: 2px solid var(--color-primary);
+      outline-offset: 2px;
+    }
+
+    .btn--primary {
+      background: var(--color-primary);
+      color: var(--color-text-inverse);
+    }
+
+    .btn--primary:hover { background: var(--color-primary-hover); }
+
+    .btn--secondary {
+      background: var(--surface-card);
+      color: var(--color-text-primary);
+      border: 1px solid var(--color-border);
+    }
+
+    .btn--secondary:hover { background: var(--surface-card-muted); }
+
+    .btn--danger-ghost {
+      background: transparent;
+      color: var(--color-error-dark);
+      border: 1px solid transparent;
+    }
+
+    .btn--danger-ghost:hover {
+      background: var(--color-error-light);
+      border-color: rgba(239, 68, 68, 0.2);
+    }
+
+    .btn--sm {
+      padding: var(--space-1) var(--space-3);
+      font-size: var(--font-size-xs);
+      min-height: 28px;
+    }
+
+    .btn--ghost {
+      background: transparent;
+      color: var(--color-text-secondary);
+      border: 1px solid transparent;
+    }
+
+    .btn--ghost:hover {
+      background: var(--surface-card-muted);
+      color: var(--color-text-primary);
+    }
+
+    /* Connecting animation */
+    .btn--loading {
+      position: relative;
+      color: transparent;
+      pointer-events: none;
+    }
+
+    .btn--loading::after {
+      content: '';
+      position: absolute;
+      width: 16px;
+      height: 16px;
+      top: 50%;
+      left: 50%;
+      margin: -8px 0 0 -8px;
+      border: 2px solid var(--color-text-inverse);
+      border-radius: 50%;
+      border-top-color: transparent;
+      animation: spin 600ms linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* ============================
+       IMAP SECTION EXTRAS
+       ============================ */
+
+    .imap-header {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+    }
+
+    .imap-counter {
+      display: inline-flex;
+      align-items: center;
+      padding: 2px var(--space-2);
+      border-radius: var(--radius-full);
+      background: var(--surface-card-muted);
+      border: 1px solid var(--color-border);
+      color: var(--color-text-tertiary);
+      font-size: var(--font-size-xs);
+      font-weight: var(--font-weight-medium);
+    }
+
+    /* ============================
+       RECENT EMAILS SECTION
+       ============================ */
+
+    .recent-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: var(--space-3);
+    }
+
+    .recent-toggle {
+      display: inline-flex;
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-full);
+      background: var(--surface-card);
+      padding: 2px;
+    }
+
+    .recent-toggle__btn {
+      padding: var(--space-1) var(--space-3);
+      border-radius: var(--radius-full);
+      border: none;
+      background: transparent;
+      color: var(--color-text-secondary);
+      font-family: var(--font-system);
+      font-size: var(--font-size-xs);
+      font-weight: var(--font-weight-medium);
+      cursor: pointer;
+      transition: background var(--duration-fast) ease-out, color var(--duration-fast) ease-out;
+    }
+
+    .recent-toggle__btn--active {
+      background: var(--color-primary);
+      color: var(--color-text-inverse);
+    }
+
+    .recent-list {
+      display: grid;
+      gap: var(--space-2);
+    }
+
+    .recent-card {
+      display: grid;
+      gap: var(--space-2);
+      padding: var(--space-3) var(--space-4);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+      background: var(--surface-card-muted);
+      transition: border-color var(--duration-fast) ease-out;
+    }
+
+    .recent-card:hover {
+      border-color: var(--color-border-hover);
+    }
+
+    .recent-card__meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--space-2);
+      align-items: center;
+      color: var(--color-text-tertiary);
+      font-size: var(--font-size-xs);
+    }
+
+    .recent-card__title {
+      margin: 0;
+      font-size: var(--font-size-base);
+      font-weight: var(--font-weight-semibold);
+      color: var(--color-text-primary);
+    }
+
+    .recent-code {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-2);
+      padding: var(--space-2) var(--space-3);
+      border-radius: var(--radius-md);
+      font-family: var(--font-mono);
+      font-size: var(--font-size-lg);
+      letter-spacing: 0.08em;
+      background: var(--color-gray-800);
+      color: var(--color-text-inverse);
+    }
+
+    [data-theme="dark"] .recent-code {
+      background: var(--color-gray-200);
+      color: var(--color-text-primary);
+    }
+
+    .recent-actions {
+      display: flex;
+      gap: var(--space-2);
+    }
+
+    .meta-dot {
+      width: 3px;
+      height: 3px;
+      border-radius: 50%;
+      background: var(--color-text-tertiary);
+    }
+
+    /* Provider badge inline */
+    .provider-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 1px var(--space-2);
+      border-radius: var(--radius-full);
+      font-size: 11px;
+      font-weight: var(--font-weight-medium);
+      background: var(--surface-card);
+      border: 1px solid var(--color-border);
+      color: var(--color-text-secondary);
+    }
+
+    .provider-badge__dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+    }
+
+    .provider-badge__dot--gmail { background: var(--color-gmail); }
+    .provider-badge__dot--outlook { background: var(--color-outlook); }
+
+    /* ============================
+       EMPTY RECENT STATE
+       ============================ */
+
+    .empty-state {
+      border: 1px dashed var(--color-border-strong);
+      border-radius: var(--radius-md);
+      padding: var(--space-8) var(--space-4);
+      text-align: center;
+      color: var(--color-text-tertiary);
+      font-size: var(--font-size-sm);
+    }
+
+    .empty-state__icon {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 48px;
+      height: 48px;
+      margin: 0 auto var(--space-3);
+      border-radius: var(--radius-lg);
+      background: var(--color-bg-secondary);
+      color: var(--color-text-tertiary);
+    }
+
+    /* ============================
+       MICROCOPY / HINT
+       ============================ */
+
+    .microcopy {
+      color: var(--color-text-tertiary);
+      font-size: var(--font-size-xs);
+      margin: 0;
+      line-height: var(--line-height-normal);
+    }
+
+    /* ============================
+       ERROR BANNER (inline)
+       ============================ */
+
+    .error-banner {
+      display: flex;
+      align-items: flex-start;
+      gap: var(--space-2);
+      border-radius: var(--radius-md);
+      padding: var(--space-2) var(--space-3);
+      background: var(--color-error-light);
+      color: var(--color-error-dark);
+      font-size: var(--font-size-sm);
+      border: 1px solid rgba(239, 68, 68, 0.2);
+    }
+
+    /* ============================
+       STAGGER ENTRANCE ANIMATION
+       ============================ */
+
+    @keyframes fadeUp {
+      from {
+        opacity: 0;
+        transform: translateY(12px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .accounts-panel > * {
+      animation: fadeUp 350ms cubic-bezier(0.16, 1, 0.3, 1) both;
+    }
+
+    .accounts-panel > *:nth-child(1) { animation-delay: 0ms; }
+    .accounts-panel > *:nth-child(2) { animation-delay: 60ms; }
+    .accounts-panel > *:nth-child(3) { animation-delay: 120ms; }
+    .accounts-panel > *:nth-child(4) { animation-delay: 180ms; }
+    .accounts-panel > *:nth-child(5) { animation-delay: 240ms; }
+
+    @media (prefers-reduced-motion: reduce) {
+      .accounts-panel > * {
+        animation: none;
+      }
+    }
+
+    /* ============================
+       CONNECTING STAGE INDICATOR
+       ============================ */
+
+    .connecting-stage {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+      padding: var(--space-3) var(--space-4);
+      border: 1px solid rgba(0, 122, 255, 0.2);
+      border-radius: var(--radius-md);
+      background: var(--color-primary-light);
+      color: var(--color-primary);
+      font-size: var(--font-size-sm);
+      font-weight: var(--font-weight-medium);
+    }
+
+    .connecting-dots {
+      display: flex;
+      gap: 4px;
+    }
+
+    .connecting-dots span {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--color-primary);
+      animation: pulse 1.4s ease-in-out infinite;
+    }
+
+    .connecting-dots span:nth-child(2) { animation-delay: 0.2s; }
+    .connecting-dots span:nth-child(3) { animation-delay: 0.4s; }
+
+    @keyframes pulse {
+      0%, 80%, 100% { opacity: 0.3; transform: scale(0.8); }
+      40% { opacity: 1; transform: scale(1); }
+    }
+
+    /* ============================
+       RESPONSIVE
+       ============================ */
+
+    @media (max-width: 640px) {
+      .options-shell {
+        padding: var(--space-4);
+        gap: var(--space-4);
+      }
+
+      .options-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: var(--space-3);
+      }
+
+      .trust-banner__pillars {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .account-row {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .account-row__actions {
+        width: 100%;
+      }
+
+      .account-row__actions .btn {
+        flex: 1;
+      }
+    }
+
+    /* ============================
+       SCENARIO HIGHLIGHT
+       ============================ */
+
+    .scenario-label {
+      display: none;
+      position: absolute;
+      top: calc(-1 * var(--space-3));
+      left: var(--space-3);
+      padding: 1px var(--space-2);
+      border-radius: var(--radius-sm);
+      font-size: 10px;
+      font-weight: var(--font-weight-bold);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      background: var(--color-warning);
+      color: #000;
+      z-index: 1;
+    }
+
+    .show-labels .scenario-label {
+      display: block;
+    }
+
+    .accounts-section {
+      position: relative;
+    }
+  </style>
+</head>
+<body>
+  <!-- ========================================
+       PROTOTYPE TOOLBAR
+       ======================================== -->
+  <div class="proto-toolbar">
+    <div class="proto-toolbar__left">
+      <span class="proto-toolbar__title">Accounts Panel</span>
+      <span class="proto-toolbar__status" data-status="ideation">Ideation</span>
+      <span class="proto-toolbar__date">2026-03-09</span>
+    </div>
+    <div class="proto-toolbar__right">
+      <div class="proto-state-controls">
+        <label>
+          Gmail:
+          <select id="ctrl-gmail">
+            <option value="connected" selected>Connected</option>
+            <option value="disconnected">Disconnected</option>
+            <option value="connecting">Connecting...</option>
+            <option value="error">Error</option>
+          </select>
+        </label>
+        <label>
+          Outlook:
+          <select id="ctrl-outlook">
+            <option value="connected">Connected</option>
+            <option value="disconnected" selected>Disconnected</option>
+            <option value="connecting">Connecting...</option>
+          </select>
+        </label>
+        <label>
+          IMAP:
+          <select id="ctrl-imap">
+            <option value="2accounts" selected>2 accounts</option>
+            <option value="0accounts">No accounts</option>
+            <option value="1account">1 account</option>
+          </select>
+        </label>
+        <label>
+          Recent:
+          <select id="ctrl-recent">
+            <option value="populated" selected>Populated</option>
+            <option value="empty">Empty</option>
+          </select>
+        </label>
+        <div class="proto-separator"></div>
+        <label>
+          <input type="checkbox" id="ctrl-labels">
+          Labels
+        </label>
+      </div>
+      <div class="proto-separator"></div>
+      <div class="proto-theme-toggle">
+        <button data-theme-btn="light" aria-pressed="true">Light</button>
+        <button data-theme-btn="dark" aria-pressed="false">Dark</button>
+      </div>
+      <button class="proto-decisions-toggle">Decisions</button>
+    </div>
+  </div>
+
+  <!-- ========================================
+       DECISIONS PANEL
+       ======================================== -->
+  <div class="proto-decisions-panel">
+    <button class="proto-decisions-close">&times;</button>
+    <h3>Design Decisions</h3>
+    <ol></ol>
+  </div>
+
+  <!-- ========================================
+       PROTOTYPE CANVAS
+       ======================================== -->
+  <main class="proto-canvas">
+    <div class="options-container">
+      <div class="options-shell">
+
+        <!-- HEADER -->
+        <header class="options-header">
+          <div class="options-header__identity">
+            <span class="brand__icon" aria-hidden="true">
+              <i data-lucide="key-round" style="width:24px;height:24px"></i>
+            </span>
+            <div>
+              <h1 class="brand__title">InboxKey</h1>
+              <p class="privacy-line">Your data stays on your device</p>
+            </div>
+          </div>
+          <div class="options-header__actions">
+            <a href="#" class="support-link">View Source</a>
+            <a href="#" class="coffee-btn">
+              <span>&#9749;</span>
+              Buy me a coffee
+            </a>
+          </div>
+        </header>
+
+        <!-- TRUST BANNER -->
+        <section class="trust-banner">
+          <p class="trust-banner__headline">Privacy-first email verification for everyone</p>
+          <div class="trust-banner__pillars">
+            <div class="trust-pillar">
+              <span class="trust-pillar__icon" aria-hidden="true">
+                <i data-lucide="puzzle" style="width:16px;height:16px"></i>
+              </span>
+              <span class="trust-pillar__label">Open Source</span>
+            </div>
+            <div class="trust-pillar">
+              <span class="trust-pillar__icon" aria-hidden="true">
+                <i data-lucide="lock" style="width:16px;height:16px"></i>
+              </span>
+              <span class="trust-pillar__label">Local Only</span>
+            </div>
+            <div class="trust-pillar">
+              <span class="trust-pillar__icon" aria-hidden="true">
+                <i data-lucide="shield-check" style="width:16px;height:16px"></i>
+              </span>
+              <span class="trust-pillar__label">Safe &amp; Secure</span>
+            </div>
+          </div>
+        </section>
+
+        <!-- TAB NAVIGATION -->
+        <nav class="tab-navigation" role="tablist">
+          <button class="tab-button tab-button--active" role="tab" aria-selected="true">
+            <span class="tab-button__icon" aria-hidden="true">
+              <i data-lucide="users" style="width:16px;height:16px"></i>
+            </span>
+            Accounts
+          </button>
+          <button class="tab-button" role="tab" aria-selected="false">
+            <span class="tab-button__icon" aria-hidden="true">
+              <i data-lucide="shield" style="width:16px;height:16px"></i>
+            </span>
+            Security
+          </button>
+          <button class="tab-button" role="tab" aria-selected="false">
+            <span class="tab-button__icon" aria-hidden="true">
+              <i data-lucide="settings" style="width:16px;height:16px"></i>
+            </span>
+            Settings
+          </button>
+          <button class="tab-button" role="tab" aria-selected="false">
+            <span class="tab-button__icon" aria-hidden="true">
+              <i data-lucide="info" style="width:16px;height:16px"></i>
+            </span>
+            About
+          </button>
+        </nav>
+
+        <!-- MAIN CONTENT: ACCOUNTS PANEL -->
+        <div class="section">
+          <div class="accounts-panel" id="accounts-panel">
+
+            <!-- ========================
+                 GMAIL SECTION
+                 ======================== -->
+            <div class="accounts-section" id="gmail-section">
+              <span class="scenario-label">Gmail</span>
+              <div class="accounts-section__header">
+                <h2 class="accounts-section__title">
+                  <span class="provider-dot provider-dot--gmail" aria-hidden="true"></span>
+                  Gmail
+                </h2>
+                <span class="status-chip status-chip--connected" id="gmail-status">Connected</span>
+              </div>
+
+              <!-- Connected state -->
+              <div id="gmail-connected">
+                <div class="account-row">
+                  <div class="account-row__info">
+                    <span class="account-row__email">
+                      <span class="status-dot status-dot--online" aria-label="Online"></span>
+                      user@gmail.com
+                    </span>
+                    <span class="account-row__meta">Synced 2 minutes ago</span>
+                  </div>
+                  <div class="account-row__actions">
+                    <button class="btn btn--secondary btn--sm">Reconnect</button>
+                    <button class="btn btn--danger-ghost btn--sm">Disconnect</button>
+                  </div>
+                </div>
+                <p class="microcopy">Gmail uses Chrome's built-in identity. Limited to 1 account.</p>
+              </div>
+
+              <!-- Disconnected state -->
+              <div id="gmail-disconnected" style="display:none">
+                <div class="empty-slot">
+                  <div class="empty-slot__icon">
+                    <i data-lucide="mail" style="width:24px;height:24px"></i>
+                  </div>
+                  <p class="empty-slot__text">Connect your Gmail account to autofill verification codes from your inbox.</p>
+                  <button class="btn btn--primary">Connect Gmail</button>
+                </div>
+              </div>
+
+              <!-- Connecting state -->
+              <div id="gmail-connecting" style="display:none">
+                <div class="connecting-stage">
+                  <div class="connecting-dots">
+                    <span></span><span></span><span></span>
+                  </div>
+                  Authenticating with Google...
+                </div>
+              </div>
+
+              <!-- Error state -->
+              <div id="gmail-error" style="display:none">
+                <div class="error-banner">
+                  <i data-lucide="alert-circle" style="width:16px;height:16px;flex-shrink:0;margin-top:1px"></i>
+                  <span>Connection failed: OAuth credentials are not configured. <a href="#" style="color:inherit;font-weight:500">Learn more</a></span>
+                </div>
+                <div class="empty-slot" style="border-style:solid;border-color:rgba(239,68,68,0.15)">
+                  <button class="btn btn--primary">Retry Connection</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- ========================
+                 OUTLOOK SECTION
+                 ======================== -->
+            <div class="accounts-section" id="outlook-section">
+              <span class="scenario-label">Outlook</span>
+              <div class="accounts-section__header">
+                <h2 class="accounts-section__title">
+                  <span class="provider-dot provider-dot--outlook" aria-hidden="true"></span>
+                  Outlook
+                </h2>
+                <span class="status-chip status-chip--disconnected" id="outlook-status">Not connected</span>
+              </div>
+
+              <!-- Connected state -->
+              <div id="outlook-connected" style="display:none">
+                <div class="account-row">
+                  <div class="account-row__info">
+                    <span class="account-row__email">
+                      <span class="status-dot status-dot--online" aria-label="Online"></span>
+                      user@outlook.com
+                    </span>
+                    <span class="account-row__meta">Synced 5 minutes ago</span>
+                  </div>
+                  <div class="account-row__actions">
+                    <button class="btn btn--secondary btn--sm">Reconnect</button>
+                    <button class="btn btn--danger-ghost btn--sm">Disconnect</button>
+                  </div>
+                </div>
+                <p class="microcopy">Outlook supports multiple accounts via secure PKCE authentication.</p>
+              </div>
+
+              <!-- Disconnected state -->
+              <div id="outlook-disconnected">
+                <div class="empty-slot">
+                  <div class="empty-slot__icon">
+                    <i data-lucide="mail" style="width:24px;height:24px"></i>
+                  </div>
+                  <p class="empty-slot__text">Connect your Outlook or Microsoft 365 account to autofill verification codes.</p>
+                  <button class="btn btn--primary">Connect Outlook</button>
+                </div>
+              </div>
+
+              <!-- Connecting state -->
+              <div id="outlook-connecting" style="display:none">
+                <div class="connecting-stage">
+                  <div class="connecting-dots">
+                    <span></span><span></span><span></span>
+                  </div>
+                  Opening Microsoft sign-in...
+                </div>
+              </div>
+            </div>
+
+            <!-- ========================
+                 IMAP SECTION
+                 ======================== -->
+            <div class="accounts-section" id="imap-section">
+              <span class="scenario-label">IMAP</span>
+              <div class="accounts-section__header">
+                <div class="imap-header">
+                  <h2 class="accounts-section__title">
+                    <span class="provider-dot provider-dot--imap" aria-hidden="true"></span>
+                    IMAP
+                  </h2>
+                  <span class="imap-counter" id="imap-counter">2 / 10</span>
+                </div>
+                <button class="btn btn--secondary btn--sm" id="imap-add-btn">
+                  <i data-lucide="plus" style="width:14px;height:14px"></i>
+                  Add Account
+                </button>
+              </div>
+              <p class="accounts-section__description">Connect any email provider via IMAP. Requires the InboxBridge desktop companion.</p>
+
+              <!-- 2 accounts state -->
+              <div id="imap-2accounts">
+                <div style="display:grid;gap:var(--space-2)">
+                  <div class="account-row">
+                    <div class="account-row__info">
+                      <span class="account-row__email">
+                        <span class="status-dot status-dot--online"></span>
+                        hello@protonmail.com
+                      </span>
+                      <span class="account-row__meta">imap.protonmail.ch:993 &middot; Synced 1 min ago</span>
+                    </div>
+                    <div class="account-row__actions">
+                      <button class="btn btn--ghost btn--sm">
+                        <i data-lucide="refresh-cw" style="width:13px;height:13px"></i>
+                      </button>
+                      <button class="btn btn--danger-ghost btn--sm">Remove</button>
+                    </div>
+                  </div>
+                  <div class="account-row">
+                    <div class="account-row__info">
+                      <span class="account-row__email">
+                        <span class="status-dot status-dot--warning"></span>
+                        me@fastmail.com
+                      </span>
+                      <span class="account-row__meta">imap.fastmail.com:993 &middot; Last sync failed</span>
+                    </div>
+                    <div class="account-row__actions">
+                      <button class="btn btn--secondary btn--sm">Reconnect</button>
+                      <button class="btn btn--danger-ghost btn--sm">Remove</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 1 account state -->
+              <div id="imap-1account" style="display:none">
+                <div class="account-row">
+                  <div class="account-row__info">
+                    <span class="account-row__email">
+                      <span class="status-dot status-dot--online"></span>
+                      hello@protonmail.com
+                    </span>
+                    <span class="account-row__meta">imap.protonmail.ch:993 &middot; Synced 1 min ago</span>
+                  </div>
+                  <div class="account-row__actions">
+                    <button class="btn btn--ghost btn--sm">
+                      <i data-lucide="refresh-cw" style="width:13px;height:13px"></i>
+                    </button>
+                    <button class="btn btn--danger-ghost btn--sm">Remove</button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 0 accounts state -->
+              <div id="imap-0accounts" style="display:none">
+                <div class="empty-slot">
+                  <div class="empty-slot__icon">
+                    <i data-lucide="server" style="width:24px;height:24px"></i>
+                  </div>
+                  <p class="empty-slot__text">Add any IMAP-compatible email account. Works with ProtonMail, Fastmail, Yahoo, and more.</p>
+                  <button class="btn btn--primary">Add IMAP Account</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- ========================
+                 RECENT EMAILS SECTION
+                 ======================== -->
+            <div class="accounts-section" id="recent-section">
+              <span class="scenario-label">Recent</span>
+
+              <!-- Populated state -->
+              <div id="recent-populated">
+                <div class="recent-header">
+                  <h2 class="accounts-section__title" style="font-size:var(--font-size-lg)">Recent Emails</h2>
+                  <div class="recent-toggle">
+                    <button class="recent-toggle__btn recent-toggle__btn--active" aria-pressed="true">All</button>
+                    <button class="recent-toggle__btn" aria-pressed="false">Codes</button>
+                    <button class="recent-toggle__btn" aria-pressed="false">Links</button>
+                  </div>
+                </div>
+
+                <div class="recent-list" style="margin-top:var(--space-3)">
+                  <!-- Code card -->
+                  <div class="recent-card">
+                    <div class="recent-card__meta">
+                      <span class="provider-badge">
+                        <span class="provider-badge__dot provider-badge__dot--gmail"></span>
+                        Gmail
+                      </span>
+                      <span class="meta-dot"></span>
+                      <span>noreply@github.com</span>
+                      <span class="meta-dot"></span>
+                      <span>2 min ago</span>
+                    </div>
+                    <h3 class="recent-card__title">[GitHub] Please verify your device</h3>
+                    <div style="display:flex;align-items:center;justify-content:space-between;gap:var(--space-3)">
+                      <span class="recent-code">847 291</span>
+                      <div class="recent-actions">
+                        <button class="btn btn--primary btn--sm">
+                          <i data-lucide="copy" style="width:13px;height:13px"></i>
+                          Copy
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Link card -->
+                  <div class="recent-card">
+                    <div class="recent-card__meta">
+                      <span class="provider-badge">
+                        <span class="provider-badge__dot provider-badge__dot--gmail"></span>
+                        Gmail
+                      </span>
+                      <span class="meta-dot"></span>
+                      <span>no-reply@accounts.google.com</span>
+                      <span class="meta-dot"></span>
+                      <span>15 min ago</span>
+                    </div>
+                    <h3 class="recent-card__title">Sign-in attempt from new device</h3>
+                    <div class="recent-actions">
+                      <button class="btn btn--secondary btn--sm">
+                        <i data-lucide="external-link" style="width:13px;height:13px"></i>
+                        Open Link
+                      </button>
+                    </div>
+                  </div>
+
+                  <!-- Another code card -->
+                  <div class="recent-card">
+                    <div class="recent-card__meta">
+                      <span class="provider-badge">
+                        <span class="provider-badge__dot provider-badge__dot--outlook"></span>
+                        Outlook
+                      </span>
+                      <span class="meta-dot"></span>
+                      <span>noreply@discord.com</span>
+                      <span class="meta-dot"></span>
+                      <span>1 hour ago</span>
+                    </div>
+                    <h3 class="recent-card__title">Verify your email address</h3>
+                    <div style="display:flex;align-items:center;justify-content:space-between;gap:var(--space-3)">
+                      <span class="recent-code">396 482</span>
+                      <div class="recent-actions">
+                        <button class="btn btn--primary btn--sm">
+                          <i data-lucide="copy" style="width:13px;height:13px"></i>
+                          Copy
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Empty state -->
+              <div id="recent-empty" style="display:none">
+                <div class="recent-header" style="margin-bottom:var(--space-3)">
+                  <h2 class="accounts-section__title" style="font-size:var(--font-size-lg)">Recent Emails</h2>
+                </div>
+                <div class="empty-state">
+                  <div class="empty-state__icon">
+                    <i data-lucide="inbox" style="width:24px;height:24px"></i>
+                  </div>
+                  <p>No verification emails yet. They will appear here when detected.</p>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </main>
+
+  <!-- ========================================
+       DESIGN DECISIONS (MANDATORY)
+       ======================================== -->
+  <script type="application/json" id="decisions">
+  [
+    "Border-first section separation - Borders (1px solid var(--color-border)) provide reliable visual separation in both light and dark modes. Shadows alone are invisible on pure-black dark backgrounds (#000000). Every container uses border + shadow-sm for consistent depth.",
+    "Card-in-card nesting with surface layering - Outer section uses --surface-card (#FFFFFF / #1C1C1E), inner account rows use --surface-card-muted (#F9FAFB / #0A0A0C). This creates visual hierarchy through background contrast without relying on shadows.",
+    "Dashed border for empty states - Empty/disconnected slots use dashed borders with --color-border-strong to distinguish them from populated containers. This signals 'slot available' without competing with active account rows.",
+    "Status dot system - Tiny colored dots (8px) for account health: green=online/synced, red=offline, amber=warning/sync-failed. More compact than text badges and scannable at a glance across multiple accounts.",
+    "Staggered entrance animation - Account sections fade up with 60ms delays between each. Creates a cascade effect that draws the eye downward and gives the page a premium feel. Disabled for prefers-reduced-motion.",
+    "Provider color identity dots - Gmail (red), Outlook (blue), IMAP (gray) dots next to section titles create instant visual association without logos. Same dot system reused in recent email provider badges for consistency.",
+    "Single-slot Gmail vs multi-slot IMAP - Gmail section shows exactly 1 account (Chrome Identity API limitation). IMAP shows a counter (N/10) and list. This reflects the actual technical constraints without pretending Gmail supports multiple accounts.",
+    "Connecting state with pulse animation - Three pulsing dots + descriptive text ('Authenticating with Google...') instead of a generic spinner. The text explains what is happening in the multi-step OAuth flow (authenticating, loading profile, saving).",
+    "Inline error with contextual action - Error state shows a colored banner with the error message PLUS keeps the connect button visible as 'Retry Connection'. No modal interruption -- the user stays in context.",
+    "Recent emails toggle (All/Codes/Links) - Segmented control allows filtering without page navigation. Active state uses primary color fill for clear indication. Positioned in the section header to save vertical space.",
+    "Monospace code display with dark chip - Verification codes displayed in monospace font on a dark chip (#1C1C1E) with letter-spacing for readability. Inverted in dark mode to maintain contrast. The large font-size (16px) makes codes easy to verify at a glance.",
+    "Prototype interactive controls - Top toolbar dropdowns change account states in real-time, allowing stakeholders to review all edge cases without editing HTML. Labels checkbox shows section identifiers for clearer communication during design reviews."
+  ]
+  </script>
+
+  <!-- ========================================
+       SCRIPTS
+       ======================================== -->
+  <script src="../shared/theme-switcher.js"></script>
+  <script>
+    // Initialize Lucide icons
+    lucide.createIcons();
+
+    // ==============================
+    // State Controllers
+    // ==============================
+
+    const ctrlGmail = document.getElementById('ctrl-gmail');
+    const ctrlOutlook = document.getElementById('ctrl-outlook');
+    const ctrlImap = document.getElementById('ctrl-imap');
+    const ctrlRecent = document.getElementById('ctrl-recent');
+    const ctrlLabels = document.getElementById('ctrl-labels');
+
+    function showOnly(parentId, stateId) {
+      const parent = document.getElementById(parentId);
+      if (!parent) return;
+      const states = parent.querySelectorAll('[id^="' + parentId.split('-')[0] + '-"]');
+      states.forEach(function (el) {
+        if (el.id !== parentId) el.style.display = 'none';
+      });
+      const target = document.getElementById(stateId);
+      if (target) target.style.display = '';
+    }
+
+    function updateGmail() {
+      var v = ctrlGmail.value;
+      var statusEl = document.getElementById('gmail-status');
+
+      document.getElementById('gmail-connected').style.display = v === 'connected' ? '' : 'none';
+      document.getElementById('gmail-disconnected').style.display = v === 'disconnected' ? '' : 'none';
+      document.getElementById('gmail-connecting').style.display = v === 'connecting' ? '' : 'none';
+      document.getElementById('gmail-error').style.display = v === 'error' ? '' : 'none';
+
+      if (v === 'connected') {
+        statusEl.textContent = 'Connected';
+        statusEl.className = 'status-chip status-chip--connected';
+      } else if (v === 'connecting') {
+        statusEl.textContent = 'Connecting...';
+        statusEl.className = 'status-chip status-chip--connected';
+        statusEl.style.opacity = '0.6';
+      } else {
+        statusEl.textContent = 'Not connected';
+        statusEl.className = 'status-chip status-chip--disconnected';
+        statusEl.style.opacity = '';
+      }
+    }
+
+    function updateOutlook() {
+      var v = ctrlOutlook.value;
+      var statusEl = document.getElementById('outlook-status');
+
+      document.getElementById('outlook-connected').style.display = v === 'connected' ? '' : 'none';
+      document.getElementById('outlook-disconnected').style.display = v === 'disconnected' ? '' : 'none';
+      document.getElementById('outlook-connecting').style.display = v === 'connecting' ? '' : 'none';
+
+      if (v === 'connected') {
+        statusEl.textContent = 'Connected';
+        statusEl.className = 'status-chip status-chip--connected';
+      } else if (v === 'connecting') {
+        statusEl.textContent = 'Connecting...';
+        statusEl.className = 'status-chip status-chip--connected';
+        statusEl.style.opacity = '0.6';
+      } else {
+        statusEl.textContent = 'Not connected';
+        statusEl.className = 'status-chip status-chip--disconnected';
+        statusEl.style.opacity = '';
+      }
+    }
+
+    function updateImap() {
+      var v = ctrlImap.value;
+      var counter = document.getElementById('imap-counter');
+      var addBtn = document.getElementById('imap-add-btn');
+
+      document.getElementById('imap-2accounts').style.display = v === '2accounts' ? '' : 'none';
+      document.getElementById('imap-1account').style.display = v === '1account' ? '' : 'none';
+      document.getElementById('imap-0accounts').style.display = v === '0accounts' ? '' : 'none';
+
+      if (v === '2accounts') { counter.textContent = '2 / 10'; addBtn.style.display = ''; }
+      else if (v === '1account') { counter.textContent = '1 / 10'; addBtn.style.display = ''; }
+      else { counter.textContent = '0 / 10'; addBtn.style.display = 'none'; }
+    }
+
+    function updateRecent() {
+      var v = ctrlRecent.value;
+      document.getElementById('recent-populated').style.display = v === 'populated' ? '' : 'none';
+      document.getElementById('recent-empty').style.display = v === 'empty' ? '' : 'none';
+    }
+
+    function updateLabels() {
+      document.querySelector('.proto-canvas').classList.toggle('show-labels', ctrlLabels.checked);
+    }
+
+    ctrlGmail.addEventListener('change', updateGmail);
+    ctrlOutlook.addEventListener('change', updateOutlook);
+    ctrlImap.addEventListener('change', updateImap);
+    ctrlRecent.addEventListener('change', updateRecent);
+    ctrlLabels.addEventListener('change', updateLabels);
+
+    // Recent toggle buttons (interactive)
+    document.querySelectorAll('.recent-toggle__btn').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        btn.closest('.recent-toggle').querySelectorAll('.recent-toggle__btn').forEach(function (b) {
+          b.classList.remove('recent-toggle__btn--active');
+          b.setAttribute('aria-pressed', 'false');
+        });
+        btn.classList.add('recent-toggle__btn--active');
+        btn.setAttribute('aria-pressed', 'true');
+      });
+    });
+  </script>
+</body>
+</html>
