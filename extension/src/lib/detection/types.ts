@@ -49,7 +49,7 @@ export interface TextSources {
  */
 export interface DetectionMetadata {
   /** Detection layer that made the decision */
-  layer: 'cooldown' | 'attribute' | 'autocomplete' | 'context' | 'label' | 'structural' | 'signal-classifier-tier1' | 'channel-classifier'
+  layer: 'cooldown' | 'attribute' | 'autocomplete' | 'context' | 'label' | 'structural' | 'signal-classifier-tier1' | 'trigger-policy' | 'channel-classifier'
   /** Matched attribute name (for Tier1 attribute/autocomplete detections) */
   matchedAttribute?: string
   /** Delivery channel classification (for Layer 2.5) */
@@ -90,4 +90,27 @@ export interface ChannelClassification {
     sms?: number
     authenticator?: number
   }
+}
+
+/**
+ * Lightweight decision trace for debugging false positives
+ * Attached to detection results for local-only investigation
+ */
+export interface DecisionTrace {
+  /** Input field identifier (name or id) */
+  fieldId: string
+  /** Tier that made the decision (1 or 2) */
+  tier: 1 | 2
+  /** Channel classification result */
+  channel: 'email' | 'sms' | 'authenticator' | 'unknown'
+  /** Whether email option was available */
+  hasEmailOption: boolean
+  /** Non-email intent category if detected */
+  nonEmailCategory: string | null
+  /** OTP-likeness score (Tier 2 only) */
+  otpScore?: number
+  /** Final action taken */
+  action: 'trigger' | 'block'
+  /** Human-readable reason chain */
+  reasons: string[]
 }
