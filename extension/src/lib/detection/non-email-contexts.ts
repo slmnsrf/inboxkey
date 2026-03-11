@@ -159,8 +159,10 @@ const EMAIL_DELIVERY_SIGNALS = [
   /\b(?:to|from|via)\s+(?:your\s+)?(?:e[\s\-]?mail|inbox)\b/i,
   /\b(?:check|open)\s+(?:your\s+)?(?:e[\s\-]?mail|inbox)\b/i,
   /\be[\s\-]?mail(?:ed)?\s+(?:you|a?\s*code|verification)\b/i,
-  // Masked or full email address (j***@company.com, user@gmail.com)
-  /[\w][\w.*]*@[\w.-]+\.\w{2,}/i,
+  // Email address only counts as delivery evidence when preceded by delivery verbs
+  // "sent to j***@gmail.com" = delivery signal, "Registered email: user@example.com" = not
+  /(?:sent|envoy|geschickt|gesendet|g[oö]nder).{0,40}[\w][\w.*]*@[\w.-]+\.\w{2,}/i,
+  /\b(?:to|via)\s+[\w][\w.*]*@[\w.-]+\.\w{2,}/i,
   // German
   /(?:an\s+(?:Ihre|deine)\s+E[\s\-]?Mail|per\s+E[\s\-]?Mail|E[\s\-]?Mail[\s\-]?Adresse)/i,
   // Turkish

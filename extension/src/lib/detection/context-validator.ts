@@ -593,12 +593,13 @@ function findNegativeKeywords(
  * @returns Validation result with pass/fail, matched keywords, language, confidence
  */
 export function validateContext(textSources: TextSources): ContextValidationResult {
-  // Combine all text sources (including pageTitle for setup page detection)
+  // Combine all text sources (including pageTitle and ariaDescribedby)
   const combinedText = [
     textSources.label,
     textSources.placeholder,
     textSources.nearbyText,
     textSources.ariaLabel || '',
+    textSources.ariaDescribedby || '',
     textSources.pageTitle || '',
   ]
     .filter(Boolean)
