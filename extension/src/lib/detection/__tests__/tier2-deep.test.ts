@@ -871,7 +871,7 @@ describe('tier2-deep helpers', () => {
 
         // Should fail because form has password field AND button text contains "password" (negative signal)
         // Even though button intent is 'verify', the nearby text "Password" triggers negative keyword
-        // Score: 35 (label) + 5 (nearby with negative signal) + 25 (placeholder) = 65 points
+        // Score: 35 (label) + 0 (nearby negative-signal-blocked) + 25 (placeholder) = 60 points
         expect(result.detected).toBe(false)
         expect(result.score).toBeLessThan(70)
       })
@@ -1010,7 +1010,7 @@ describe('tier2-deep helpers', () => {
 
         // Context validator rejects "password" even with "one-time" prefix
         // The nearby text "One-time password - Verification Code" contains "password" (negative signal)
-        // Score: 35 (label) + 5 (nearby negative signal) + 25 (placeholder) = 65 points
+        // Score: 35 (label) + 0 (nearby negative-signal-blocked) + 25 (placeholder) = 60 points
         expect(result.detected).toBe(false)
         expect(result.score).toBeLessThan(70)
       })
