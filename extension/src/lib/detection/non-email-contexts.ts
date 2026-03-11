@@ -127,8 +127,8 @@ const CATEGORY_PATTERNS: Record<string, RegExp[]> = {
     /(?:vergi[\s\-_]?(?:numaras(?:ı|i)|kimlik)|TC[\s\-_]?kimlik[\s\-_]?(?:no|numaras(?:ı|i))?)/i,
     // French (no \b — é is non-ASCII)
     /(?:num(?:é|e)ro[\s\-_]?fiscal|carte[\s\-_]?d'identit(?:é|e))/i,
-    // Spanish (no \b — ú/ó are non-ASCII)
-    /(?:n(?:ú|u)mero[\s\-_]?(?:de[\s\-_]?)?(?:identificaci(?:ó|o)n|fiscal)|DNI|NIE)/i,
+    // Spanish (no \b for número — ú/ó are non-ASCII, but DNI/NIE need \b to avoid substring matches)
+    /(?:n(?:ú|u)mero[\s\-_]?(?:de[\s\-_]?)?(?:identificaci(?:ó|o)n|fiscal)|\bDNI\b|\bNIE\b)/i,
   ],
 
   account_setup: [

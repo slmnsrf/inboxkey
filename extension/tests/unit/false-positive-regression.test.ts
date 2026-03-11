@@ -179,4 +179,23 @@ describe('False Positive Regression Tests', () => {
       expect(result).not.toBeNull()
     })
   })
+
+  describe('Example 5: Postal/ZIP code field', () => {
+    it('should NOT detect postal code in business form', () => {
+      document.body.innerHTML = `
+        <form>
+          <label for="company">Company Name</label>
+          <input type="text" id="company" name="company">
+          <label for="address">Address</label>
+          <input type="text" id="address" name="address">
+          <label for="postal">Postal Code</label>
+          <input type="text" id="postal" name="postal" maxlength="6">
+          <label for="city">City</label>
+          <input type="text" id="city" name="city">
+        </form>
+      `
+      const result = detectVerificationField({ strictVisibility: false })
+      expect(result).toBeNull()
+    })
+  })
 })
