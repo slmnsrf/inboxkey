@@ -359,9 +359,10 @@ const SMS_PATTERNS = [
   /code.*(?:via|per).*(?:sms|mobiel)/i,
 
   // Turkish (telefon = phone, kısa mesaj = SMS, mesaj = message)
-  /\b(?:k[ıi]sa\s*mesaj|sms|telefon(?:unuz(?:a|dan)?)?)\b/i,
-  /(?:cep\s*)?telefon(?:unuz)?(?:a|dan)/i,
+  /\b(?:k[ıi]sa\s*mesaj|sms|telefon(?:un(?:uz)?(?:a|dan)?)?)\b/i,
+  /(?:cep\s*)?telefon(?:un(?:uz)?)?(?:a|dan)/i,
   /kod.*(?:telefon|mesaj|sms)/i,
+  /(?:telefon|mesaj|sms).*(?:kod|kodu)/i,
 
   // Polish
   /\b(?:sms|wiadomo[sś][cć]\s*tekstowa|telefon\s*kom[oó]rkowy)\b/i,
