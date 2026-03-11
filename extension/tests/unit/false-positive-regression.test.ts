@@ -198,4 +198,84 @@ describe('False Positive Regression Tests', () => {
       expect(result).toBeNull()
     })
   })
+
+  // ═══════════════════════════════════════════════════════════════
+  // Category-Level Negative Fixtures
+  // ═══════════════════════════════════════════════════════════════
+
+  describe('Category: Address/Postal forms', () => {
+    it('should NOT detect in multi-field address form', () => {
+      document.body.innerHTML = `
+        <form>
+          <input type="text" name="street" placeholder="Street Address">
+          <input type="text" name="city" placeholder="City">
+          <input type="text" name="state" placeholder="State">
+          <input type="text" name="zipcode" maxlength="5" placeholder="ZIP Code">
+          <input type="text" name="country" placeholder="Country">
+        </form>
+      `
+      const result = detectVerificationField({ strictVisibility: false })
+      expect(result).toBeNull()
+    })
+  })
+
+  describe('Category: Payment/Banking', () => {
+    it('should NOT detect bank verification code', () => {
+      document.body.innerHTML = `
+        <div>
+          <p>Enter the code from your banking app to confirm the transaction</p>
+          <input type="text" maxlength="6" inputmode="numeric">
+        </div>
+      `
+      const result = detectVerificationField({ strictVisibility: false })
+      expect(result).toBeNull()
+    })
+  })
+
+  // ═══════════════════════════════════════════════════════════════
+  // Positive Recall: Must Still Detect
+  // ═══════════════════════════════════════════════════════════════
+
+  describe('Positive recall: email OTP flows', () => {
+    it('should detect email verification code field', () => {
+      document.body.innerHTML = `
+        <div>
+          <p>We sent a verification code to your email</p>
+          <label for="code">Enter code</label>
+          <input type="text" id="code" name="code" maxlength="6" inputmode="numeric">
+        </div>
+      `
+      const result = detectVerificationField({ strictVisibility: false })
+      expect(result).not.toBeNull()
+    })
+
+    it('should detect split-input OTP field', () => {
+      document.body.innerHTML = `
+        <div>
+          <p>Enter your verification code</p>
+          <div>
+            <input maxlength="1" type="text" value="">
+            <input maxlength="1" type="text" value="">
+            <input maxlength="1" type="text" value="">
+            <input maxlength="1" type="text" value="">
+            <input maxlength="1" type="text" value="">
+            <input maxlength="1" type="text" value="">
+          </div>
+        </div>
+      `
+      const result = detectVerificationField({ strictVisibility: false })
+      expect(result).not.toBeNull()
+    })
+
+    it('should detect email+authenticator hybrid as eligible', () => {
+      document.body.innerHTML = `
+        <div>
+          <p>Enter the code from your email or authenticator app</p>
+          <input type="text" name="code" maxlength="6">
+        </div>
+      `
+      const result = detectVerificationField({ strictVisibility: false })
+      expect(result).not.toBeNull()
+    })
+  })
 })
