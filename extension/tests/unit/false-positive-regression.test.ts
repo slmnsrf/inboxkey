@@ -131,6 +131,28 @@ describe('False Positive Regression Tests', () => {
     })
   })
 
+  describe('Turkish SMS informal phrasing', () => {
+    it('should detect "telefonuna gelen" as SMS (informal possessive)', async () => {
+      const { classifyDeliveryChannel } = await import('../../src/lib/detection/signal-classifier')
+      const result = classifyDeliveryChannel({
+        label: '',
+        placeholder: '',
+        nearbyText: 'Telefonuna gelen kodu gir',
+      })
+      expect(result.channel).toBe('sms')
+    })
+
+    it('should detect "telefonunuza gönderilen" as SMS (formal)', async () => {
+      const { classifyDeliveryChannel } = await import('../../src/lib/detection/signal-classifier')
+      const result = classifyDeliveryChannel({
+        label: '',
+        placeholder: '',
+        nearbyText: 'Telefonunuza gönderilen SMS kodunu giriniz',
+      })
+      expect(result.channel).toBe('sms')
+    })
+  })
+
   describe('Positive recall: real OTP fields still detected', () => {
     it('should detect autocomplete="one-time-code"', () => {
       document.body.innerHTML = `
