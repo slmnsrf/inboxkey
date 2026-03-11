@@ -481,6 +481,26 @@ function getNearbyText(input: HTMLInputElement, isSplitInput: boolean = false): 
 }
 
 /**
+ * Resolve aria-describedby text
+ *
+ * aria-describedby can reference multiple IDs (space-separated).
+ * Each referenced element's text content is resolved and joined.
+ *
+ * @param input - Input field to resolve aria-describedby from
+ * @returns Combined text from all referenced elements
+ */
+function getAriaDescribedbyText(input: HTMLInputElement): string {
+  const describedby = input.getAttribute('aria-describedby')
+  if (!describedby) return ''
+
+  return describedby
+    .split(/\s+/)
+    .map(id => input.ownerDocument?.getElementById(id)?.textContent?.trim() || '')
+    .filter(Boolean)
+    .join(' ')
+}
+
+/**
  * Tier 2: Deep DOM traversal detection with 4-layer defense
  *
  * Called when Tier 1 fails to find high-confidence matches.
@@ -630,6 +650,7 @@ export function detectTier2(
     placeholder,
     nearbyText,
     ariaLabel: input.getAttribute('aria-label') || '',
+    ariaDescribedby: getAriaDescribedbyText(input),
   }
 
   const channelResult = classifyDeliveryChannel(channelTextSources)
