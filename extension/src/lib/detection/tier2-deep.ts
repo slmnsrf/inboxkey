@@ -703,23 +703,26 @@ export function detectTier2(
 
   // ═══════════════════════════════════════════════════════════════
   // Multi-Input Form Penalty
+  // Exempt split-input groups: their multiple boxes ARE the OTP widget
   // ═══════════════════════════════════════════════════════════════
-  const form = input.closest('form')
-  if (form) {
-    const textInputs = form.querySelectorAll<HTMLInputElement>(
-      'input[type="text"], input[type="tel"], input[type="number"], input:not([type])'
-    )
-    const visibleTextInputs = Array.from(textInputs).filter(i => !i.disabled && i.type !== 'hidden')
-    if (visibleTextInputs.length >= 4) {
-      score -= 20
-      scoreBreakdown.push('multi-input-penalty:-20')
-      if (score < THRESHOLD) {
-        return {
-          detected: false,
-          confidence: score / THRESHOLD,
-          score,
-          reason: `Multi-input form penalty dropped score below threshold (${scoreBreakdown.join(', ')})`,
-          metadata: { layer: 'structural' },
+  if (!isSplitInput) {
+    const form = input.closest('form')
+    if (form) {
+      const textInputs = form.querySelectorAll<HTMLInputElement>(
+        'input[type="text"], input[type="tel"], input[type="number"], input:not([type])'
+      )
+      const visibleTextInputs = Array.from(textInputs).filter(i => !i.disabled && i.type !== 'hidden')
+      if (visibleTextInputs.length >= 4) {
+        score -= 20
+        scoreBreakdown.push('multi-input-penalty:-20')
+        if (score < THRESHOLD) {
+          return {
+            detected: false,
+            confidence: score / THRESHOLD,
+            score,
+            reason: `Multi-input form penalty dropped score below threshold (${scoreBreakdown.join(', ')})`,
+            metadata: { layer: 'structural' },
+          }
         }
       }
     }
