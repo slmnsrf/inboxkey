@@ -10,6 +10,7 @@
 import type { CooldownRegistry } from './cooldown-registry'
 import { validateContext } from './context-validator'
 import { classifyDeliveryChannel } from './signal-classifier'
+import { classifyNonEmailIntent } from './non-email-contexts'
 import type { TextSources } from './types'
 import {
   getLabelMatchStrength,
@@ -340,7 +341,7 @@ export interface Tier2Result {
     placeholderMatch?: string
     formContext?: FormContext
     buttonIntent?: ButtonIntent
-    layer: 'label' | 'placeholder' | 'structural' | 'context' | 'split-input' | 'channel-gate'
+    layer: 'label' | 'placeholder' | 'structural' | 'context' | 'split-input' | 'channel-gate' | 'non-email-intent'
   }
 }
 
@@ -679,6 +680,47 @@ export function detectTier2(
         score,
         reason: `SMS-only field (channel gate): ${channelResult.matchedKeywords.join(', ')}`,
         metadata: { layer: 'channel-gate' },
+      }
+    }
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  // Non-Email Intent Check
+  // ═══════════════════════════════════════════════════════════════
+  const combinedContextText = [labelText, placeholder, nearbyText].filter(Boolean).join(' ')
+  const intentResult = classifyNonEmailIntent(combinedContextText)
+
+  if (intentResult.blocked) {
+    cooldown.markRejected(input)
+    return {
+      detected: false,
+      confidence: 0,
+      score,
+      reason: `Non-email context (${intentResult.category}): ${intentResult.matchedKeywords.join(', ')}`,
+      metadata: { layer: 'non-email-intent' },
+    }
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  // Multi-Input Form Penalty
+  // ═══════════════════════════════════════════════════════════════
+  const form = input.closest('form')
+  if (form) {
+    const textInputs = form.querySelectorAll<HTMLInputElement>(
+      'input[type="text"], input[type="tel"], input[type="number"], input:not([type])'
+    )
+    const visibleTextInputs = Array.from(textInputs).filter(i => !i.disabled && i.type !== 'hidden')
+    if (visibleTextInputs.length >= 4) {
+      score -= 20
+      scoreBreakdown.push('multi-input-penalty:-20')
+      if (score < THRESHOLD) {
+        return {
+          detected: false,
+          confidence: score / THRESHOLD,
+          score,
+          reason: `Multi-input form penalty dropped score below threshold (${scoreBreakdown.join(', ')})`,
+          metadata: { layer: 'structural' },
+        }
       }
     }
   }
