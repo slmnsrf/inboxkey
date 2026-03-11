@@ -54,7 +54,7 @@ const HIGH_CONFIDENCE_KEYWORDS = new RegExp(
 /**
  * P2: Negative signal keywords for score penalty
  *
- * When nearby text contains these keywords, penalize score to max 5 points.
+ * When nearby text contains these keywords, block all nearby text scoring (0 points).
  * Prevents false positives on password/email fields with "code" in nearby text.
  */
 const NEGATIVE_SIGNALS = /\b(password|email.?address|username|phone.?number)\b/i
@@ -581,9 +581,9 @@ export function detectTier2(
     const hasNegativeSignal = NEGATIVE_SIGNALS.test(nearbyText)
 
     if (hasNegativeSignal) {
-      // Penalty: Contains password/email/username keywords
-      score += 5
-      scoreBreakdown.push('nearby:5 (negative-signal)')
+      // Negative signal: do NOT add any points from nearby text
+      // The field has password/email/username context - nearby text is not helpful
+      scoreBreakdown.push('nearby:0 (negative-signal-blocked)')
     } else if (hasHighConfidence) {
       // High confidence: Contains verification/code keywords in 21 languages
       score += 20
