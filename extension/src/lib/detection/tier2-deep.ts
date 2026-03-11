@@ -687,7 +687,8 @@ export function detectTier2(
   // ═══════════════════════════════════════════════════════════════
   // Non-Email Intent Check
   // ═══════════════════════════════════════════════════════════════
-  const combinedContextText = [labelText, placeholder, nearbyText].filter(Boolean).join(' ')
+  const ariaDescribedby = getAriaDescribedbyText(input)
+  const combinedContextText = [labelText, placeholder, nearbyText, ariaDescribedby].filter(Boolean).join(' ')
   const intentResult = classifyNonEmailIntent(combinedContextText)
 
   if (intentResult.blocked) {

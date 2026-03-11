@@ -386,6 +386,7 @@ export function detectTier1(
       placeholder: input.placeholder || '',
       nearbyText,
       ariaLabel: input.getAttribute('aria-label') || '',
+      ariaDescribedby: getAriaDescribedbyText(input),
       pageTitle: document.title || '',
     })
 
