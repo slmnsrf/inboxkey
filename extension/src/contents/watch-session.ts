@@ -101,8 +101,7 @@ export class WatchSession {
     this.port.onMessage.addListener(this.handlePortMessage)
     this.port.onDisconnect.addListener(this.handlePortDisconnect)
 
-    const splitGroup = detectSplitInputGroup(this.field)
-    const expected = deriveExpectedShape(this.field, splitGroup?.inputs.length)
+    const expected = deriveExpectedShape(this.field)
 
     // Load timeout setting
     const storage = await StorageFactory.create()
@@ -533,15 +532,20 @@ export function isFieldWatched(field: HTMLInputElement): boolean {
 /**
  * Derive expected code shape information from an input element.
  */
-export function deriveExpectedShape(field: HTMLInputElement, splitGroupSize?: number): ExpectedShape {
+function deriveExpectedShape(field: HTMLInputElement): ExpectedShape {
   const expected: ExpectedShape = {}
 
   if (field.maxLength && field.maxLength > 0) {
-    expected.length = splitGroupSize
-      ? field.maxLength * splitGroupSize
-      : field.maxLength
-  } else if (field.size && field.size > 0) {
-    expected.length = field.size
+    expected.length = field.maxLength
+  } else {
+    // For split-input groups with unset maxLength (e.g. Microsoft codeEntry-0..5),
+    // use the group input count as expected code length
+    const group = detectSplitInputGroup(field)
+    if (group && group.inputs.length > 1) {
+      expected.length = group.inputs.length
+    } else if (field.size && field.size > 0) {
+      expected.length = field.size
+    }
   }
 
   const inputMode = field.inputMode?.toLowerCase()

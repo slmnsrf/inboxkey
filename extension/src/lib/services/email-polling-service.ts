@@ -20,6 +20,7 @@
 
 import { extractFromEmail } from '@inboxkey/extraction-core'
 import { SCORE_POPUP } from '@/lib/popup/popup-config'
+import { SeenMessageStore } from './seen-message-store'
 
 // ---------------- Types ----------------
 
@@ -28,7 +29,8 @@ export type ProviderId = 'gmail' | 'outlook' | 'imap' | 'imap-bridge'
 export interface EmailLike {
   id: string
   provider: ProviderId
-  mailboxId?: string
+  /** The specific mailbox this email came from (required for multi-account disambiguation). */
+  mailboxId: string
   subject?: string
   from?: string
   receivedEpochMs?: number
@@ -41,8 +43,8 @@ export interface EmailLike {
 
 export interface ProviderAdapter {
   id: ProviderId
-  /** The specific mailbox this adapter is bound to (for multi-account disambiguation). */
-  mailboxId?: string
+  /** The specific mailbox this adapter is bound to (required for multi-account disambiguation). */
+  mailboxId: string
   /**
    * Fetch *recent* messages for this provider, bounded by time and count.
    * Implementations should do a metadata-first pass and, when possible,
@@ -83,10 +85,21 @@ export interface PollConfig {
   signal?: AbortSignal
 }
 
+export interface AdapterResult {
+  mailboxId: string
+  success: boolean
+  error?: string
+}
+
+export interface PollResult {
+  candidates: CandidateRecord[]
+  adapterResults: AdapterResult[]
+}
+
 export interface CandidateRecord {
   provider: ProviderId
-  /** Which specific mailbox this candidate came from (for multi-account disambiguation). */
-  mailboxId?: string
+  /** Which specific mailbox this candidate came from (required for multi-account disambiguation). */
+  mailboxId: string
   messageId: string
   subject?: string
   from?: string
@@ -108,7 +121,7 @@ export class EmailPollingService {
   // @ts-expect-error: Reserved for future rate limiting
   private lastPollEpochMs = 0
 
-  constructor(adapters: ProviderAdapter[] = []) {
+  constructor(adapters: ProviderAdapter[] = [], private seenStore?: SeenMessageStore) {
     this.adapters = adapters.slice()
   }
 
@@ -142,7 +155,7 @@ export class EmailPollingService {
    *  • Extracts OTPs and magic links via extractFromEmail().
    *  • Keeps top-N by (recency → score) in memory (default 5).
    */
-  async pollOnce(ctx: ExtractContext = {}, cfg: PollConfig = {}): Promise<CandidateRecord[]> {
+  async pollOnce(ctx: ExtractContext = {}, cfg: PollConfig = {}): Promise<PollResult> {
     const now = Date.now()
     const since = now - 1000 * 60 * (cfg.timeWindowMin ?? 10)
     const perProviderMax = clampInt(cfg.perProviderMax ?? 8, 1, 50)
@@ -154,21 +167,37 @@ export class EmailPollingService {
     const keywordHint = 'code OR verification OR "one-time" OR otp OR "magic link" OR login'
 
     const results: CandidateRecord[] = []
+    const adapterResults: AdapterResult[] = []
     let processed = 0
 
     // Fetch from providers in parallel but respect AbortSignal
     await Promise.all(this.adapters.map(async (ad) => {
       if (cfg.signal?.aborted) return
+      if (!ad.mailboxId) {
+        console.warn(`[EmailPollingService] skipping adapter without mailboxId: ${ad.id}`)
+        adapterResults.push({ mailboxId: ad.mailboxId || 'unknown', success: false, error: 'missing mailboxId' })
+        return
+      }
       try {
         const batch = await ad.listRecent({ sinceEpochMs: since, max: perProviderMax, keywordHint })
         for (const msg of batch) {
           if (cfg.signal?.aborted) break
           if (processed >= globalMax) break
 
-          // Skip messages we've processed before (include mailboxId for multi-account)
-          const seenKey = `${msg.mailboxId || msg.provider}:${msg.id}`
-          if (this.seenMessageIds.has(seenKey)) continue
-          this.seenMessageIds.add(seenKey)
+          // Service-side freshness floor: reject messages outside time window
+          // (compensates for Gmail's day-granularity newerThan rounding)
+          if (msg.receivedEpochMs && msg.receivedEpochMs < since) continue
+
+          // Skip messages we've processed before (use adapter.mailboxId for multi-account)
+          const seenKey = `${ad.mailboxId}:${msg.id}`
+          if (this.seenStore) {
+            if (await this.seenStore.hasSeen(seenKey)) continue
+            await this.seenStore.add(seenKey)
+          } else {
+            // Fallback to in-memory set (backward compat for callers that don't pass store)
+            if (this.seenMessageIds.has(seenKey)) continue
+            this.seenMessageIds.add(seenKey)
+          }
 
           const subject = msg.subject || ''
           const ext = extractFromEmail(
@@ -200,7 +229,7 @@ export class EmailPollingService {
           if (topScore >= minScore) {
             const rec: CandidateRecord = {
               provider: msg.provider,
-              mailboxId: msg.mailboxId || ad.mailboxId,
+              mailboxId: ad.mailboxId,
               messageId: msg.id,
               subject: msg.subject,
               from: msg.from,
@@ -217,10 +246,14 @@ export class EmailPollingService {
             processed++
           }
         }
+        adapterResults.push({ mailboxId: ad.mailboxId, success: true })
       } catch (err) {
         // Swallow provider errors to keep other adapters running
-        // Consider logging locally for diagnostics
-        // console.warn('[pollOnce] provider error', ad.id, err)
+        adapterResults.push({
+          mailboxId: ad.mailboxId,
+          success: false,
+          error: err instanceof Error ? err.message : String(err),
+        })
       }
     }))
 
@@ -235,7 +268,7 @@ export class EmailPollingService {
     // Keep top N
     this.cache = merged.slice(0, keepTopN)
     this.lastPollEpochMs = now
-    return this.cache.slice()
+    return { candidates: this.cache.slice(), adapterResults }
   }
 }
 
