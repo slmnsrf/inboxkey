@@ -6,13 +6,13 @@
  */
 
 import { useState, useEffect } from 'react'
-import type { PopupCache } from '@/shared/popup-messages'
+import type { UnifiedPopupCache } from '@/shared/popup-messages'
 import { PopupBridge } from '../services/popup-bridge'
 
 const bridge = new PopupBridge()
 
 export function usePopupData() {
-  const [data, setData] = useState<PopupCache | null>(null)
+  const [data, setData] = useState<UnifiedPopupCache | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [isSyncing, setIsSyncing] = useState(false)

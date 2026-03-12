@@ -5,7 +5,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { PopupCacheManager } from '../../src/background/popup-cache'
 import type { StoredCode } from '../../src/lib/storage/schema'
-import type { PopupCache } from '../../src/shared/popup-messages'
 
 // Mock chrome.storage.session
 const mockStorage = new Map<string, any>()
@@ -56,17 +55,24 @@ describe('PopupCacheManager', () => {
     })
 
     it('should restore cache from storage', async () => {
-      const existingCache: PopupCache = {
-        codes: [
+      const now = Date.now()
+      // Store an internal cache with items[] (new format)
+      const existingCache = {
+        items: [
           {
-            code: '123456',
+            kind: 'code' as const,
+            id: 'gmail:unknown:' + now,
+            providerId: 'gmail' as const,
             source: 'test@example.com - Subject',
-            receivedAt: Date.now(),
+            receivedAt: now,
+            score: 0.65,
+            code: '123456',
+            len: 6,
           },
         ],
-        magicLinks: [],
-        lastSync: Date.now(),
+        lastSync: now,
         mailboxCount: 1,
+        ts: now,
       }
 
       mockStorage.set('inboxkey.popup_cache', existingCache)
@@ -74,7 +80,12 @@ describe('PopupCacheManager', () => {
       await cacheManager.initialize()
       const cache = await cacheManager.getCache()
 
-      expect(cache).toEqual(existingCache)
+      // Items restored from storage, legacy arrays derived
+      expect(cache.items).toHaveLength(1)
+      expect(cache.codes).toHaveLength(1)
+      expect(cache.codes[0].code).toBe('123456')
+      expect(cache.lastSync).toBe(now)
+      expect(cache.mailboxCount).toBe(1)
     })
   })
 
@@ -84,22 +95,30 @@ describe('PopupCacheManager', () => {
       const cache1 = await cacheManager.getCache()
       const cache2 = await cacheManager.getCache()
 
-      // Should be the same object reference (warm cache)
-      expect(cache1).toBe(cache2)
+      // getCache() now derives legacy arrays on each call, so object identity differs
+      // but the data should be deeply equal
+      expect(cache1).toStrictEqual(cache2)
     })
 
     it('should read from storage on cold start', async () => {
-      const existingCache: PopupCache = {
-        codes: [
+      const now = Date.now()
+      // Store internal cache format (items-first)
+      const existingCache = {
+        items: [
           {
-            code: '999999',
+            kind: 'code' as const,
+            id: 'gmail:unknown:' + now,
+            providerId: 'gmail' as const,
             source: 'cold@example.com',
-            receivedAt: Date.now(),
+            receivedAt: now,
+            score: 0.65,
+            code: '999999',
+            len: 6,
           },
         ],
-        magicLinks: [],
-        lastSync: Date.now(),
+        lastSync: now,
         mailboxCount: 1,
+        ts: now,
       }
 
       mockStorage.set('inboxkey.popup_cache', existingCache)
@@ -391,9 +410,9 @@ describe('PopupCacheManager', () => {
       await cacheManager.updateWithNewCodes(storedCodes, 1)
       await cacheManager.markCodeUsed('123456')
 
-      // Verify it was saved to storage
+      // Verify it was saved to storage (internal format: items[], not codes[])
       const savedCache = mockStorage.get('inboxkey.popup_cache')
-      expect(savedCache.codes[0].usedAt).toBeGreaterThan(0)
+      expect(savedCache.items[0].usedAt).toBeGreaterThan(0)
     })
   })
 
@@ -443,9 +462,10 @@ describe('PopupCacheManager', () => {
       await cacheManager.updateWithNewCodes(storedCodes, 1)
       await cacheManager.markLinkOpened('https://example.com/verify')
 
-      // Verify it was saved to storage
+      // Verify it was saved to storage (internal format: items[], not magicLinks[])
       const savedCache = mockStorage.get('inboxkey.popup_cache')
-      expect(savedCache.magicLinks[0].openedAt).toBeGreaterThan(0)
+      const linkItem = savedCache.items.find((i: any) => i.kind === 'link')
+      expect(linkItem.openedAt).toBeGreaterThan(0)
     })
   })
 
@@ -492,11 +512,14 @@ describe('PopupCacheManager', () => {
 
       await cacheManager.updateWithNewCodes(storedCodes, 1)
 
+      // Internal storage uses items-first format
       const savedCache = mockStorage.get('inboxkey.popup_cache')
 
       expect(savedCache).toBeDefined()
-      expect(savedCache.codes).toHaveLength(1)
-      expect(savedCache.codes[0].code).toBe('123456')
+      expect(savedCache.items).toHaveLength(1)
+      expect(savedCache.items[0].code).toBe('123456')
+      // Legacy arrays not stored in internal format
+      expect(savedCache.codes).toBeUndefined()
     })
 
     it('should survive service worker restart', async () => {
@@ -594,6 +617,147 @@ describe('PopupCacheManager', () => {
       expect(cache.codes).toHaveLength(0)
       expect(cache.magicLinks).toHaveLength(0)
       expect(cache.mailboxCount).toBe(0)
+    })
+  })
+
+  describe('items-first cache semantics', () => {
+    it('getCache should derive legacy codes from items', async () => {
+      const manager = new PopupCacheManager()
+      await manager.updateWithNewCodes([
+        {
+          code: '123456',
+          timestamp: Date.now(),
+          source: 'test@example.com - Test',
+          used: false,
+          mailboxId: 'mbx-1',
+        },
+      ], 1)
+
+      const cache = await manager.getCache()
+      expect(cache.items.length).toBe(1)
+      expect(cache.items[0].kind).toBe('code')
+      expect(cache.codes.length).toBe(1)
+      expect(cache.codes[0].code).toBe('123456')
+    })
+
+    it('markCodeUsed should update items, visible via getCache', async () => {
+      const manager = new PopupCacheManager()
+      await manager.updateWithNewCodes([
+        {
+          code: 'ABC123',
+          timestamp: Date.now(),
+          source: 'test@example.com - Test',
+          used: false,
+          mailboxId: 'mbx-1',
+        },
+      ], 1)
+
+      await manager.markCodeUsed('ABC123')
+      const cache = await manager.getCache()
+      const item = cache.items.find(i => i.kind === 'code' && (i as any).code === 'ABC123')
+      expect(item?.usedAt).toBeDefined()
+      expect(cache.codes[0].usedAt).toBeDefined()
+    })
+
+    it('markLinkOpened should update items, visible via getCache', async () => {
+      const manager = new PopupCacheManager()
+      await manager.updateWithNewCodes([
+        {
+          code: 'magic-link:https://example.com/login/abc',
+          timestamp: Date.now(),
+          source: 'test@example.com - Login',
+          used: false,
+          mailboxId: 'mbx-1',
+        },
+      ], 1)
+
+      await manager.markLinkOpened('https://example.com/login/abc')
+      const cache = await manager.getCache()
+      const item = cache.items.find(i => i.kind === 'link')
+      expect(item?.openedAt).toBeDefined()
+      expect(cache.magicLinks[0].openedAt).toBeDefined()
+    })
+
+    it('markCodesSeen should set seenAt on all items', async () => {
+      const manager = new PopupCacheManager()
+      await manager.updateWithNewCodes([
+        { code: '111', timestamp: Date.now(), source: 'a', used: false, mailboxId: 'mbx-1' },
+        { code: '222', timestamp: Date.now(), source: 'b', used: false, mailboxId: 'mbx-1' },
+      ], 1)
+
+      await manager.markCodesSeen()
+      const cache = await manager.getCache()
+      for (const item of cache.items) {
+        expect(item.seenAt).toBeDefined()
+      }
+      for (const code of cache.codes) {
+        expect(code.seenAt).toBeDefined()
+      }
+    })
+
+    it('internal storage should not contain legacy codes/magicLinks arrays', async () => {
+      const manager = new PopupCacheManager()
+      await manager.updateWithNewCodes([
+        {
+          code: '123456',
+          timestamp: Date.now(),
+          source: 'test@example.com - Test',
+          used: false,
+          mailboxId: 'mbx-1',
+        },
+        {
+          code: 'magic-link:https://example.com/verify?token=abc',
+          timestamp: Date.now(),
+          source: 'test@example.com - Verify',
+          used: false,
+          mailboxId: 'mbx-1',
+        },
+      ], 1)
+
+      // Check what was persisted to storage
+      const savedCache = mockStorage.get('inboxkey.popup_cache')
+      expect(savedCache.items).toBeDefined()
+      expect(savedCache.items.length).toBe(2)
+      // Internal storage should NOT have legacy arrays
+      expect(savedCache.codes).toBeUndefined()
+      expect(savedCache.magicLinks).toBeUndefined()
+    })
+
+    it('markCodesSeen should not save if no items need updating', async () => {
+      const manager = new PopupCacheManager()
+      await manager.updateWithNewCodes([
+        { code: '111', timestamp: Date.now(), source: 'a', used: false, mailboxId: 'mbx-1' },
+      ], 1)
+
+      // Mark seen once
+      await manager.markCodesSeen()
+      const setCallCount = (chrome.storage.session.set as any).mock.calls.length
+
+      // Mark seen again (should be a no-op)
+      await manager.markCodesSeen()
+      const newSetCallCount = (chrome.storage.session.set as any).mock.calls.length
+      expect(newSetCallCount).toBe(setCallCount) // No additional save
+    })
+
+    it('markCodeUsed should persist usedAt to storage on items', async () => {
+      const manager = new PopupCacheManager()
+      await manager.updateWithNewCodes([
+        {
+          code: 'PERSIST1',
+          timestamp: Date.now(),
+          source: 'test',
+          used: false,
+          mailboxId: 'mbx-1',
+        },
+      ], 1)
+
+      await manager.markCodeUsed('PERSIST1')
+
+      // Verify internal storage has usedAt on items
+      const savedCache = mockStorage.get('inboxkey.popup_cache')
+      expect(savedCache.items[0].usedAt).toBeGreaterThan(0)
+      // No legacy codes array in storage
+      expect(savedCache.codes).toBeUndefined()
     })
   })
 })

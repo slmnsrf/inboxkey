@@ -39,6 +39,8 @@ export interface BaseItem {
   usedAt?: number
   /** When link was opened */
   openedAt?: number
+  /** When user opened popup and saw this item (for unread count) */
+  seenAt?: number
 }
 
 /**
@@ -192,7 +194,7 @@ export interface SyncErrorInfo {
  * Responses sent from background to popup
  */
 export type PopupResponse =
-  | { success: true; data: PopupCache }
+  | { success: true; data: UnifiedPopupCache }
   | { success: true; mailboxes: MailboxInfo[] }
   | { success: true; error: SyncErrorInfo | null }
   | { success: true }

@@ -8,13 +8,15 @@
 import { PopupCacheManager } from './popup-cache'
 import { ErrorStateManager } from './error-state-manager'
 import { SyncRateLimiter } from './sync-rate-limiter'
-import type { PopupRequest, PopupResponse } from '@/shared/popup-messages'
+import type { PopupRequest, PopupResponse, CodeItem, LinkItem } from '@/shared/popup-messages'
 import { EmailPollingService } from '@/lib/services/email-polling-service'
 import { createAdaptersFromMailboxes } from '@/lib/services/provider-adapter'
 import { SeenMessageStore } from '@/lib/services/seen-message-store'
 import { StorageFactory } from '@/lib/storage/storage-factory'
 import { setBadgeCount, setBadgeSyncError, clearBadge } from '@/contents/badge-manager'
 import { BADGE_EXPIRY_MS } from '@/lib/popup/popup-config'
+import { sortByPriority } from '@/lib/popup/popup-priority'
+import { separateItems } from '@/lib/popup/popup-filters'
 
 /**
  * Handles popup-related messages from the UI
@@ -35,33 +37,37 @@ export class PopupMessageHandler {
     try {
       switch (request.type) {
         case 'GET_POPUP_DATA': {
-          const currentDomain = request.currentDomain
+          // Pure read path: never mutate cache on popup open
+          const cache = await this.cacheManager.getCache()
 
-          // Refresh cache with domain context if we have one
-          if (currentDomain) {
-            const storage = await StorageFactory.create()
-            const mailboxes = await storage.getMailboxes()
-            const cache = await this.cacheManager.getCache()
-
-            // Re-score with domain context (use existing codes)
-            const storedCodes = cache.codes.map(c => ({
-              code: c.code,
-              timestamp: c.receivedAt,
-              source: c.source,
-              used: !!c.usedAt,
-              siteMatch: undefined,
-              mailboxId: undefined,
-            }))
-
-            await this.cacheManager.updateWithNewCodes(
-              storedCodes,
-              mailboxes.length,
-              mailboxes,
-              currentDomain
+          // Apply domain rescoring as a non-persistent projection
+          if (request.currentDomain && cache.items?.length) {
+            const now = Date.now()
+            const projectedItems = sortByPriority(
+              [...cache.items], // shallow copy
+              now,
+              request.currentDomain
             )
+            // Derive legacy arrays from projected items
+            const { codes: codeItems, links: linkItems } = separateItems(projectedItems)
+            const projectedCodes = codeItems.map((item) =>
+              this.cacheManager.convertPopupItemToLegacyCode(item as CodeItem, now, request.currentDomain)
+            )
+            const projectedLinks = linkItems.map((item) =>
+              this.cacheManager.convertPopupItemToLegacyLink(item as LinkItem)
+            )
+
+            return {
+              success: true,
+              data: {
+                ...cache,
+                items: projectedItems,
+                codes: projectedCodes,
+                magicLinks: projectedLinks,
+              },
+            }
           }
 
-          const cache = await this.cacheManager.getCache()
           return { success: true, data: cache }
         }
 
@@ -246,22 +252,9 @@ export class PopupMessageHandler {
         }
 
         case 'MARK_CODES_SEEN': {
-          // Mark all codes as seen (set seenAt timestamp)
           try {
-            const cache = await this.cacheManager.getCache()
-            if (cache.codes.length > 0) {
-              const now = Date.now()
-              cache.codes.forEach((code) => {
-                if (!code.seenAt) {
-                  code.seenAt = now
-                }
-              })
-              // Save updated cache
-              await chrome.storage.session.set({ 'inboxkey.popup_cache': cache })
-
-              // Clear badge since all codes are now seen
-              clearBadge()
-            }
+            await this.cacheManager.markCodesSeen()
+            clearBadge()
             return { success: true }
           } catch (error) {
             console.error('[PopupHandler] MARK_CODES_SEEN failed:', error)
