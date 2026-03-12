@@ -147,6 +147,33 @@ describe('FieldDetector', () => {
       expect(results[0].signals).toContain('name/id="email_code" (contains match)')
     })
 
+    it('should run Tier 2 on unmatched inputs even when Tier 1 found results', () => {
+      // First field: obvious Tier 1 match
+      // Second field: only detectable by Tier 2 (split-input pattern)
+      document.body.innerHTML = `
+        <input type="text" id="otp" autocomplete="one-time-code">
+        <div>
+          <input type="text" maxlength="1" class="code-digit">
+          <input type="text" maxlength="1" class="code-digit">
+          <input type="text" maxlength="1" class="code-digit">
+          <input type="text" maxlength="1" class="code-digit">
+          <input type="text" maxlength="1" class="code-digit">
+          <input type="text" maxlength="1" class="code-digit">
+        </div>
+      `
+
+      const results = detector.detectExisting({ strictVisibility: false })
+
+      // Should find BOTH: the autocomplete field AND the split-input group
+      expect(results.length).toBeGreaterThanOrEqual(2)
+
+      // Verify we have both Tier 1 and Tier 2 results
+      const hasTier1 = results.some(r => r.tier === 1)
+      const hasTier2 = results.some(r => r.tier === 2)
+      expect(hasTier1).toBe(true)
+      expect(hasTier2).toBe(true)
+    })
+
     it('should track detected fields to avoid duplicates', () => {
       document.body.innerHTML = `
         <input type="text" name="otp" autocomplete="one-time-code" data-testid="verification-field">
