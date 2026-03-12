@@ -623,6 +623,110 @@ describe('Autofill', () => {
     })
   })
 
+  describe('split autofill edge cases', () => {
+    it('should clear trailing inputs when code is shorter than group', async () => {
+      const container = document.createElement('div')
+      const inputs: HTMLInputElement[] = []
+      for (let i = 0; i < 6; i++) {
+        const input = document.createElement('input')
+        input.type = 'text'
+        input.maxLength = 1
+        input.value = '9' // Pre-existing value
+        container.appendChild(input)
+        inputs.push(input)
+      }
+      document.body.appendChild(container)
+
+      // Mock detectSplitInputGroup to return our inputs as a group
+      const { detectSplitInputGroup } = await import('../../src/lib/detection/split-input-detector')
+      vi.mocked(detectSplitInputGroup).mockReturnValue({
+        inputs,
+        representative: inputs[0],
+        pattern: 'maxlength-1',
+      })
+
+      await autofillCode({
+        code: '1234',
+        field: inputs[0],
+        showFeedback: false,
+      })
+
+      expect(inputs[0].value).toBe('1')
+      expect(inputs[1].value).toBe('2')
+      expect(inputs[2].value).toBe('3')
+      expect(inputs[3].value).toBe('4')
+      // Trailing inputs should be cleared
+      expect(inputs[4].value).toBe('')
+      expect(inputs[5].value).toBe('')
+    })
+
+    it('should skip readOnly and disabled inputs', async () => {
+      const container = document.createElement('div')
+      const inputs: HTMLInputElement[] = []
+      for (let i = 0; i < 5; i++) {
+        const input = document.createElement('input')
+        input.type = 'text'
+        input.maxLength = 1
+        container.appendChild(input)
+        inputs.push(input)
+      }
+      inputs[1].readOnly = true
+      inputs[3].disabled = true
+      document.body.appendChild(container)
+
+      const { detectSplitInputGroup } = await import('../../src/lib/detection/split-input-detector')
+      vi.mocked(detectSplitInputGroup).mockReturnValue({
+        inputs,
+        representative: inputs[0],
+        pattern: 'maxlength-1',
+      })
+
+      await autofillCode({
+        code: '12345',
+        field: inputs[0],
+        showFeedback: false,
+      })
+
+      expect(inputs[0].value).toBe('1')
+      expect(inputs[1].value).toBe('')  // readOnly - skipped
+      expect(inputs[2].value).toBe('2')
+      expect(inputs[3].value).toBe('')  // disabled - skipped
+      expect(inputs[4].value).toBe('3')
+    })
+
+    it('should return false when code is longer than fillable inputs', async () => {
+      const container = document.createElement('div')
+      const inputs: HTMLInputElement[] = []
+      for (let i = 0; i < 3; i++) {
+        const input = document.createElement('input')
+        input.type = 'text'
+        input.maxLength = 1
+        container.appendChild(input)
+        inputs.push(input)
+      }
+      document.body.appendChild(container)
+
+      const { detectSplitInputGroup } = await import('../../src/lib/detection/split-input-detector')
+      vi.mocked(detectSplitInputGroup).mockReturnValue({
+        inputs,
+        representative: inputs[0],
+        pattern: 'maxlength-1',
+      })
+
+      const result = await autofillCode({
+        code: '123456',
+        field: inputs[0],
+        showFeedback: false,
+      })
+
+      // Should return false -- only 3 of 6 chars were filled
+      expect(result).toBe(false)
+      expect(inputs[0].value).toBe('1')
+      expect(inputs[1].value).toBe('2')
+      expect(inputs[2].value).toBe('3')
+    })
+  })
+
   describe('findAndClickSubmitButton()', () => {
     it('should find and click submit button when finder returns a button', async () => {
       const form = document.createElement('form')
