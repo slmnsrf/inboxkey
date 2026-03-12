@@ -535,17 +535,25 @@ export function isFieldWatched(field: HTMLInputElement): boolean {
 function deriveExpectedShape(field: HTMLInputElement): ExpectedShape {
   const expected: ExpectedShape = {}
 
+  // Check if field belongs to a split-input group FIRST,
+  // before interpreting maxLength (which may be per-box, not total)
+  const group = detectSplitInputGroup(field)
+  const groupSize = group && group.inputs.length > 1 ? group.inputs.length : 1
+
   if (field.maxLength && field.maxLength > 0) {
-    expected.length = field.maxLength
-  } else {
-    // For split-input groups with unset maxLength (e.g. Microsoft codeEntry-0..5),
-    // use the group input count as expected code length
-    const group = detectSplitInputGroup(field)
-    if (group && group.inputs.length > 1) {
-      expected.length = group.inputs.length
-    } else if (field.size && field.size > 0) {
-      expected.length = field.size
+    if (field.maxLength <= 3 && groupSize > 1) {
+      // Small per-box maxLength in a split group: total code length = per-box * group size
+      // e.g., maxLength=1, 6 inputs -> expected length = 6
+      expected.length = field.maxLength * groupSize
+    } else {
+      // Single field or large maxLength: use directly
+      expected.length = field.maxLength
     }
+  } else if (groupSize > 1) {
+    // Split group with unset maxLength (e.g., Microsoft codeEntry-0..5)
+    expected.length = groupSize
+  } else if (field.size && field.size > 0) {
+    expected.length = field.size
   }
 
   const inputMode = field.inputMode?.toLowerCase()
