@@ -135,9 +135,11 @@ async function autofillSplitInputs(
 
   console.log(`[Autofill] Distributing ${chars.length} characters across ${fillableInputs.length} fillable inputs (${inputs.length} total)`)
 
-  // Code must have enough characters to fill all fillable inputs
-  if (chars.length < fillableInputs.length) {
-    console.warn(`[Autofill] Code length (${chars.length}) shorter than fillable input count (${fillableInputs.length}), incomplete fill`)
+  // Strict shape contract: code length must exactly match fillable input count
+  if (chars.length !== fillableInputs.length) {
+    console.warn(
+      `[Autofill] Shape mismatch: code has ${chars.length} chars but ${fillableInputs.length} fillable inputs`
+    )
     return false
   }
 
