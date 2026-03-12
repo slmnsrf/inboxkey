@@ -124,36 +124,43 @@ async function autofillSplitInputs(
 ): Promise<boolean> {
   const chars = code.split('')
 
-  // Fill each input with one character
-  for (let i = 0; i < Math.min(chars.length, inputs.length); i++) {
-    const input = inputs[i]
+  // Filter to fillable inputs only (skip readOnly, disabled)
+  const fillableInputs = inputs.filter(input =>
+    !input.readOnly && !input.disabled
+  )
 
-    // Focus the input
-    input.focus()
+  // Fill each fillable input with one character
+  let charIndex = 0
+  for (const input of fillableInputs) {
+    if (charIndex < chars.length) {
+      input.focus()
+      input.value = chars[charIndex]
 
-    // Set the value
-    input.value = chars[i]
+      // Dispatch events for framework reactivity
+      input.dispatchEvent(new Event('input', { bubbles: true }))
+      input.dispatchEvent(new Event('change', { bubbles: true }))
+      input.dispatchEvent(new KeyboardEvent('keydown', { bubbles: true }))
+      input.dispatchEvent(new KeyboardEvent('keyup', { bubbles: true }))
 
-    // Dispatch events to trigger framework reactivity
-    input.dispatchEvent(new Event('input', { bubbles: true }))
-    input.dispatchEvent(new Event('change', { bubbles: true }))
-    input.dispatchEvent(new KeyboardEvent('keydown', { bubbles: true }))
-    input.dispatchEvent(new KeyboardEvent('keyup', { bubbles: true }))
+      input.setAttribute('data-inboxkey-filled', 'true')
+      input.setAttribute('data-inboxkey-timestamp', Date.now().toString())
 
-    // Mark as filled
-    input.setAttribute('data-inboxkey-filled', 'true')
-    input.setAttribute('data-inboxkey-timestamp', Date.now().toString())
-
-    // Visual feedback
-    if (showFeedback) {
-      showSuccessFeedback(input)
+      if (showFeedback) {
+        showSuccessFeedback(input)
+      }
+      charIndex++
+    } else {
+      // Clear trailing inputs when code is shorter than group
+      input.value = ''
+      input.dispatchEvent(new Event('input', { bubbles: true }))
+      input.dispatchEvent(new Event('change', { bubbles: true }))
     }
   }
 
-  // Focus last filled input (matches user expectation)
-  const lastIndex = Math.min(chars.length, inputs.length) - 1
-  if (lastIndex >= 0) {
-    inputs[lastIndex].focus()
+  // Focus last filled input
+  const lastFilledIndex = Math.min(chars.length, fillableInputs.length) - 1
+  if (lastFilledIndex >= 0) {
+    fillableInputs[lastFilledIndex].focus()
   }
 
   return true
