@@ -217,12 +217,23 @@ export class PopupMessageHandler {
               await new Promise(resolve => setTimeout(resolve, delay))
             }
 
-            // All adapters failed = real failure response (no green flash)
+            // Any failure = failure response (prevents green flash / banner dismissal)
             if (allFailed) {
               const firstError = adapterResults.find(r => r.error)?.error || 'All adapters failed'
               return {
                 success: false,
                 error: firstError,
+              }
+            }
+
+            if (!allSucceeded) {
+              // Partial failure: some data was retrieved but not all mailboxes synced
+              const failedAdapters = adapterResults.filter(r => !r.success)
+              const failedCount = failedAdapters.length
+              const totalCount = adapterResults.length
+              return {
+                success: false,
+                error: `Partial sync: ${failedCount}/${totalCount} mailboxes failed`,
               }
             }
 

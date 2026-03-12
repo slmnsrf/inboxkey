@@ -82,11 +82,17 @@ describe('sync response contract (Finding #1)', () => {
     adapterResults: Array<{ mailboxId: string; success: boolean; error?: string }>,
     cache: object
   ): { success: boolean; data?: object; error?: string } {
+    const allSucceeded = adapterResults.every(r => r.success)
     const allFailed = adapterResults.every(r => !r.success)
 
     if (allFailed) {
       const firstError = adapterResults.find(r => r.error)?.error || 'All adapters failed'
       return { success: false, error: firstError }
+    }
+
+    if (!allSucceeded) {
+      const failedCount = adapterResults.filter(r => !r.success).length
+      return { success: false, error: `Partial sync: ${failedCount}/${adapterResults.length} mailboxes failed` }
     }
 
     return { success: true, data: cache }
@@ -113,15 +119,16 @@ describe('sync response contract (Finding #1)', () => {
     expect(result.data).toEqual({ items: ['code1'] })
   })
 
-  it('should return success:true for partial failure (some adapters succeeded)', () => {
+  it('should return success:false for partial failure (prevents green flash)', () => {
     const result = decideSyncResponse([
       { mailboxId: 'mbx-good', success: true },
       { mailboxId: 'mbx-bad', success: false, error: 'Auth failed' },
     ], { items: ['code1'] })
 
-    // Partial failure still returns success:true (data from working adapters)
-    // but error state is tracked separately via ErrorStateManager
-    expect(result.success).toBe(true)
-    expect(result.data).toBeDefined()
+    // Partial failure returns success:false so popup.tsx doesn't green-flash
+    // and useSyncErrors doesn't dismiss the error banner
+    expect(result.success).toBe(false)
+    expect(result.error).toContain('Partial sync')
+    expect(result.data).toBeUndefined()
   })
 })
