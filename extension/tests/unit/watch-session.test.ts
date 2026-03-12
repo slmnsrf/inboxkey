@@ -42,17 +42,12 @@ vi.mock("../../src/contents/autofill", () => ({
   findAndClickSubmitButton: vi.fn().mockResolvedValue(false),
 }))
 
-vi.mock("../../src/lib/detection/split-input-detector", () => ({
-  detectSplitInputGroup: vi.fn().mockReturnValue(null),
-}))
-
 import {
   WatchSession,
   startWatch,
   getActiveWatch,
   stopActiveWatch,
   isFieldWatched,
-  deriveExpectedShape,
 } from "../../src/contents/watch-session"
 import type { DetectionResult } from "../../src/lib/types"
 
@@ -716,36 +711,5 @@ describe("WatchSession", () => {
     emitDisconnect()
 
     expect(getActiveWatch()).toBe(null)
-  })
-})
-
-describe('deriveExpectedShape for split-input', () => {
-  it('should derive length from group size for split-input fields', () => {
-    const input = document.createElement('input') as unknown as HTMLInputElement
-    input.type = 'text'
-    input.maxLength = 1
-
-    // Split-input: 6 inputs * maxLength 1 = expected length 6
-    const shape = deriveExpectedShape(input, 6)
-    expect(shape.length).toBe(6)
-  })
-
-  it('should use maxLength directly for non-split-input fields', () => {
-    const input = document.createElement('input') as unknown as HTMLInputElement
-    input.type = 'text'
-    input.maxLength = 6
-
-    const shape = deriveExpectedShape(input)
-    expect(shape.length).toBe(6)
-  })
-
-  it('should handle split-input with maxLength=2 per input', () => {
-    const input = document.createElement('input') as unknown as HTMLInputElement
-    input.type = 'text'
-    input.maxLength = 2
-
-    // 4 inputs * maxLength 2 = 8
-    const shape = deriveExpectedShape(input, 4)
-    expect(shape.length).toBe(8)
   })
 })

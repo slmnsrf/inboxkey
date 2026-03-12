@@ -14,7 +14,6 @@ import { extractDomain, isDomainEnabled } from "@/lib/utils/domain"
 import { StorageFactory } from '@/lib/storage/storage-factory'
 import { findAndClickSubmitButton } from './autofill'
 import { isBlacklisted, addBlacklistedUrl } from "@/lib/utils/blacklist"
-import { detectSplitInputGroup } from "@/lib/detection/split-input-detector"
 
 interface SessionCodeResult {
   code: string
@@ -101,8 +100,7 @@ export class WatchSession {
     this.port.onMessage.addListener(this.handlePortMessage)
     this.port.onDisconnect.addListener(this.handlePortDisconnect)
 
-    const splitGroup = detectSplitInputGroup(this.field)
-    const expected = deriveExpectedShape(this.field, splitGroup?.inputs.length)
+    const expected = deriveExpectedShape(this.field)
 
     // Load timeout setting
     const storage = await StorageFactory.create()
@@ -533,13 +531,11 @@ export function isFieldWatched(field: HTMLInputElement): boolean {
 /**
  * Derive expected code shape information from an input element.
  */
-export function deriveExpectedShape(field: HTMLInputElement, splitGroupSize?: number): ExpectedShape {
+function deriveExpectedShape(field: HTMLInputElement): ExpectedShape {
   const expected: ExpectedShape = {}
 
   if (field.maxLength && field.maxLength > 0) {
-    expected.length = splitGroupSize
-      ? field.maxLength * splitGroupSize
-      : field.maxLength
+    expected.length = field.maxLength
   } else if (field.size && field.size > 0) {
     expected.length = field.size
   }

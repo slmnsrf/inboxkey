@@ -27,6 +27,7 @@ export async function autofillCode(options: AutofillOptions): Promise<boolean> {
   if (domain) {
     const enabled = await isDomainEnabled(domain)
     if (!enabled) {
+      console.log('[Autofill] Domain is disabled, skipping autofill')
       return false
     }
   }
@@ -71,10 +72,13 @@ export async function autofillCode(options: AutofillOptions): Promise<boolean> {
   const group = detectSplitInputGroup(field)
 
   if (group && group.inputs.length > 1) {
+    console.log(`[Autofill] Split-input group detected: ${group.inputs.length} inputs`)
     return autofillSplitInputs(code, group.inputs, showFeedback)
   }
 
   // Perform autofill (single field)
+  console.log('[Autofill] Autofilling code:', code)
+
   // Focus the field first
   field.focus()
 
@@ -102,9 +106,11 @@ export async function autofillCode(options: AutofillOptions): Promise<boolean> {
   // Check if we should auto-submit
   const shouldAutoSubmit = await checkForAutoSubmit(field)
   if (shouldAutoSubmit) {
+    console.log('[Autofill] Auto-submitting form')
     await submitForm(field)
   }
 
+  console.log('[Autofill] Autofill completed successfully')
   return true
 }
 
@@ -124,48 +130,42 @@ async function autofillSplitInputs(
 ): Promise<boolean> {
   const chars = code.split('')
 
-  // Filter to fillable inputs only (skip readOnly, disabled)
-  const fillableInputs = inputs.filter(input =>
-    !input.readOnly && !input.disabled
-  )
+  console.log(`[Autofill] Distributing ${chars.length} characters across ${inputs.length} inputs`)
 
-  // Fill each fillable input with one character
-  let charIndex = 0
-  for (const input of fillableInputs) {
-    if (charIndex < chars.length) {
-      input.focus()
-      input.value = chars[charIndex]
+  // Fill each input with one character
+  for (let i = 0; i < Math.min(chars.length, inputs.length); i++) {
+    const input = inputs[i]
 
-      // Dispatch events for framework reactivity
-      input.dispatchEvent(new Event('input', { bubbles: true }))
-      input.dispatchEvent(new Event('change', { bubbles: true }))
-      input.dispatchEvent(new KeyboardEvent('keydown', { bubbles: true }))
-      input.dispatchEvent(new KeyboardEvent('keyup', { bubbles: true }))
+    // Focus the input
+    input.focus()
 
-      input.setAttribute('data-inboxkey-filled', 'true')
-      input.setAttribute('data-inboxkey-timestamp', Date.now().toString())
+    // Set the value
+    input.value = chars[i]
 
-      if (showFeedback) {
-        showSuccessFeedback(input)
-      }
-      charIndex++
-    } else {
-      // Clear trailing inputs when code is shorter than group
-      input.value = ''
-      input.dispatchEvent(new Event('input', { bubbles: true }))
-      input.dispatchEvent(new Event('change', { bubbles: true }))
+    // Dispatch events to trigger framework reactivity
+    input.dispatchEvent(new Event('input', { bubbles: true }))
+    input.dispatchEvent(new Event('change', { bubbles: true }))
+    input.dispatchEvent(new KeyboardEvent('keydown', { bubbles: true }))
+    input.dispatchEvent(new KeyboardEvent('keyup', { bubbles: true }))
+
+    // Mark as filled
+    input.setAttribute('data-inboxkey-filled', 'true')
+    input.setAttribute('data-inboxkey-timestamp', Date.now().toString())
+
+    // Visual feedback
+    if (showFeedback) {
+      showSuccessFeedback(input)
     }
   }
 
-  // Focus last filled input
-  const lastFilledIndex = Math.min(chars.length, fillableInputs.length) - 1
-  if (lastFilledIndex >= 0) {
-    fillableInputs[lastFilledIndex].focus()
+  // Focus last filled input (matches user expectation)
+  const lastIndex = Math.min(chars.length, inputs.length) - 1
+  if (lastIndex >= 0) {
+    inputs[lastIndex].focus()
   }
 
-  // Report failure if code was truncated (more chars than fillable inputs)
-  const filledCount = Math.min(chars.length, fillableInputs.length)
-  return filledCount === chars.length
+  console.log('[Autofill] Split-input autofill completed successfully')
+  return true
 }
 
 /**
@@ -254,6 +254,9 @@ export async function findAndClickSubmitButton(
   field: HTMLInputElement,
   extendedDetection: boolean = false  // NEW parameter
 ): Promise<boolean> {
+  console.log('[Autofill] Attempting to find and click submit button')
+  console.log('[Autofill] Extended detection:', extendedDetection)
+
   const url = window.location.href
 
   try {
@@ -265,13 +268,17 @@ export async function findAndClickSubmitButton(
     })
 
     if (!button) {
+      console.log('[Autofill] No safe submit button found')
       await logAutoSubmitFailure(url, 'no_safe_buttons', { buttonCount: 0 })
       return false
     }
 
     // Found a safe button, try to click it
+    console.log('[Autofill] Clicking submit button:', button.textContent?.trim())
+
     try {
       button.click()
+      console.log('[Autofill] Submit button clicked successfully')
       return true
     } catch (clickError) {
       console.error('[Autofill] Failed to click button:', clickError)

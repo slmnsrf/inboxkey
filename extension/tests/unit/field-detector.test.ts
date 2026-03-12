@@ -6,7 +6,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { Window } from 'happy-dom'
 import { FieldDetector } from '../../src/lib/detection/field-detector'
-import type { DetectionResult } from '../../src/lib/types'
 
 describe('FieldDetector', () => {
   let window: Window
@@ -148,33 +147,6 @@ describe('FieldDetector', () => {
       expect(results[0].signals).toContain('name/id="email_code" (contains match)')
     })
 
-    it('should run Tier 2 on unmatched inputs even when Tier 1 found results', () => {
-      // First field: obvious Tier 1 match
-      // Second field: only detectable by Tier 2 (split-input pattern)
-      document.body.innerHTML = `
-        <input type="text" id="otp" autocomplete="one-time-code">
-        <div>
-          <input type="text" maxlength="1" class="code-digit">
-          <input type="text" maxlength="1" class="code-digit">
-          <input type="text" maxlength="1" class="code-digit">
-          <input type="text" maxlength="1" class="code-digit">
-          <input type="text" maxlength="1" class="code-digit">
-          <input type="text" maxlength="1" class="code-digit">
-        </div>
-      `
-
-      const results = detector.detectExisting({ strictVisibility: false })
-
-      // Should find BOTH: the autocomplete field AND the split-input group
-      expect(results.length).toBeGreaterThanOrEqual(2)
-
-      // Verify we have both Tier 1 and Tier 2 results
-      const hasTier1 = results.some(r => r.tier === 1)
-      const hasTier2 = results.some(r => r.tier === 2)
-      expect(hasTier1).toBe(true)
-      expect(hasTier2).toBe(true)
-    })
-
     it('should track detected fields to avoid duplicates', () => {
       document.body.innerHTML = `
         <input type="text" name="otp" autocomplete="one-time-code" data-testid="verification-field">
@@ -247,7 +219,7 @@ describe('FieldDetector', () => {
       // Wait for debounce (100ms)
       await new Promise((resolve) => setTimeout(resolve, 150))
 
-      expect(callback).toHaveBeenCalledWith(input, expect.objectContaining({ tier: 1 }))
+      expect(callback).toHaveBeenCalledWith(input)
     })
 
     it('should debounce mutations within 100ms window', async () => {
@@ -331,7 +303,7 @@ describe('FieldDetector', () => {
       await new Promise((resolve) => setTimeout(resolve, 150))
 
       // Should detect the nested input
-      expect(callback).toHaveBeenCalledWith(input, expect.objectContaining({ tier: 1 }))
+      expect(callback).toHaveBeenCalledWith(input)
     })
 
     it('should filter out hidden and disabled fields', async () => {
@@ -358,55 +330,6 @@ describe('FieldDetector', () => {
 
       // Should not call callback
       expect(callback).not.toHaveBeenCalled()
-    })
-  })
-
-  describe('dynamic detection callback signature', () => {
-    it('should pass DetectionResult alongside field in callback', async () => {
-      let receivedResult: DetectionResult | null = null
-      detector.startObserving((field, result) => {
-        receivedResult = result
-      })
-
-      // Trigger mutation
-      const input = document.createElement('input')
-      input.type = 'text'
-      input.setAttribute('autocomplete', 'one-time-code')
-      input.id = 'dynamic-otp'
-      document.body.appendChild(input)
-
-      // Wait for debounce + processing
-      await new Promise(r => setTimeout(r, 200))
-
-      expect(receivedResult).not.toBeNull()
-      expect(receivedResult!.tier).toBe(1)
-      expect(receivedResult!.confidence).toBe(100)
-    })
-  })
-
-  describe('processPendingMutations overflow', () => {
-    it('should process all pending mutations, not just first 10', async () => {
-      const detectedFields: HTMLInputElement[] = []
-      detector.startObserving((field) => {
-        detectedFields.push(field)
-      })
-
-      // Inject 15 inputs at once (simulating SPA route change)
-      const container = document.createElement('div')
-      for (let i = 0; i < 15; i++) {
-        const input = document.createElement('input')
-        input.type = 'text'
-        input.id = `dynamic-${i}`
-        input.setAttribute('autocomplete', 'one-time-code')
-        container.appendChild(input)
-      }
-      document.body.appendChild(container)
-
-      // Wait for debounce (100ms) + processing
-      await new Promise(r => setTimeout(r, 200))
-
-      // All 15 inputs should be processed, not capped at 10
-      expect(detectedFields.length).toBe(15)
     })
   })
 

@@ -390,7 +390,7 @@ export class FieldDetector {
   private detectedFields: WeakSet<HTMLInputElement> = new WeakSet()
   private debounceTimer: number | null = null
   private pendingMutations: Set<HTMLInputElement> = new Set()
-  private callback: ((field: HTMLInputElement, result: DetectionResult) => void) | null = null
+  private callback: ((field: HTMLInputElement) => void) | null = null
   private cooldown: CooldownRegistry
 
   constructor() {
@@ -441,20 +441,18 @@ export class FieldDetector {
       }
     }
 
-    // Run Tier 2 on inputs NOT matched by Tier 1
-    // (matches detectAllFields behavior -- don't suppress Tier 2 just because Tier 1 found something)
-    const tier1MatchedFields = new Set(results.map(r => r.field))
-    for (const input of inputs) {
-      if (tier1MatchedFields.has(input)) continue
+    // If Tier 1 found nothing, try Tier 2
+    if (results.length === 0) {
+      for (const input of inputs) {
+        const startTime = performance.now()
+        const tier2Result = detectTier2(input, scanCooldown)
 
-      const startTime = performance.now()
-      const tier2Result = detectTier2(input, scanCooldown)
-
-      if (tier2Result.detected) {
-        const executionTime = performance.now() - startTime
-        const result = tier2ToDetectionResult(input, tier2Result, executionTime)
-        results.push(result)
-        this.detectedFields.add(input)
+        if (tier2Result.detected) {
+          const executionTime = performance.now() - startTime
+          const result = tier2ToDetectionResult(input, tier2Result, executionTime)
+          results.push(result)
+          this.detectedFields.add(input)
+        }
       }
     }
 
@@ -469,7 +467,7 @@ export class FieldDetector {
    *
    * @param callback - Called when a new verification field is detected
    */
-  startObserving(callback: (field: HTMLInputElement, result: DetectionResult) => void): void {
+  startObserving(callback: (field: HTMLInputElement) => void): void {
     if (this.observer) {
       console.warn('[FieldDetector] Already observing, stopping previous observer')
       this.stopObserving()
@@ -515,12 +513,20 @@ export class FieldDetector {
       return
     }
 
+    console.log('[FieldDetector] handleMutations called with', mutations.length, 'mutation(s)')
+
     // Collect new input fields
     for (const mutation of mutations) {
       for (const node of mutation.addedNodes) {
         if (node instanceof HTMLInputElement) {
           if (!this.detectedFields.has(node)) {
             this.pendingMutations.add(node)
+            console.log('[FieldDetector] Collected input:', {
+              element: node,
+              maxLength: node.maxLength,
+              type: node.type,
+              role: node.getAttribute('role')
+            })
           }
         } else if (node instanceof HTMLElement) {
           // Check descendants
@@ -528,11 +534,19 @@ export class FieldDetector {
           for (const input of inputs) {
             if (!this.detectedFields.has(input)) {
               this.pendingMutations.add(input)
+              console.log('[FieldDetector] Collected input (descendant):', {
+                element: input,
+                maxLength: input.maxLength,
+                type: input.type,
+                role: input.getAttribute('role')
+              })
             }
           }
         }
       }
     }
+
+    console.log('[FieldDetector] Total pending mutations:', this.pendingMutations.size)
 
     // Debounce processing
     if (this.debounceTimer !== null) {
@@ -549,59 +563,113 @@ export class FieldDetector {
    */
   private processPendingMutations(): void {
     if (this.pendingMutations.size === 0) {
+      console.log('[FieldDetector] processPendingMutations: no pending mutations')
       return
     }
 
-    const inputs = Array.from(this.pendingMutations)
+    // Limit batch size for performance
+    const inputs = Array.from(this.pendingMutations).slice(0, 10)
     this.pendingMutations.clear()
 
-    // Filter visible inputs
+    console.log(`[FieldDetector] processPendingMutations: processing ${inputs.length} input(s)`)
+
+    // Filter visible inputs WITH detailed logging
     const visibleInputs = inputs.filter(input => {
       const style = window.getComputedStyle(input)
-      return (
+      const isVisible = (
         style.display !== 'none' &&
         style.visibility !== 'hidden' &&
         input.type !== 'hidden' &&
         !input.disabled
       )
+
+      if (!isVisible) {
+        console.log('[FieldDetector] Filtered out (not visible):', {
+          element: input,
+          display: style.display,
+          visibility: style.visibility,
+          type: input.type,
+          disabled: input.disabled,
+          maxLength: input.maxLength,
+          role: input.getAttribute('role')
+        })
+      } else {
+        console.log('[FieldDetector] Passed visibility check:', {
+          element: input,
+          maxLength: input.maxLength,
+          type: input.type,
+          role: input.getAttribute('role')
+        })
+      }
+
+      return isVisible
     })
 
+    console.log(`[FieldDetector] After visibility filter: ${visibleInputs.length}/${inputs.length} inputs visible`)
+
     if (visibleInputs.length === 0) {
+      console.log('[FieldDetector] No visible inputs - aborting detection')
       return
     }
 
     // Try to detect verification fields
     for (const input of visibleInputs) {
-      const startTime = performance.now()
+      console.log('[FieldDetector] Attempting detection on input:', {
+        maxLength: input.maxLength,
+        type: input.type,
+        name: input.name,
+        id: input.id,
+        role: input.getAttribute('role')
+      })
 
       // Try Tier 1 first
       const tier1Result = detectTier1(input, this.cooldown)
+      console.log('[FieldDetector] Tier1 result:', {
+        detected: tier1Result.detected,
+        confidence: tier1Result.confidence,
+        reason: tier1Result.reason,
+        layer: tier1Result.metadata?.layer
+      })
 
       if (tier1Result.detected) {
-        const result = tier1ToDetectionResult(input, tier1Result, performance.now() - startTime)
         this.detectedFields.add(input)
-        this.callback?.(input, result)
+        this.callback?.(input)
+        console.log('[FieldDetector] Field detected via Tier1, callback invoked')
         continue
       }
 
-      // Try Tier 2 if Tier 1 didn't reject definitively
+      // Try Tier 2 if Tier 1 didn't reject
       const shouldTryTier2 = (
         tier1Result.metadata?.layer !== 'attribute' &&
         tier1Result.metadata?.layer !== 'context' &&
-        tier1Result.metadata?.layer !== 'signal-classifier-tier1' &&
-        tier1Result.metadata?.layer !== 'url-pattern'
+        tier1Result.metadata?.layer !== 'signal-classifier-tier1'
       )
+
+      console.log('[FieldDetector] Should try Tier2?', shouldTryTier2,
+        '(rejection layer:', tier1Result.metadata?.layer, ')')
 
       if (shouldTryTier2) {
         const tier2Result = detectTier2(input, this.cooldown)
+        console.log('[FieldDetector] Tier2 result:', {
+          detected: tier2Result.detected,
+          confidence: tier2Result.confidence,
+          score: tier2Result.score,
+          reason: tier2Result.reason
+        })
 
         if (tier2Result.detected) {
-          const result = tier2ToDetectionResult(input, tier2Result, performance.now() - startTime)
           this.detectedFields.add(input)
-          this.callback?.(input, result)
+          this.callback?.(input)
+          console.log('[FieldDetector] Field detected via Tier2, callback invoked')
+        } else {
+          console.log('[FieldDetector] Tier2 failed - field rejected')
         }
+      } else {
+        console.log('[FieldDetector] Tier2 skipped - Tier1 rejected with layer:', tier1Result.metadata?.layer)
       }
     }
+
+    console.log('[FieldDetector] processPendingMutations complete')
   }
 
   /**

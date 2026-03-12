@@ -41,7 +41,9 @@ let urlCheckTimer: ReturnType<typeof setInterval> | null = null
  */
 export function clearProcessedFields(): void {
   if (globalProcessedRepresentatives) {
+    const size = globalProcessedRepresentatives.size
     globalProcessedRepresentatives.clear()
+    console.log(`[InboxKey] 🧹 Cleared ${size} processed representative(s)`)
   }
 }
 
@@ -57,6 +59,8 @@ export function clearProcessedFields(): void {
   }
 
   // Domain is enabled - proceed with normal initialization
+  console.log('[InboxKey] Content script loaded on', window.location.href)
+
   // Initialize field detector
   const detector = new FieldDetector()
 
@@ -67,12 +71,29 @@ export function clearProcessedFields(): void {
     field: HTMLInputElement,
     detectionResult: DetectionResult
   ): void {
+    console.log('[InboxKey] ========================================')
+    console.log('[InboxKey] Verification field detected')
+
     // Check if field is part of split-input group
     const group = detectSplitInputGroup(field)
     const representativeField = group?.representative || field
 
+    if (group) {
+      console.log(`[InboxKey] Split-input group detected: ${group.inputs.length} inputs`)
+      console.log('[InboxKey] Pattern:', group.pattern)
+      console.log('[InboxKey] Using first input as representative')
+    }
+
+    console.log('[InboxKey] Field:', representativeField)
+    console.log('[InboxKey] Confidence:', detectionResult.confidence)
+    console.log('[InboxKey] Tier:', detectionResult.tier)
+    console.log('[InboxKey] Signals:', detectionResult.signals)
+    console.log('[InboxKey] Execution time:', `${detectionResult.executionTime.toFixed(2)}ms`)
+    console.log('[InboxKey] ========================================')
+
     // Check if already watching this field (or its group representative)
     if (isFieldWatched(representativeField)) {
+      console.log('[InboxKey] Field (or group) already being watched, skipping')
       return
     }
 
@@ -81,11 +102,11 @@ export function clearProcessedFields(): void {
       representativeField,
       detectionResult,
       {
-        onSessionStarted: (_sessionId: string) => {
-          // Session started
+        onSessionStarted: (sessionId: string) => {
+          console.log(`[InboxKey] Watch session started: ${sessionId}`)
         },
         onCodeFound: (result) => {
-          // Code value intentionally not logged (privacy)
+          console.log(`[InboxKey] Code received: ${result.code}`)
         },
         onAutofill: async (result, targetField) => {
           // Try to autofill the code
@@ -100,9 +121,11 @@ export function clearProcessedFields(): void {
           return success
         },
         onTimeout: () => {
+          console.log("[InboxKey] Watch session timed out without code")
           clearProcessedFields()
         },
         onCanceled: () => {
+          console.log("[InboxKey] Watch session canceled")
           clearProcessedFields()
         },
       }
@@ -113,12 +136,15 @@ export function clearProcessedFields(): void {
    * Detect existing fields on page load
    */
   async function detectExistingFields(): Promise<void> {
+    console.log('[InboxKey] Detecting existing verification fields...')
+
     // Check automation level setting
     try {
       const result = await chrome.storage.local.get('settings')
       const automationLevel = result.settings?.automationLevel || 'autofill'
 
       if (automationLevel === 'manual') {
+        console.log('[InboxKey] Manual mode enabled - skipping auto-detection')
         return
       }
     } catch (error) {
@@ -129,6 +155,7 @@ export function clearProcessedFields(): void {
     const results = detector.detectExisting({ strictVisibility: true })
 
     if (results.length === 0) {
+      console.log('[InboxKey] No verification fields found')
       return
     }
 
@@ -141,8 +168,11 @@ export function clearProcessedFields(): void {
    * Start observing for dynamically injected fields
    */
   function startDynamicDetection(): void {
-    const pendingFields = new Map<HTMLInputElement, DetectionResult>()
+    console.log('[InboxKey] Starting dynamic field detection...')
+
+    const pendingFields = new Set<HTMLInputElement>()
     let debounceTimer: number | null = null
+    let callbackCount = 0  // Track how many times observer fires
 
     // Initialize global Set (module-level variable)
     globalProcessedRepresentatives = new Set<HTMLInputElement>()
@@ -151,14 +181,24 @@ export function clearProcessedFields(): void {
     let lastUrl = window.location.href
     urlCheckTimer = window.setInterval(() => {
       if (window.location.href !== lastUrl) {
+        console.log('[InboxKey] 🔄 URL changed, clearing processed representatives')
         globalProcessedRepresentatives?.clear()
         lastUrl = window.location.href
       }
     }, 500)
 
-    detector.startObserving(async (field: HTMLInputElement, detectionResult: DetectionResult) => {
-      // Add to pending batch (store both field and its detection result)
-      pendingFields.set(field, detectionResult)
+    detector.startObserving(async (field: HTMLInputElement) => {
+      callbackCount++
+      console.log(`[InboxKey] ⚡ Dynamic detection callback #${callbackCount} fired for field:`, {
+        id: field.id,
+        name: field.name,
+        maxLength: field.maxLength,
+        type: field.type,
+        role: field.getAttribute('role')
+      })
+
+      // Add to pending batch
+      pendingFields.add(field)
 
       // Clear existing timer
       if (debounceTimer !== null) {
@@ -167,8 +207,11 @@ export function clearProcessedFields(): void {
 
       // Wait 50ms to batch rapid injections (e.g., 5 inputs injected together)
       debounceTimer = window.setTimeout(async () => {
-        const entries = Array.from(pendingFields.entries())
+        const fields = Array.from(pendingFields)
         pendingFields.clear()
+
+        console.log(`[InboxKey] 📦 Processing batch of ${fields.length} field(s)`)
+        console.log('[InboxKey] 📦 Field IDs in batch:', fields.map(f => f.id || f.name || '?'))
 
         // Check automation level
         try {
@@ -176,41 +219,58 @@ export function clearProcessedFields(): void {
           const automationLevel = result.settings?.automationLevel || 'autofill'
 
           if (automationLevel === 'manual') {
+            console.log('[InboxKey] Manual mode enabled - skipping dynamic detection')
             return
           }
         } catch (error) {
           console.error('[InboxKey] Failed to check automation level:', error)
         }
 
-        // Process each batched field using the detection result passed from FieldDetector
-        for (const [f, result] of entries) {
+        // Evaluate each batched field directly (no full-page rescan)
+        for (const f of fields) {
           // Detect if this field is part of a split-input group
           const group = detectSplitInputGroup(f)
           const representative = group?.representative || f
 
+          console.log('[InboxKey] 🎯 Field:', f.id || f.name, '→ Representative:', representative.id || representative.name)
+
           // Skip if we've already processed this representative (GLOBAL check across all batches)
           if (globalProcessedRepresentatives?.has(representative)) {
+            console.log('[InboxKey] ⏭️  SKIPPING - representative already processed globally')
             continue
           }
 
           // Mark representative as processed GLOBALLY (only if still in DOM)
           if (document.contains(representative)) {
             globalProcessedRepresentatives?.add(representative)
+            console.log('[InboxKey] ✅ Added representative to global Set (size:', globalProcessedRepresentatives?.size, ')')
           } else {
+            console.log('[InboxKey] ⚠️  Representative no longer in DOM, skipping')
             continue
           }
 
-          // Use the detection result passed from FieldDetector (no re-evaluation needed)
-          handleDetectedField(representative, result)
+          // Evaluate the specific field through Tier 1 -> Tier 2
+          const result = detector.evaluateField(representative, { strictVisibility: true })
+
+          if (result) {
+            console.log('[InboxKey] ✓ Field detected, calling handleDetectedField()')
+            handleDetectedField(representative, result)
+          } else {
+            console.log('[InboxKey] ✗ Field not detected as verification input')
+          }
         }
       }, 50)  // 50ms debounce window
     })
+
+    console.log('[InboxKey] Dynamic detection active')
   }
 
   /**
    * Initialize the content script
    */
   function initialize(): void {
+    console.log('[InboxKey] Initializing content script...')
+
     // Detect fields immediately
     detectExistingFields()
 
@@ -221,6 +281,7 @@ export function clearProcessedFields(): void {
     const observer = new MutationObserver(() => {
       const activeWatch = getActiveWatch()
       if (activeWatch && !document.contains(activeWatch.getField())) {
+        console.log('[InboxKey] Active watch field removed from DOM')
         stopActiveWatch()
       }
     })
@@ -229,6 +290,8 @@ export function clearProcessedFields(): void {
       childList: true,
       subtree: true,
     })
+
+    console.log('[InboxKey] Content script initialized')
   }
 
   // Initialize when DOM is ready
@@ -240,10 +303,13 @@ export function clearProcessedFields(): void {
 
   // Clean up on page unload
   window.addEventListener('beforeunload', () => {
+    console.log('[InboxKey] Cleaning up before page unload')
+
     // Clear URL check timer (prevent memory leak)
     if (urlCheckTimer !== null) {
       clearInterval(urlCheckTimer)
       urlCheckTimer = null
+      console.log('[InboxKey] 🧹 Cleared URL check timer')
     }
 
     detector.stopObserving()

@@ -37,21 +37,41 @@ export function detectSplitInputGroup(
   // Split-input fields typically have maxlength="1" (Steam) or maxlength="2" (some banks)
   const maxLen = field.maxLength
 
+  // DEBUG: Log maxLength for diagnosis
+  if (maxLen === -1) {
+    console.log('[SplitInputDetector] Field has unset maxLength (-1), proceeding with detection:', {
+      id: field.id,
+      name: field.name,
+      label: field.getAttribute('aria-label')
+    })
+  }
+
   if (maxLen > 3 && maxLen !== -1) {
+    console.log('[SplitInputDetector] Rejecting field - maxLength too large:', {
+      maxLen,
+      id: field.id
+    })
     return null
   }
 
   // Get similar sibling inputs within same container
   const siblings = getSimilarSiblings(field)
 
+  console.log('[SplitInputDetector] Found siblings:', {
+    count: siblings.length,
+    ids: siblings.map(s => s.id || s.name || '?')
+  })
+
   // Need at least 4 inputs to be a group (support 4-8+ digit codes)
   // Single/pair/triple inputs are just short regular fields
   if (siblings.length < 4) {
+    console.log('[SplitInputDetector] Not enough siblings for group (need 4+)')
     return null
   }
 
   // Validate that inputs form a coherent group
   if (!isCoherentGroup(siblings)) {
+    console.log('[SplitInputDetector] Siblings failed coherence check')
     return null
   }
 
@@ -70,6 +90,13 @@ export function detectSplitInputGroup(
     }
 
     return 0  // Same element (shouldn't happen)
+  })
+
+  console.log('[SplitInputDetector] ✓ Group detected:', {
+    pattern,
+    count: sortedInputs.length,
+    representative: sortedInputs[0].id || sortedInputs[0].name,
+    members: sortedInputs.map(s => s.id || s.name || '?')
   })
 
   return {
