@@ -22,6 +22,7 @@ import { findBestMatchingCode } from "@/lib/matching/code-matcher"
 import { StorageFactory } from "@/lib/storage/storage-factory"
 import { EmailPollingService } from "@/lib/services/email-polling-service"
 import { createAdaptersFromMailboxes } from "@/lib/services/provider-adapter"
+import { SeenMessageStore } from "@/lib/services/seen-message-store"
 import { SessionPoller } from "./session-poller"
 import { extractETLD } from "@/lib/matching/domain-affinity"
 import { WATCH_SESSION_SCORING } from "@/lib/matching/scoring-config"
@@ -95,6 +96,7 @@ interface PersistedSessions {
 export class SessionController {
   private sessions = new Map<string, SessionState>()
   private poller: SessionPoller  // V2: Replaces manual timer/alarm management
+  private readonly seenStore = new SeenMessageStore()
 
   constructor(
     private readonly callbacks: SessionControllerCallbacks,
@@ -336,8 +338,8 @@ export class SessionController {
       // Create adapters from mailboxes (v2 pattern)
       const adapters = await createAdaptersFromMailboxes(storage)
 
-      // Poll emails from all connected mailboxes (v2 API)
-      const pollingService = new EmailPollingService(adapters)
+      // Poll emails from all connected mailboxes (v2 API) — share seenStore to persist across polls
+      const pollingService = new EmailPollingService(adapters, this.seenStore)
       const candidates = await pollingService.pollOnce()
       console.log(
         `[SessionController] Email poll complete: ${candidates.length} candidates found`

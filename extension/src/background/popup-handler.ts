@@ -11,6 +11,7 @@ import { SyncRateLimiter } from './sync-rate-limiter'
 import type { PopupRequest, PopupResponse } from '@/shared/popup-messages'
 import { EmailPollingService } from '@/lib/services/email-polling-service'
 import { createAdaptersFromMailboxes } from '@/lib/services/provider-adapter'
+import { SeenMessageStore } from '@/lib/services/seen-message-store'
 import { StorageFactory } from '@/lib/storage/storage-factory'
 import { setBadgeCount, setBadgeSyncError, clearBadge } from '@/contents/badge-manager'
 import { BADGE_EXPIRY_MS } from '@/lib/popup/popup-config'
@@ -20,6 +21,7 @@ import { BADGE_EXPIRY_MS } from '@/lib/popup/popup-config'
  */
 export class PopupMessageHandler {
   private readonly rateLimiter = new SyncRateLimiter()
+  private readonly seenStore = new SeenMessageStore()
 
   constructor(
     private readonly cacheManager: PopupCacheManager,
@@ -107,8 +109,8 @@ export class PopupMessageHandler {
             // Create adapters from mailboxes (v2 pattern)
             const adapters = await createAdaptersFromMailboxes(storage)
 
-            // Run email polling (v2 API)
-            const pollingService = new EmailPollingService(adapters)
+            // Run email polling (v2 API) — share seenStore to persist across syncs
+            const pollingService = new EmailPollingService(adapters, this.seenStore)
             const candidates = await pollingService.pollOnce()
 
             console.log(`[PopupHandler] Manual sync found ${candidates.length} candidates`)

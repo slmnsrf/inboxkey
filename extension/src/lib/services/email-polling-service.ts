@@ -20,6 +20,7 @@
 
 import { extractFromEmail } from '@inboxkey/extraction-core'
 import { SCORE_POPUP } from '@/lib/popup/popup-config'
+import { SeenMessageStore } from './seen-message-store'
 
 // ---------------- Types ----------------
 
@@ -109,7 +110,7 @@ export class EmailPollingService {
   // @ts-expect-error: Reserved for future rate limiting
   private lastPollEpochMs = 0
 
-  constructor(adapters: ProviderAdapter[] = []) {
+  constructor(adapters: ProviderAdapter[] = [], private seenStore?: SeenMessageStore) {
     this.adapters = adapters.slice()
   }
 
@@ -172,8 +173,14 @@ export class EmailPollingService {
 
           // Skip messages we've processed before (use adapter.mailboxId for multi-account)
           const seenKey = `${ad.mailboxId}:${msg.id}`
-          if (this.seenMessageIds.has(seenKey)) continue
-          this.seenMessageIds.add(seenKey)
+          if (this.seenStore) {
+            if (await this.seenStore.hasSeen(seenKey)) continue
+            await this.seenStore.add(seenKey)
+          } else {
+            // Fallback to in-memory set (backward compat for callers that don't pass store)
+            if (this.seenMessageIds.has(seenKey)) continue
+            this.seenMessageIds.add(seenKey)
+          }
 
           const subject = msg.subject || ''
           const ext = extractFromEmail(

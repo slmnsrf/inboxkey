@@ -19,6 +19,7 @@ vi.mock('@/lib/popup/popup-config', () => ({
 
 import { EmailPollingService } from '../../src/lib/services/email-polling-service'
 import type { ProviderAdapter } from '../../src/lib/services/email-polling-service'
+import { SeenMessageStore } from '../../src/lib/services/seen-message-store'
 
 describe('mailboxId propagation', () => {
   it('should skip adapters without mailboxId and log warning', async () => {
@@ -69,5 +70,37 @@ describe('mailboxId propagation', () => {
     for (const r of results) {
       expect(r.mailboxId).toBe('mbx-456')
     }
+  })
+})
+
+describe('duplicate suppression persistence', () => {
+  it('should not re-process messages seen by a previous EmailPollingService instance', async () => {
+    // Use real in-memory storage (not overridden mock) so the store actually persists
+    const store = new SeenMessageStore()
+    const email = {
+      id: 'msg-dup-1',
+      provider: 'gmail' as const,
+      mailboxId: 'mbx-1',
+      subject: 'Your code is 999888',
+      from: 'noreply@test.com',
+      receivedEpochMs: Date.now(),
+      text: 'Your verification code is 999888',
+    }
+    const adapter: ProviderAdapter = {
+      id: 'gmail',
+      mailboxId: 'mbx-1',
+      listRecent: vi.fn().mockResolvedValue([email]),
+    }
+
+    // First poll — message should be processed
+    const service1 = new EmailPollingService([adapter], store)
+    const results1 = await service1.pollOnce()
+    expect(results1.length).toBeGreaterThan(0)
+
+    // Second poll with a NEW EmailPollingService instance but the SAME store
+    const service2 = new EmailPollingService([adapter], store)
+    const results2 = await service2.pollOnce()
+    // Message was already seen — must not appear again
+    expect(results2.length).toBe(0)
   })
 })
