@@ -6,10 +6,15 @@ import { describe, it, expect, vi } from 'vitest'
 
 // Mock extraction-core before importing the service
 vi.mock('@inboxkey/extraction-core', () => ({
-  extractFromEmail: vi.fn((_email, _ctx) => ({
-    otps: [{ code: '123456', confidence: 0.95, charset: 'digits' }],
-    links: [],
-  })),
+  extractFromEmail: vi.fn((email: { subject?: string }, _ctx: unknown) => {
+    // Extract a 6-digit code from subject if present (supports freshness-floor tests)
+    const match = (email.subject || '').match(/\b(\d{6})\b/)
+    const code = match ? match[1] : '123456'
+    return {
+      otps: [{ code, confidence: 0.95, charset: 'digits' }],
+      links: [],
+    }
+  }),
 }))
 
 // Mock popup-config
@@ -70,6 +75,45 @@ describe('mailboxId propagation', () => {
     for (const r of results) {
       expect(r.mailboxId).toBe('mbx-456')
     }
+  })
+})
+
+describe('freshness floor', () => {
+  it('should filter out messages older than the time window', async () => {
+    const now = Date.now()
+    const adapter: ProviderAdapter = {
+      id: 'gmail',
+      mailboxId: 'mbx-1',
+      listRecent: vi.fn().mockResolvedValue([
+        {
+          id: 'fresh-msg',
+          provider: 'gmail',
+          mailboxId: 'mbx-1',
+          subject: 'Your code is 111222',
+          from: 'noreply@test.com',
+          receivedEpochMs: now - 2 * 60 * 1000, // 2 min ago (within 10-min window)
+          text: 'Your verification code is 111222',
+        },
+        {
+          id: 'stale-msg',
+          provider: 'gmail',
+          mailboxId: 'mbx-1',
+          subject: 'Your code is 333444',
+          from: 'noreply@test.com',
+          receivedEpochMs: now - 60 * 60 * 1000, // 60 min ago (outside window)
+          text: 'Your verification code is 333444',
+        },
+      ]),
+    }
+
+    const service = new EmailPollingService([adapter])
+    const result = await service.pollOnce({}, { timeWindowMin: 10 })
+
+    // Note: after Task 4, pollOnce returns PollResult; use .candidates
+    const candidates = Array.isArray(result) ? result : result.candidates
+    const codes = candidates.map(r => r.code?.value).filter(Boolean)
+    expect(codes).toContain('111222')
+    expect(codes).not.toContain('333444')
   })
 })
 

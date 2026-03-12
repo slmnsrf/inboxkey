@@ -171,6 +171,10 @@ export class EmailPollingService {
           if (cfg.signal?.aborted) break
           if (processed >= globalMax) break
 
+          // Service-side freshness floor: reject messages outside time window
+          // (compensates for Gmail's day-granularity newerThan rounding)
+          if (msg.receivedEpochMs && msg.receivedEpochMs < since) continue
+
           // Skip messages we've processed before (use adapter.mailboxId for multi-account)
           const seenKey = `${ad.mailboxId}:${msg.id}`
           if (this.seenStore) {
