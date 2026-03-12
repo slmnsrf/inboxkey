@@ -367,14 +367,21 @@ export class SessionController {
         }
       }
 
-      // Update lastSyncedAt only for mailboxes whose adapter succeeded
+      // Update sync status for all mailboxes based on adapter results
       const now = Date.now()
-      const successfulMailboxIds = new Set(
-        adapterResults.filter(r => r.success).map(r => r.mailboxId)
-      )
-      for (const mailbox of mailboxes) {
-        if (successfulMailboxIds.has(mailbox.id)) {
-          await storage.updateMailbox(mailbox.id, { lastSyncedAt: now })
+      for (const result of adapterResults) {
+        const mailbox = mailboxes.find(m => m.id === result.mailboxId)
+        if (!mailbox) continue
+
+        if (result.success) {
+          await storage.updateMailbox(mailbox.id, {
+            lastSyncedAt: now,
+            lastSyncError: undefined, // Clear error on success
+          })
+        } else if (result.error) {
+          await storage.updateMailbox(mailbox.id, {
+            lastSyncError: result.error,
+          })
         }
       }
 
