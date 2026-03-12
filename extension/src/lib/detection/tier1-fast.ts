@@ -23,6 +23,7 @@ import type { CooldownRegistry } from './cooldown-registry'
 import { validateContext } from './context-validator'
 import { validateURL } from './url-pattern-validator'
 import { classifyDeliveryChannel } from './signal-classifier'
+import { getAriaDescribedbyText } from './detection-utils'
 import type { TextSources } from './types'
 import {
   ATTRIBUTE_PATTERNS,
@@ -144,26 +145,6 @@ function getNearbyText(input: HTMLInputElement): string {
   }
 
   return texts.join(' ')
-}
-
-/**
- * Resolve aria-describedby text
- *
- * aria-describedby can reference multiple IDs (space-separated).
- * Each referenced element's text content is resolved and joined.
- *
- * @param input - Input field to resolve aria-describedby from
- * @returns Combined text from all referenced elements
- */
-function getAriaDescribedbyText(input: HTMLInputElement): string {
-  const describedby = input.getAttribute('aria-describedby')
-  if (!describedby) return ''
-
-  return describedby
-    .split(/\s+/)
-    .map(id => input.ownerDocument?.getElementById(id)?.textContent?.trim() || '')
-    .filter(Boolean)
-    .join(' ')
 }
 
 /**
