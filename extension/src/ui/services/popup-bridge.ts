@@ -5,7 +5,7 @@
  * Includes fallback to direct storage reads if SW is dead.
  */
 
-import type { PopupCache, PopupRequest, PopupResponse, SyncErrorInfo } from '@/shared/popup-messages'
+import type { UnifiedPopupCache, PopupRequest, PopupResponse, SyncErrorInfo } from '@/shared/popup-messages'
 
 /**
  * Lock status interface
@@ -19,7 +19,7 @@ export class PopupBridge {
   /**
    * Get popup data from background worker.
    */
-  async getPopupData(timeout = 5000): Promise<PopupCache> {
+  async getPopupData(timeout = 5000): Promise<UnifiedPopupCache> {
     // Get current tab domain for scoring
     let currentDomain: string | undefined
     try {
@@ -32,7 +32,7 @@ export class PopupBridge {
       console.warn('[PopupBridge] Could not get current tab domain:', error)
     }
 
-    const response = await this.sendMessage<PopupCache>(
+    const response = await this.sendMessage<UnifiedPopupCache>(
       { type: 'GET_POPUP_DATA', currentDomain },
       timeout
     )
@@ -115,7 +115,7 @@ export class PopupBridge {
    * Trigger manual email sync.
    * @returns New popup data with updated codes
    */
-  async triggerSync(): Promise<PopupCache> {
+  async triggerSync(): Promise<UnifiedPopupCache> {
     const response = await chrome.runtime.sendMessage({ type: 'TRIGGER_SYNC' })
     if (!response.success) {
       throw new Error(response.error)
@@ -169,9 +169,10 @@ export class PopupBridge {
     })
   }
 
-  private async readCacheFromStorage(): Promise<PopupCache> {
+  private async readCacheFromStorage(): Promise<UnifiedPopupCache> {
     const result = await chrome.storage.session.get('inboxkey.popup_cache')
     return result['inboxkey.popup_cache'] || {
+      items: [],
       codes: [],
       magicLinks: [],
       lastSync: 0,
