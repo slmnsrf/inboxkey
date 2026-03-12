@@ -22,6 +22,7 @@ dist/
 build/
 .next/
 out/
+inboxbridge/target/
 
 
 # Environment variables
@@ -42,6 +43,11 @@ client_secret*.json
 # OS
 .DS_Store
 Thumbs.db
+nul
+
+# Local tooling
+.mcp.json
+.theteamlead/
 
 # Test coverage and reports
 coverage/
