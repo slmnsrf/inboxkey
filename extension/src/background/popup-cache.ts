@@ -12,9 +12,13 @@
  * - Stricter score thresholds (0.60/0.70/0.80)
  * - Staleness detection with async refresh
  *
+ * Items-first semantics:
+ * - items[] is the single authoritative store
+ * - Legacy codes[]/magicLinks[] are derived on read in getCache()
+ * - markCodeUsed, markLinkOpened, markCodesSeen all operate on items[]
+ *
  * Design:
- * - Stores up to 5 verification codes (MAX_CODES)
- * - Stores up to 3 magic links (MAX_LINKS)
+ * - Stores up to 5 items (MAX_ITEMS) in a unified priority-sorted list
  * - Updates automatically after email polling
  * - Responds to popup requests in <50ms
  */
@@ -42,10 +46,21 @@ import { recencyBoost } from '@/lib/matching/recency-scorer'
 const POPUP_CACHE_KEY = 'inboxkey.popup_cache'
 
 /**
+ * Internal cache shape stored in memory and chrome.storage.session.
+ * Only items[] is stored; legacy arrays are derived on read.
+ */
+interface InternalCache {
+  items: PopupItem[]
+  lastSync: number
+  mailboxCount: number
+  ts?: number
+}
+
+/**
  * Manages the popup cache for fast access to recent codes/links
  */
 export class PopupCacheManager {
-  private cache: UnifiedPopupCache | null = null
+  private cache: InternalCache | null = null
   private mailboxCache: Map<string, Mailbox> = new Map()
 
   /**
@@ -53,7 +68,20 @@ export class PopupCacheManager {
    */
   async initialize(): Promise<void> {
     const result = await chrome.storage.session.get(POPUP_CACHE_KEY)
-    this.cache = (result[POPUP_CACHE_KEY] as UnifiedPopupCache | undefined) || this.getEmptyCache()
+    const stored = result[POPUP_CACHE_KEY] as (InternalCache | UnifiedPopupCache | undefined)
+
+    if (stored) {
+      // Migrate from legacy format: if stored has codes/magicLinks but no items,
+      // or if stored has items alongside legacy arrays (V2 transition)
+      this.cache = {
+        items: stored.items || [],
+        lastSync: stored.lastSync || 0,
+        mailboxCount: stored.mailboxCount || 0,
+        ts: stored.ts,
+      }
+    } else {
+      this.cache = this.getEmptyInternalCache()
+    }
   }
 
   /**
@@ -68,25 +96,38 @@ export class PopupCacheManager {
 
   /**
    * Get current cache (fast path if warm, fallback to storage).
+   * Derives legacy codes[]/magicLinks[] from items[] on every read.
    * Detects staleness and can trigger async refresh if needed.
    */
   async getCache(): Promise<UnifiedPopupCache> {
-    if (this.cache) {
-      // Check staleness (V2 feature)
-      if (this.cache.ts) {
-        const age = Date.now() - this.cache.ts
-        if (age > POPUP_CACHE_STALE_MS) {
-          // Cache is stale but return it anyway (popup will trigger refresh)
-          // Staleness is expected behavior; popup will trigger async refresh
+    if (!this.cache) {
+      // Cold start: read from storage
+      const result = await chrome.storage.session.get(POPUP_CACHE_KEY)
+      const stored = result[POPUP_CACHE_KEY] as (InternalCache | UnifiedPopupCache | undefined)
+
+      if (stored) {
+        this.cache = {
+          items: stored.items || [],
+          lastSync: stored.lastSync || 0,
+          mailboxCount: stored.mailboxCount || 0,
+          ts: stored.ts,
         }
+      } else {
+        this.cache = this.getEmptyInternalCache()
       }
-      return this.cache
     }
 
-    // Cold start: read from storage
-    const result = await chrome.storage.session.get(POPUP_CACHE_KEY)
-    this.cache = (result[POPUP_CACHE_KEY] as UnifiedPopupCache | undefined) || this.getEmptyCache()
-    return this.cache
+    // Check staleness (V2 feature)
+    if (this.cache.ts) {
+      const age = Date.now() - this.cache.ts
+      if (age > POPUP_CACHE_STALE_MS) {
+        // Cache is stale but return it anyway (popup will trigger refresh)
+        // Staleness is expected behavior; popup will trigger async refresh
+      }
+    }
+
+    // Derive legacy arrays from items[]
+    return this.deriveUnifiedCache(this.cache)
   }
 
   /**
@@ -94,12 +135,12 @@ export class PopupCacheManager {
    * Called by EmailPollingService after successful extraction.
    *
    * V2 Pipeline:
-   * 1. Convert StoredCode[] → PopupItem[]
+   * 1. Convert StoredCode[] -> PopupItem[]
    * 2. Filter: fresh + safe + score threshold
    * 3. Deduplicate: canonical keys
    * 4. Sort: priority scoring
-   * 5. Slice: MAX_CODES/MAX_LINKS
-   * 6. Convert back to legacy format for backward compat
+   * 5. Slice: MAX_ITEMS
+   * 6. Store only items[] (legacy arrays derived on read)
    */
   async updateWithNewCodes(
     storedCodes: StoredCode[],
@@ -114,7 +155,7 @@ export class PopupCacheManager {
       this.updateMailboxCache(mailboxes)
     }
 
-    // Step 1: Convert StoredCode[] → PopupItem[]
+    // Step 1: Convert StoredCode[] -> PopupItem[]
     const allItems: PopupItem[] = storedCodes.map((stored) =>
       this.convertStoredCodeToPopupItem(stored)
     )
@@ -128,25 +169,15 @@ export class PopupCacheManager {
     // Step 4: Priority sorting
     const sortedItems = sortByPriority(dedupedItems, now, currentTabDomain)
 
-    // Step 5: Slice unified list to MAX_ITEMS (NEW: unified approach)
-    // This solves the empty section problem - top 5 items regardless of type
+    // Step 5: Slice unified list to MAX_ITEMS
     const topItems = sortedItems.slice(0, MAX_ITEMS)
 
-    // Step 6: Separate for legacy format (backward compatibility)
-    const { codes: codeItems, links: linkItems } = separateItems(topItems)
-
-    // Step 7: Convert to legacy format for backward compatibility
-    const legacyCodes = codeItems.map((item) => this.convertPopupItemToLegacyCode(item as CodeItem, now, currentTabDomain))
-    const legacyLinks = linkItems.map((item) => this.convertPopupItemToLegacyLink(item as LinkItem))
-
-    // Build unified cache with V2 items array + V1 legacy arrays
-    const cache: UnifiedPopupCache = {
-      items: topItems, // NEW: Unified priority-sorted list
-      codes: legacyCodes, // Legacy: for backward compatibility
-      magicLinks: legacyLinks, // Legacy: for backward compatibility
+    // Build internal cache with only items[]
+    const cache: InternalCache = {
+      items: topItems,
       lastSync: now,
       mailboxCount,
-      ts: now, // Cache timestamp for staleness detection
+      ts: now,
     }
 
     await this.saveCache(cache)
@@ -154,27 +185,54 @@ export class PopupCacheManager {
 
   /**
    * Mark a code as used (when popup copies it).
+   * Operates on items[] directly; legacy arrays are derived on read.
    */
   async markCodeUsed(code: string): Promise<void> {
-    const cache = await this.getCache()
-    const found = cache.codes.find((c) => c.code === code)
+    const internal = await this.getInternalCache()
+    const found = internal.items.find(
+      (item) => item.kind === 'code' && (item as CodeItem).code === code
+    )
 
     if (found) {
       found.usedAt = Date.now()
-      await this.saveCache(cache)
+      await this.saveCache(internal)
     }
   }
 
   /**
    * Mark a magic link as opened.
+   * Operates on items[] directly; legacy arrays are derived on read.
    */
   async markLinkOpened(url: string): Promise<void> {
-    const cache = await this.getCache()
-    const found = cache.magicLinks.find((l) => l.url === url)
+    const internal = await this.getInternalCache()
+    const found = internal.items.find(
+      (item) => item.kind === 'link' && (item as LinkItem).url === url
+    )
 
     if (found) {
       found.openedAt = Date.now()
-      await this.saveCache(cache)
+      await this.saveCache(internal)
+    }
+  }
+
+  /**
+   * Mark all items as seen (set seenAt on items that don't already have it).
+   * Called when popup opens to clear the unread badge.
+   */
+  async markCodesSeen(): Promise<void> {
+    const internal = await this.getInternalCache()
+    const now = Date.now()
+    let changed = false
+
+    for (const item of internal.items) {
+      if (!item.seenAt) {
+        item.seenAt = now
+        changed = true
+      }
+    }
+
+    if (changed) {
+      await this.saveCache(internal)
     }
   }
 
@@ -190,21 +248,153 @@ export class PopupCacheManager {
   }
 
   /**
-   * Save cache to both memory and chrome.storage.session
+   * Convert CodeItem to legacy PopupCacheCode (V2 -> V1)
+   * Now includes scoring metadata for debug/display purposes.
+   * Public so popup-handler can do domain projection.
    */
-  private async saveCache(cache: UnifiedPopupCache): Promise<void> {
+  convertPopupItemToLegacyCode(item: CodeItem, now: number, currentTabDomain?: string): PopupCacheCode {
+    const { from, subject } = this.parseSource(item.source)
+    const to = this.getMailboxEmail(item.id)
+    const providerName = this.getProviderName(item.providerId)
+
+    // Extract sender eTLD from the from email address
+    let senderETLD: string | undefined
+    if (from) {
+      const emailMatch = from.match(/([^@]+@)?([^@]+\.[^@>\s]+)/i)
+      if (emailMatch && emailMatch[2]) {
+        senderETLD = extractETLD(emailMatch[2])
+      }
+    }
+
+    // Compute scoring metadata for display/debug
+    const currentTabETLD = currentTabDomain ? extractETLD(currentTabDomain) : undefined
+    const domainAffinity = senderETLD && currentTabETLD
+      ? computeDomainAffinity(currentTabETLD, senderETLD, subject)
+      : 0
+
+    const ageSeconds = (now - item.receivedAt) / 1000
+    const recencyScore = recencyBoost(ageSeconds)
+
+    // Session boost is not applicable in popup context (no session start time)
+    const sessionBoost = 0
+
+    // Shape score would require expected shape from current site
+    const shapeScore = 0
+
+    // Compute total priority score
+    const totalScore = computePriority(item, now, currentTabDomain)
+
+    return {
+      code: item.code,
+      source: item.source,
+      receivedAt: item.receivedAt,
+      usedAt: item.usedAt,
+      seenAt: item.seenAt,
+      providerId: item.providerId === 'imap-bridge' ? undefined : item.providerId,
+      providerName,
+      from,
+      to,
+      subject,
+      // Scoring metadata
+      senderETLD,
+      domainAffinity,
+      recencyScore,
+      sessionBoost,
+      shapeScore,
+      totalScore,
+    }
+  }
+
+  /**
+   * Convert LinkItem to legacy PopupCacheMagicLink (V2 -> V1)
+   * Public so popup-handler can do domain projection.
+   */
+  convertPopupItemToLegacyLink(item: LinkItem): PopupCacheMagicLink {
+    const { from, subject } = this.parseSource(item.source)
+    const to = this.getMailboxEmail(item.id)
+    const providerName = this.getProviderName(item.providerId)
+
+    return {
+      url: item.url,
+      type: item.linkType,
+      source: item.source,
+      receivedAt: item.receivedAt,
+      openedAt: item.openedAt,
+      providerId: item.providerId === 'imap-bridge' ? undefined : item.providerId,
+      providerName,
+      from,
+      to,
+      subject,
+    }
+  }
+
+  /**
+   * Save cache to both memory and chrome.storage.session.
+   * Only stores InternalCache shape (items[] only, no legacy arrays).
+   */
+  private async saveCache(cache: InternalCache): Promise<void> {
     this.cache = cache
     await chrome.storage.session.set({ [POPUP_CACHE_KEY]: cache })
   }
 
   /**
-   * Create an empty cache
+   * Get internal cache (warm or cold start).
+   * Does NOT derive legacy arrays.
    */
-  private getEmptyCache(): UnifiedPopupCache {
+  private async getInternalCache(): Promise<InternalCache> {
+    if (this.cache) {
+      return this.cache
+    }
+
+    // Cold start: read from storage
+    const result = await chrome.storage.session.get(POPUP_CACHE_KEY)
+    const stored = result[POPUP_CACHE_KEY] as (InternalCache | UnifiedPopupCache | undefined)
+
+    if (stored) {
+      this.cache = {
+        items: stored.items || [],
+        lastSync: stored.lastSync || 0,
+        mailboxCount: stored.mailboxCount || 0,
+        ts: stored.ts,
+      }
+    } else {
+      this.cache = this.getEmptyInternalCache()
+    }
+
+    return this.cache
+  }
+
+  /**
+   * Derive the full UnifiedPopupCache (with legacy arrays) from internal cache.
+   * This is the only place legacy arrays are constructed.
+   */
+  private deriveUnifiedCache(internal: InternalCache): UnifiedPopupCache {
+    const now = Date.now()
+    const { codes: codeItems, links: linkItems } = separateItems(internal.items)
+
+    const legacyCodes = codeItems.map((item) =>
+      this.convertPopupItemToLegacyCode(item as CodeItem, now)
+    )
+    const legacyLinks = linkItems.map((item) =>
+      this.convertPopupItemToLegacyLink(item as LinkItem)
+    )
+
+    return {
+      items: internal.items,
+      codes: legacyCodes,
+      magicLinks: legacyLinks,
+      lastSync: internal.lastSync,
+      mailboxCount: internal.mailboxCount,
+      ts: internal.ts,
+    }
+  }
+
+  /**
+   * Create an empty internal cache
+   */
+  private getEmptyInternalCache(): InternalCache {
     return {
       items: [],
-      codes: [],
-      magicLinks: [],
       lastSync: 0,
       mailboxCount: 0,
     }
@@ -277,86 +467,6 @@ export class PopupCacheManager {
         usedAt: stored.used ? stored.timestamp : undefined,
       }
       return codeItem
-    }
-  }
-
-  /**
-   * Convert CodeItem to legacy PopupCacheCode (V2 → V1)
-   * Now includes scoring metadata for debug/display purposes
-   */
-  private convertPopupItemToLegacyCode(item: CodeItem, now: number, currentTabDomain?: string): PopupCacheCode {
-    const { from, subject } = this.parseSource(item.source)
-    const to = this.getMailboxEmail(item.id)
-    const providerName = this.getProviderName(item.providerId)
-
-    // Extract sender eTLD from the from email address
-    let senderETLD: string | undefined
-    if (from) {
-      const emailMatch = from.match(/([^@]+@)?([^@]+\.[^@>\s]+)/i)
-      if (emailMatch && emailMatch[2]) {
-        senderETLD = extractETLD(emailMatch[2])
-      }
-    }
-
-    // Compute scoring metadata for display/debug
-    const currentTabETLD = currentTabDomain ? extractETLD(currentTabDomain) : undefined
-    const domainAffinity = senderETLD && currentTabETLD
-      ? computeDomainAffinity(currentTabETLD, senderETLD, subject)
-      : 0
-
-    const ageSeconds = (now - item.receivedAt) / 1000
-    const recencyScore = recencyBoost(ageSeconds)
-
-    // Session boost is not applicable in popup context (no session start time)
-    // Could be added if we track tab navigation start time
-    const sessionBoost = 0
-
-    // Shape score would require expected shape from current site
-    // Skip for now as we don't have that context in popup-cache
-    const shapeScore = 0
-
-    // Compute total priority score
-    const totalScore = computePriority(item, now, currentTabDomain)
-
-    return {
-      code: item.code,
-      source: item.source,
-      receivedAt: item.receivedAt,
-      usedAt: item.usedAt,
-      providerId: item.providerId === 'imap-bridge' ? undefined : item.providerId,
-      providerName,
-      from,
-      to,
-      subject,
-      // Scoring metadata
-      senderETLD,
-      domainAffinity,
-      recencyScore,
-      sessionBoost,
-      shapeScore,
-      totalScore,
-    }
-  }
-
-  /**
-   * Convert LinkItem to legacy PopupCacheMagicLink (V2 → V1)
-   */
-  private convertPopupItemToLegacyLink(item: LinkItem): PopupCacheMagicLink {
-    const { from, subject } = this.parseSource(item.source)
-    const to = this.getMailboxEmail(item.id)
-    const providerName = this.getProviderName(item.providerId)
-
-    return {
-      url: item.url,
-      type: item.linkType,
-      source: item.source,
-      receivedAt: item.receivedAt,
-      openedAt: item.openedAt,
-      providerId: item.providerId === 'imap-bridge' ? undefined : item.providerId,
-      providerName,
-      from,
-      to,
-      subject,
     }
   }
 

@@ -29,6 +29,7 @@ export default defineConfig({
     alias: {
       "@": path.resolve(__dirname, "./src"),
       "~": path.resolve(__dirname, "."),
+      "@inboxkey/extraction-core": path.resolve(__dirname, "../packages/extraction-core/src/index.ts"),
     },
   },
 })
