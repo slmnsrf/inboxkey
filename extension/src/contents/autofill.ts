@@ -27,7 +27,6 @@ export async function autofillCode(options: AutofillOptions): Promise<boolean> {
   if (domain) {
     const enabled = await isDomainEnabled(domain)
     if (!enabled) {
-      console.log('[Autofill] Domain is disabled, skipping autofill')
       return false
     }
   }
@@ -72,13 +71,10 @@ export async function autofillCode(options: AutofillOptions): Promise<boolean> {
   const group = detectSplitInputGroup(field)
 
   if (group && group.inputs.length > 1) {
-    console.log(`[Autofill] Split-input group detected: ${group.inputs.length} inputs`)
     return autofillSplitInputs(code, group.inputs, showFeedback)
   }
 
   // Perform autofill (single field)
-  console.log('[Autofill] Autofilling code:', code)
-
   // Focus the field first
   field.focus()
 
@@ -106,11 +102,9 @@ export async function autofillCode(options: AutofillOptions): Promise<boolean> {
   // Check if we should auto-submit
   const shouldAutoSubmit = await checkForAutoSubmit(field)
   if (shouldAutoSubmit) {
-    console.log('[Autofill] Auto-submitting form')
     await submitForm(field)
   }
 
-  console.log('[Autofill] Autofill completed successfully')
   return true
 }
 
@@ -129,8 +123,6 @@ async function autofillSplitInputs(
   showFeedback: boolean
 ): Promise<boolean> {
   const chars = code.split('')
-
-  console.log(`[Autofill] Distributing ${chars.length} characters across ${inputs.length} inputs`)
 
   // Fill each input with one character
   for (let i = 0; i < Math.min(chars.length, inputs.length); i++) {
@@ -164,7 +156,6 @@ async function autofillSplitInputs(
     inputs[lastIndex].focus()
   }
 
-  console.log('[Autofill] Split-input autofill completed successfully')
   return true
 }
 
@@ -254,9 +245,6 @@ export async function findAndClickSubmitButton(
   field: HTMLInputElement,
   extendedDetection: boolean = false  // NEW parameter
 ): Promise<boolean> {
-  console.log('[Autofill] Attempting to find and click submit button')
-  console.log('[Autofill] Extended detection:', extendedDetection)
-
   const url = window.location.href
 
   try {
@@ -268,17 +256,13 @@ export async function findAndClickSubmitButton(
     })
 
     if (!button) {
-      console.log('[Autofill] No safe submit button found')
       await logAutoSubmitFailure(url, 'no_safe_buttons', { buttonCount: 0 })
       return false
     }
 
     // Found a safe button, try to click it
-    console.log('[Autofill] Clicking submit button:', button.textContent?.trim())
-
     try {
       button.click()
-      console.log('[Autofill] Submit button clicked successfully')
       return true
     } catch (clickError) {
       console.error('[Autofill] Failed to click button:', clickError)
