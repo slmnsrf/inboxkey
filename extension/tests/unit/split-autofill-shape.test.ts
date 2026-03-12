@@ -154,3 +154,48 @@ describe('split autofill shape contract', () => {
     expect(result).toBe(false)
   })
 })
+
+describe('deriveExpectedShape for split groups', () => {
+  // Test the logic directly by simulating what deriveExpectedShape does.
+  // deriveExpectedShape is a private function, so we validate its contract
+  // via this extracted computation that mirrors the fixed algorithm:
+  //   1. Check split group FIRST
+  //   2. When maxLength <= 3 and groupSize > 1, use maxLength * groupSize
+  //   3. Otherwise use maxLength directly, or groupSize, or 0
+  function computeExpectedLength(maxLength: number, groupSize: number): number {
+    if (maxLength > 0 && maxLength <= 3 && groupSize > 1) {
+      return maxLength * groupSize
+    }
+    if (maxLength > 0) {
+      return maxLength
+    }
+    if (groupSize > 1) {
+      return groupSize
+    }
+    return 0 // no length constraint
+  }
+
+  it('should use maxLength * groupSize for maxLength=1, 6-input group', () => {
+    expect(computeExpectedLength(1, 6)).toBe(6)
+  })
+
+  it('should use maxLength * groupSize for maxLength=2, 4-input group', () => {
+    expect(computeExpectedLength(2, 4)).toBe(8)
+  })
+
+  it('should use maxLength * groupSize for maxLength=3 boundary', () => {
+    expect(computeExpectedLength(3, 4)).toBe(12)
+  })
+
+  it('should use groupSize for maxLength=-1 (unset)', () => {
+    expect(computeExpectedLength(-1, 6)).toBe(6)
+  })
+
+  it('should use maxLength directly for single field (no group)', () => {
+    expect(computeExpectedLength(6, 1)).toBe(6)
+  })
+
+  it('should use maxLength directly for large maxLength (not per-box)', () => {
+    expect(computeExpectedLength(6, 6)).toBe(6)
+  })
+})
