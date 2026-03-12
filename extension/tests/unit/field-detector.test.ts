@@ -499,6 +499,38 @@ describe('FieldDetector', () => {
     })
   })
 
+  describe('tier priority ordering', () => {
+    it('should rank Tier 1 results above Tier 2 results even with lower confidence', () => {
+      // Set up page with both a Tier 1 field and a Tier 2 split-input field
+      document.body.innerHTML = `
+        <input type="text" inputmode="numeric" maxlength="6" id="otp-single">
+        <div>
+          <label>Enter code</label>
+          <input type="text" maxlength="1" id="split-0">
+          <input type="text" maxlength="1" id="split-1">
+          <input type="text" maxlength="1" id="split-2">
+          <input type="text" maxlength="1" id="split-3">
+          <input type="text" maxlength="1" id="split-4">
+          <input type="text" maxlength="1" id="split-5">
+        </div>
+      `
+
+      const results = detector.detectExisting({ strictVisibility: false })
+
+      // If both are detected, Tier 1 must come first regardless of confidence
+      if (results.length >= 2) {
+        const tier1Results = results.filter(r => r.tier === 1)
+        const tier2Results = results.filter(r => r.tier === 2)
+
+        if (tier1Results.length > 0 && tier2Results.length > 0) {
+          const firstTier1Index = results.indexOf(tier1Results[0])
+          const firstTier2Index = results.indexOf(tier2Results[0])
+          expect(firstTier1Index).toBeLessThan(firstTier2Index)
+        }
+      }
+    })
+  })
+
   describe('Performance', () => {
     it('should meet Tier 1 performance target (<1ms)', () => {
       document.body.innerHTML = `

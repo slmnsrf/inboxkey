@@ -362,8 +362,8 @@ export function detectAllFields(options?: {
     }
   }
 
-  // Sort by confidence descending
-  results.sort((a, b) => b.confidence - a.confidence)
+  // Sort by tier first (Tier 1 before Tier 2), then by confidence within same tier
+  results.sort((a, b) => a.tier - b.tier || b.confidence - a.confidence)
 
   return results
 }
@@ -458,8 +458,8 @@ export class FieldDetector {
       }
     }
 
-    // Sort by confidence descending (highest confidence first)
-    results.sort((a, b) => b.confidence - a.confidence)
+    // Sort by tier first (Tier 1 before Tier 2), then by confidence within same tier
+    results.sort((a, b) => a.tier - b.tier || b.confidence - a.confidence)
 
     return results
   }
