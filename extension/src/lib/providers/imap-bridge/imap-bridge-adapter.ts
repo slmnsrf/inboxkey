@@ -64,45 +64,45 @@ export class IMAPBridgeAdapter implements ProviderAdapter {
       // Convert IMAP messages to EmailLike format
       return response.messages.map((msg) => this.convertToEmailLike(msg))
     } catch (error) {
-      // Log the error for diagnostics, then re-throw so pollOnce() can
-      // record this adapter as failed (mailbox-aware sync accounting).
-      if (error instanceof NativeMessagingError) {
-        switch (error.code) {
-          case NativeErrorCode.ACCOUNT_NOT_FOUND:
-            console.error(
-              `[IMAPBridgeAdapter] Account ${this.accountId} not found on backend`
-            )
-            break
-          case NativeErrorCode.KEYCHAIN_UNAVAILABLE:
-            console.error(
-              `[IMAPBridgeAdapter] Keychain unavailable for ${this.accountId}`
-            )
-            break
-          case NativeErrorCode.IMAP_AUTH:
-            console.error(`[IMAPBridgeAdapter] Auth failed for ${this.accountEmail}`)
-            break
-          case NativeErrorCode.IMAP_NETWORK:
-            console.warn(`[IMAPBridgeAdapter] Network error for ${this.accountEmail}`)
-            break
-          case NativeErrorCode.PORT_DISCONNECTED:
-            console.error('[IMAPBridgeAdapter] InboxBridge not running')
-            break
-          case NativeErrorCode.TIMEOUT:
-            console.warn(
-              `[IMAPBridgeAdapter] Timeout fetching emails for ${this.accountEmail}`
-            )
-            break
-          default:
-            console.error('[IMAPBridgeAdapter] Unknown error:', error.message)
-        }
-      } else {
-        console.error('[IMAPBridgeAdapter] Unexpected error:', error)
-      }
+      // Map errors to user-facing messages, then re-throw so pollOnce() can
+      // record this adapter as failed in adapterResults with a meaningful message.
+      const userMessage = this.getUserFacingError(error)
+      console.error(`[IMAPBridgeAdapter] ${userMessage}`)
 
-      // Re-throw so EmailPollingService.pollOnce() catches it and marks
-      // this adapter as failed in adapterResults (instead of false success)
-      throw error
+      // Re-throw with user-facing message so it propagates to lastSyncError
+      throw new Error(userMessage)
     }
+  }
+
+  /**
+   * Map raw errors to user-facing messages for UI display (lastSyncError).
+   */
+  private getUserFacingError(error: unknown): string {
+    if (error instanceof NativeMessagingError) {
+      switch (error.code) {
+        case NativeErrorCode.ACCOUNT_NOT_FOUND:
+          return 'Account not found in InboxBridge. Reconnect in settings.'
+        case NativeErrorCode.KEYCHAIN_UNAVAILABLE:
+          return 'OS keychain unavailable. Restart your computer or check permissions.'
+        case NativeErrorCode.IMAP_AUTH:
+          return 'Login failed. Check your email password.'
+        case NativeErrorCode.IMAP_NETWORK:
+          return 'Could not reach mail server. Check your internet connection.'
+        case NativeErrorCode.PORT_DISCONNECTED:
+          return 'InboxBridge is not running. Start it and try again.'
+        case NativeErrorCode.TIMEOUT:
+          return 'Mail server took too long to respond.'
+        case NativeErrorCode.TLS_HANDSHAKE:
+          return 'Secure connection failed. Check server settings.'
+        case NativeErrorCode.RATE_LIMIT_EXCEEDED:
+          return 'Too many requests. Try again in a few minutes.'
+        case NativeErrorCode.CONNECTION_LIMIT:
+          return 'Too many connections to mail server. Close other email clients.'
+        default:
+          return `Sync failed: ${error.message}`
+      }
+    }
+    return error instanceof Error ? error.message : 'Unknown sync error'
   }
 
   /**
