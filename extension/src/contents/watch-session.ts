@@ -532,7 +532,7 @@ export function isFieldWatched(field: HTMLInputElement): boolean {
 /**
  * Derive expected code shape information from an input element.
  */
-function deriveExpectedShape(field: HTMLInputElement): ExpectedShape {
+export function deriveExpectedShape(field: HTMLInputElement): ExpectedShape {
   const expected: ExpectedShape = {}
 
   // Check if field belongs to a split-input group FIRST,
@@ -541,10 +541,11 @@ function deriveExpectedShape(field: HTMLInputElement): ExpectedShape {
   const groupSize = group && group.inputs.length > 1 ? group.inputs.length : 1
 
   if (field.maxLength && field.maxLength > 0) {
-    if (field.maxLength <= 3 && groupSize > 1) {
-      // Small per-box maxLength in a split group: total code length = per-box * group size
+    if (field.maxLength === 1 && groupSize > 1) {
+      // Per-box maxLength=1 in a split group: total code length = group size
       // e.g., maxLength=1, 6 inputs -> expected length = 6
-      expected.length = field.maxLength * groupSize
+      // Only maxLength=1 is supported because autofill writes one char per box
+      expected.length = groupSize
     } else {
       // Single field or large maxLength: use directly
       expected.length = field.maxLength

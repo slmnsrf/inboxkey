@@ -517,17 +517,20 @@ describe('FieldDetector', () => {
 
       const results = detector.detectExisting({ strictVisibility: false })
 
-      // If both are detected, Tier 1 must come first regardless of confidence
-      if (results.length >= 2) {
-        const tier1Results = results.filter(r => r.tier === 1)
-        const tier2Results = results.filter(r => r.tier === 2)
+      // Must detect at least 2 results (both tiers)
+      expect(results.length).toBeGreaterThanOrEqual(2)
 
-        if (tier1Results.length > 0 && tier2Results.length > 0) {
-          const firstTier1Index = results.indexOf(tier1Results[0])
-          const firstTier2Index = results.indexOf(tier2Results[0])
-          expect(firstTier1Index).toBeLessThan(firstTier2Index)
-        }
-      }
+      const tier1Results = results.filter(r => r.tier === 1)
+      const tier2Results = results.filter(r => r.tier === 2)
+
+      // Both tiers must be present for this test to be meaningful
+      expect(tier1Results.length).toBeGreaterThan(0)
+      expect(tier2Results.length).toBeGreaterThan(0)
+
+      // Tier 1 must appear before Tier 2 in sorted results
+      const firstTier1Index = results.indexOf(tier1Results[0])
+      const firstTier2Index = results.indexOf(tier2Results[0])
+      expect(firstTier1Index).toBeLessThan(firstTier2Index)
     })
   })
 

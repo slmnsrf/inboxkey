@@ -55,6 +55,7 @@ import {
   deriveExpectedShape,
 } from "../../src/contents/watch-session"
 import type { DetectionResult } from "../../src/lib/types"
+import { detectSplitInputGroup } from "../../src/lib/detection/split-input-detector"
 
 interface MockPort {
   name: string
@@ -720,13 +721,18 @@ describe("WatchSession", () => {
 })
 
 describe('deriveExpectedShape for split-input', () => {
-  it('should derive length from group size for split-input fields', () => {
+  it('should derive length from group size for maxLength=1 split-input fields', () => {
     const input = document.createElement('input') as unknown as HTMLInputElement
     input.type = 'text'
     input.maxLength = 1
 
-    // Split-input: 6 inputs * maxLength 1 = expected length 6
-    const shape = deriveExpectedShape(input, 6)
+    vi.mocked(detectSplitInputGroup).mockReturnValue({
+      inputs: Array.from({ length: 6 }, () => input),
+      representative: input,
+      pattern: 'maxlength-1',
+    })
+
+    const shape = deriveExpectedShape(input)
     expect(shape.length).toBe(6)
   })
 
@@ -735,17 +741,25 @@ describe('deriveExpectedShape for split-input', () => {
     input.type = 'text'
     input.maxLength = 6
 
+    vi.mocked(detectSplitInputGroup).mockReturnValue(null)
+
     const shape = deriveExpectedShape(input)
     expect(shape.length).toBe(6)
   })
 
-  it('should handle split-input with maxLength=2 per input', () => {
+  it('should use maxLength directly for maxLength=2 split group (autofill only supports 1-char-per-box)', () => {
     const input = document.createElement('input') as unknown as HTMLInputElement
     input.type = 'text'
     input.maxLength = 2
 
-    // 4 inputs * maxLength 2 = 8
-    const shape = deriveExpectedShape(input, 4)
-    expect(shape.length).toBe(8)
+    vi.mocked(detectSplitInputGroup).mockReturnValue({
+      inputs: Array.from({ length: 4 }, () => input),
+      representative: input,
+      pattern: 'maxlength-1',
+    })
+
+    // maxLength=2 is NOT multiplied: autofill writes 1 char per box
+    const shape = deriveExpectedShape(input)
+    expect(shape.length).toBe(2)
   })
 })

@@ -26,9 +26,14 @@ vi.mock('../../src/lib/storage/telemetry', () => ({
 vi.mock('../../src/lib/detection/split-input-detector', () => ({
   detectSplitInputGroup: vi.fn(() => null),
 }))
+// Mock watch-session dependencies for deriveExpectedShape
+vi.mock('../../src/lib/storage/storage-factory', () => ({
+  StorageFactory: { create: vi.fn() },
+}))
 
 import { autofillCode } from '../../src/contents/autofill'
 import { detectSplitInputGroup } from '../../src/lib/detection/split-input-detector'
+import { deriveExpectedShape } from '../../src/contents/watch-session'
 
 describe('split autofill shape contract', () => {
   let window: Window
@@ -155,47 +160,124 @@ describe('split autofill shape contract', () => {
   })
 })
 
-describe('deriveExpectedShape for split groups', () => {
-  // Test the logic directly by simulating what deriveExpectedShape does.
-  // deriveExpectedShape is a private function, so we validate its contract
-  // via this extracted computation that mirrors the fixed algorithm:
-  //   1. Check split group FIRST
-  //   2. When maxLength <= 3 and groupSize > 1, use maxLength * groupSize
-  //   3. Otherwise use maxLength directly, or groupSize, or 0
-  function computeExpectedLength(maxLength: number, groupSize: number): number {
-    if (maxLength > 0 && maxLength <= 3 && groupSize > 1) {
-      return maxLength * groupSize
+describe('deriveExpectedShape (real function)', () => {
+  let window: Window
+  let document: Document
+
+  beforeEach(() => {
+    window = new Window()
+    document = window.document
+    global.document = document as any
+    global.window = window as any
+  })
+
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
+  function createField(attrs: Record<string, string | number>): HTMLInputElement {
+    const input = document.createElement('input') as HTMLInputElement
+    input.type = 'text'
+    for (const [key, value] of Object.entries(attrs)) {
+      if (key === 'maxLength') {
+        input.maxLength = value as number
+      } else if (key === 'inputMode') {
+        input.setAttribute('inputmode', value as string)
+      } else {
+        input.setAttribute(key, String(value))
+      }
     }
-    if (maxLength > 0) {
-      return maxLength
-    }
-    if (groupSize > 1) {
-      return groupSize
-    }
-    return 0 // no length constraint
+    document.body.appendChild(input)
+    return input
   }
 
-  it('should use maxLength * groupSize for maxLength=1, 6-input group', () => {
-    expect(computeExpectedLength(1, 6)).toBe(6)
+  function createSplitGroup(count: number, maxLength: number = 1): HTMLInputElement[] {
+    const container = document.createElement('div')
+    const inputs: HTMLInputElement[] = []
+    for (let i = 0; i < count; i++) {
+      const input = document.createElement('input') as HTMLInputElement
+      input.type = 'text'
+      input.maxLength = maxLength
+      input.id = `split-${i}`
+      container.appendChild(input)
+      inputs.push(input)
+    }
+    document.body.appendChild(container)
+    return inputs
+  }
+
+  it('should use groupSize for maxLength=1 split group (e.g., 6 inputs -> length 6)', () => {
+    const inputs = createSplitGroup(6, 1)
+    vi.mocked(detectSplitInputGroup).mockReturnValue({
+      inputs,
+      representative: inputs[0],
+      pattern: 'maxlength-1',
+    })
+
+    const shape = deriveExpectedShape(inputs[0])
+    expect(shape.length).toBe(6)
   })
 
-  it('should use maxLength * groupSize for maxLength=2, 4-input group', () => {
-    expect(computeExpectedLength(2, 4)).toBe(8)
+  it('should use maxLength directly for maxLength=2 split group (autofill only supports 1-char-per-box)', () => {
+    const inputs = createSplitGroup(4, 2)
+    vi.mocked(detectSplitInputGroup).mockReturnValue({
+      inputs,
+      representative: inputs[0],
+      pattern: 'maxlength-1',
+    })
+
+    // maxLength=2 is NOT multiplied because autofill writes 1 char per box
+    const shape = deriveExpectedShape(inputs[0])
+    expect(shape.length).toBe(2)
   })
 
-  it('should use maxLength * groupSize for maxLength=3 boundary', () => {
-    expect(computeExpectedLength(3, 4)).toBe(12)
+  it('should use maxLength directly for maxLength=3 split group', () => {
+    const inputs = createSplitGroup(4, 3)
+    vi.mocked(detectSplitInputGroup).mockReturnValue({
+      inputs,
+      representative: inputs[0],
+      pattern: 'maxlength-1',
+    })
+
+    const shape = deriveExpectedShape(inputs[0])
+    expect(shape.length).toBe(3)
   })
 
-  it('should use groupSize for maxLength=-1 (unset)', () => {
-    expect(computeExpectedLength(-1, 6)).toBe(6)
+  it('should use groupSize for unset maxLength split group (e.g., Microsoft)', () => {
+    const inputs = createSplitGroup(6)
+    // Simulate unset maxLength (browser default is -1)
+    inputs.forEach(input => { input.removeAttribute('maxlength') })
+    vi.mocked(detectSplitInputGroup).mockReturnValue({
+      inputs,
+      representative: inputs[0],
+      pattern: 'sequential-name',
+    })
+
+    const shape = deriveExpectedShape(inputs[0])
+    expect(shape.length).toBe(6)
   })
 
   it('should use maxLength directly for single field (no group)', () => {
-    expect(computeExpectedLength(6, 1)).toBe(6)
+    const field = createField({ maxLength: 6 })
+    vi.mocked(detectSplitInputGroup).mockReturnValue(null)
+
+    const shape = deriveExpectedShape(field)
+    expect(shape.length).toBe(6)
   })
 
-  it('should use maxLength directly for large maxLength (not per-box)', () => {
-    expect(computeExpectedLength(6, 6)).toBe(6)
+  it('should detect numeric charset from type=tel', () => {
+    const field = createField({ maxLength: 6, type: 'tel' })
+    vi.mocked(detectSplitInputGroup).mockReturnValue(null)
+
+    const shape = deriveExpectedShape(field)
+    expect(shape.charset).toBe('digits')
+  })
+
+  it('should default to alnum charset', () => {
+    const field = createField({ maxLength: 6 })
+    vi.mocked(detectSplitInputGroup).mockReturnValue(null)
+
+    const shape = deriveExpectedShape(field)
+    expect(shape.charset).toBe('alnum')
   })
 })
