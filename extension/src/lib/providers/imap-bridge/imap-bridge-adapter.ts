@@ -23,10 +23,15 @@ import {
  * - Uses Native Messaging for all operations
  */
 export class IMAPBridgeAdapter implements ProviderAdapter {
+  public readonly mailboxId: string
+
   constructor(
     private accountId: string,
-    private accountEmail: string
-  ) {}
+    private accountEmail: string,
+    mailboxId: string
+  ) {
+    this.mailboxId = mailboxId
+  }
 
   get id(): 'imap-bridge' {
     return 'imap-bridge'
@@ -120,6 +125,7 @@ export class IMAPBridgeAdapter implements ProviderAdapter {
     return {
       id: `${this.accountId}:${mailbox}:${msg.uid}`, // Composite key: accountId:mailbox:uid (IMAP UIDs only unique per mailbox)
       provider: 'imap-bridge',
+      mailboxId: this.mailboxId,
       subject: msg.subject,
       from: msg.from,
       receivedEpochMs: new Date(msg.date).getTime(),

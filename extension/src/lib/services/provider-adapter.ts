@@ -11,40 +11,25 @@ import { GmailProvider } from '@/lib/providers/gmail/gmail-provider'
 import { OutlookProvider } from '@/lib/providers/outlook/outlook-provider'
 import { IMAPBridgeAdapter } from '@/lib/providers/imap-bridge/imap-bridge-adapter'
 import type { Mailbox } from '@/lib/storage/schema'
+import { type ProviderAdapter, type EmailLike, type ProviderId } from './email-polling-service'
 
-// Re-export types that v2 email-polling-service needs
-export type ProviderId = 'gmail' | 'outlook' | 'imap-bridge'
-
-export interface EmailLike {
-  id: string
-  provider: ProviderId
-  subject?: string
-  from?: string
-  receivedEpochMs?: number
-  text?: string
-  html?: string
-  _meta?: Record<string, unknown>
-}
-
-export interface ProviderAdapter {
-  id: ProviderId
-  listRecent(params: {
-    sinceEpochMs: number
-    max: number
-    keywordHint?: string
-  }): Promise<EmailLike[]>
-}
+// Re-export for consumers that import from this module
+export type { ProviderAdapter, EmailLike, ProviderId }
 
 /**
  * Adapter that bridges v1 mailbox/provider/storage architecture
  * with v2 EmailPollingService's adapter interface.
  */
 export class StorageProviderAdapter implements ProviderAdapter {
+  public readonly mailboxId: string
+
   constructor(
     private storage: IStorage,
     private provider: IEmailProvider,
     private mailbox: Mailbox
-  ) {}
+  ) {
+    this.mailboxId = mailbox.id
+  }
 
   get id(): ProviderId {
     return this.mailbox.providerId as ProviderId
@@ -101,6 +86,7 @@ export class StorageProviderAdapter implements ProviderAdapter {
     return emails.map(email => ({
       id: email.id,
       provider: this.id,
+      mailboxId: this.mailboxId,
       subject: email.subject,
       from: email.from.email,
       receivedEpochMs: email.date.getTime(),
@@ -145,7 +131,8 @@ export async function createAdaptersFromMailboxes(
       // IMAP provider: use IMAPBridgeAdapter (no OAuth provider needed)
       return new IMAPBridgeAdapter(
         mailbox.imapAccountId || '',
-        mailbox.email
+        mailbox.email,
+        mailbox.id
       )
     } else {
       // OAuth provider: use StorageProviderAdapter with Gmail/Outlook provider

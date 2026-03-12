@@ -345,9 +345,12 @@ export class SessionController {
 
       // Convert v2 candidates to StoredCode format and save to storage
       for (const candidate of candidates) {
-        // Find mailbox for this provider
-        const mailbox = mailboxes.find(m => m.providerId === candidate.provider)
-        if (!mailbox) continue
+        // Find mailbox by ID (multi-account safe)
+        const mailbox = mailboxes.find(m => m.id === candidate.mailboxId)
+        if (!mailbox) {
+          console.warn(`[SessionController] No mailbox found for mailboxId: ${candidate.mailboxId}`)
+          continue
+        }
 
         if (candidate.code) {
           // V2: Codes are ephemeral-only (stored in PopupCache via chrome.storage.session)
@@ -372,7 +375,7 @@ export class SessionController {
       if (this.popupCacheManager && candidates.length > 0) {
         // Convert candidates to StoredCode format for PopupCache
         const ephemeralCodes = candidates.flatMap(candidate => {
-          const mailbox = mailboxes.find(m => m.providerId === candidate.provider)
+          const mailbox = mailboxes.find(m => m.id === candidate.mailboxId)
           if (!mailbox) return []
 
           const senderETLD = candidate.from

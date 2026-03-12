@@ -115,9 +115,8 @@ export class PopupMessageHandler {
 
             // Convert v2 candidates to StoredCode format for PopupCache (ephemeral only)
             const ephemeralCodes = candidates.flatMap(candidate => {
-              // Find mailbox by ID first (multi-account safe), fall back to provider match
+              // Find mailbox by ID (multi-account safe)
               const mailbox = mailboxes.find(m => m.id === candidate.mailboxId)
-                || mailboxes.find(m => m.providerId === candidate.provider)
               if (!mailbox) return []
 
               const results = []

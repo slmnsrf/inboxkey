@@ -28,7 +28,8 @@ export type ProviderId = 'gmail' | 'outlook' | 'imap' | 'imap-bridge'
 export interface EmailLike {
   id: string
   provider: ProviderId
-  mailboxId?: string
+  /** The specific mailbox this email came from (required for multi-account disambiguation). */
+  mailboxId: string
   subject?: string
   from?: string
   receivedEpochMs?: number
@@ -41,8 +42,8 @@ export interface EmailLike {
 
 export interface ProviderAdapter {
   id: ProviderId
-  /** The specific mailbox this adapter is bound to (for multi-account disambiguation). */
-  mailboxId?: string
+  /** The specific mailbox this adapter is bound to (required for multi-account disambiguation). */
+  mailboxId: string
   /**
    * Fetch *recent* messages for this provider, bounded by time and count.
    * Implementations should do a metadata-first pass and, when possible,
@@ -85,8 +86,8 @@ export interface PollConfig {
 
 export interface CandidateRecord {
   provider: ProviderId
-  /** Which specific mailbox this candidate came from (for multi-account disambiguation). */
-  mailboxId?: string
+  /** Which specific mailbox this candidate came from (required for multi-account disambiguation). */
+  mailboxId: string
   messageId: string
   subject?: string
   from?: string
@@ -159,14 +160,18 @@ export class EmailPollingService {
     // Fetch from providers in parallel but respect AbortSignal
     await Promise.all(this.adapters.map(async (ad) => {
       if (cfg.signal?.aborted) return
+      if (!ad.mailboxId) {
+        console.warn(`[EmailPollingService] skipping adapter without mailboxId: ${ad.id}`)
+        return
+      }
       try {
         const batch = await ad.listRecent({ sinceEpochMs: since, max: perProviderMax, keywordHint })
         for (const msg of batch) {
           if (cfg.signal?.aborted) break
           if (processed >= globalMax) break
 
-          // Skip messages we've processed before (include mailboxId for multi-account)
-          const seenKey = `${msg.mailboxId || msg.provider}:${msg.id}`
+          // Skip messages we've processed before (use adapter.mailboxId for multi-account)
+          const seenKey = `${ad.mailboxId}:${msg.id}`
           if (this.seenMessageIds.has(seenKey)) continue
           this.seenMessageIds.add(seenKey)
 
@@ -200,7 +205,7 @@ export class EmailPollingService {
           if (topScore >= minScore) {
             const rec: CandidateRecord = {
               provider: msg.provider,
-              mailboxId: msg.mailboxId || ad.mailboxId,
+              mailboxId: ad.mailboxId,
               messageId: msg.id,
               subject: msg.subject,
               from: msg.from,
