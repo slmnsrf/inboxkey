@@ -62,3 +62,10 @@ test-results/
 apps/reviewer/.plasmo/cache/
 **/plasmo/cache/
 .worktrees/
+
+# Rust build artifacts (binary files break PR diffs if committed)
+inboxbridge/target/
+
+# Local tooling
+.mcp.json
+.theteamlead/

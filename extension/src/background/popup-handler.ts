@@ -115,7 +115,7 @@ export class PopupMessageHandler {
             // Create adapters from mailboxes (v2 pattern)
             const adapters = await createAdaptersFromMailboxes(storage)
 
-            // Run email polling (v2 API) — share seenStore to persist across syncs
+            // Run email polling (v2 API) - share seenStore to persist across syncs
             const pollingService = new EmailPollingService(adapters, this.seenStore)
             const { candidates, adapterResults } = await pollingService.pollOnce()
 

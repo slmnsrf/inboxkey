@@ -338,7 +338,7 @@ export class SessionController {
       // Create adapters from mailboxes (v2 pattern)
       const adapters = await createAdaptersFromMailboxes(storage)
 
-      // Poll emails from all connected mailboxes (v2 API) — share seenStore to persist across polls
+      // Poll emails from all connected mailboxes (v2 API) - share seenStore to persist across polls
       const pollingService = new EmailPollingService(adapters, this.seenStore)
       const { candidates, adapterResults } = await pollingService.pollOnce()
       console.log(
