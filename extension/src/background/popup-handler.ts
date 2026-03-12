@@ -217,6 +217,15 @@ export class PopupMessageHandler {
               await new Promise(resolve => setTimeout(resolve, delay))
             }
 
+            // All adapters failed = real failure response (no green flash)
+            if (allFailed) {
+              const firstError = adapterResults.find(r => r.error)?.error || 'All adapters failed'
+              return {
+                success: false,
+                error: firstError,
+              }
+            }
+
             return {
               success: true,
               data: cache,

@@ -143,6 +143,31 @@ describe('per-adapter result tracking', () => {
   })
 })
 
+describe('IMAP adapter error propagation (Finding #3)', () => {
+  it('should mark adapter as failed when listRecent throws (not silent success)', async () => {
+    const imapAdapter: ProviderAdapter = {
+      id: 'imap-bridge',
+      mailboxId: 'mbx-imap',
+      listRecent: vi.fn().mockRejectedValue(new Error('IMAP auth failed')),
+    }
+    const gmailAdapter: ProviderAdapter = {
+      id: 'gmail',
+      mailboxId: 'mbx-gmail',
+      listRecent: vi.fn().mockResolvedValue([]),
+    }
+
+    const service = new EmailPollingService([imapAdapter, gmailAdapter])
+    const result = await service.pollOnce()
+
+    const imapResult = result.adapterResults.find(r => r.mailboxId === 'mbx-imap')
+    expect(imapResult?.success).toBe(false)
+    expect(imapResult?.error).toContain('IMAP auth failed')
+
+    const gmailResult = result.adapterResults.find(r => r.mailboxId === 'mbx-gmail')
+    expect(gmailResult?.success).toBe(true)
+  })
+})
+
 describe('duplicate suppression persistence', () => {
   it('should not re-process messages seen by a previous EmailPollingService instance', async () => {
     // Use real in-memory storage (not overridden mock) so the store actually persists

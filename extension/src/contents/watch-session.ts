@@ -14,6 +14,7 @@ import { extractDomain, isDomainEnabled } from "@/lib/utils/domain"
 import { StorageFactory } from '@/lib/storage/storage-factory'
 import { findAndClickSubmitButton } from './autofill'
 import { isBlacklisted, addBlacklistedUrl } from "@/lib/utils/blacklist"
+import { detectSplitInputGroup } from "@/lib/detection/split-input-detector"
 
 interface SessionCodeResult {
   code: string
@@ -536,8 +537,15 @@ function deriveExpectedShape(field: HTMLInputElement): ExpectedShape {
 
   if (field.maxLength && field.maxLength > 0) {
     expected.length = field.maxLength
-  } else if (field.size && field.size > 0) {
-    expected.length = field.size
+  } else {
+    // For split-input groups with unset maxLength (e.g. Microsoft codeEntry-0..5),
+    // use the group input count as expected code length
+    const group = detectSplitInputGroup(field)
+    if (group && group.inputs.length > 1) {
+      expected.length = group.inputs.length
+    } else if (field.size && field.size > 0) {
+      expected.length = field.size
+    }
   }
 
   const inputMode = field.inputMode?.toLowerCase()

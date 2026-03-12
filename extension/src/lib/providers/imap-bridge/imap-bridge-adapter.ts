@@ -64,8 +64,8 @@ export class IMAPBridgeAdapter implements ProviderAdapter {
       // Convert IMAP messages to EmailLike format
       return response.messages.map((msg) => this.convertToEmailLike(msg))
     } catch (error) {
-      // Handle errors gracefully - don't crash polling
-      // Return empty array to allow other providers (Gmail, Outlook) to continue
+      // Log the error for diagnostics, then re-throw so pollOnce() can
+      // record this adapter as failed (mailbox-aware sync accounting).
       if (error instanceof NativeMessagingError) {
         switch (error.code) {
           case NativeErrorCode.ACCOUNT_NOT_FOUND:
@@ -99,8 +99,9 @@ export class IMAPBridgeAdapter implements ProviderAdapter {
         console.error('[IMAPBridgeAdapter] Unexpected error:', error)
       }
 
-      // Return empty array to allow other providers to continue
-      return []
+      // Re-throw so EmailPollingService.pollOnce() catches it and marks
+      // this adapter as failed in adapterResults (instead of false success)
+      throw error
     }
   }
 

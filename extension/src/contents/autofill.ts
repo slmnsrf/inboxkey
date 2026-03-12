@@ -132,8 +132,14 @@ async function autofillSplitInputs(
 
   console.log(`[Autofill] Distributing ${chars.length} characters across ${inputs.length} inputs`)
 
+  // Code must have enough characters to fill all inputs
+  if (chars.length < inputs.length) {
+    console.warn(`[Autofill] Code length (${chars.length}) shorter than input count (${inputs.length}), incomplete fill`)
+    return false
+  }
+
   // Fill each input with one character
-  for (let i = 0; i < Math.min(chars.length, inputs.length); i++) {
+  for (let i = 0; i < inputs.length; i++) {
     const input = inputs[i]
 
     // Focus the input
@@ -159,10 +165,7 @@ async function autofillSplitInputs(
   }
 
   // Focus last filled input (matches user expectation)
-  const lastIndex = Math.min(chars.length, inputs.length) - 1
-  if (lastIndex >= 0) {
-    inputs[lastIndex].focus()
-  }
+  inputs[inputs.length - 1].focus()
 
   console.log('[Autofill] Split-input autofill completed successfully')
   return true
