@@ -12,6 +12,7 @@ import { validateContext } from './context-validator'
 import { classifyDeliveryChannel } from './signal-classifier'
 import { classifyNonEmailIntent } from './non-email-contexts'
 import { detectSplitInputGroup } from './split-input-detector'
+import { getAriaDescribedbyText } from './detection-utils'
 import type { TextSources } from './types'
 import {
   getLabelMatchStrength,
@@ -429,26 +430,6 @@ function getNearbyText(input: HTMLInputElement, isSplitInput: boolean = false): 
   }
 
   return texts.join(' ')
-}
-
-/**
- * Resolve aria-describedby text
- *
- * aria-describedby can reference multiple IDs (space-separated).
- * Each referenced element's text content is resolved and joined.
- *
- * @param input - Input field to resolve aria-describedby from
- * @returns Combined text from all referenced elements
- */
-function getAriaDescribedbyText(input: HTMLInputElement): string {
-  const describedby = input.getAttribute('aria-describedby')
-  if (!describedby) return ''
-
-  return describedby
-    .split(/\s+/)
-    .map(id => input.ownerDocument?.getElementById(id)?.textContent?.trim() || '')
-    .filter(Boolean)
-    .join(' ')
 }
 
 /**
