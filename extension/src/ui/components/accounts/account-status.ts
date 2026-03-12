@@ -39,7 +39,7 @@ export function getAccountStatus(account: AccountData): AccountStatusResult {
   if (account.lastSyncError) {
     return {
       status: 'offline',
-      label: t('status_offline_connection_failed'),
+      label: account.lastSyncError,
     }
   }
 
