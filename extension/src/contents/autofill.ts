@@ -163,7 +163,9 @@ async function autofillSplitInputs(
     fillableInputs[lastFilledIndex].focus()
   }
 
-  return true
+  // Report failure if code was truncated (more chars than fillable inputs)
+  const filledCount = Math.min(chars.length, fillableInputs.length)
+  return filledCount === chars.length
 }
 
 /**
