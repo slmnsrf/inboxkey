@@ -354,8 +354,8 @@ export function AccountsPanel() {
         host: mb.imapServer,
         lastSyncedLabel: mb.lastSyncedAt ? timeAgo(mb.lastSyncedAt) : undefined,
         lastSyncedAt: mb.lastSyncedAt,
-        isSyncing: false, // TODO: Track syncing state
-        lastSyncError: undefined, // TODO: Track sync errors
+        isSyncing: false,
+        lastSyncError: mb.lastSyncError,
       }))
   }, [mailboxes])
 
@@ -368,8 +368,8 @@ export function AccountsPanel() {
       lastSyncedLabel: mailbox.lastSyncedAt ? timeAgo(mailbox.lastSyncedAt) : undefined,
       lastSyncedAt: mailbox.lastSyncedAt,
       tokenExpiresAt: mailbox.tokenExpiresAt,
-      isSyncing: false, // TODO: Track syncing state
-      lastSyncError: undefined, // TODO: Track sync errors
+      isSyncing: false,
+      lastSyncError: mailbox.lastSyncError,
     }
   }, [mailboxes])
 
@@ -382,8 +382,8 @@ export function AccountsPanel() {
         lastSyncedLabel: mb.lastSyncedAt ? timeAgo(mb.lastSyncedAt) : undefined,
         lastSyncedAt: mb.lastSyncedAt,
         tokenExpiresAt: mb.tokenExpiresAt,
-        isSyncing: false, // TODO: Track syncing state
-        lastSyncError: undefined, // TODO: Track sync errors
+        isSyncing: false,
+        lastSyncError: mb.lastSyncError,
       }))
   }, [mailboxes])
 
