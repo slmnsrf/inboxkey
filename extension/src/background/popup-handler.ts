@@ -111,7 +111,7 @@ export class PopupMessageHandler {
 
             // Run email polling (v2 API) — share seenStore to persist across syncs
             const pollingService = new EmailPollingService(adapters, this.seenStore)
-            const candidates = await pollingService.pollOnce()
+            const { candidates, adapterResults } = await pollingService.pollOnce()
 
             console.log(`[PopupHandler] Manual sync found ${candidates.length} candidates`)
 
@@ -152,12 +152,19 @@ export class PopupMessageHandler {
 
             console.log(`[PopupHandler] Found ${ephemeralCodes.length} new items (ephemeral only)`)
 
-            // Update lastSyncedAt for all mailboxes after successful sync
+            // Update lastSyncedAt only for mailboxes whose adapter succeeded
             const now = Date.now()
+            const successfulMailboxIds = new Set(
+              adapterResults.filter(r => r.success).map(r => r.mailboxId)
+            )
+            let updatedCount = 0
             for (const mailbox of mailboxes) {
-              await storage.updateMailbox(mailbox.id, { lastSyncedAt: now })
+              if (successfulMailboxIds.has(mailbox.id)) {
+                await storage.updateMailbox(mailbox.id, { lastSyncedAt: now })
+                updatedCount++
+              }
             }
-            console.log(`[PopupHandler] Updated lastSyncedAt for ${mailboxes.length} mailboxes`)
+            console.log(`[PopupHandler] Updated lastSyncedAt for ${updatedCount}/${mailboxes.length} mailboxes`)
 
             // Update popup cache with ephemeral codes (session storage only)
             await this.cacheManager.updateWithNewCodes(ephemeralCodes, mailboxes.length, mailboxes)
@@ -165,8 +172,23 @@ export class PopupMessageHandler {
             // Return updated cache
             const cache = await this.cacheManager.getCache()
 
-            // Reset sync failure tracking on successful sync
-            await this.errorManager.recordSuccess()
+            // Update error state based on per-adapter results
+            const allSucceeded = adapterResults.every(r => r.success)
+            const allFailed = adapterResults.every(r => !r.success)
+
+            if (allSucceeded) {
+              await this.errorManager.recordSuccess()
+            } else if (allFailed) {
+              const firstError = adapterResults.find(r => r.error)?.error || 'All adapters failed'
+              await this.errorManager.recordFailure(new Error(firstError))
+            } else {
+              // Partial failure: some adapters succeeded, some failed
+              const failedAdapters = adapterResults.filter(r => !r.success)
+              const failedIds = failedAdapters.map(r => r.mailboxId).join(', ')
+              await this.errorManager.recordFailure(
+                new Error(`Partial sync failure: ${failedAdapters.length} adapter(s) failed (${failedIds})`)
+              )
+            }
 
             // Update badge with unseen code count (only fresh codes < 10 min old)
             const unseenCount = cache.codes.filter((c) =>

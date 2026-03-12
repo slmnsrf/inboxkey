@@ -85,6 +85,17 @@ export interface PollConfig {
   signal?: AbortSignal
 }
 
+export interface AdapterResult {
+  mailboxId: string
+  success: boolean
+  error?: string
+}
+
+export interface PollResult {
+  candidates: CandidateRecord[]
+  adapterResults: AdapterResult[]
+}
+
 export interface CandidateRecord {
   provider: ProviderId
   /** Which specific mailbox this candidate came from (required for multi-account disambiguation). */
@@ -144,7 +155,7 @@ export class EmailPollingService {
    *  • Extracts OTPs and magic links via extractFromEmail().
    *  • Keeps top-N by (recency → score) in memory (default 5).
    */
-  async pollOnce(ctx: ExtractContext = {}, cfg: PollConfig = {}): Promise<CandidateRecord[]> {
+  async pollOnce(ctx: ExtractContext = {}, cfg: PollConfig = {}): Promise<PollResult> {
     const now = Date.now()
     const since = now - 1000 * 60 * (cfg.timeWindowMin ?? 10)
     const perProviderMax = clampInt(cfg.perProviderMax ?? 8, 1, 50)
@@ -156,6 +167,7 @@ export class EmailPollingService {
     const keywordHint = 'code OR verification OR "one-time" OR otp OR "magic link" OR login'
 
     const results: CandidateRecord[] = []
+    const adapterResults: AdapterResult[] = []
     let processed = 0
 
     // Fetch from providers in parallel but respect AbortSignal
@@ -163,6 +175,7 @@ export class EmailPollingService {
       if (cfg.signal?.aborted) return
       if (!ad.mailboxId) {
         console.warn(`[EmailPollingService] skipping adapter without mailboxId: ${ad.id}`)
+        adapterResults.push({ mailboxId: ad.mailboxId || 'unknown', success: false, error: 'missing mailboxId' })
         return
       }
       try {
@@ -233,10 +246,14 @@ export class EmailPollingService {
             processed++
           }
         }
+        adapterResults.push({ mailboxId: ad.mailboxId, success: true })
       } catch (err) {
         // Swallow provider errors to keep other adapters running
-        // Consider logging locally for diagnostics
-        // console.warn('[pollOnce] provider error', ad.id, err)
+        adapterResults.push({
+          mailboxId: ad.mailboxId,
+          success: false,
+          error: err instanceof Error ? err.message : String(err),
+        })
       }
     }))
 
@@ -251,7 +268,7 @@ export class EmailPollingService {
     // Keep top N
     this.cache = merged.slice(0, keepTopN)
     this.lastPollEpochMs = now
-    return this.cache.slice()
+    return { candidates: this.cache.slice(), adapterResults }
   }
 }
 

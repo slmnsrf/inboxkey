@@ -45,7 +45,7 @@ vi.mock("../../src/lib/storage/storage-factory", () => {
 vi.mock("../../src/lib/services/email-polling-service", () => {
   return {
     EmailPollingService: vi.fn(() => ({
-      pollOnce: vi.fn(() => Promise.resolve([])),
+      pollOnce: vi.fn(() => Promise.resolve({ candidates: [], adapterResults: [] })),
     })),
   }
 })

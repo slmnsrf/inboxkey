@@ -69,10 +69,10 @@ describe('mailboxId propagation', () => {
     }
 
     const service = new EmailPollingService([adapter])
-    const results = await service.pollOnce()
+    const { candidates } = await service.pollOnce()
 
-    expect(results.length).toBeGreaterThan(0)
-    for (const r of results) {
+    expect(candidates.length).toBeGreaterThan(0)
+    for (const r of candidates) {
       expect(r.mailboxId).toBe('mbx-456')
     }
   })
@@ -107,13 +107,39 @@ describe('freshness floor', () => {
     }
 
     const service = new EmailPollingService([adapter])
-    const result = await service.pollOnce({}, { timeWindowMin: 10 })
+    const { candidates } = await service.pollOnce({}, { timeWindowMin: 10 })
 
-    // Note: after Task 4, pollOnce returns PollResult; use .candidates
-    const candidates = Array.isArray(result) ? result : result.candidates
     const codes = candidates.map(r => r.code?.value).filter(Boolean)
     expect(codes).toContain('111222')
     expect(codes).not.toContain('333444')
+  })
+})
+
+describe('per-adapter result tracking', () => {
+  it('should return adapterResults with success/failure per mailbox', async () => {
+    const goodAdapter: ProviderAdapter = {
+      id: 'gmail',
+      mailboxId: 'mbx-good',
+      listRecent: vi.fn().mockResolvedValue([]),
+    }
+    const badAdapter: ProviderAdapter = {
+      id: 'outlook',
+      mailboxId: 'mbx-bad',
+      listRecent: vi.fn().mockRejectedValue(new Error('Network error')),
+    }
+
+    const service = new EmailPollingService([goodAdapter, badAdapter])
+    const result = await service.pollOnce()
+
+    expect(result.adapterResults).toBeDefined()
+    expect(result.adapterResults).toHaveLength(2)
+
+    const good = result.adapterResults.find(r => r.mailboxId === 'mbx-good')
+    expect(good?.success).toBe(true)
+
+    const bad = result.adapterResults.find(r => r.mailboxId === 'mbx-bad')
+    expect(bad?.success).toBe(false)
+    expect(bad?.error).toContain('Network error')
   })
 })
 
@@ -138,13 +164,13 @@ describe('duplicate suppression persistence', () => {
 
     // First poll — message should be processed
     const service1 = new EmailPollingService([adapter], store)
-    const results1 = await service1.pollOnce()
-    expect(results1.length).toBeGreaterThan(0)
+    const { candidates: candidates1 } = await service1.pollOnce()
+    expect(candidates1.length).toBeGreaterThan(0)
 
     // Second poll with a NEW EmailPollingService instance but the SAME store
     const service2 = new EmailPollingService([adapter], store)
-    const results2 = await service2.pollOnce()
+    const { candidates: candidates2 } = await service2.pollOnce()
     // Message was already seen — must not appear again
-    expect(results2.length).toBe(0)
+    expect(candidates2.length).toBe(0)
   })
 })

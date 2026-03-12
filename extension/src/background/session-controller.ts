@@ -340,7 +340,7 @@ export class SessionController {
 
       // Poll emails from all connected mailboxes (v2 API) — share seenStore to persist across polls
       const pollingService = new EmailPollingService(adapters, this.seenStore)
-      const candidates = await pollingService.pollOnce()
+      const { candidates, adapterResults } = await pollingService.pollOnce()
       console.log(
         `[SessionController] Email poll complete: ${candidates.length} candidates found`
       )
@@ -367,10 +367,15 @@ export class SessionController {
         }
       }
 
-      // Update lastSyncedAt for all mailboxes after successful polling
+      // Update lastSyncedAt only for mailboxes whose adapter succeeded
       const now = Date.now()
+      const successfulMailboxIds = new Set(
+        adapterResults.filter(r => r.success).map(r => r.mailboxId)
+      )
       for (const mailbox of mailboxes) {
-        await storage.updateMailbox(mailbox.id, { lastSyncedAt: now })
+        if (successfulMailboxIds.has(mailbox.id)) {
+          await storage.updateMailbox(mailbox.id, { lastSyncedAt: now })
+        }
       }
 
       // Update popup cache if available (using ephemeral candidates)
