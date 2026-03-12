@@ -1,5 +1,5 @@
 /**
- * Unit Tests for EmailPollingService — mailboxId propagation
+ * Unit Tests for EmailPollingService - mailboxId propagation
  */
 
 import { describe, it, expect, vi } from 'vitest'
@@ -187,7 +187,7 @@ describe('duplicate suppression persistence', () => {
       listRecent: vi.fn().mockResolvedValue([email]),
     }
 
-    // First poll — message should be processed
+    // First poll - message should be processed
     const service1 = new EmailPollingService([adapter], store)
     const { candidates: candidates1 } = await service1.pollOnce()
     expect(candidates1.length).toBeGreaterThan(0)
@@ -195,7 +195,7 @@ describe('duplicate suppression persistence', () => {
     // Second poll with a NEW EmailPollingService instance but the SAME store
     const service2 = new EmailPollingService([adapter], store)
     const { candidates: candidates2 } = await service2.pollOnce()
-    // Message was already seen — must not appear again
+    // Message was already seen - must not appear again
     expect(candidates2.length).toBe(0)
   })
 })

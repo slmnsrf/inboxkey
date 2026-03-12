@@ -1,5 +1,5 @@
 // seen-message-store.ts
-// InboxKey — Persistent Duplicate Suppression
+// InboxKey - Persistent Duplicate Suppression
 // -----------------------------------------------------------------------------
 // Stores seen message IDs in chrome.storage.session with a 24-hour TTL.
 // Survives across EmailPollingService instance lifetimes (within a browser
@@ -39,7 +39,7 @@ export class SeenMessageStore {
         }
       }
     } catch {
-      // Start fresh on parse error — better to re-process than to crash
+      // Start fresh on parse error - better to re-process than to crash
       this.entries.clear()
     }
     this.loaded = true
