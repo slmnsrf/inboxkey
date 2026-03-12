@@ -1,1 +1,0 @@
-/home/dev/work/inboxkey/inboxbridge/target/debug/libinboxbridge.rlib: /home/dev/work/inboxkey/inboxbridge/src/dispatcher.rs /home/dev/work/inboxkey/inboxbridge/src/errors.rs /home/dev/work/inboxkey/inboxbridge/src/keychain.rs /home/dev/work/inboxkey/inboxbridge/src/lib.rs /home/dev/work/inboxkey/inboxbridge/src/protocol.rs
