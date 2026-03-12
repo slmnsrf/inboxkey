@@ -15,7 +15,7 @@ import { isGmailConfigured } from '@/lib/providers/gmail/config'
 import { isOutlookConfigured } from '@/lib/providers/outlook/config'
 import { TrustIndicator } from './TrustIndicator'
 import { t, timeAgo } from '@/lib/i18n'
-import type { PopupCache } from '@/shared/popup-messages'
+import type { UnifiedPopupCache } from '@/shared/popup-messages'
 import type { ProviderKey, ProviderSlotState, ImapAccountRow, OutlookAccountRow, RecentItem } from './accounts/types'
 import { ProviderSlotCard } from './accounts/ProviderSlotCard'
 import { GmailAccountCard } from './accounts/GmailAccountCard'
@@ -47,7 +47,7 @@ interface ConnectionError {
   message: string
 }
 
-type PopupResponseData = PopupCache | null
+type PopupResponseData = UnifiedPopupCache | null
 
 const PROVIDER_DISPLAY: Record<ProviderKey, { name: string; microcopy: string; empty: string }> = {
   gmail: {
@@ -473,7 +473,7 @@ export function AccountsPanel() {
   )
 }
 
-function transformRecentItems(cache: PopupCache): RecentItem[] {
+function transformRecentItems(cache: UnifiedPopupCache): RecentItem[] {
   const codes = (cache.codes || []).map<RecentItem>((code) => ({
     id: `code:${code.code}:${code.receivedAt}`,
     kind: 'code',

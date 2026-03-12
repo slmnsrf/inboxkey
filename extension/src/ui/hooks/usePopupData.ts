@@ -6,13 +6,13 @@
  */
 
 import { useState, useEffect } from 'react'
-import type { PopupCache } from '@/shared/popup-messages'
+import type { UnifiedPopupCache } from '@/shared/popup-messages'
 import { PopupBridge } from '../services/popup-bridge'
 
 const bridge = new PopupBridge()
 
 export function usePopupData() {
-  const [data, setData] = useState<PopupCache | null>(null)
+  const [data, setData] = useState<UnifiedPopupCache | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [isSyncing, setIsSyncing] = useState(false)
@@ -29,12 +29,12 @@ export function usePopupData() {
 
         // Check if should auto-sync
         const shouldAutoSync =
-          cache.codes.length === 0 || // No codes
+          !cache.items?.length || // No items (codes or links)
           !cache.ts || // No timestamp
           (Date.now() - cache.ts > 30_000) // Stale (>30s)
 
         if (shouldAutoSync) {
-          console.log('[usePopupData] Auto-triggering sync (cache stale or empty)')
+          console.log('[usePopupData] Auto-triggering sync (cache stale or no items)')
           setIsSyncing(true)
 
           try {

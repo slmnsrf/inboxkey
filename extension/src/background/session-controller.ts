@@ -22,6 +22,7 @@ import { findBestMatchingCode } from "@/lib/matching/code-matcher"
 import { StorageFactory } from "@/lib/storage/storage-factory"
 import { EmailPollingService } from "@/lib/services/email-polling-service"
 import { createAdaptersFromMailboxes } from "@/lib/services/provider-adapter"
+import { SeenMessageStore } from "@/lib/services/seen-message-store"
 import { SessionPoller } from "./session-poller"
 import { extractETLD } from "@/lib/matching/domain-affinity"
 import { WATCH_SESSION_SCORING } from "@/lib/matching/scoring-config"
@@ -95,6 +96,7 @@ interface PersistedSessions {
 export class SessionController {
   private sessions = new Map<string, SessionState>()
   private poller: SessionPoller  // V2: Replaces manual timer/alarm management
+  private readonly seenStore = new SeenMessageStore()
 
   constructor(
     private readonly callbacks: SessionControllerCallbacks,
@@ -336,18 +338,21 @@ export class SessionController {
       // Create adapters from mailboxes (v2 pattern)
       const adapters = await createAdaptersFromMailboxes(storage)
 
-      // Poll emails from all connected mailboxes (v2 API)
-      const pollingService = new EmailPollingService(adapters)
-      const candidates = await pollingService.pollOnce()
+      // Poll emails from all connected mailboxes (v2 API) — share seenStore to persist across polls
+      const pollingService = new EmailPollingService(adapters, this.seenStore)
+      const { candidates, adapterResults } = await pollingService.pollOnce()
       console.log(
         `[SessionController] Email poll complete: ${candidates.length} candidates found`
       )
 
       // Convert v2 candidates to StoredCode format and save to storage
       for (const candidate of candidates) {
-        // Find mailbox for this provider
-        const mailbox = mailboxes.find(m => m.providerId === candidate.provider)
-        if (!mailbox) continue
+        // Find mailbox by ID (multi-account safe)
+        const mailbox = mailboxes.find(m => m.id === candidate.mailboxId)
+        if (!mailbox) {
+          console.warn(`[SessionController] No mailbox found for mailboxId: ${candidate.mailboxId}`)
+          continue
+        }
 
         if (candidate.code) {
           // V2: Codes are ephemeral-only (stored in PopupCache via chrome.storage.session)
@@ -362,17 +367,22 @@ export class SessionController {
         }
       }
 
-      // Update lastSyncedAt for all mailboxes after successful polling
+      // Update lastSyncedAt only for mailboxes whose adapter succeeded
       const now = Date.now()
+      const successfulMailboxIds = new Set(
+        adapterResults.filter(r => r.success).map(r => r.mailboxId)
+      )
       for (const mailbox of mailboxes) {
-        await storage.updateMailbox(mailbox.id, { lastSyncedAt: now })
+        if (successfulMailboxIds.has(mailbox.id)) {
+          await storage.updateMailbox(mailbox.id, { lastSyncedAt: now })
+        }
       }
 
       // Update popup cache if available (using ephemeral candidates)
       if (this.popupCacheManager && candidates.length > 0) {
         // Convert candidates to StoredCode format for PopupCache
         const ephemeralCodes = candidates.flatMap(candidate => {
-          const mailbox = mailboxes.find(m => m.providerId === candidate.provider)
+          const mailbox = mailboxes.find(m => m.id === candidate.mailboxId)
           if (!mailbox) return []
 
           const senderETLD = candidate.from
