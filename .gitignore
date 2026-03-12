@@ -22,6 +22,14 @@ dist/
 build/
 .next/
 out/
+inboxbridge/target/
+
+# Windows artifacts
+nul
+
+# Local tooling
+.mcp.json
+.theteamlead/
 
 
 # Environment variables
