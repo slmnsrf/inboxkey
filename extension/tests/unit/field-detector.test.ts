@@ -6,6 +6,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { Window } from 'happy-dom'
 import { FieldDetector } from '../../src/lib/detection/field-detector'
+import type { DetectionResult } from '../../src/lib/types'
 
 describe('FieldDetector', () => {
   let window: Window
@@ -246,7 +247,7 @@ describe('FieldDetector', () => {
       // Wait for debounce (100ms)
       await new Promise((resolve) => setTimeout(resolve, 150))
 
-      expect(callback).toHaveBeenCalledWith(input)
+      expect(callback).toHaveBeenCalledWith(input, expect.objectContaining({ tier: 1 }))
     })
 
     it('should debounce mutations within 100ms window', async () => {
@@ -330,7 +331,7 @@ describe('FieldDetector', () => {
       await new Promise((resolve) => setTimeout(resolve, 150))
 
       // Should detect the nested input
-      expect(callback).toHaveBeenCalledWith(input)
+      expect(callback).toHaveBeenCalledWith(input, expect.objectContaining({ tier: 1 }))
     })
 
     it('should filter out hidden and disabled fields', async () => {
@@ -357,6 +358,29 @@ describe('FieldDetector', () => {
 
       // Should not call callback
       expect(callback).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('dynamic detection callback signature', () => {
+    it('should pass DetectionResult alongside field in callback', async () => {
+      let receivedResult: DetectionResult | null = null
+      detector.startObserving((field, result) => {
+        receivedResult = result
+      })
+
+      // Trigger mutation
+      const input = document.createElement('input')
+      input.type = 'text'
+      input.setAttribute('autocomplete', 'one-time-code')
+      input.id = 'dynamic-otp'
+      document.body.appendChild(input)
+
+      // Wait for debounce + processing
+      await new Promise(r => setTimeout(r, 200))
+
+      expect(receivedResult).not.toBeNull()
+      expect(receivedResult!.tier).toBe(1)
+      expect(receivedResult!.confidence).toBe(100)
     })
   })
 
