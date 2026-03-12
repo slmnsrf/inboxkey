@@ -624,7 +624,7 @@ describe('Autofill', () => {
   })
 
   describe('split autofill edge cases', () => {
-    it('should clear trailing inputs when code is shorter than group', async () => {
+    it('should reject when code is shorter than fillable inputs (shape mismatch)', async () => {
       const container = document.createElement('div')
       const inputs: HTMLInputElement[] = []
       for (let i = 0; i < 6; i++) {
@@ -645,22 +645,24 @@ describe('Autofill', () => {
         pattern: 'maxlength-1',
       })
 
-      await autofillCode({
+      const result = await autofillCode({
         code: '1234',
         field: inputs[0],
         showFeedback: false,
       })
 
-      expect(inputs[0].value).toBe('1')
-      expect(inputs[1].value).toBe('2')
-      expect(inputs[2].value).toBe('3')
-      expect(inputs[3].value).toBe('4')
-      // Trailing inputs should be cleared
-      expect(inputs[4].value).toBe('')
-      expect(inputs[5].value).toBe('')
+      // Strict shape contract: 4 chars != 6 inputs -> reject entirely
+      expect(result).toBe(false)
+      // No inputs should be modified (bail before filling)
+      expect(inputs[0].value).toBe('9')
+      expect(inputs[1].value).toBe('9')
+      expect(inputs[2].value).toBe('9')
+      expect(inputs[3].value).toBe('9')
+      expect(inputs[4].value).toBe('9')
+      expect(inputs[5].value).toBe('9')
     })
 
-    it('should skip readOnly and disabled inputs', async () => {
+    it('should skip readOnly and disabled inputs and match fillable count', async () => {
       const container = document.createElement('div')
       const inputs: HTMLInputElement[] = []
       for (let i = 0; i < 5; i++) {
@@ -681,12 +683,14 @@ describe('Autofill', () => {
         pattern: 'maxlength-1',
       })
 
-      await autofillCode({
-        code: '12345',
+      // 3 fillable inputs (indices 0, 2, 4), so send exactly 3 chars
+      const result = await autofillCode({
+        code: '123',
         field: inputs[0],
         showFeedback: false,
       })
 
+      expect(result).toBe(true)
       expect(inputs[0].value).toBe('1')
       expect(inputs[1].value).toBe('')  // readOnly - skipped
       expect(inputs[2].value).toBe('2')
@@ -694,7 +698,7 @@ describe('Autofill', () => {
       expect(inputs[4].value).toBe('3')
     })
 
-    it('should return false when code is longer than fillable inputs', async () => {
+    it('should return false when code is longer than fillable inputs (no partial fill)', async () => {
       const container = document.createElement('div')
       const inputs: HTMLInputElement[] = []
       for (let i = 0; i < 3; i++) {
@@ -719,11 +723,12 @@ describe('Autofill', () => {
         showFeedback: false,
       })
 
-      // Should return false -- only 3 of 6 chars were filled
+      // Strict shape contract: 6 chars != 3 inputs -> reject entirely
       expect(result).toBe(false)
-      expect(inputs[0].value).toBe('1')
-      expect(inputs[1].value).toBe('2')
-      expect(inputs[2].value).toBe('3')
+      // No inputs should be modified (bail before filling)
+      expect(inputs[0].value).toBe('')
+      expect(inputs[1].value).toBe('')
+      expect(inputs[2].value).toBe('')
     })
   })
 
