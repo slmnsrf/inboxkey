@@ -223,7 +223,7 @@ function validateFieldContext(
     placeholder: input.placeholder || '',
     nearbyText,
     ariaLabel: input.getAttribute('aria-label') || '',
-    ariaDescribedby: getAriaDescribedbyText(input),
+    ariaDescribedby: textSources.ariaDescribedby,
     pageTitle: document.title || '',
   })
 

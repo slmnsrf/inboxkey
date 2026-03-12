@@ -588,7 +588,8 @@ export class FieldDetector {
       const shouldTryTier2 = (
         tier1Result.metadata?.layer !== 'attribute' &&
         tier1Result.metadata?.layer !== 'context' &&
-        tier1Result.metadata?.layer !== 'signal-classifier-tier1'
+        tier1Result.metadata?.layer !== 'signal-classifier-tier1' &&
+        tier1Result.metadata?.layer !== 'url-pattern'
       )
 
       if (shouldTryTier2) {
