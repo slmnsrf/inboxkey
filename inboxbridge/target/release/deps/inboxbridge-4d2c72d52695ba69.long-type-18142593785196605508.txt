@@ -1,1 +1,0 @@
-impl Stream<Item = Result<async_imap::types::Fetch, async_imap::error::Error>> + std::marker::Send + Unpin + '_
