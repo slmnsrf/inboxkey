@@ -441,18 +441,20 @@ export class FieldDetector {
       }
     }
 
-    // If Tier 1 found nothing, try Tier 2
-    if (results.length === 0) {
-      for (const input of inputs) {
-        const startTime = performance.now()
-        const tier2Result = detectTier2(input, scanCooldown)
+    // Run Tier 2 on inputs NOT matched by Tier 1
+    // (matches detectAllFields behavior -- don't suppress Tier 2 just because Tier 1 found something)
+    const tier1MatchedFields = new Set(results.map(r => r.field))
+    for (const input of inputs) {
+      if (tier1MatchedFields.has(input)) continue
 
-        if (tier2Result.detected) {
-          const executionTime = performance.now() - startTime
-          const result = tier2ToDetectionResult(input, tier2Result, executionTime)
-          results.push(result)
-          this.detectedFields.add(input)
-        }
+      const startTime = performance.now()
+      const tier2Result = detectTier2(input, scanCooldown)
+
+      if (tier2Result.detected) {
+        const executionTime = performance.now() - startTime
+        const result = tier2ToDetectionResult(input, tier2Result, executionTime)
+        results.push(result)
+        this.detectedFields.add(input)
       }
     }
 
