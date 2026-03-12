@@ -11,6 +11,8 @@ import type { CooldownRegistry } from './cooldown-registry'
 import { validateContext } from './context-validator'
 import { classifyDeliveryChannel } from './signal-classifier'
 import { classifyNonEmailIntent } from './non-email-contexts'
+import { detectSplitInputGroup } from './split-input-detector'
+import { getAriaDescribedbyText } from './detection-utils'
 import type { TextSources } from './types'
 import {
   getLabelMatchStrength,
@@ -346,57 +348,6 @@ export interface Tier2Result {
 }
 
 /**
- * P3: Detect split single-character OTP input pattern
- *
- * Pattern: 4-8 adjacent inputs with maxlength=1 within same parent container
- * Common in React/Vue component libraries (Ant Design, Material-UI, Chakra UI, Steam)
- *
- * Architecture Decision: Tier 2 placement (not Tier 1) for performance budget compliance
- * - Tier 1 budget: <0.15ms (DOM traversal would exceed)
- * - Tier 2 budget: <0.50ms (sufficient for 2-level traversal ~0.25ms)
- *
- * Performance: ~0.20-0.25ms per field (2-level DOM traversal + querySelectorAll)
- *
- * @param input - Input field to check (must have maxlength=1)
- * @returns True if this input is part of a split OTP pattern (4-8 adjacent inputs)
- */
-function detectSplitInputPattern(input: HTMLInputElement): boolean {
-  // Early exit: only check maxlength=1 inputs
-  if (input.maxLength !== 1) {
-    return false
-  }
-
-  // Performance optimization: limit traversal to 2 levels (vs proposed 3)
-  let container: HTMLElement | null = input.parentElement
-  let levels = 0
-
-  while (container && levels < 2) {
-    // Count adjacent maxlength=1 inputs in this container
-    const inputs = container.querySelectorAll<HTMLInputElement>('input[maxlength="1"]')
-    const count = inputs.length
-
-    // Valid OTP range: 4-8 inputs (standard code lengths)
-    if (count >= 4 && count <= 8) {
-      const inputArray = Array.from(inputs)
-
-      // Validate sibling relationship (all share same parent)
-      const firstParent = inputArray[0].parentElement
-      const lastParent = inputArray[count - 1].parentElement
-
-      if (firstParent && lastParent && firstParent === lastParent) {
-        return true  // Found valid split input pattern
-      }
-    }
-
-    // Move up one level
-    container = container.parentElement
-    levels++
-  }
-
-  return false  // No split input pattern found
-}
-
-/**
  * Extract label text from various sources
  *
  * Priority order:
@@ -482,26 +433,6 @@ function getNearbyText(input: HTMLInputElement, isSplitInput: boolean = false): 
 }
 
 /**
- * Resolve aria-describedby text
- *
- * aria-describedby can reference multiple IDs (space-separated).
- * Each referenced element's text content is resolved and joined.
- *
- * @param input - Input field to resolve aria-describedby from
- * @returns Combined text from all referenced elements
- */
-function getAriaDescribedbyText(input: HTMLInputElement): string {
-  const describedby = input.getAttribute('aria-describedby')
-  if (!describedby) return ''
-
-  return describedby
-    .split(/\s+/)
-    .map(id => input.ownerDocument?.getElementById(id)?.textContent?.trim() || '')
-    .filter(Boolean)
-    .join(' ')
-}
-
-/**
  * Tier 2: Deep DOM traversal detection with 4-layer defense
  *
  * Called when Tier 1 fails to find high-confidence matches.
@@ -562,8 +493,10 @@ export function detectTier2(
   const scoreBreakdown: string[] = []
 
   // P3: Check for split input pattern (Steam, banks, enterprise SSO)
-  // Increased from 60 to 75 to ensure detection even with authenticator penalty (-10)
-  if (detectSplitInputPattern(input)) {
+  // Uses detectSplitInputGroup as single source of truth (cached for reuse below)
+  const splitGroup = detectSplitInputGroup(input)
+  const isSplitInput = splitGroup !== null
+  if (isSplitInput) {
     score += 75  // High confidence, sufficient to meet threshold (70)
     scoreBreakdown.push('split-input:75')
   }
@@ -593,7 +526,6 @@ export function detectTier2(
   }
 
   // Extract nearby text (siblings, parent text)
-  const isSplitInput = detectSplitInputPattern(input)
   const nearbyText = getNearbyText(input, isSplitInput)
   if (nearbyText) {
     // Primary check: Multilingual high-confidence keywords (21 languages)

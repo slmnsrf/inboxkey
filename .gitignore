@@ -31,7 +31,6 @@ nul
 .mcp.json
 .theteamlead/
 
-
 # Environment variables
 .env
 .env.local
