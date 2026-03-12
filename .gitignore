@@ -24,6 +24,12 @@ build/
 out/
 inboxbridge/target/
 
+# Windows artifacts
+nul
+
+# Local tooling
+.mcp.json
+.theteamlead/
 
 # Environment variables
 .env
@@ -43,11 +49,6 @@ client_secret*.json
 # OS
 .DS_Store
 Thumbs.db
-nul
-
-# Local tooling
-.mcp.json
-.theteamlead/
 
 # Test coverage and reports
 coverage/
