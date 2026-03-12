@@ -29,12 +29,12 @@ export function usePopupData() {
 
         // Check if should auto-sync
         const shouldAutoSync =
-          cache.codes.length === 0 || // No codes
+          !cache.items?.length || // No items (codes or links)
           !cache.ts || // No timestamp
           (Date.now() - cache.ts > 30_000) // Stale (>30s)
 
         if (shouldAutoSync) {
-          console.log('[usePopupData] Auto-triggering sync (cache stale or empty)')
+          console.log('[usePopupData] Auto-triggering sync (cache stale or no items)')
           setIsSyncing(true)
 
           try {

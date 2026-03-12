@@ -117,19 +117,7 @@ export interface PopupCacheMagicLink {
 }
 
 /**
- * Complete popup cache structure
- */
-export interface PopupCache {
-  codes: PopupCacheCode[]
-  magicLinks: PopupCacheMagicLink[]
-  lastSync: number
-  mailboxCount: number
-  /** Cache timestamp for staleness detection (ms) */
-  ts?: number
-}
-
-/**
- * Unified popup cache structure (V2)
+ * Complete popup cache structure (unified V2)
  *
  * Single priority-sorted list of codes and links combined.
  * Replaces separate codes/magicLinks arrays with unified items array.
@@ -140,20 +128,23 @@ export interface PopupCache {
  * - Simplified UI rendering (single section)
  *
  * Backward compatibility: Still includes legacy codes/magicLinks arrays
- * for gradual migration. UI can use either format.
+ * derived from items on read.
  */
-export interface UnifiedPopupCache {
+export interface PopupCache {
   /** Unified priority-sorted items (codes + links combined) */
   items: PopupItem[]
-  /** Legacy: Separate codes array (for backward compatibility) */
+  /** Legacy: Separate codes array (derived from items on read) */
   codes: PopupCacheCode[]
-  /** Legacy: Separate links array (for backward compatibility) */
+  /** Legacy: Separate links array (derived from items on read) */
   magicLinks: PopupCacheMagicLink[]
   lastSync: number
   mailboxCount: number
   /** Cache timestamp for staleness detection (ms) */
   ts?: number
 }
+
+/** Backward-compat alias for PopupCache */
+export type UnifiedPopupCache = PopupCache
 
 /**
  * Mailbox information returned to popup (without sensitive tokens)
