@@ -333,6 +333,32 @@ describe('FieldDetector', () => {
     })
   })
 
+  describe('processPendingMutations overflow', () => {
+    it('should process all pending mutations, not just first 10', async () => {
+      const detectedFields: HTMLInputElement[] = []
+      detector.startObserving((field) => {
+        detectedFields.push(field)
+      })
+
+      // Inject 15 inputs at once (simulating SPA route change)
+      const container = document.createElement('div')
+      for (let i = 0; i < 15; i++) {
+        const input = document.createElement('input')
+        input.type = 'text'
+        input.id = `dynamic-${i}`
+        input.setAttribute('autocomplete', 'one-time-code')
+        container.appendChild(input)
+      }
+      document.body.appendChild(container)
+
+      // Wait for debounce (100ms) + processing
+      await new Promise(r => setTimeout(r, 200))
+
+      // All 15 inputs should be processed, not capped at 10
+      expect(detectedFields.length).toBe(15)
+    })
+  })
+
   describe('isObserving', () => {
     it('should return false initially', () => {
       expect(detector.isObserving()).toBe(false)
