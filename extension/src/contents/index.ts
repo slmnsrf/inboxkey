@@ -92,7 +92,6 @@ export function clearProcessedFields(): void {
           const success = await autofillCode({
             code: result.code,
             field: targetField,
-            showFeedback: true,
           })
           if (success) {
             clearProcessedFields()

@@ -7,12 +7,9 @@ import { extractDomain, isDomainEnabled } from '@/lib/utils/domain'
 import { findSubmitButton } from './submit-button-finder'
 import { logAutoSubmitFailure } from '@/lib/storage/telemetry'
 import { detectSplitInputGroup } from '@/lib/detection/split-input-detector'
-import { COLOR_SUCCESS, COLOR_SUCCESS_BG } from '@/lib/design-tokens'
-
 export interface AutofillOptions {
   code: string
   field: HTMLInputElement
-  showFeedback?: boolean
 }
 
 /**
@@ -20,7 +17,7 @@ export interface AutofillOptions {
  * @returns true if successful, false if field is not fillable
  */
 export async function autofillCode(options: AutofillOptions): Promise<boolean> {
-  const { code, field, showFeedback = true } = options
+  const { code, field } = options
 
   // Check if domain is enabled
   const domain = extractDomain(window.location.href)
@@ -73,7 +70,7 @@ export async function autofillCode(options: AutofillOptions): Promise<boolean> {
 
   if (group && group.inputs.length > 1) {
     console.log(`[Autofill] Split-input group detected: ${group.inputs.length} inputs`)
-    return autofillSplitInputs(code, group.inputs, showFeedback)
+    return autofillSplitInputs(code, group.inputs)
   }
 
   // Perform autofill (single field)
@@ -98,11 +95,6 @@ export async function autofillCode(options: AutofillOptions): Promise<boolean> {
   field.setAttribute('data-inboxkey-filled', 'true')
   field.setAttribute('data-inboxkey-timestamp', Date.now().toString())
 
-  // Visual feedback
-  if (showFeedback) {
-    showSuccessFeedback(field)
-  }
-
   // Check if we should auto-submit
   const shouldAutoSubmit = await checkForAutoSubmit(field)
   if (shouldAutoSubmit) {
@@ -120,13 +112,11 @@ export async function autofillCode(options: AutofillOptions): Promise<boolean> {
  *
  * @param code - Verification code to fill
  * @param inputs - Array of input fields in DOM order
- * @param showFeedback - Whether to show visual feedback
  * @returns true if successful
  */
 async function autofillSplitInputs(
   code: string,
-  inputs: HTMLInputElement[],
-  showFeedback: boolean
+  inputs: HTMLInputElement[]
 ): Promise<boolean> {
   const chars = code.split('')
 
@@ -162,11 +152,6 @@ async function autofillSplitInputs(
     // Mark as filled
     input.setAttribute('data-inboxkey-filled', 'true')
     input.setAttribute('data-inboxkey-timestamp', Date.now().toString())
-
-    // Visual feedback
-    if (showFeedback) {
-      showSuccessFeedback(input)
-    }
   }
 
   // Focus last filled input (matches user expectation)
@@ -174,28 +159,6 @@ async function autofillSplitInputs(
 
   console.log('[Autofill] Split-input autofill completed successfully')
   return true
-}
-
-/**
- * Show visual feedback for successful autofill
- */
-function showSuccessFeedback(field: HTMLInputElement): void {
-  // Save original styles
-  const originalBackground = field.style.backgroundColor
-  const originalBorder = field.style.border
-  const originalTransition = field.style.transition
-
-  // Apply success styles (using design tokens)
-  field.style.transition = 'background-color 0.3s ease'
-  field.style.backgroundColor = COLOR_SUCCESS_BG // Light green from tokens
-  field.style.border = `2px solid ${COLOR_SUCCESS}` // Green border from tokens
-
-  // Revert after 2 seconds
-  setTimeout(() => {
-    field.style.transition = originalTransition
-    field.style.backgroundColor = originalBackground
-    field.style.border = originalBorder
-  }, 2000)
 }
 
 /**
