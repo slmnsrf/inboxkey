@@ -416,6 +416,27 @@ function attachResizeObserver(
 }
 
 /**
+ * One-shot theme detection. Checks common dark mode signals.
+ * Does not react to runtime theme changes (deferred).
+ */
+function detectTheme(): 'light' | 'dark' {
+  // Check data-theme attribute on html/body (common pattern)
+  const htmlTheme = document.documentElement.getAttribute('data-theme')
+  if (htmlTheme === 'dark') return 'dark'
+
+  const bodyTheme = document.body?.getAttribute('data-theme')
+  if (bodyTheme === 'dark') return 'dark'
+
+  // Check class-based dark mode (e.g., Tailwind's .dark class)
+  if (document.documentElement.classList.contains('dark')) return 'dark'
+
+  // Fallback to system preference
+  if (window.matchMedia?.('(prefers-color-scheme: dark)').matches) return 'dark'
+
+  return 'light'
+}
+
+/**
  * Inject the field-feedback stylesheet into <head> (idempotent).
  */
 function injectStyles(): void {
@@ -423,7 +444,7 @@ function injectStyles(): void {
 
   const style = document.createElement('style')
   style.id = STYLE_ID
-  style.textContent = generateFieldFeedbackCSS('light') // Theme detection is Task 7
+  style.textContent = generateFieldFeedbackCSS(detectTheme())
 
   // SR-only utility not included in field-feedback-styles.ts, append it here
   style.textContent += `
