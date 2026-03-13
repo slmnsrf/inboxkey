@@ -532,51 +532,88 @@
     }
 
     /* ============================
-       MICRO INDICATOR
-       Tiny dot below the field
+       TOOLTIP
+       Appears on hover, top-right of field
        ============================ */
 
-    .micro-indicator {
-      display: flex;
-      align-items: center;
-      gap: 4px;
-      margin-top: 6px;
+    .shimmer-wrap,
+    .otp-shimmer-cell {
+      position: relative;
+    }
+
+    .field-tooltip {
+      position: absolute;
+      top: -6px;
+      right: 4px;
+      transform: translateY(-100%);
+      padding: 4px 10px;
+      border-radius: var(--radius-sm);
+      font-family: var(--font-system);
+      font-size: 11px;
+      font-weight: var(--font-weight-medium);
+      line-height: 1.3;
+      white-space: nowrap;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity var(--duration-fast) var(--easing-default);
+      z-index: 10;
+    }
+
+    /* Arrow */
+    .field-tooltip::after {
+      content: '';
+      position: absolute;
+      bottom: -4px;
+      right: 12px;
+      width: 8px;
       height: 8px;
+      transform: rotate(45deg);
+      border-radius: 1px;
     }
 
-    .micro-dot {
-      width: 5px;
-      height: 5px;
-      border-radius: 50%;
-      flex-shrink: 0;
+    /* Show on hover of the shimmer-wrap */
+    .shimmer-wrap:hover .field-tooltip,
+    .otp-group-wrap:hover .field-tooltip {
+      opacity: 1;
     }
 
-    .micro-dot--success {
-      background: var(--color-success);
-      opacity: 0.6;
-    }
-
-    .micro-dot--error {
-      background: var(--color-error);
-      opacity: 0.6;
-    }
-
-    .micro-dot--listening {
+    /* State colors */
+    .field-tooltip--listening {
       background: var(--color-primary);
-      opacity: 0.5;
+      color: white;
+    }
+    .field-tooltip--listening::after {
+      background: var(--color-primary);
     }
 
-    /* Clipboard mini icon for copied state */
-    .micro-icon {
-      width: 10px;
-      height: 10px;
-      color: var(--color-success);
-      opacity: 0.5;
+    .field-tooltip--filled {
+      background: var(--color-success-dark);
+      color: white;
+    }
+    .field-tooltip--filled::after {
+      background: var(--color-success-dark);
     }
 
-    /* Timeout mini icon */
-    .micro-icon--error {
-      color: var(--color-error);
+    .field-tooltip--copied {
+      background: var(--color-success-dark);
+      color: white;
+    }
+    .field-tooltip--copied::after {
+      background: var(--color-success-dark);
+    }
+
+    .field-tooltip--timeout {
+      background: var(--color-error-dark);
+      color: white;
+    }
+    .field-tooltip--timeout::after {
+      background: var(--color-error-dark);
+    }
+
+    /* OTP group needs a wrapper for hover target */
+    .otp-group-wrap {
+      position: relative;
+      display: inline-flex;
     }
 
     @media (prefers-reduced-motion: reduce) {
@@ -643,9 +680,7 @@
             <div class="field-wrapper field-wrapper--full">
               <div class="shimmer-wrap shimmer-wrap--listening shimmer-wrap--full">
                 <input class="fake-input fake-input--listening" type="text" placeholder="Enter code" disabled>
-              </div>
-              <div class="micro-indicator">
-                <span class="micro-dot micro-dot--listening"></span>
+                <span class="field-tooltip field-tooltip--listening">Checking emails...</span>
               </div>
             </div>
             <button class="fake-submit">Verify</button>
@@ -665,9 +700,7 @@
             <div class="field-wrapper field-wrapper--full">
               <div class="shimmer-wrap shimmer-wrap--filled shimmer-wrap--full">
                 <input class="fake-input fake-input--filled" type="text" value="847293" disabled>
-              </div>
-              <div class="micro-indicator">
-                <span class="micro-dot micro-dot--success"></span>
+                <span class="field-tooltip field-tooltip--filled">Code filled</span>
               </div>
             </div>
             <button class="fake-submit">Verify</button>
@@ -689,9 +722,7 @@
             <div class="field-wrapper field-wrapper--full">
               <div class="shimmer-wrap shimmer-wrap--copied shimmer-wrap--full">
                 <input class="fake-input fake-input--copied" type="text" placeholder="Enter code" disabled>
-              </div>
-              <div class="micro-indicator">
-                <svg class="micro-icon" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="3.5" width="5" height="5" rx="1"/><path d="M6.5 3.5V2.5a1 1 0 0 0-1-1h-3a1 1 0 0 0-1 1v3a1 1 0 0 0 1 1h1"/></svg>
+                <span class="field-tooltip field-tooltip--copied">Copied to clipboard</span>
               </div>
             </div>
             <button class="fake-submit">Verify</button>
@@ -711,9 +742,7 @@
             <div class="field-wrapper field-wrapper--full">
               <div class="shimmer-wrap shimmer-wrap--timeout shimmer-wrap--full">
                 <input class="fake-input fake-input--timeout" type="text" placeholder="Enter code" disabled>
-              </div>
-              <div class="micro-indicator">
-                <span class="micro-dot micro-dot--error"></span>
+                <span class="field-tooltip field-tooltip--timeout">No code received</span>
               </div>
             </div>
             <button class="fake-submit">Verify</button>
@@ -742,16 +771,16 @@
             <p class="fake-page-title">Two-factor authentication</p>
             <p class="fake-page-subtitle">Enter the 6-digit code from your email</p>
             <div class="field-wrapper">
-              <div class="fake-otp-group">
-                <div class="otp-shimmer-cell otp-shimmer-cell--listening"><div class="fake-otp-cell fake-otp-cell--listening"></div></div>
-                <div class="otp-shimmer-cell otp-shimmer-cell--listening"><div class="fake-otp-cell fake-otp-cell--listening"></div></div>
-                <div class="otp-shimmer-cell otp-shimmer-cell--listening"><div class="fake-otp-cell fake-otp-cell--listening"></div></div>
-                <div class="otp-shimmer-cell otp-shimmer-cell--listening"><div class="fake-otp-cell fake-otp-cell--listening"></div></div>
-                <div class="otp-shimmer-cell otp-shimmer-cell--listening"><div class="fake-otp-cell fake-otp-cell--listening"></div></div>
-                <div class="otp-shimmer-cell otp-shimmer-cell--listening"><div class="fake-otp-cell fake-otp-cell--listening"></div></div>
-              </div>
-              <div class="micro-indicator">
-                <span class="micro-dot micro-dot--listening"></span>
+              <div class="otp-group-wrap">
+                <div class="fake-otp-group">
+                  <div class="otp-shimmer-cell otp-shimmer-cell--listening"><div class="fake-otp-cell fake-otp-cell--listening"></div></div>
+                  <div class="otp-shimmer-cell otp-shimmer-cell--listening"><div class="fake-otp-cell fake-otp-cell--listening"></div></div>
+                  <div class="otp-shimmer-cell otp-shimmer-cell--listening"><div class="fake-otp-cell fake-otp-cell--listening"></div></div>
+                  <div class="otp-shimmer-cell otp-shimmer-cell--listening"><div class="fake-otp-cell fake-otp-cell--listening"></div></div>
+                  <div class="otp-shimmer-cell otp-shimmer-cell--listening"><div class="fake-otp-cell fake-otp-cell--listening"></div></div>
+                  <div class="otp-shimmer-cell otp-shimmer-cell--listening"><div class="fake-otp-cell fake-otp-cell--listening"></div></div>
+                </div>
+                <span class="field-tooltip field-tooltip--listening">Checking emails...</span>
               </div>
             </div>
           </div>
@@ -767,16 +796,16 @@
             <p class="fake-page-title">Two-factor authentication</p>
             <p class="fake-page-subtitle">Enter the 6-digit code from your email</p>
             <div class="field-wrapper">
-              <div class="fake-otp-group">
-                <div class="otp-shimmer-cell otp-shimmer-cell--filled"><div class="fake-otp-cell fake-otp-cell--filled">8</div></div>
-                <div class="otp-shimmer-cell otp-shimmer-cell--filled"><div class="fake-otp-cell fake-otp-cell--filled">4</div></div>
-                <div class="otp-shimmer-cell otp-shimmer-cell--filled"><div class="fake-otp-cell fake-otp-cell--filled">7</div></div>
-                <div class="otp-shimmer-cell otp-shimmer-cell--filled"><div class="fake-otp-cell fake-otp-cell--filled">2</div></div>
-                <div class="otp-shimmer-cell otp-shimmer-cell--filled"><div class="fake-otp-cell fake-otp-cell--filled">9</div></div>
-                <div class="otp-shimmer-cell otp-shimmer-cell--filled"><div class="fake-otp-cell fake-otp-cell--filled">3</div></div>
-              </div>
-              <div class="micro-indicator">
-                <span class="micro-dot micro-dot--success"></span>
+              <div class="otp-group-wrap">
+                <div class="fake-otp-group">
+                  <div class="otp-shimmer-cell otp-shimmer-cell--filled"><div class="fake-otp-cell fake-otp-cell--filled">8</div></div>
+                  <div class="otp-shimmer-cell otp-shimmer-cell--filled"><div class="fake-otp-cell fake-otp-cell--filled">4</div></div>
+                  <div class="otp-shimmer-cell otp-shimmer-cell--filled"><div class="fake-otp-cell fake-otp-cell--filled">7</div></div>
+                  <div class="otp-shimmer-cell otp-shimmer-cell--filled"><div class="fake-otp-cell fake-otp-cell--filled">2</div></div>
+                  <div class="otp-shimmer-cell otp-shimmer-cell--filled"><div class="fake-otp-cell fake-otp-cell--filled">9</div></div>
+                  <div class="otp-shimmer-cell otp-shimmer-cell--filled"><div class="fake-otp-cell fake-otp-cell--filled">3</div></div>
+                </div>
+                <span class="field-tooltip field-tooltip--filled">Code filled</span>
               </div>
             </div>
           </div>
@@ -794,16 +823,16 @@
             <p class="fake-page-title">Two-factor authentication</p>
             <p class="fake-page-subtitle">Enter the 6-digit code from your email</p>
             <div class="field-wrapper">
-              <div class="fake-otp-group">
-                <div class="otp-shimmer-cell"><div class="fake-otp-cell fake-otp-cell--copied"></div></div>
-                <div class="otp-shimmer-cell"><div class="fake-otp-cell fake-otp-cell--copied"></div></div>
-                <div class="otp-shimmer-cell"><div class="fake-otp-cell fake-otp-cell--copied"></div></div>
-                <div class="otp-shimmer-cell"><div class="fake-otp-cell fake-otp-cell--copied"></div></div>
-                <div class="otp-shimmer-cell"><div class="fake-otp-cell fake-otp-cell--copied"></div></div>
-                <div class="otp-shimmer-cell"><div class="fake-otp-cell fake-otp-cell--copied"></div></div>
-              </div>
-              <div class="micro-indicator">
-                <svg class="micro-icon" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="3.5" width="5" height="5" rx="1"/><path d="M6.5 3.5V2.5a1 1 0 0 0-1-1h-3a1 1 0 0 0-1 1v3a1 1 0 0 0 1 1h1"/></svg>
+              <div class="otp-group-wrap">
+                <div class="fake-otp-group">
+                  <div class="otp-shimmer-cell"><div class="fake-otp-cell fake-otp-cell--copied"></div></div>
+                  <div class="otp-shimmer-cell"><div class="fake-otp-cell fake-otp-cell--copied"></div></div>
+                  <div class="otp-shimmer-cell"><div class="fake-otp-cell fake-otp-cell--copied"></div></div>
+                  <div class="otp-shimmer-cell"><div class="fake-otp-cell fake-otp-cell--copied"></div></div>
+                  <div class="otp-shimmer-cell"><div class="fake-otp-cell fake-otp-cell--copied"></div></div>
+                  <div class="otp-shimmer-cell"><div class="fake-otp-cell fake-otp-cell--copied"></div></div>
+                </div>
+                <span class="field-tooltip field-tooltip--copied">Copied to clipboard</span>
               </div>
             </div>
           </div>
@@ -819,16 +848,16 @@
             <p class="fake-page-title">Two-factor authentication</p>
             <p class="fake-page-subtitle">Enter the 6-digit code from your email</p>
             <div class="field-wrapper">
-              <div class="fake-otp-group">
-                <div class="otp-shimmer-cell"><div class="fake-otp-cell fake-otp-cell--timeout"></div></div>
-                <div class="otp-shimmer-cell"><div class="fake-otp-cell fake-otp-cell--timeout"></div></div>
-                <div class="otp-shimmer-cell"><div class="fake-otp-cell fake-otp-cell--timeout"></div></div>
-                <div class="otp-shimmer-cell"><div class="fake-otp-cell fake-otp-cell--timeout"></div></div>
-                <div class="otp-shimmer-cell"><div class="fake-otp-cell fake-otp-cell--timeout"></div></div>
-                <div class="otp-shimmer-cell"><div class="fake-otp-cell fake-otp-cell--timeout"></div></div>
-              </div>
-              <div class="micro-indicator">
-                <span class="micro-dot micro-dot--error"></span>
+              <div class="otp-group-wrap">
+                <div class="fake-otp-group">
+                  <div class="otp-shimmer-cell"><div class="fake-otp-cell fake-otp-cell--timeout"></div></div>
+                  <div class="otp-shimmer-cell"><div class="fake-otp-cell fake-otp-cell--timeout"></div></div>
+                  <div class="otp-shimmer-cell"><div class="fake-otp-cell fake-otp-cell--timeout"></div></div>
+                  <div class="otp-shimmer-cell"><div class="fake-otp-cell fake-otp-cell--timeout"></div></div>
+                  <div class="otp-shimmer-cell"><div class="fake-otp-cell fake-otp-cell--timeout"></div></div>
+                  <div class="otp-shimmer-cell"><div class="fake-otp-cell fake-otp-cell--timeout"></div></div>
+                </div>
+                <span class="field-tooltip field-tooltip--timeout">No code received</span>
               </div>
             </div>
           </div>
@@ -856,15 +885,15 @@
             <p class="fake-page-title">Steam Guard</p>
             <p class="fake-page-subtitle">Enter the 5-character code from your email</p>
             <div class="field-wrapper">
-              <div class="fake-otp-group">
-                <div class="otp-shimmer-cell otp-shimmer-cell--listening"><div class="fake-otp-cell fake-otp-cell--listening"></div></div>
-                <div class="otp-shimmer-cell otp-shimmer-cell--listening"><div class="fake-otp-cell fake-otp-cell--listening"></div></div>
-                <div class="otp-shimmer-cell otp-shimmer-cell--listening"><div class="fake-otp-cell fake-otp-cell--listening"></div></div>
-                <div class="otp-shimmer-cell otp-shimmer-cell--listening"><div class="fake-otp-cell fake-otp-cell--listening"></div></div>
-                <div class="otp-shimmer-cell otp-shimmer-cell--listening"><div class="fake-otp-cell fake-otp-cell--listening"></div></div>
-              </div>
-              <div class="micro-indicator">
-                <span class="micro-dot micro-dot--listening"></span>
+              <div class="otp-group-wrap">
+                <div class="fake-otp-group">
+                  <div class="otp-shimmer-cell otp-shimmer-cell--listening"><div class="fake-otp-cell fake-otp-cell--listening"></div></div>
+                  <div class="otp-shimmer-cell otp-shimmer-cell--listening"><div class="fake-otp-cell fake-otp-cell--listening"></div></div>
+                  <div class="otp-shimmer-cell otp-shimmer-cell--listening"><div class="fake-otp-cell fake-otp-cell--listening"></div></div>
+                  <div class="otp-shimmer-cell otp-shimmer-cell--listening"><div class="fake-otp-cell fake-otp-cell--listening"></div></div>
+                  <div class="otp-shimmer-cell otp-shimmer-cell--listening"><div class="fake-otp-cell fake-otp-cell--listening"></div></div>
+                </div>
+                <span class="field-tooltip field-tooltip--listening">Checking emails...</span>
               </div>
             </div>
           </div>
@@ -880,15 +909,15 @@
             <p class="fake-page-title">Steam Guard</p>
             <p class="fake-page-subtitle">Enter the 5-character code from your email</p>
             <div class="field-wrapper">
-              <div class="fake-otp-group">
-                <div class="otp-shimmer-cell otp-shimmer-cell--filled"><div class="fake-otp-cell fake-otp-cell--filled">R</div></div>
-                <div class="otp-shimmer-cell otp-shimmer-cell--filled"><div class="fake-otp-cell fake-otp-cell--filled">7</div></div>
-                <div class="otp-shimmer-cell otp-shimmer-cell--filled"><div class="fake-otp-cell fake-otp-cell--filled">K</div></div>
-                <div class="otp-shimmer-cell otp-shimmer-cell--filled"><div class="fake-otp-cell fake-otp-cell--filled">M</div></div>
-                <div class="otp-shimmer-cell otp-shimmer-cell--filled"><div class="fake-otp-cell fake-otp-cell--filled">2</div></div>
-              </div>
-              <div class="micro-indicator">
-                <span class="micro-dot micro-dot--success"></span>
+              <div class="otp-group-wrap">
+                <div class="fake-otp-group">
+                  <div class="otp-shimmer-cell otp-shimmer-cell--filled"><div class="fake-otp-cell fake-otp-cell--filled">R</div></div>
+                  <div class="otp-shimmer-cell otp-shimmer-cell--filled"><div class="fake-otp-cell fake-otp-cell--filled">7</div></div>
+                  <div class="otp-shimmer-cell otp-shimmer-cell--filled"><div class="fake-otp-cell fake-otp-cell--filled">K</div></div>
+                  <div class="otp-shimmer-cell otp-shimmer-cell--filled"><div class="fake-otp-cell fake-otp-cell--filled">M</div></div>
+                  <div class="otp-shimmer-cell otp-shimmer-cell--filled"><div class="fake-otp-cell fake-otp-cell--filled">2</div></div>
+                </div>
+                <span class="field-tooltip field-tooltip--filled">Code filled</span>
               </div>
             </div>
           </div>
@@ -919,9 +948,7 @@
             <div class="field-wrapper field-wrapper--full">
               <div class="shimmer-wrap shimmer-wrap--listening shimmer-wrap--full">
                 <input class="fake-input fake-input--wide fake-input--listening" type="text" placeholder="000-000" disabled>
-              </div>
-              <div class="micro-indicator">
-                <span class="micro-dot micro-dot--listening"></span>
+                <span class="field-tooltip field-tooltip--listening">Checking emails...</span>
               </div>
             </div>
             <button class="fake-submit">Continue</button>
@@ -941,9 +968,7 @@
             <div class="field-wrapper field-wrapper--full">
               <div class="shimmer-wrap shimmer-wrap--filled shimmer-wrap--full">
                 <input class="fake-input fake-input--wide fake-input--filled" type="text" value="381-742" disabled>
-              </div>
-              <div class="micro-indicator">
-                <span class="micro-dot micro-dot--success"></span>
+                <span class="field-tooltip field-tooltip--filled">Code filled</span>
               </div>
             </div>
             <button class="fake-submit">Continue</button>
@@ -974,9 +999,7 @@
             <div class="field-wrapper">
               <div class="shimmer-wrap shimmer-wrap--listening">
                 <input class="fake-input fake-input--compact fake-input--listening" type="text" placeholder="Code" disabled>
-              </div>
-              <div class="micro-indicator">
-                <span class="micro-dot micro-dot--listening"></span>
+                <span class="field-tooltip field-tooltip--listening">Checking emails...</span>
               </div>
             </div>
             <button class="fake-submit fake-submit--compact">Submit</button>
@@ -995,9 +1018,7 @@
             <div class="field-wrapper">
               <div class="shimmer-wrap shimmer-wrap--filled">
                 <input class="fake-input fake-input--compact fake-input--filled" type="text" value="5931" disabled>
-              </div>
-              <div class="micro-indicator">
-                <span class="micro-dot micro-dot--success"></span>
+                <span class="field-tooltip field-tooltip--filled">Code filled</span>
               </div>
             </div>
             <button class="fake-submit fake-submit--compact">Submit</button>
@@ -1013,11 +1034,13 @@
   [
     "Conic-gradient shimmer rotating around the border - A single bright spot of color travels continuously along the field's border using a conic-gradient animated via @property. This creates the illusion of light catching the edge of the field, like a subtle scanner beam. Much quieter than a pulsing glow.",
     "Masking trick for border-only gradient - The pseudo-element uses the mask-composite: exclude technique to show the gradient only in the 1px border area. The field's own background completely covers the interior, so the shimmer is purely on the border line.",
-    "3-second rotation cycle - Slow enough to feel ambient rather than urgent. The highlight passes each edge roughly once every 3 seconds, which reads as 'working in the background' rather than 'loading spinner'.",
+    "Removed micro-dot indicators - The shimmer border already communicates state through color and motion. The dots were redundant visual noise that restated what the border already conveyed.",
+    "Hover tooltip instead of persistent text - State explanation is available on demand via hover, positioned at top-right of the field with a downward arrow. This keeps the default view completely clean while still providing context when the user wants it.",
+    "Tooltip color matches state - Listening tooltip is blue, filled/copied are green, timeout is red. The tooltip background uses the same semantic color as the shimmer, reinforcing the state without needing icons or labels.",
+    "Tooltip on shimmer-wrap, not the input - The hover target is the wrapper that contains both the input and the shimmer pseudo-element. This means hovering anywhere on the field area (including the shimmer border itself) triggers the tooltip.",
+    "OTP group wrapper for single tooltip - OTP cells are wrapped in an otp-group-wrap that acts as the hover target. One tooltip for the entire group rather than per-cell tooltips, since the state applies to all cells collectively.",
     "Staggered shimmer on OTP cells - Each cell's rotation starts at a different offset (negative animation-delay), so the bright spot appears to cascade across the cells rather than all pulsing in unison. Creates a wave-like rhythm.",
-    "One-shot sweep for terminal states - Filled, copied, and timeout states play the shimmer animation exactly once (animation-iteration-count: 1) then stop. This gives a brief celebratory or conclusive flash without persisting.",
-    "No box-shadow, no background tint on listening - The only visual change during listening is the shimmer on the 1px border and a tiny 5px dot below. The field's appearance is otherwise completely normal, minimizing disruption to the host page.",
-    "Faint border color as baseline - Listening uses a very low-opacity blue border (0.2 alpha), filled/copied use green (0.25-0.3 alpha), timeout uses red (0.25 alpha). These are barely noticeable on their own. The shimmer adds the motion, the border color adds the meaning.",
+    "One-shot sweep for terminal states - Filled, copied, and timeout states play the shimmer animation exactly once then stop. A brief flash of color traveling along the border as confirmation, then static.",
     "Reduced motion fallback - Shimmer animations are completely disabled. The faint colored border remains as the only indicator, which is sufficient for state differentiation without any motion."
   ]
   </script>
