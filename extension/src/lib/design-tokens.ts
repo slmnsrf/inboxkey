@@ -45,3 +45,10 @@ export const FONT_FAMILY_UI = "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'R
 export const DURATION_FAST = 150 // Fast timing for hovers and focus states (100-200ms)
 export const DURATION_NORMAL = 300 // Normal timing for toasts and modal transitions
 export const DURATION_SLOW = 500 // Slow timing for complex animations
+
+// Shimmer RGB channels (for use in rgba() inside CSS template strings)
+// Light values match COLOR_PRIMARY (#2563EB), COLOR_SUCCESS (#10B981), COLOR_ERROR (#EF4444)
+// Dark values match the dark theme palette from tokens.css
+export const SHIMMER_BLUE = { light: '37, 99, 235', dark: '10, 132, 255' }
+export const SHIMMER_GREEN = { light: '16, 185, 129', dark: '48, 209, 88' }
+export const SHIMMER_RED = { light: '239, 68, 68', dark: '255, 69, 58' }
