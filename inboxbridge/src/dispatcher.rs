@@ -1,5 +1,5 @@
 use crate::protocol::{Request, Response, RpcError, PingResult};
-use crate::state::{Account, AppState, Watch};
+use crate::state::{Account, AppState};
 use crate::keychain::KeychainManager;
 use crate::imap_client::ImapClient;
 use serde_json::{json, Value};
@@ -20,8 +20,8 @@ pub async fn dispatch(
         "account.remove" => handle_account_remove(id, request.params, state, keychain).await,
         "account.test" => handle_account_test(id, request.params).await,
         "mail.fetchRecent" => handle_mail_fetch_recent(id, request.params, state, keychain).await,
-        "watch.start" => handle_watch_start(id, request.params, state).await,
-        "watch.stop" => handle_watch_stop(id, request.params, state).await,
+        "watch.start" => error_response(id, "UNIMPLEMENTED", "watch.start is not yet implemented. Use manual sync via mail.fetchRecent."),
+        "watch.stop" => error_response(id, "UNIMPLEMENTED", "watch.stop is not yet implemented."),
         _ => Response {
             v: 1,
             id,
@@ -135,13 +135,14 @@ async fn handle_account_add(
         username: username.to_string(),
     };
 
-    state.add_account(account).await;
-
-    Response {
-        v: 1,
-        id,
-        result: Some(json!({"accountId": account_id})),
-        error: None,
+    match state.add_account(account) {
+        Ok(_) => Response {
+            v: 1,
+            id,
+            result: Some(json!({"accountId": account_id})),
+            error: None,
+        },
+        Err(e) => error_response(id, "STORAGE_ERROR", &e),
     }
 }
 
@@ -157,9 +158,10 @@ async fn handle_account_remove(
     };
 
     // Get account to retrieve username for keychain deletion
-    let account = match state.get_account(account_id).await {
-        Some(acc) => acc,
-        None => return error_response(id, "ACCOUNT_NOT_FOUND", &format!("Account {} not found", account_id)),
+    let account = match state.get_account(account_id) {
+        Ok(Some(acct)) => acct,
+        Ok(None) => return error_response(id, "ACCOUNT_NOT_FOUND", &format!("Account {} not found", account_id)),
+        Err(e) => return error_response(id, "STORAGE_ERROR", &e),
     };
 
     // Delete password from keychain
@@ -170,13 +172,14 @@ async fn handle_account_remove(
     }
 
     // Remove account from state
-    state.remove_account(account_id).await;
-
-    Response {
-        v: 1,
-        id,
-        result: Some(json!({"success": true})),
-        error: None,
+    match state.remove_account(account_id) {
+        Ok(_) => Response {
+            v: 1,
+            id,
+            result: Some(json!({"success": true})),
+            error: None,
+        },
+        Err(e) => error_response(id, "STORAGE_ERROR", &e),
     }
 }
 
@@ -252,9 +255,10 @@ async fn handle_mail_fetch_recent(
     let limit = params["limit"].as_u64().unwrap_or(15) as usize;
 
     // Get account
-    let account = match state.get_account(account_id).await {
-        Some(acc) => acc,
-        None => return error_response(id, "ACCOUNT_NOT_FOUND", &format!("Account {} not found", account_id)),
+    let account = match state.get_account(account_id) {
+        Ok(Some(acct)) => acct,
+        Ok(None) => return error_response(id, "ACCOUNT_NOT_FOUND", &format!("Account {} not found", account_id)),
+        Err(e) => return error_response(id, "STORAGE_ERROR", &e),
     };
 
     // Get password from keychain
@@ -294,88 +298,5 @@ async fn handle_mail_fetch_recent(
         id,
         result: Some(json!({"messages": messages})),
         error: None,
-    }
-}
-
-async fn handle_watch_start(
-    id: String,
-    params: Value,
-    state: Arc<AppState>,
-) -> Response<Value> {
-    let account_id = match params["accountId"].as_str() {
-        Some(id) => id,
-        None => return error_response(id, "INVALID_PARAMS", "Missing accountId parameter"),
-    };
-
-    // Verify account exists
-    if state.get_account(account_id).await.is_none() {
-        return error_response(id, "ACCOUNT_NOT_FOUND", &format!("Account {} not found", account_id));
-    }
-
-    // Parse filters
-    let newer_than = params["filters"]["newerThan"].as_str().unwrap_or("10m");
-    let since_minutes = parse_duration_to_minutes(newer_than);
-
-    // Create watch
-    let watch_id = format!("watch_{}", Uuid::new_v4().to_string().replace("-", "").chars().take(8).collect::<String>());
-    let watch = Watch {
-        id: watch_id.clone(),
-        account_id: account_id.to_string(),
-        since_minutes,
-    };
-
-    state.add_watch(watch).await;
-
-    // TODO: Start background polling task (Phase 3)
-    // For MVP, watch is just recorded - polling not yet implemented
-
-    Response {
-        v: 1,
-        id,
-        result: Some(json!({"watchId": watch_id})),
-        error: None,
-    }
-}
-
-async fn handle_watch_stop(
-    id: String,
-    params: Value,
-    state: Arc<AppState>,
-) -> Response<Value> {
-    let watch_id = match params["watchId"].as_str() {
-        Some(id) => id,
-        None => return error_response(id, "INVALID_PARAMS", "Missing watchId parameter"),
-    };
-
-    // Remove watch
-    let removed = state.remove_watch(watch_id).await;
-
-    if !removed {
-        return error_response(id, "WATCH_NOT_FOUND", &format!("Watch {} not found", watch_id));
-    }
-
-    // TODO: Stop background polling task (Phase 3)
-
-    Response {
-        v: 1,
-        id,
-        result: Some(json!({"success": true})),
-        error: None,
-    }
-}
-
-fn parse_duration_to_minutes(duration: &str) -> u32 {
-    // Simple parser for durations like "10m", "1h", "30s"
-    let duration = duration.trim();
-
-    if duration.ends_with('m') {
-        duration.trim_end_matches('m').parse::<u32>().unwrap_or(10)
-    } else if duration.ends_with('h') {
-        duration.trim_end_matches('h').parse::<u32>().unwrap_or(1) * 60
-    } else if duration.ends_with('s') {
-        let seconds = duration.trim_end_matches('s').parse::<u32>().unwrap_or(600);
-        (seconds + 59) / 60 // Round up to minutes
-    } else {
-        10 // Default to 10 minutes
     }
 }
