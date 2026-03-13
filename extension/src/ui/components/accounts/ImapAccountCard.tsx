@@ -94,14 +94,6 @@ export function ImapAccountCard({
         setRemoveState('idle')
         setRemoveError(null)
         await onAccountChanged()
-
-        // Also try to remove from native app
-        try {
-          const client = getNativeClient()
-          await client.call('account.remove', { accountId: mailboxId })
-        } catch (error) {
-          console.warn('[ImapAccountCard] Failed to remove from native app:', error)
-        }
       } else {
         setRemoveState('idle')
         setRemoveError(t('toast_disconnect_failed'))
