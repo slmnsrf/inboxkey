@@ -8,6 +8,7 @@
 import React from 'react'
 import { Settings, RefreshCw } from 'lucide-react'
 import { t, plural, timeAgo } from '@/lib/i18n'
+import iconBase64 from 'data-base64:~/assets/icon.svg'
 
 interface HeaderProps {
   mailboxCount: number
@@ -35,7 +36,7 @@ export function Header({
         <div className="popup-header__title-group">
           <h1 className="popup-title">
             <img
-              src={chrome.runtime.getURL('assets/icon.svg')}
+              src={iconBase64}
               alt=""
               className="popup-title__logo"
               width={20}
