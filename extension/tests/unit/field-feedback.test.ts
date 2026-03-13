@@ -25,6 +25,11 @@ beforeEach(() => {
 afterEach(() => {
   document.body.innerHTML = ''
   document.head.querySelectorAll('style[id^="inboxkey-"]').forEach(s => s.remove())
+  // Restore window.matchMedia to default
+  if (window.matchMedia.toString().includes('mockImplementation')) {
+    // If we mocked it, restore default behavior by deleting it
+    delete (window as any).matchMedia
+  }
   vi.clearAllMocks()
 })
 
@@ -219,5 +224,28 @@ describe('split input support (auto-detected internally)', () => {
     // No inline text on split inputs (too small per-cell)
     const inlineTexts = container.querySelectorAll('.inboxkey-inline-text')
     expect(inlineTexts.length).toBe(0)
+  })
+})
+
+// ─── Test 8: Theme detection ──────────────────────────────────────────────────
+
+describe('theme detection', () => {
+  it('detects dark theme from prefers-color-scheme', async () => {
+    // Mock matchMedia
+    window.matchMedia = vi.fn().mockImplementation(query => ({
+      matches: query === '(prefers-color-scheme: dark)',
+      media: query,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+    }))
+
+    const field = document.createElement('input')
+    document.body.appendChild(field)
+
+    await showFieldFeedback(field)
+
+    const style = document.getElementById('inboxkey-field-feedback-styles')
+    // Dark theme should use dark blue channel
+    expect(style!.textContent).toContain('10, 132, 255')
   })
 })
