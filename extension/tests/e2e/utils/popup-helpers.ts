@@ -136,14 +136,14 @@ export async function waitForTabCount(context: BrowserContext, count: number, ti
  * Get code button element by code value.
  */
 export async function getCodeButton(page: Page, code: string) {
-  return page.locator(`.code-item:has-text("${code}") button`)
+  return page.locator(`.item-card[data-kind="code"]:has-text("${code}") button`)
 }
 
 /**
  * Get link button element by URL.
  */
 export async function getLinkButton(page: Page, urlFragment: string) {
-  return page.locator(`.link-item:has-text("${urlFragment}") button`)
+  return page.locator(`.item-card[data-kind="link"]:has-text("${urlFragment}") button`)
 }
 
 /**
@@ -164,14 +164,14 @@ export async function hasEmptyLinksState(page: Page): Promise<boolean> {
  * Get all visible code elements.
  */
 export async function getVisibleCodes(page: Page) {
-  return page.locator('.code-item').all()
+  return page.locator('.item-card[data-kind="code"]').all()
 }
 
 /**
  * Get all visible link elements.
  */
 export async function getVisibleLinks(page: Page) {
-  return page.locator('.link-item').all()
+  return page.locator('.item-card[data-kind="link"]').all()
 }
 
 /**
