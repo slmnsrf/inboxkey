@@ -106,30 +106,6 @@ function OptionsApp() {
                 </div>
               </header>
 
-              <section
-                className="trust-banner"
-                role="region"
-                aria-label={t('settings_trust_region_label')}
-              >
-                <p className="trust-banner__headline">
-                  {t('settings_trust_summary')}
-                </p>
-                <div className="trust-banner__pillars">
-                  <div className="trust-pillar">
-                    <span className="trust-pillar__icon" aria-hidden="true"><Puzzle size={18} /></span>
-                    <span className="trust-pillar__label">{t('settings_trust_open_source')}</span>
-                  </div>
-                  <div className="trust-pillar">
-                    <span className="trust-pillar__icon" aria-hidden="true"><Lock size={18} /></span>
-                    <span className="trust-pillar__label">{t('settings_trust_local_only')}</span>
-                  </div>
-                  <div className="trust-pillar">
-                    <span className="trust-pillar__icon" aria-hidden="true"><ShieldCheck size={18} /></span>
-                    <span className="trust-pillar__label">{t('settings_trust_safe')}</span>
-                  </div>
-                </div>
-              </section>
-
               <TabNavigation activeTab={activeTab} onTabChange={setActiveTab} />
 
               <main className="options-content">
@@ -193,6 +169,30 @@ function OptionsApp() {
                   </section>
                 </div>
               </main>
+
+              <section
+                className="trust-banner"
+                role="region"
+                aria-label={t('settings_trust_region_label')}
+              >
+                <p className="trust-banner__headline">
+                  {t('settings_trust_summary')}
+                </p>
+                <div className="trust-banner__pillars">
+                  <div className="trust-pillar">
+                    <span className="trust-pillar__icon" aria-hidden="true"><Puzzle size={18} /></span>
+                    <span className="trust-pillar__label">{t('settings_trust_open_source')}</span>
+                  </div>
+                  <div className="trust-pillar">
+                    <span className="trust-pillar__icon" aria-hidden="true"><Lock size={18} /></span>
+                    <span className="trust-pillar__label">{t('settings_trust_local_only')}</span>
+                  </div>
+                  <div className="trust-pillar">
+                    <span className="trust-pillar__icon" aria-hidden="true"><ShieldCheck size={18} /></span>
+                    <span className="trust-pillar__label">{t('settings_trust_safe')}</span>
+                  </div>
+                </div>
+              </section>
             </div>
           </div>
         </ToastProvider>
