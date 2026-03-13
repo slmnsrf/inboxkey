@@ -210,8 +210,13 @@ export function generateFieldFeedbackCSS(theme: 'light' | 'dark'): string {
 .inboxkey-shimmer-wrap--copied .inboxkey-inline-text     { color: rgba(${green}, 0.7); opacity: 1; }
 .inboxkey-shimmer-wrap--timeout .inboxkey-inline-text    { color: rgba(${red}, 0.8); opacity: 1; }
 
-/* --- @supports fallback for browsers without @property --- */
-@supports not (syntax: "<angle>") {
+/* --- Fallback for browsers without @property support --- */
+/* @property is needed for animatable conic-gradient angle.
+   Without it, var(--inboxkey-shimmer-angle) resolves to the
+   initial-value (0deg) and stays static. Detect this by checking
+   if the custom property resolves (inherits: false only works
+   with @property). Fallback uses a sliding linear-gradient. */
+@supports not (background: conic-gradient(from 0deg, red, blue)) {
   .inboxkey-shimmer-wrap--listening::before {
     background: linear-gradient(
       90deg,
@@ -221,6 +226,21 @@ export function generateFieldFeedbackCSS(theme: 'light' | 'dark'): string {
     );
     background-size: 200% 100%;
     animation: inboxkey-shimmer-slide 3s linear infinite;
+  }
+
+  .inboxkey-shimmer-wrap--filled::before {
+    background: rgba(${green}, 0.4);
+    animation: none;
+  }
+
+  .inboxkey-shimmer-wrap--copied::before {
+    background: rgba(${green}, 0.3);
+    animation: none;
+  }
+
+  .inboxkey-shimmer-wrap--timeout::before {
+    background: rgba(${red}, 0.4);
+    animation: none;
   }
 
   @keyframes inboxkey-shimmer-slide {
