@@ -104,7 +104,11 @@ export class ErrorStateManager {
   }
 
   private async save(state: SyncErrorState): Promise<void> {
-    await chrome.storage.local.set({ [STORAGE_KEY]: state })
+    try {
+      await chrome.storage.local.set({ [STORAGE_KEY]: state })
+    } catch (err) {
+      console.warn('[ErrorStateManager] Failed to persist error state:', err)
+    }
   }
 
   private getDefaultState(): SyncErrorState {

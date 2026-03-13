@@ -21,6 +21,7 @@ import { useSyncErrors } from './ui/hooks/useSyncErrors'
 import { PopupBridge } from './ui/services/popup-bridge'
 import { ClipboardService } from './ui/services/clipboard-service'
 import { LinkService } from './ui/services/link-service'
+import { PopupErrorBoundary } from './ui/components/PopupErrorBoundary'
 import './popup.css'
 import type { PopupCacheMagicLink } from '@/shared/popup-messages'
 import { t } from '@/lib/i18n'
@@ -154,11 +155,13 @@ function PopupContent() {
 
 function PopupApp() {
   return (
-    <ThemeProvider>
-      <ToastProvider>
-        <PopupContent />
-      </ToastProvider>
-    </ThemeProvider>
+    <PopupErrorBoundary>
+      <ThemeProvider>
+        <ToastProvider>
+          <PopupContent />
+        </ToastProvider>
+      </ThemeProvider>
+    </PopupErrorBoundary>
   )
 }
 
