@@ -5,7 +5,8 @@
  * Allows users to control whether InboxKey is active on the current domain.
  */
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef, useCallback } from 'react'
+import { Ban } from 'lucide-react'
 import { PopupBridge } from '@/ui/services/popup-bridge'
 import { t } from '@/lib/i18n'
 
@@ -17,7 +18,10 @@ export function DomainToggle() {
   const [loading, setLoading] = useState<boolean>(true)
   const [error, setError] = useState<string>('')
   const [urlBlacklisted, setUrlBlacklisted] = useState<boolean>(false)
-  const [justToggled, setJustToggled] = useState<boolean>(false)
+  const [feedbackText, setFeedbackText] = useState<string>('')
+  const [feedbackType, setFeedbackType] = useState<'enabled' | 'paused'>('enabled')
+  const [feedbackVisible, setFeedbackVisible] = useState<boolean>(false)
+  const feedbackTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
     loadDomainState()
@@ -52,6 +56,18 @@ export function DomainToggle() {
     }
   }
 
+  const showFeedback = useCallback((text: string, type: 'enabled' | 'paused') => {
+    if (feedbackTimer.current) clearTimeout(feedbackTimer.current)
+    setFeedbackText(text)
+    setFeedbackType(type)
+    setFeedbackVisible(true)
+    feedbackTimer.current = setTimeout(() => setFeedbackVisible(false), 3000)
+  }, [])
+
+  useEffect(() => {
+    return () => { if (feedbackTimer.current) clearTimeout(feedbackTimer.current) }
+  }, [])
+
   const handleToggle = async () => {
     if (!domain) return
 
@@ -62,15 +78,15 @@ export function DomainToggle() {
       // Save to storage
       await bridge.setDomainPreference(domain, newState)
 
-      // Trigger visual feedback
-      setJustToggled(true)
-      setTimeout(() => setJustToggled(false), 1500)
+      // Inline feedback
+      showFeedback(
+        newState ? t('domain_toggle_enabled') : t('domain_toggle_paused'),
+        newState ? 'enabled' : 'paused'
+      )
 
-      // Notify user via badge/icon update (handled by background script)
       console.log(`[DomainToggle] Domain ${domain} ${newState ? 'enabled' : 'disabled'}`)
     } catch (err) {
       console.error('[DomainToggle] Failed to toggle domain:', err)
-      // Revert on error
       setEnabled(!enabled)
       setError(t('error_domain_update'))
     }
@@ -104,25 +120,33 @@ export function DomainToggle() {
   }
 
   return (
-    <div className="domain-toggle">
-      <span className={`domain-toggle__label ${justToggled ? 'domain-toggle__label--success' : ''}`}>
-        {t('domain_toggle_label')}
-      </span>
-      <label className="toggle">
-        <input
-          type="checkbox"
-          checked={enabled}
-          onChange={handleToggle}
-          aria-label={`${t('domain_toggle_label')} ${domain}`}
-        />
-        <span className="slider" />
-      </label>
-      {!loading && !error && !enabled && (
+    <div className={`domain-toggle-inline ${!enabled ? 'domain-toggle-inline--off' : ''}`}>
+      <div className="domain-toggle-inline__row">
+        <label className="mini-toggle" aria-label={`${t('domain_toggle_label')} ${domain}`}>
+          <input
+            type="checkbox"
+            checked={enabled}
+            onChange={handleToggle}
+          />
+          <span className="slider" />
+        </label>
+        <span className="domain-toggle-inline__off-icon" aria-hidden="true">
+          <Ban size={12} />
+        </span>
+        <span className="domain-toggle-inline__domain">{domain}</span>
+        <span
+          className={`domain-toggle-inline__feedback ${feedbackVisible ? 'domain-toggle-inline__feedback--visible' : ''} ${feedbackVisible ? `domain-toggle-inline__feedback--${feedbackType}` : ''}`}
+          aria-live="polite"
+        >
+          {feedbackText}
+        </span>
+      </div>
+      {!enabled && (
         <span className="domain-toggle__warning">
           {t('domain_toggle_disabled_warning')}
         </span>
       )}
-      {!loading && !error && enabled && urlBlacklisted && (
+      {enabled && urlBlacklisted && (
         <div className="domain-toggle__url-warning" role="status" aria-live="polite">
           <span className="domain-toggle__url-warning-text">
             {t('domain_toggle_url_warning')}
