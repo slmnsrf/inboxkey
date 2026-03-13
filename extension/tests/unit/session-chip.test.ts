@@ -1,548 +1,66 @@
-/**
- * Unit tests for session-chip
- * Tests chip lifecycle, state updates, keyboard accessibility, and ARIA compliance
- */
-
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
-import { Window } from 'happy-dom'
 import { showSessionChip } from '../../src/contents/session-chip'
 
-describe('session-chip', () => {
-  let window: Window
-  let document: Document
-  let testField: HTMLInputElement
+// Mock chrome.storage for settings
+beforeEach(() => {
+  global.chrome = {
+    storage: {
+      local: {
+        get: vi.fn().mockResolvedValue({ settings: { showSessionChips: true } })
+      }
+    }
+  } as any
+})
 
-  beforeEach(() => {
-    window = new Window()
-    document = window.document
-    global.document = document as any
-    global.window = window as any
+afterEach(() => {
+  document.body.innerHTML = ''
+  document.head.querySelectorAll('style[id^="inboxkey-"]').forEach(s => s.remove())
+})
 
-    // Mock chrome.storage.local.get to return showSessionChips: true by default
-    vi.spyOn(chrome.storage.local, 'get').mockResolvedValue({
-      settings: { showSessionChips: true }
-    })
+describe('showSessionChip (delegation wrapper)', () => {
+  it('returns a handle with update and hide methods', async () => {
+    const field = document.createElement('input')
+    document.body.appendChild(field)
 
-    // Create a test input field
-    document.body.innerHTML = `
-      <input type="text" id="test-field" style="position: absolute; top: 100px; left: 200px;">
-    `
-    testField = document.getElementById('test-field') as HTMLInputElement
+    const handle = await showSessionChip(field, 20)
+    expect(typeof handle.update).toBe('function')
+    expect(typeof handle.hide).toBe('function')
   })
 
-  afterEach(() => {
-    // Clean up any chips
-    const chips = document.querySelectorAll('.inboxkey-chip')
-    chips.forEach(chip => chip.remove())
+  it('wraps the field in a shimmer container (not a floating chip)', async () => {
+    const field = document.createElement('input')
+    document.body.appendChild(field)
+
+    await showSessionChip(field, 20)
+
+    const wrapper = field.parentElement
+    expect(wrapper!.classList.contains('inboxkey-shimmer-wrap')).toBe(true)
   })
 
-  describe('showSessionChip', () => {
-    it('should create chip element with correct structure', async () => {
-      const chipHandle = await showSessionChip(testField)
+  it('forwards onClose callback to field-feedback', async () => {
+    const onClose = vi.fn()
+    const field = document.createElement('input')
+    document.body.appendChild(field)
 
-      const chip = document.querySelector('.inboxkey-chip') as HTMLElement
-      expect(chip).not.toBeNull()
-      expect(chip.tagName).toBe('DIV')
+    await showSessionChip(field, 20, { onClose })
 
-      // role="status" is on the sr-only live region, not the chip container
-      const liveRegion = document.querySelector('.inboxkey-chip-sr-only') as HTMLDivElement
-      expect(liveRegion).not.toBeNull()
-      expect(liveRegion.getAttribute('role')).toBe('status')
-      expect(liveRegion.getAttribute('aria-live')).toBe('polite')
-
-      chipHandle.hide()
-    })
-
-    it('should display "listening" state by default', async () => {
-      const chipHandle = await showSessionChip(testField)
-
-      const chip = document.querySelector('.inboxkey-chip') as HTMLElement
-      expect(chip.textContent).toContain('Checking e-mails...')
-
-      chipHandle.hide()
-    })
-
-    it('should position chip near the field', async () => {
-      const chipHandle = await showSessionChip(testField)
-
-      const chip = document.querySelector('.inboxkey-chip') as HTMLElement
-      // happy-dom returns inline styles directly set in JS
-      expect(chip.style.left).toBeTruthy()
-      expect(chip.style.top).toBeTruthy()
-
-      chipHandle.hide()
-    })
-
-    it('should have correct default styling', async () => {
-      const chipHandle = await showSessionChip(testField)
-
-      const chip = document.querySelector('.inboxkey-chip') as HTMLElement
-      // happy-dom returns hex colors as set in JS
-      expect(chip.style.backgroundColor).toBe('#2563EB')
-      // Style injected via <style> tag, not inline
-      expect(chip.className).toBe('inboxkey-chip')
-
-      chipHandle.hide()
-    })
+    const dismissBtn = field.parentElement!.querySelector('.inboxkey-field-tooltip-dismiss') as HTMLButtonElement
+    expect(dismissBtn).toBeTruthy()
+    dismissBtn.click()
+    expect(onClose).toHaveBeenCalledOnce()
   })
 
-  describe('ChipHandle.update', () => {
-    it('should update to "filled" state with correct text and color', async () => {
-      const chipHandle = await showSessionChip(testField)
-      chipHandle.update('filled')
-
-      const chip = document.querySelector('.inboxkey-chip') as HTMLElement
-      expect(chip.textContent).toContain('Code filled')
-      expect(chip.style.backgroundColor).toBe('#10B981')
-
-      chipHandle.hide()
+  it('returns no-op handle when chips are disabled', async () => {
+    ;(chrome.storage.local.get as any).mockResolvedValueOnce({
+      settings: { showSessionChips: false }
     })
 
-    it('should update to "copied" state with correct text and color', async () => {
-      const chipHandle = await showSessionChip(testField)
-      chipHandle.update('copied')
-
-      const chip = document.querySelector('.inboxkey-chip') as HTMLElement
-      expect(chip.textContent).toContain('Code copied to clipboard')
-      expect(chip.style.backgroundColor).toBe('#10B981')
-
-      chipHandle.hide()
-    })
-
-    it('should update to "timeout" state with correct text and color', async () => {
-      const chipHandle = await showSessionChip(testField)
-      chipHandle.update('timeout')
-
-      const chip = document.querySelector('.inboxkey-chip') as HTMLElement
-      expect(chip.textContent).toContain('No code received')
-      expect(chip.style.backgroundColor).toBe('#EF4444')
-
-      chipHandle.hide()
-    })
-
-    it('should allow multiple state updates', async () => {
-      const chipHandle = await showSessionChip(testField)
-
-      chipHandle.update('listening')
-      let chip = document.querySelector('.inboxkey-chip') as HTMLElement
-      expect(chip.textContent).toContain('Checking e-mails...')
-
-      chipHandle.update('filled')
-      chip = document.querySelector('.inboxkey-chip') as HTMLElement
-      expect(chip.textContent).toContain('Code filled')
-
-      chipHandle.hide()
-    })
-  })
-
-  describe('ChipHandle.hide', () => {
-    it('should remove chip from DOM', async () => {
-      vi.useFakeTimers()
-
-      const chipHandle = await showSessionChip(testField)
-
-      const chip = document.querySelector('.inboxkey-chip')
-      expect(chip).not.toBeNull()
-
-      chipHandle.hide()
-
-      // Fast-forward through animation duration
-      vi.advanceTimersByTime(300)
-
-      const removedChip = document.querySelector('.inboxkey-chip')
-      expect(removedChip).toBeNull()
-
-      vi.useRealTimers()
-    })
-
-    it('should be idempotent (safe to call multiple times)', async () => {
-      vi.useFakeTimers()
-
-      const chipHandle = await showSessionChip(testField)
-
-      chipHandle.hide()
-      vi.advanceTimersByTime(300)
-
-      chipHandle.hide() // Should not throw
-      chipHandle.hide()
-
-      const chip = document.querySelector('.inboxkey-chip')
-      expect(chip).toBeNull()
-
-      vi.useRealTimers()
-    })
-  })
-
-  describe('Icon visibility', () => {
-    it('should show correct icon for listening state', async () => {
-      const chipHandle = await showSessionChip(testField)
-
-      chipHandle.update('listening')
-
-      const icon = document.querySelector('.inboxkey-chip-icon') as HTMLSpanElement
-      expect(icon).not.toBeNull()
-      expect(icon.textContent).toBe('⋯')
-      expect(icon.style.display).not.toBe('none')
-
-      chipHandle.hide()
-    })
-
-    it('should show correct icon for filled state', async () => {
-      const chipHandle = await showSessionChip(testField)
-
-      chipHandle.update('filled')
-
-      const icon = document.querySelector('.inboxkey-chip-icon') as HTMLSpanElement
-      expect(icon).not.toBeNull()
-      expect(icon.textContent).toBe('OK')
-      expect(icon.style.display).not.toBe('none')
-
-      chipHandle.hide()
-    })
-
-    it('should show correct icon for copied state', async () => {
-      const chipHandle = await showSessionChip(testField)
-
-      chipHandle.update('copied')
-
-      const icon = document.querySelector('.inboxkey-chip-icon') as HTMLSpanElement
-      expect(icon).not.toBeNull()
-      expect(icon.textContent).toBe('⎘')
-      expect(icon.style.display).not.toBe('none')
-
-      chipHandle.hide()
-    })
-
-    it('should show correct icon for timeout state', async () => {
-      const chipHandle = await showSessionChip(testField)
-
-      chipHandle.update('timeout')
-
-      const icon = document.querySelector('.inboxkey-chip-icon') as HTMLSpanElement
-      expect(icon).not.toBeNull()
-      expect(icon.textContent).toBe('○')
-      expect(icon.style.display).not.toBe('none')
-
-      chipHandle.hide()
-    })
-  })
-
-  describe('Auto-dismiss behavior', () => {
-    it('should auto-dismiss "filled" state after 1.5s', async () => {
-      vi.useFakeTimers()
-
-      const chipHandle = await showSessionChip(testField)
-
-      chipHandle.update('filled')
-
-      const chip = document.querySelector('.inboxkey-chip') as HTMLElement
-      expect(chip).not.toBeNull()
-
-      // Verify timer count before advancing
-      const timersBefore = vi.getTimerCount()
-      expect(timersBefore).toBeGreaterThan(0) // Should have at least the auto-dismiss timer
-
-      // Fast-forward 1.4s - chip should still be visible
-      vi.advanceTimersByTime(1400)
-      expect(chip.style.animation).toBe('') // No dismissal animation yet
-
-      // Fast-forward past the dismiss delay to trigger hide()
-      vi.advanceTimersByTime(200)
-
-      // Now the dismissal should have been triggered - check for animation
-      expect(chip.style.animation).toContain('inboxkeyChipFadeOut')
-
-      vi.useRealTimers()
-      chipHandle.hide()
-    })
-
-    it('should auto-dismiss "copied" state after 3s', async () => {
-      vi.useFakeTimers()
-
-      const chipHandle = await showSessionChip(testField)
-
-      chipHandle.update('copied')
-
-      const chip = document.querySelector('.inboxkey-chip') as HTMLElement
-      expect(chip).not.toBeNull()
-
-      // Fast-forward past dismiss delay
-      vi.advanceTimersByTime(3100)
-
-      // Check that dismissal animation was applied
-      expect(chip.style.animation).toContain('inboxkeyChipFadeOut')
-
-      vi.useRealTimers()
-      chipHandle.hide()
-    })
-
-    it('should auto-dismiss "timeout" state after 3s', async () => {
-      vi.useFakeTimers()
-
-      const chipHandle = await showSessionChip(testField)
-
-      chipHandle.update('timeout')
-
-      const chip = document.querySelector('.inboxkey-chip') as HTMLElement
-      expect(chip).not.toBeNull()
-
-      // Fast-forward past dismiss delay
-      vi.advanceTimersByTime(3100)
-
-      // Check that dismissal animation was applied
-      expect(chip.style.animation).toContain('inboxkeyChipFadeOut')
-
-      vi.useRealTimers()
-      chipHandle.hide()
-    })
-
-    it('should auto-dismiss "listening" state dynamically based on timeout', async () => {
-      vi.useFakeTimers()
-
-      const chipHandle = await showSessionChip(testField, 20) // 20s timeout
-
-      chipHandle.update('listening')
-
-      const chip = document.querySelector('.inboxkey-chip') as HTMLElement
-      expect(chip).not.toBeNull()
-
-      // Fast-forward 24s (20s timeout + 4s buffer) - chip should still be visible
-      vi.advanceTimersByTime(24000)
-      expect(chip.style.animation).toBe('') // No dismissal animation yet
-
-      // Fast-forward past the dismiss delay (20s + 5s buffer = 25s total)
-      vi.advanceTimersByTime(1100)
-
-      // Check that dismissal animation was applied
-      expect(chip.style.animation).toContain('inboxkeyChipFadeOut')
-
-      vi.useRealTimers()
-      chipHandle.hide()
-    })
-  })
-
-  describe('Multiple chips prevention', () => {
-    it('should only allow one chip at a time', async () => {
-      const handle1 = await showSessionChip(testField)
-      const handle2 = await showSessionChip(testField)
-
-      const chips = document.querySelectorAll('.inboxkey-chip')
-      expect(chips.length).toBe(2) // Currently creates multiple chips - not prevented
-
-      handle1.hide()
-      handle2.hide()
-    })
-
-    it('should replace existing chip when creating new one', async () => {
-      vi.useFakeTimers()
-
-      const handle1 = await showSessionChip(testField)
-      handle1.update('listening')
-
-      const chip1 = document.querySelector('.inboxkey-chip') as HTMLElement
-      expect(chip1.textContent).toContain('Checking')
-
-      const handle2 = await showSessionChip(testField)
-      handle2.update('filled')
-
-      const chips = document.querySelectorAll('.inboxkey-chip')
-      expect(chips.length).toBeGreaterThanOrEqual(1) // At least one chip exists
-
-      // The last chip created should have "Code filled" text
-      const allChips = Array.from(chips)
-      const filledChip = allChips.find(chip => chip.textContent?.includes('Code filled'))
-      expect(filledChip).toBeDefined()
-
-      handle1.hide()
-      vi.advanceTimersByTime(300)
-      handle2.hide()
-      vi.advanceTimersByTime(300)
-
-      vi.useRealTimers()
-    })
-  })
-
-  describe('ARIA compliance', () => {
-    it('should have role="status" for screen readers', async () => {
-      const chipHandle = await showSessionChip(testField)
-
-      // role="status" is on the sr-only live region, not the chip container
-      const liveRegion = document.querySelector('.inboxkey-chip-sr-only') as HTMLDivElement
-      expect(liveRegion).not.toBeNull()
-      expect(liveRegion.getAttribute('role')).toBe('status')
-
-      chipHandle.hide()
-    })
-
-    it('should have aria-live="polite" for announcements', async () => {
-      const chipHandle = await showSessionChip(testField)
-
-      // aria-live is on the sr-only live region
-      const liveRegion = document.querySelector('.inboxkey-chip-sr-only') as HTMLDivElement
-      expect(liveRegion).not.toBeNull()
-      expect(liveRegion.getAttribute('aria-live')).toBe('polite')
-
-      chipHandle.hide()
-    })
-
-    it('should update aria-label on state change', async () => {
-      const chipHandle = await showSessionChip(testField)
-
-      chipHandle.update('listening')
-      let chip = document.querySelector('.inboxkey-chip') as HTMLElement
-      expect(chip.textContent).toContain('Checking')
-
-      chipHandle.update('filled')
-      chip = document.querySelector('.inboxkey-chip') as HTMLElement
-      expect(chip.textContent).toContain('Code filled')
-
-      chipHandle.hide()
-    })
-  })
-
-  describe('Reduced motion support', () => {
-    it('should respect prefers-reduced-motion', async () => {
-      // Note: happy-dom doesn't fully support matchMedia, but we can test the structure
-      const chipHandle = await showSessionChip(testField)
-
-      const chip = document.querySelector('.inboxkey-chip') as HTMLElement
-      // Chip exists and can be tested for reduced motion support
-      expect(chip).not.toBeNull()
-
-      chipHandle.hide()
-    })
-  })
-
-  describe('Edge cases', () => {
-    it('should handle field removal gracefully', async () => {
-      const chipHandle = await showSessionChip(testField)
-
-      // Remove field from DOM
-      testField.remove()
-
-      // Update should not throw
-      expect(() => chipHandle.update('filled')).not.toThrow()
-      expect(() => chipHandle.hide()).not.toThrow()
-    })
-
-    it('should handle rapid state changes', async () => {
-      const chipHandle = await showSessionChip(testField)
-
-      // Rapidly change states
-      chipHandle.update('listening')
-      chipHandle.update('filled')
-      chipHandle.update('copied')
-      chipHandle.update('timeout')
-      chipHandle.update('listening')
-
-      const chip = document.querySelector('.inboxkey-chip') as HTMLElement
-      expect(chip).not.toBeNull()
-      expect(chip.textContent).toContain('Checking')
-
-      chipHandle.hide()
-    })
-
-    it('should clean up event listeners on hide', async () => {
-      vi.useFakeTimers()
-
-      const chipHandle = await showSessionChip(testField)
-      chipHandle.hide()
-
-      // Fast-forward through animation duration so chip is removed from DOM
-      vi.advanceTimersByTime(300)
-
-      // Chip should be removed
-      expect(document.querySelector('.inboxkey-chip')).toBeNull()
-
-      vi.useRealTimers()
-    })
-  })
-
-  describe('Visibility setting', () => {
-    it('shows chip when setting is ON', async () => {
-      const handle = await showSessionChip(testField)
-      expect(document.querySelector('.inboxkey-chip')).not.toBeNull()
-      handle.hide()
-    })
-
-    it('returns no-op handle when setting is OFF', async () => {
-      vi.spyOn(chrome.storage.local, 'get').mockResolvedValue({
-        settings: { showSessionChips: false }
-      })
-
-      const handle = await showSessionChip(testField)
-      expect(document.querySelector('.inboxkey-chip')).toBeNull()
-
-      // No-op handle should not throw
-      handle.update('filled')
-      handle.hide()
-    })
-
-    it('shows chip on storage error (fail-safe)', async () => {
-      vi.spyOn(chrome.storage.local, 'get').mockRejectedValue(new Error('Storage error'))
-
-      const handle = await showSessionChip(testField)
-      expect(document.querySelector('.inboxkey-chip')).not.toBeNull()
-      handle.hide()
-    })
-  })
-
-  describe('Close button', () => {
-    it('should show close button only in listening state', async () => {
-      const chipHandle = await showSessionChip(testField)
-
-      chipHandle.update('listening')
-      let closeBtn = document.querySelector('.inboxkey-chip-close') as HTMLButtonElement
-      expect(closeBtn).not.toBeNull()
-      expect(closeBtn.style.display).not.toBe('none')
-      expect(closeBtn.getAttribute('title')).toBe('Cancel & ignore this URL')
-      expect(closeBtn.getAttribute('aria-label')).toBe('Cancel and ignore this URL')
-
-      chipHandle.update('filled')
-      closeBtn = document.querySelector('.inboxkey-chip-close') as HTMLButtonElement
-      expect(closeBtn.style.display).toBe('none')
-
-      chipHandle.update('copied')
-      closeBtn = document.querySelector('.inboxkey-chip-close') as HTMLButtonElement
-      expect(closeBtn.style.display).toBe('none')
-
-      chipHandle.update('timeout')
-      closeBtn = document.querySelector('.inboxkey-chip-close') as HTMLButtonElement
-      expect(closeBtn.style.display).toBe('none')
-
-      chipHandle.hide()
-    })
-
-    it('should call onClose callback when close button is clicked in listening state', async () => {
-      const onCloseMock = vi.fn()
-      const chipHandle = await showSessionChip(testField, 20, { onClose: onCloseMock })
-
-      chipHandle.update('listening')
-
-      const closeBtn = document.querySelector('.inboxkey-chip-close') as HTMLButtonElement
-      expect(closeBtn).not.toBeNull()
-
-      await closeBtn.click()
-
-      expect(onCloseMock).toHaveBeenCalledTimes(1)
-
-      chipHandle.hide()
-    })
-
-    it('should not call onClose callback when chip is not in listening state', async () => {
-      const onCloseMock = vi.fn()
-      const chipHandle = await showSessionChip(testField, 20, { onClose: onCloseMock })
-
-      chipHandle.update('filled')
-
-      const closeBtn = document.querySelector('.inboxkey-chip-close') as HTMLButtonElement
-
-      await closeBtn.click()
-
-      // onClose should not be called since we're not in listening state
-      expect(onCloseMock).not.toHaveBeenCalled()
-
-      chipHandle.hide()
-    })
+    const field = document.createElement('input')
+    document.body.appendChild(field)
+
+    const handle = await showSessionChip(field, 20)
+    expect(field.parentElement).toBe(document.body) // Not wrapped
+    expect(() => handle.update('filled')).not.toThrow()
+    expect(() => handle.hide()).not.toThrow()
   })
 })
