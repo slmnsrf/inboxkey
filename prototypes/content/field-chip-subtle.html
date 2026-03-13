@@ -171,7 +171,6 @@
       font-size: var(--font-size-base);
       outline: none;
       transition: border-color var(--duration-normal) var(--easing-default),
-                  box-shadow var(--duration-normal) var(--easing-default),
                   background var(--duration-normal) var(--easing-default);
     }
 
@@ -184,55 +183,210 @@
     }
 
     /* ============================
-       STATE: LISTENING
-       Soft pulsing blue glow on the field
+       SHIMMER BORDER SYSTEM
+       A gradient highlight that travels
+       along the border of the field.
+       Uses a pseudo-element + conic-gradient
+       masked to the border shape.
        ============================ */
 
-    .fake-input--listening {
-      border-color: var(--color-primary);
-      box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.12);
-      animation: field-pulse-blue 2.4s ease-in-out infinite;
+    .shimmer-wrap {
+      position: relative;
+      display: inline-block;
+      border-radius: var(--radius-md);
     }
 
-    @keyframes field-pulse-blue {
-      0%, 100% { box-shadow: 0 0 0 2px rgba(0, 122, 255, 0.08); }
-      50% { box-shadow: 0 0 0 4px rgba(0, 122, 255, 0.15); }
+    .shimmer-wrap--full {
+      display: block;
+    }
+
+    /* The animated gradient border */
+    .shimmer-wrap--listening::before {
+      content: '';
+      position: absolute;
+      inset: -1px;
+      border-radius: calc(var(--radius-md) + 1px);
+      padding: 1px;
+      background: conic-gradient(
+        from var(--shimmer-angle, 0deg),
+        transparent 0%,
+        transparent 30%,
+        rgba(0, 122, 255, 0.45) 48%,
+        rgba(0, 122, 255, 0.6) 50%,
+        rgba(0, 122, 255, 0.45) 52%,
+        transparent 70%,
+        transparent 100%
+      );
+      -webkit-mask:
+        linear-gradient(#fff 0 0) content-box,
+        linear-gradient(#fff 0 0);
+      -webkit-mask-composite: xor;
+      mask:
+        linear-gradient(#fff 0 0) content-box,
+        linear-gradient(#fff 0 0);
+      mask-composite: exclude;
+      animation: shimmer-rotate 3s linear infinite;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    [data-theme="dark"] .shimmer-wrap--listening::before {
+      background: conic-gradient(
+        from var(--shimmer-angle, 0deg),
+        transparent 0%,
+        transparent 30%,
+        rgba(10, 132, 255, 0.5) 48%,
+        rgba(10, 132, 255, 0.7) 50%,
+        rgba(10, 132, 255, 0.5) 52%,
+        transparent 70%,
+        transparent 100%
+      );
+    }
+
+    @property --shimmer-angle {
+      syntax: '<angle>';
+      initial-value: 0deg;
+      inherits: false;
+    }
+
+    @keyframes shimmer-rotate {
+      to { --shimmer-angle: 360deg; }
+    }
+
+    /* Fallback for browsers without @property:
+       animate via transform rotation on the pseudo */
+    @supports not (background: conic-gradient(from 0deg, red, red)) {
+      .shimmer-wrap--listening::before {
+        background: linear-gradient(
+          90deg,
+          transparent,
+          rgba(0, 122, 255, 0.5),
+          transparent
+        );
+        animation: shimmer-slide 2s ease-in-out infinite;
+      }
+
+      @keyframes shimmer-slide {
+        0% { transform: translateX(-100%); }
+        100% { transform: translateX(100%); }
+      }
+    }
+
+    /* Listening input: subtle base border, no glow */
+    .fake-input--listening {
+      border-color: rgba(0, 122, 255, 0.2);
     }
 
     [data-theme="dark"] .fake-input--listening {
-      border-color: var(--color-primary);
-      animation: field-pulse-blue-dark 2.4s ease-in-out infinite;
+      border-color: rgba(10, 132, 255, 0.25);
     }
 
-    @keyframes field-pulse-blue-dark {
-      0%, 100% { box-shadow: 0 0 0 2px rgba(10, 132, 255, 0.1); }
-      50% { box-shadow: 0 0 0 4px rgba(10, 132, 255, 0.2); }
+    /* ============================
+       SUCCESS SHIMMER (one-shot sweep)
+       Green light sweeps once then stops
+       ============================ */
+
+    .shimmer-wrap--filled::before {
+      content: '';
+      position: absolute;
+      inset: -1px;
+      border-radius: calc(var(--radius-md) + 1px);
+      padding: 1px;
+      background: conic-gradient(
+        from var(--shimmer-angle, 0deg),
+        rgba(16, 185, 129, 0.15) 0%,
+        rgba(16, 185, 129, 0.4) 25%,
+        rgba(16, 185, 129, 0.15) 50%,
+        rgba(16, 185, 129, 0.4) 75%,
+        rgba(16, 185, 129, 0.15) 100%
+      );
+      -webkit-mask:
+        linear-gradient(#fff 0 0) content-box,
+        linear-gradient(#fff 0 0);
+      -webkit-mask-composite: xor;
+      mask:
+        linear-gradient(#fff 0 0) content-box,
+        linear-gradient(#fff 0 0);
+      mask-composite: exclude;
+      pointer-events: none;
+      z-index: 1;
+      animation: shimmer-rotate 2s linear 1 forwards;
     }
 
     /* STATE: FILLED */
     .fake-input--filled {
-      border-color: var(--color-success);
-      background: var(--color-success-light);
-      box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.1);
+      border-color: rgba(16, 185, 129, 0.3);
       font-family: var(--font-mono);
       font-weight: var(--font-weight-semibold);
       letter-spacing: 0.15em;
     }
 
     /* STATE: COPIED */
-    .fake-input--copied {
-      border-color: var(--color-success);
-      box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.1);
+    .shimmer-wrap--copied::before {
+      content: '';
+      position: absolute;
+      inset: -1px;
+      border-radius: calc(var(--radius-md) + 1px);
+      padding: 1px;
+      background: conic-gradient(
+        from var(--shimmer-angle, 0deg),
+        rgba(16, 185, 129, 0.1) 0%,
+        rgba(16, 185, 129, 0.3) 25%,
+        rgba(16, 185, 129, 0.1) 50%,
+        rgba(16, 185, 129, 0.3) 75%,
+        rgba(16, 185, 129, 0.1) 100%
+      );
+      -webkit-mask:
+        linear-gradient(#fff 0 0) content-box,
+        linear-gradient(#fff 0 0);
+      -webkit-mask-composite: xor;
+      mask:
+        linear-gradient(#fff 0 0) content-box,
+        linear-gradient(#fff 0 0);
+      mask-composite: exclude;
+      pointer-events: none;
+      z-index: 1;
+      animation: shimmer-rotate 2s linear 1 forwards;
     }
 
-    /* STATE: TIMEOUT */
+    .fake-input--copied {
+      border-color: rgba(16, 185, 129, 0.25);
+    }
+
+    /* STATE: TIMEOUT - single red flash */
+    .shimmer-wrap--timeout::before {
+      content: '';
+      position: absolute;
+      inset: -1px;
+      border-radius: calc(var(--radius-md) + 1px);
+      padding: 1px;
+      background: conic-gradient(
+        from var(--shimmer-angle, 0deg),
+        rgba(239, 68, 68, 0.1) 0%,
+        rgba(239, 68, 68, 0.3) 25%,
+        rgba(239, 68, 68, 0.1) 50%,
+        rgba(239, 68, 68, 0.3) 75%,
+        rgba(239, 68, 68, 0.1) 100%
+      );
+      -webkit-mask:
+        linear-gradient(#fff 0 0) content-box,
+        linear-gradient(#fff 0 0);
+      -webkit-mask-composite: xor;
+      mask:
+        linear-gradient(#fff 0 0) content-box,
+        linear-gradient(#fff 0 0);
+      mask-composite: exclude;
+      pointer-events: none;
+      z-index: 1;
+      animation: shimmer-rotate 1.5s linear 1 forwards;
+    }
+
     .fake-input--timeout {
-      border-color: var(--color-error);
-      box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.08);
+      border-color: rgba(239, 68, 68, 0.25);
     }
 
     [data-theme="dark"] .fake-input--timeout {
-      box-shadow: 0 0 0 2px rgba(255, 69, 58, 0.12);
+      border-color: rgba(255, 69, 58, 0.3);
     }
 
     /* ============================
@@ -258,54 +412,128 @@
       font-weight: var(--font-weight-semibold);
       color: var(--color-text-primary);
       transition: border-color var(--duration-normal) var(--easing-default),
-                  box-shadow var(--duration-normal) var(--easing-default),
                   background var(--duration-normal) var(--easing-default);
     }
 
-    /* OTP - LISTENING: staggered pulse across cells */
-    .fake-otp-cell--listening {
-      border-color: var(--color-primary);
-      animation: field-pulse-blue 2.4s ease-in-out infinite;
+    /* OTP shimmer wraps each cell individually */
+    .otp-shimmer-cell {
+      position: relative;
+      border-radius: var(--radius-md);
     }
 
-    .fake-otp-cell--listening:nth-child(2) { animation-delay: 0.15s; }
-    .fake-otp-cell--listening:nth-child(3) { animation-delay: 0.3s; }
-    .fake-otp-cell--listening:nth-child(4) { animation-delay: 0.45s; }
-    .fake-otp-cell--listening:nth-child(5) { animation-delay: 0.6s; }
-    .fake-otp-cell--listening:nth-child(6) { animation-delay: 0.75s; }
+    /* OTP - LISTENING shimmer per cell, staggered */
+    .otp-shimmer-cell--listening::before {
+      content: '';
+      position: absolute;
+      inset: -1px;
+      border-radius: calc(var(--radius-md) + 1px);
+      padding: 1px;
+      background: conic-gradient(
+        from var(--shimmer-angle, 0deg),
+        transparent 0%,
+        transparent 30%,
+        rgba(0, 122, 255, 0.45) 48%,
+        rgba(0, 122, 255, 0.6) 50%,
+        rgba(0, 122, 255, 0.45) 52%,
+        transparent 70%,
+        transparent 100%
+      );
+      -webkit-mask:
+        linear-gradient(#fff 0 0) content-box,
+        linear-gradient(#fff 0 0);
+      -webkit-mask-composite: xor;
+      mask:
+        linear-gradient(#fff 0 0) content-box,
+        linear-gradient(#fff 0 0);
+      mask-composite: exclude;
+      animation: shimmer-rotate 3s linear infinite;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    [data-theme="dark"] .otp-shimmer-cell--listening::before {
+      background: conic-gradient(
+        from var(--shimmer-angle, 0deg),
+        transparent 0%,
+        transparent 30%,
+        rgba(10, 132, 255, 0.5) 48%,
+        rgba(10, 132, 255, 0.7) 50%,
+        rgba(10, 132, 255, 0.5) 52%,
+        transparent 70%,
+        transparent 100%
+      );
+    }
+
+    /* Stagger the shimmer across cells */
+    .otp-shimmer-cell--listening:nth-child(2)::before { animation-delay: -0.4s; }
+    .otp-shimmer-cell--listening:nth-child(3)::before { animation-delay: -0.8s; }
+    .otp-shimmer-cell--listening:nth-child(4)::before { animation-delay: -1.2s; }
+    .otp-shimmer-cell--listening:nth-child(5)::before { animation-delay: -1.6s; }
+    .otp-shimmer-cell--listening:nth-child(6)::before { animation-delay: -2.0s; }
+
+    .fake-otp-cell--listening {
+      border-color: rgba(0, 122, 255, 0.2);
+    }
 
     [data-theme="dark"] .fake-otp-cell--listening {
-      border-color: var(--color-primary);
-      animation: field-pulse-blue-dark 2.4s ease-in-out infinite;
+      border-color: rgba(10, 132, 255, 0.25);
     }
 
     /* OTP - FILLED */
+    .otp-shimmer-cell--filled::before {
+      content: '';
+      position: absolute;
+      inset: -1px;
+      border-radius: calc(var(--radius-md) + 1px);
+      padding: 1px;
+      background: conic-gradient(
+        from var(--shimmer-angle, 0deg),
+        rgba(16, 185, 129, 0.15) 0%,
+        rgba(16, 185, 129, 0.4) 25%,
+        rgba(16, 185, 129, 0.15) 50%,
+        rgba(16, 185, 129, 0.4) 75%,
+        rgba(16, 185, 129, 0.15) 100%
+      );
+      -webkit-mask:
+        linear-gradient(#fff 0 0) content-box,
+        linear-gradient(#fff 0 0);
+      -webkit-mask-composite: xor;
+      mask:
+        linear-gradient(#fff 0 0) content-box,
+        linear-gradient(#fff 0 0);
+      mask-composite: exclude;
+      pointer-events: none;
+      z-index: 1;
+      animation: shimmer-rotate 2s linear 1 forwards;
+    }
+
+    .otp-shimmer-cell--filled:nth-child(2)::before { animation-delay: 0.1s; }
+    .otp-shimmer-cell--filled:nth-child(3)::before { animation-delay: 0.2s; }
+    .otp-shimmer-cell--filled:nth-child(4)::before { animation-delay: 0.3s; }
+    .otp-shimmer-cell--filled:nth-child(5)::before { animation-delay: 0.4s; }
+    .otp-shimmer-cell--filled:nth-child(6)::before { animation-delay: 0.5s; }
+
     .fake-otp-cell--filled {
-      border-color: var(--color-success);
-      background: var(--color-success-light);
-      box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.1);
+      border-color: rgba(16, 185, 129, 0.3);
     }
 
     /* OTP - COPIED */
     .fake-otp-cell--copied {
-      border-color: var(--color-success);
-      box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.1);
+      border-color: rgba(16, 185, 129, 0.25);
     }
 
     /* OTP - TIMEOUT */
     .fake-otp-cell--timeout {
-      border-color: var(--color-error);
-      box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.08);
+      border-color: rgba(239, 68, 68, 0.25);
     }
 
     [data-theme="dark"] .fake-otp-cell--timeout {
-      box-shadow: 0 0 0 2px rgba(255, 69, 58, 0.12);
+      border-color: rgba(255, 69, 58, 0.3);
     }
 
     /* ============================
        MICRO INDICATOR
-       Tiny dot below the field for
-       copied/timeout (no text needed)
+       Tiny dot below the field
        ============================ */
 
     .micro-indicator {
@@ -317,28 +545,25 @@
     }
 
     .micro-dot {
-      width: 6px;
-      height: 6px;
+      width: 5px;
+      height: 5px;
       border-radius: 50%;
       flex-shrink: 0;
     }
 
     .micro-dot--success {
       background: var(--color-success);
+      opacity: 0.6;
     }
 
     .micro-dot--error {
       background: var(--color-error);
+      opacity: 0.6;
     }
 
     .micro-dot--listening {
       background: var(--color-primary);
-      animation: micro-dot-pulse 2s ease-in-out infinite;
-    }
-
-    @keyframes micro-dot-pulse {
-      0%, 100% { opacity: 0.4; transform: scale(0.85); }
-      50% { opacity: 1; transform: scale(1); }
+      opacity: 0.5;
     }
 
     /* Clipboard mini icon for copied state */
@@ -346,7 +571,7 @@
       width: 10px;
       height: 10px;
       color: var(--color-success);
-      opacity: 0.7;
+      opacity: 0.5;
     }
 
     /* Timeout mini icon */
@@ -355,23 +580,17 @@
     }
 
     @media (prefers-reduced-motion: reduce) {
-      .fake-input--listening,
-      .fake-otp-cell--listening,
-      .micro-dot--listening {
+      .shimmer-wrap--listening::before,
+      .otp-shimmer-cell--listening::before {
         animation: none !important;
+        background: rgba(0, 122, 255, 0.2);
       }
 
-      .fake-input--listening {
-        box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.12);
-      }
-
-      .fake-otp-cell--listening {
-        box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.12);
-      }
-
-      .micro-dot--listening {
-        opacity: 1;
-        transform: scale(1);
+      .shimmer-wrap--filled::before,
+      .shimmer-wrap--copied::before,
+      .shimmer-wrap--timeout::before,
+      .otp-shimmer-cell--filled::before {
+        animation: none !important;
       }
     }
   </style>
@@ -422,7 +641,9 @@
             <p class="fake-page-subtitle">Enter the code we sent to your email</p>
             <label class="fake-label">Verification code</label>
             <div class="field-wrapper field-wrapper--full">
-              <input class="fake-input fake-input--listening" type="text" placeholder="Enter code" disabled>
+              <div class="shimmer-wrap shimmer-wrap--listening shimmer-wrap--full">
+                <input class="fake-input fake-input--listening" type="text" placeholder="Enter code" disabled>
+              </div>
               <div class="micro-indicator">
                 <span class="micro-dot micro-dot--listening"></span>
               </div>
@@ -442,7 +663,9 @@
             <p class="fake-page-subtitle">Enter the code we sent to your email</p>
             <label class="fake-label">Verification code</label>
             <div class="field-wrapper field-wrapper--full">
-              <input class="fake-input fake-input--filled" type="text" value="847293" disabled>
+              <div class="shimmer-wrap shimmer-wrap--filled shimmer-wrap--full">
+                <input class="fake-input fake-input--filled" type="text" value="847293" disabled>
+              </div>
               <div class="micro-indicator">
                 <span class="micro-dot micro-dot--success"></span>
               </div>
@@ -464,7 +687,9 @@
             <p class="fake-page-subtitle">Enter the code we sent to your email</p>
             <label class="fake-label">Verification code</label>
             <div class="field-wrapper field-wrapper--full">
-              <input class="fake-input fake-input--copied" type="text" placeholder="Enter code" disabled>
+              <div class="shimmer-wrap shimmer-wrap--copied shimmer-wrap--full">
+                <input class="fake-input fake-input--copied" type="text" placeholder="Enter code" disabled>
+              </div>
               <div class="micro-indicator">
                 <svg class="micro-icon" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="3.5" width="5" height="5" rx="1"/><path d="M6.5 3.5V2.5a1 1 0 0 0-1-1h-3a1 1 0 0 0-1 1v3a1 1 0 0 0 1 1h1"/></svg>
               </div>
@@ -484,7 +709,9 @@
             <p class="fake-page-subtitle">Enter the code we sent to your email</p>
             <label class="fake-label">Verification code</label>
             <div class="field-wrapper field-wrapper--full">
-              <input class="fake-input fake-input--timeout" type="text" placeholder="Enter code" disabled>
+              <div class="shimmer-wrap shimmer-wrap--timeout shimmer-wrap--full">
+                <input class="fake-input fake-input--timeout" type="text" placeholder="Enter code" disabled>
+              </div>
               <div class="micro-indicator">
                 <span class="micro-dot micro-dot--error"></span>
               </div>
@@ -516,12 +743,12 @@
             <p class="fake-page-subtitle">Enter the 6-digit code from your email</p>
             <div class="field-wrapper">
               <div class="fake-otp-group">
-                <div class="fake-otp-cell fake-otp-cell--listening"></div>
-                <div class="fake-otp-cell fake-otp-cell--listening"></div>
-                <div class="fake-otp-cell fake-otp-cell--listening"></div>
-                <div class="fake-otp-cell fake-otp-cell--listening"></div>
-                <div class="fake-otp-cell fake-otp-cell--listening"></div>
-                <div class="fake-otp-cell fake-otp-cell--listening"></div>
+                <div class="otp-shimmer-cell otp-shimmer-cell--listening"><div class="fake-otp-cell fake-otp-cell--listening"></div></div>
+                <div class="otp-shimmer-cell otp-shimmer-cell--listening"><div class="fake-otp-cell fake-otp-cell--listening"></div></div>
+                <div class="otp-shimmer-cell otp-shimmer-cell--listening"><div class="fake-otp-cell fake-otp-cell--listening"></div></div>
+                <div class="otp-shimmer-cell otp-shimmer-cell--listening"><div class="fake-otp-cell fake-otp-cell--listening"></div></div>
+                <div class="otp-shimmer-cell otp-shimmer-cell--listening"><div class="fake-otp-cell fake-otp-cell--listening"></div></div>
+                <div class="otp-shimmer-cell otp-shimmer-cell--listening"><div class="fake-otp-cell fake-otp-cell--listening"></div></div>
               </div>
               <div class="micro-indicator">
                 <span class="micro-dot micro-dot--listening"></span>
@@ -541,12 +768,12 @@
             <p class="fake-page-subtitle">Enter the 6-digit code from your email</p>
             <div class="field-wrapper">
               <div class="fake-otp-group">
-                <div class="fake-otp-cell fake-otp-cell--filled">8</div>
-                <div class="fake-otp-cell fake-otp-cell--filled">4</div>
-                <div class="fake-otp-cell fake-otp-cell--filled">7</div>
-                <div class="fake-otp-cell fake-otp-cell--filled">2</div>
-                <div class="fake-otp-cell fake-otp-cell--filled">9</div>
-                <div class="fake-otp-cell fake-otp-cell--filled">3</div>
+                <div class="otp-shimmer-cell otp-shimmer-cell--filled"><div class="fake-otp-cell fake-otp-cell--filled">8</div></div>
+                <div class="otp-shimmer-cell otp-shimmer-cell--filled"><div class="fake-otp-cell fake-otp-cell--filled">4</div></div>
+                <div class="otp-shimmer-cell otp-shimmer-cell--filled"><div class="fake-otp-cell fake-otp-cell--filled">7</div></div>
+                <div class="otp-shimmer-cell otp-shimmer-cell--filled"><div class="fake-otp-cell fake-otp-cell--filled">2</div></div>
+                <div class="otp-shimmer-cell otp-shimmer-cell--filled"><div class="fake-otp-cell fake-otp-cell--filled">9</div></div>
+                <div class="otp-shimmer-cell otp-shimmer-cell--filled"><div class="fake-otp-cell fake-otp-cell--filled">3</div></div>
               </div>
               <div class="micro-indicator">
                 <span class="micro-dot micro-dot--success"></span>
@@ -568,12 +795,12 @@
             <p class="fake-page-subtitle">Enter the 6-digit code from your email</p>
             <div class="field-wrapper">
               <div class="fake-otp-group">
-                <div class="fake-otp-cell fake-otp-cell--copied"></div>
-                <div class="fake-otp-cell fake-otp-cell--copied"></div>
-                <div class="fake-otp-cell fake-otp-cell--copied"></div>
-                <div class="fake-otp-cell fake-otp-cell--copied"></div>
-                <div class="fake-otp-cell fake-otp-cell--copied"></div>
-                <div class="fake-otp-cell fake-otp-cell--copied"></div>
+                <div class="otp-shimmer-cell"><div class="fake-otp-cell fake-otp-cell--copied"></div></div>
+                <div class="otp-shimmer-cell"><div class="fake-otp-cell fake-otp-cell--copied"></div></div>
+                <div class="otp-shimmer-cell"><div class="fake-otp-cell fake-otp-cell--copied"></div></div>
+                <div class="otp-shimmer-cell"><div class="fake-otp-cell fake-otp-cell--copied"></div></div>
+                <div class="otp-shimmer-cell"><div class="fake-otp-cell fake-otp-cell--copied"></div></div>
+                <div class="otp-shimmer-cell"><div class="fake-otp-cell fake-otp-cell--copied"></div></div>
               </div>
               <div class="micro-indicator">
                 <svg class="micro-icon" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="3.5" width="5" height="5" rx="1"/><path d="M6.5 3.5V2.5a1 1 0 0 0-1-1h-3a1 1 0 0 0-1 1v3a1 1 0 0 0 1 1h1"/></svg>
@@ -593,12 +820,12 @@
             <p class="fake-page-subtitle">Enter the 6-digit code from your email</p>
             <div class="field-wrapper">
               <div class="fake-otp-group">
-                <div class="fake-otp-cell fake-otp-cell--timeout"></div>
-                <div class="fake-otp-cell fake-otp-cell--timeout"></div>
-                <div class="fake-otp-cell fake-otp-cell--timeout"></div>
-                <div class="fake-otp-cell fake-otp-cell--timeout"></div>
-                <div class="fake-otp-cell fake-otp-cell--timeout"></div>
-                <div class="fake-otp-cell fake-otp-cell--timeout"></div>
+                <div class="otp-shimmer-cell"><div class="fake-otp-cell fake-otp-cell--timeout"></div></div>
+                <div class="otp-shimmer-cell"><div class="fake-otp-cell fake-otp-cell--timeout"></div></div>
+                <div class="otp-shimmer-cell"><div class="fake-otp-cell fake-otp-cell--timeout"></div></div>
+                <div class="otp-shimmer-cell"><div class="fake-otp-cell fake-otp-cell--timeout"></div></div>
+                <div class="otp-shimmer-cell"><div class="fake-otp-cell fake-otp-cell--timeout"></div></div>
+                <div class="otp-shimmer-cell"><div class="fake-otp-cell fake-otp-cell--timeout"></div></div>
               </div>
               <div class="micro-indicator">
                 <span class="micro-dot micro-dot--error"></span>
@@ -630,11 +857,11 @@
             <p class="fake-page-subtitle">Enter the 5-character code from your email</p>
             <div class="field-wrapper">
               <div class="fake-otp-group">
-                <div class="fake-otp-cell fake-otp-cell--listening"></div>
-                <div class="fake-otp-cell fake-otp-cell--listening"></div>
-                <div class="fake-otp-cell fake-otp-cell--listening"></div>
-                <div class="fake-otp-cell fake-otp-cell--listening"></div>
-                <div class="fake-otp-cell fake-otp-cell--listening"></div>
+                <div class="otp-shimmer-cell otp-shimmer-cell--listening"><div class="fake-otp-cell fake-otp-cell--listening"></div></div>
+                <div class="otp-shimmer-cell otp-shimmer-cell--listening"><div class="fake-otp-cell fake-otp-cell--listening"></div></div>
+                <div class="otp-shimmer-cell otp-shimmer-cell--listening"><div class="fake-otp-cell fake-otp-cell--listening"></div></div>
+                <div class="otp-shimmer-cell otp-shimmer-cell--listening"><div class="fake-otp-cell fake-otp-cell--listening"></div></div>
+                <div class="otp-shimmer-cell otp-shimmer-cell--listening"><div class="fake-otp-cell fake-otp-cell--listening"></div></div>
               </div>
               <div class="micro-indicator">
                 <span class="micro-dot micro-dot--listening"></span>
@@ -654,11 +881,11 @@
             <p class="fake-page-subtitle">Enter the 5-character code from your email</p>
             <div class="field-wrapper">
               <div class="fake-otp-group">
-                <div class="fake-otp-cell fake-otp-cell--filled">R</div>
-                <div class="fake-otp-cell fake-otp-cell--filled">7</div>
-                <div class="fake-otp-cell fake-otp-cell--filled">K</div>
-                <div class="fake-otp-cell fake-otp-cell--filled">M</div>
-                <div class="fake-otp-cell fake-otp-cell--filled">2</div>
+                <div class="otp-shimmer-cell otp-shimmer-cell--filled"><div class="fake-otp-cell fake-otp-cell--filled">R</div></div>
+                <div class="otp-shimmer-cell otp-shimmer-cell--filled"><div class="fake-otp-cell fake-otp-cell--filled">7</div></div>
+                <div class="otp-shimmer-cell otp-shimmer-cell--filled"><div class="fake-otp-cell fake-otp-cell--filled">K</div></div>
+                <div class="otp-shimmer-cell otp-shimmer-cell--filled"><div class="fake-otp-cell fake-otp-cell--filled">M</div></div>
+                <div class="otp-shimmer-cell otp-shimmer-cell--filled"><div class="fake-otp-cell fake-otp-cell--filled">2</div></div>
               </div>
               <div class="micro-indicator">
                 <span class="micro-dot micro-dot--success"></span>
@@ -690,7 +917,9 @@
             <p class="fake-page-subtitle">We sent a verification code to j***@gmail.com</p>
             <label class="fake-label">Code</label>
             <div class="field-wrapper field-wrapper--full">
-              <input class="fake-input fake-input--wide fake-input--listening" type="text" placeholder="000-000" disabled>
+              <div class="shimmer-wrap shimmer-wrap--listening shimmer-wrap--full">
+                <input class="fake-input fake-input--wide fake-input--listening" type="text" placeholder="000-000" disabled>
+              </div>
               <div class="micro-indicator">
                 <span class="micro-dot micro-dot--listening"></span>
               </div>
@@ -710,7 +939,9 @@
             <p class="fake-page-subtitle">We sent a verification code to j***@gmail.com</p>
             <label class="fake-label">Code</label>
             <div class="field-wrapper field-wrapper--full">
-              <input class="fake-input fake-input--wide fake-input--filled" type="text" value="381-742" disabled>
+              <div class="shimmer-wrap shimmer-wrap--filled shimmer-wrap--full">
+                <input class="fake-input fake-input--wide fake-input--filled" type="text" value="381-742" disabled>
+              </div>
               <div class="micro-indicator">
                 <span class="micro-dot micro-dot--success"></span>
               </div>
@@ -741,7 +972,9 @@
             <p class="fake-page-title">Security check</p>
             <p class="fake-page-subtitle">Type the code below</p>
             <div class="field-wrapper">
-              <input class="fake-input fake-input--compact fake-input--listening" type="text" placeholder="Code" disabled>
+              <div class="shimmer-wrap shimmer-wrap--listening">
+                <input class="fake-input fake-input--compact fake-input--listening" type="text" placeholder="Code" disabled>
+              </div>
               <div class="micro-indicator">
                 <span class="micro-dot micro-dot--listening"></span>
               </div>
@@ -760,7 +993,9 @@
             <p class="fake-page-title">Security check</p>
             <p class="fake-page-subtitle">Type the code below</p>
             <div class="field-wrapper">
-              <input class="fake-input fake-input--compact fake-input--filled" type="text" value="5931" disabled>
+              <div class="shimmer-wrap shimmer-wrap--filled">
+                <input class="fake-input fake-input--compact fake-input--filled" type="text" value="5931" disabled>
+              </div>
               <div class="micro-indicator">
                 <span class="micro-dot micro-dot--success"></span>
               </div>
@@ -776,14 +1011,14 @@
   <!-- Design Decisions -->
   <script type="application/json" id="decisions">
   [
-    "No text labels, only field highlighting and micro-indicators - The field border color and glow are the primary communication channel. Users already look at the field, not at a separate UI element. This approach has zero visual footprint beyond the field itself.",
-    "Pulsing box-shadow for listening state - A breathing glow around the field signals activity without any additional DOM elements or text. The 2.4s cycle feels calm and non-distracting while clearly indicating something is happening.",
-    "Staggered pulse on OTP cells - Each cell's glow animation is offset by 150ms, creating a gentle wave effect across the cells. This makes the listening state feel alive without being flashy, like a heartbeat traveling across the inputs.",
-    "Micro-dot indicator below the field - A single 6px colored dot anchors the state below the field. It is small enough to blend into any page design but provides a persistent signal that InboxKey is active. For copied state, a 10px clipboard icon replaces the dot.",
-    "Field background tint only on filled state - Green background on the field itself is the strongest signal that autofill succeeded. Other states use only border color changes, keeping the hierarchy clear: filled = most visually prominent, everything else = subtle.",
-    "Timeout uses red border without background - A red border signals failure without being alarming. No red background fill, no error icon cluttering the form. The red dot below the field is the only additional indicator.",
-    "Copied state highlights border green without filling - Green border signals success (code was found) but empty field signals the user still needs to paste. This visual tension is intentional: good news (green) but action needed (empty).",
-    "Reduced motion fallback removes all animations - Pulsing glows become static box-shadows, dot animations freeze at full opacity. The states remain distinguishable purely through color, which is the baseline."
+    "Conic-gradient shimmer rotating around the border - A single bright spot of color travels continuously along the field's border using a conic-gradient animated via @property. This creates the illusion of light catching the edge of the field, like a subtle scanner beam. Much quieter than a pulsing glow.",
+    "Masking trick for border-only gradient - The pseudo-element uses the mask-composite: exclude technique to show the gradient only in the 1px border area. The field's own background completely covers the interior, so the shimmer is purely on the border line.",
+    "3-second rotation cycle - Slow enough to feel ambient rather than urgent. The highlight passes each edge roughly once every 3 seconds, which reads as 'working in the background' rather than 'loading spinner'.",
+    "Staggered shimmer on OTP cells - Each cell's rotation starts at a different offset (negative animation-delay), so the bright spot appears to cascade across the cells rather than all pulsing in unison. Creates a wave-like rhythm.",
+    "One-shot sweep for terminal states - Filled, copied, and timeout states play the shimmer animation exactly once (animation-iteration-count: 1) then stop. This gives a brief celebratory or conclusive flash without persisting.",
+    "No box-shadow, no background tint on listening - The only visual change during listening is the shimmer on the 1px border and a tiny 5px dot below. The field's appearance is otherwise completely normal, minimizing disruption to the host page.",
+    "Faint border color as baseline - Listening uses a very low-opacity blue border (0.2 alpha), filled/copied use green (0.25-0.3 alpha), timeout uses red (0.25 alpha). These are barely noticeable on their own. The shimmer adds the motion, the border color adds the meaning.",
+    "Reduced motion fallback - Shimmer animations are completely disabled. The faint colored border remains as the only indicator, which is sufficient for state differentiation without any motion."
   ]
   </script>
 
