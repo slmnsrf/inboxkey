@@ -62,6 +62,7 @@ impl AppState {
     fn open_lock_file(&self) -> Result<std::fs::File, String> {
         std::fs::OpenOptions::new()
             .create(true)
+            .truncate(false)
             .read(true)
             .write(true)
             .open(self.lock_path())
