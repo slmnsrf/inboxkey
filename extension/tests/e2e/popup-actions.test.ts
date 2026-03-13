@@ -319,10 +319,8 @@ test.describe('Popup Actions E2E', () => {
 
     const popup = await openPopup(context, extensionId)
 
-    // Verify type badges (look for text, CSS classes may vary)
-    await expect(popup.locator('.link-type:has-text("Login")')).toBeVisible()
-    await expect(popup.locator('.link-type:has-text("Verify")')).toBeVisible()
-    await expect(popup.locator('.link-type:has-text("Reset")')).toBeVisible()
+    // Verify link cards are visible
+    await expect(popup.locator('.item-card[data-kind="link"]')).toHaveCount(3)
 
     await popup.close()
   })
@@ -345,7 +343,7 @@ test.describe('Popup Actions E2E', () => {
     const popup = await openPopup(context, extensionId)
 
     // Verify time formatting exists (exact format may vary, just check presence)
-    const timeElements = await popup.locator('.code-time, .time-ago').all()
+    const timeElements = await popup.locator('.time-pill').all()
     expect(timeElements.length).toBeGreaterThan(0)
 
     // Check for relative time indicators
@@ -401,13 +399,13 @@ test.describe('Popup Actions E2E', () => {
 
     const popup = await openPopup(context, extensionId)
 
-    // Verify source is displayed (may be formatted as "from Gmail" or "user@example.com")
-    const codeItem = popup.locator('.code-item:has-text("123456")')
+    // Verify source is displayed in the unified card layout
+    const codeItem = popup.locator('.item-card[data-kind="code"]:has-text("123456")')
     await expect(codeItem).toBeVisible()
 
-    // Check that source info exists
-    const hasSourceInfo = await codeItem.locator('.code-source, .source').count()
-    expect(hasSourceInfo).toBeGreaterThan(0)
+    // Check that sender info exists in the card
+    const hasSenderInfo = await codeItem.locator('.item-card__sender').count()
+    expect(hasSenderInfo).toBeGreaterThan(0)
 
     await popup.close()
   })

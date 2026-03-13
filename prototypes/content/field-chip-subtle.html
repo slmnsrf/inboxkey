@@ -183,6 +183,24 @@
     }
 
     /* ============================
+       SHIMMER COLOR TOKENS
+       RGB channels derived from design tokens,
+       so shimmer colors follow theme switches.
+       ============================ */
+
+    :root, [data-theme="light"] {
+      --shimmer-blue: 0, 122, 255;     /* matches --color-primary: #007AFF */
+      --shimmer-green: 16, 185, 129;   /* matches --color-success: #10B981 */
+      --shimmer-red: 239, 68, 68;      /* matches --color-error: #EF4444 */
+    }
+
+    [data-theme="dark"] {
+      --shimmer-blue: 10, 132, 255;    /* matches --color-primary: #0A84FF */
+      --shimmer-green: 48, 209, 88;    /* matches --color-success: #30D158 */
+      --shimmer-red: 255, 69, 58;      /* matches --color-error: #FF453A */
+    }
+
+    /* ============================
        SHIMMER BORDER SYSTEM
        A gradient highlight that travels
        along the border of the field.
@@ -200,6 +218,22 @@
       display: block;
     }
 
+    /* Constrain shimmer to input width in inline-text sections */
+    .shimmer-wrap--input-std {
+      display: block;
+      max-width: 320px;
+    }
+
+    .shimmer-wrap--input-wide {
+      display: block;
+      max-width: 400px;
+    }
+
+    .shimmer-wrap--input-compact {
+      display: inline-block;
+      max-width: 200px;
+    }
+
     /* The animated gradient border */
     .shimmer-wrap--listening::before {
       content: '';
@@ -211,9 +245,9 @@
         from var(--shimmer-angle, 0deg),
         transparent 0%,
         transparent 30%,
-        rgba(0, 122, 255, 0.45) 48%,
-        rgba(0, 122, 255, 0.6) 50%,
-        rgba(0, 122, 255, 0.45) 52%,
+        rgba(var(--shimmer-blue), 0.45) 48%,
+        rgba(var(--shimmer-blue), 0.6) 50%,
+        rgba(var(--shimmer-blue), 0.45) 52%,
         transparent 70%,
         transparent 100%
       );
@@ -228,19 +262,6 @@
       animation: shimmer-rotate 3s linear infinite;
       pointer-events: none;
       z-index: 1;
-    }
-
-    [data-theme="dark"] .shimmer-wrap--listening::before {
-      background: conic-gradient(
-        from var(--shimmer-angle, 0deg),
-        transparent 0%,
-        transparent 30%,
-        rgba(10, 132, 255, 0.5) 48%,
-        rgba(10, 132, 255, 0.7) 50%,
-        rgba(10, 132, 255, 0.5) 52%,
-        transparent 70%,
-        transparent 100%
-      );
     }
 
     @property --shimmer-angle {
@@ -260,7 +281,7 @@
         background: linear-gradient(
           90deg,
           transparent,
-          rgba(0, 122, 255, 0.5),
+          rgba(var(--shimmer-blue), 0.5),
           transparent
         );
         animation: shimmer-slide 2s ease-in-out infinite;
@@ -274,11 +295,7 @@
 
     /* Listening input: subtle base border, no glow */
     .fake-input--listening {
-      border-color: rgba(0, 122, 255, 0.2);
-    }
-
-    [data-theme="dark"] .fake-input--listening {
-      border-color: rgba(10, 132, 255, 0.25);
+      border-color: rgba(var(--shimmer-blue), 0.2);
     }
 
     /* ============================
@@ -294,11 +311,11 @@
       padding: 1px;
       background: conic-gradient(
         from var(--shimmer-angle, 0deg),
-        rgba(16, 185, 129, 0.15) 0%,
-        rgba(16, 185, 129, 0.4) 25%,
-        rgba(16, 185, 129, 0.15) 50%,
-        rgba(16, 185, 129, 0.4) 75%,
-        rgba(16, 185, 129, 0.15) 100%
+        rgba(var(--shimmer-green), 0.15) 0%,
+        rgba(var(--shimmer-green), 0.4) 25%,
+        rgba(var(--shimmer-green), 0.15) 50%,
+        rgba(var(--shimmer-green), 0.4) 75%,
+        rgba(var(--shimmer-green), 0.15) 100%
       );
       -webkit-mask:
         linear-gradient(#fff 0 0) content-box,
@@ -315,7 +332,7 @@
 
     /* STATE: FILLED */
     .fake-input--filled {
-      border-color: rgba(16, 185, 129, 0.3);
+      border-color: rgba(var(--shimmer-green), 0.3);
       font-family: var(--font-mono);
       font-weight: var(--font-weight-semibold);
       letter-spacing: 0.15em;
@@ -330,11 +347,11 @@
       padding: 1px;
       background: conic-gradient(
         from var(--shimmer-angle, 0deg),
-        rgba(16, 185, 129, 0.1) 0%,
-        rgba(16, 185, 129, 0.3) 25%,
-        rgba(16, 185, 129, 0.1) 50%,
-        rgba(16, 185, 129, 0.3) 75%,
-        rgba(16, 185, 129, 0.1) 100%
+        rgba(var(--shimmer-green), 0.1) 0%,
+        rgba(var(--shimmer-green), 0.3) 25%,
+        rgba(var(--shimmer-green), 0.1) 50%,
+        rgba(var(--shimmer-green), 0.3) 75%,
+        rgba(var(--shimmer-green), 0.1) 100%
       );
       -webkit-mask:
         linear-gradient(#fff 0 0) content-box,
@@ -350,7 +367,7 @@
     }
 
     .fake-input--copied {
-      border-color: rgba(16, 185, 129, 0.25);
+      border-color: rgba(var(--shimmer-green), 0.25);
     }
 
     /* STATE: TIMEOUT - single red flash */
@@ -362,11 +379,11 @@
       padding: 1px;
       background: conic-gradient(
         from var(--shimmer-angle, 0deg),
-        rgba(239, 68, 68, 0.1) 0%,
-        rgba(239, 68, 68, 0.3) 25%,
-        rgba(239, 68, 68, 0.1) 50%,
-        rgba(239, 68, 68, 0.3) 75%,
-        rgba(239, 68, 68, 0.1) 100%
+        rgba(var(--shimmer-red), 0.1) 0%,
+        rgba(var(--shimmer-red), 0.3) 25%,
+        rgba(var(--shimmer-red), 0.1) 50%,
+        rgba(var(--shimmer-red), 0.3) 75%,
+        rgba(var(--shimmer-red), 0.1) 100%
       );
       -webkit-mask:
         linear-gradient(#fff 0 0) content-box,
@@ -382,11 +399,7 @@
     }
 
     .fake-input--timeout {
-      border-color: rgba(239, 68, 68, 0.25);
-    }
-
-    [data-theme="dark"] .fake-input--timeout {
-      border-color: rgba(255, 69, 58, 0.3);
+      border-color: rgba(var(--shimmer-red), 0.25);
     }
 
     /* ============================
@@ -432,9 +445,9 @@
         from var(--shimmer-angle, 0deg),
         transparent 0%,
         transparent 30%,
-        rgba(0, 122, 255, 0.45) 48%,
-        rgba(0, 122, 255, 0.6) 50%,
-        rgba(0, 122, 255, 0.45) 52%,
+        rgba(var(--shimmer-blue), 0.45) 48%,
+        rgba(var(--shimmer-blue), 0.6) 50%,
+        rgba(var(--shimmer-blue), 0.45) 52%,
         transparent 70%,
         transparent 100%
       );
@@ -451,19 +464,6 @@
       z-index: 1;
     }
 
-    [data-theme="dark"] .otp-shimmer-cell--listening::before {
-      background: conic-gradient(
-        from var(--shimmer-angle, 0deg),
-        transparent 0%,
-        transparent 30%,
-        rgba(10, 132, 255, 0.5) 48%,
-        rgba(10, 132, 255, 0.7) 50%,
-        rgba(10, 132, 255, 0.5) 52%,
-        transparent 70%,
-        transparent 100%
-      );
-    }
-
     /* Stagger the shimmer across cells */
     .otp-shimmer-cell--listening:nth-child(2)::before { animation-delay: -0.4s; }
     .otp-shimmer-cell--listening:nth-child(3)::before { animation-delay: -0.8s; }
@@ -472,11 +472,7 @@
     .otp-shimmer-cell--listening:nth-child(6)::before { animation-delay: -2.0s; }
 
     .fake-otp-cell--listening {
-      border-color: rgba(0, 122, 255, 0.2);
-    }
-
-    [data-theme="dark"] .fake-otp-cell--listening {
-      border-color: rgba(10, 132, 255, 0.25);
+      border-color: rgba(var(--shimmer-blue), 0.2);
     }
 
     /* OTP - FILLED */
@@ -488,11 +484,11 @@
       padding: 1px;
       background: conic-gradient(
         from var(--shimmer-angle, 0deg),
-        rgba(16, 185, 129, 0.15) 0%,
-        rgba(16, 185, 129, 0.4) 25%,
-        rgba(16, 185, 129, 0.15) 50%,
-        rgba(16, 185, 129, 0.4) 75%,
-        rgba(16, 185, 129, 0.15) 100%
+        rgba(var(--shimmer-green), 0.15) 0%,
+        rgba(var(--shimmer-green), 0.4) 25%,
+        rgba(var(--shimmer-green), 0.15) 50%,
+        rgba(var(--shimmer-green), 0.4) 75%,
+        rgba(var(--shimmer-green), 0.15) 100%
       );
       -webkit-mask:
         linear-gradient(#fff 0 0) content-box,
@@ -514,21 +510,17 @@
     .otp-shimmer-cell--filled:nth-child(6)::before { animation-delay: 0.5s; }
 
     .fake-otp-cell--filled {
-      border-color: rgba(16, 185, 129, 0.3);
+      border-color: rgba(var(--shimmer-green), 0.3);
     }
 
     /* OTP - COPIED */
     .fake-otp-cell--copied {
-      border-color: rgba(16, 185, 129, 0.25);
+      border-color: rgba(var(--shimmer-green), 0.25);
     }
 
     /* OTP - TIMEOUT */
     .fake-otp-cell--timeout {
-      border-color: rgba(239, 68, 68, 0.25);
-    }
-
-    [data-theme="dark"] .fake-otp-cell--timeout {
-      border-color: rgba(255, 69, 58, 0.3);
+      border-color: rgba(var(--shimmer-red), 0.25);
     }
 
     /* ============================
@@ -555,8 +547,9 @@
       pointer-events: none;
       opacity: 0;
       transform: translateY(calc(-100% + 4px));
-      transition: opacity 300ms ease-in-out, transform 300ms ease-in-out;
-      z-index: 10;
+      transition: opacity var(--duration-slow) var(--easing-in-out),
+                  transform var(--duration-slow) var(--easing-in-out);
+      z-index: var(--z-tooltip);
     }
 
     /* Arrow */
@@ -617,11 +610,157 @@
       display: inline-flex;
     }
 
+    /* ============================
+       INLINE TEXT FEEDBACK
+       Right-aligned text inside the input
+       showing state status. NOT for split OTP.
+       ============================ */
+
+    .inline-input-wrap {
+      position: relative;
+      display: inline-block;
+      overflow: hidden;
+      border-radius: var(--radius-md);
+    }
+
+    .inline-input-wrap--full {
+      display: block;
+      max-width: 320px;
+    }
+
+    .inline-input-wrap--wide {
+      max-width: 400px;
+    }
+
+    .inline-input-wrap--compact {
+      max-width: 200px;
+    }
+
+    /* Input inside inline-wrap fills the wrapper */
+    .inline-input-wrap .fake-input {
+      max-width: none;
+      width: 100%;
+    }
+
+    .inline-text {
+      position: absolute;
+      top: 50%;
+      right: 8px;
+      transform: translateY(-50%);
+      font-family: var(--font-system);
+      font-size: 11px;
+      font-weight: var(--font-weight-medium);
+      white-space: nowrap;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity var(--duration-slow) var(--easing-in-out);
+      z-index: 2;
+    }
+
+    .inline-text--visible {
+      opacity: 1;
+    }
+
+    .inline-text--listening {
+      color: rgba(var(--shimmer-blue), 0.7);
+    }
+
+    .inline-text--filled {
+      color: rgba(var(--shimmer-green), 0.8);
+    }
+
+    .inline-text--copied {
+      color: rgba(var(--shimmer-green), 0.7);
+    }
+
+    .inline-text--timeout {
+      color: rgba(var(--shimmer-red), 0.7);
+    }
+
+    /* Inputs with inline text need right padding to avoid overlap */
+    .fake-input--has-inline {
+      padding-right: 120px;
+    }
+
+    .fake-input--compact.fake-input--has-inline {
+      padding-right: 105px;
+    }
+
+    /* ============================
+       PLAY DEMO CONTROLS
+       ============================ */
+
+    .demo-controls {
+      display: flex;
+      align-items: center;
+      gap: var(--space-4);
+      margin-bottom: var(--space-5);
+      flex-wrap: wrap;
+    }
+
+    .demo-play-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-2);
+      height: 36px;
+      padding: 0 var(--space-4);
+      border: 1px solid var(--color-primary);
+      border-radius: var(--radius-md);
+      background: transparent;
+      color: var(--color-primary);
+      font-family: var(--font-system);
+      font-size: var(--font-size-sm);
+      font-weight: var(--font-weight-medium);
+      cursor: pointer;
+      transition: background 200ms ease, color 200ms ease;
+    }
+
+    .demo-play-btn:hover {
+      background: var(--color-primary);
+      color: white;
+    }
+
+    .demo-play-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .demo-play-btn:disabled:hover {
+      background: transparent;
+      color: var(--color-primary);
+    }
+
+    .demo-scenario-select {
+      height: 36px;
+      padding: 0 var(--space-3);
+      border: 1px solid var(--color-border-strong);
+      border-radius: var(--radius-md);
+      background: var(--surface-card);
+      color: var(--color-text-primary);
+      font-family: var(--font-system);
+      font-size: var(--font-size-sm);
+      cursor: pointer;
+    }
+
+    .demo-state-indicator {
+      font-family: var(--font-mono);
+      font-size: var(--font-size-xs);
+      color: var(--color-text-tertiary);
+      padding: 4px 8px;
+      border-radius: var(--radius-sm);
+      background: var(--surface-elevated);
+      border: 1px solid var(--color-border);
+    }
+
+    .demo-field-area {
+      max-width: 400px;
+    }
+
     @media (prefers-reduced-motion: reduce) {
       .shimmer-wrap--listening::before,
       .otp-shimmer-cell--listening::before {
         animation: none !important;
-        background: rgba(0, 122, 255, 0.2);
+        background: rgba(var(--shimmer-blue), 0.2);
       }
 
       .shimmer-wrap--filled::before,
@@ -629,6 +768,10 @@
       .shimmer-wrap--timeout::before,
       .otp-shimmer-cell--filled::before {
         animation: none !important;
+      }
+
+      .inline-text {
+        transition: none !important;
       }
     }
   </style>
@@ -679,7 +822,7 @@
             <p class="fake-page-subtitle">Enter the code we sent to your email</p>
             <label class="fake-label">Verification code</label>
             <div class="field-wrapper field-wrapper--full">
-              <div class="shimmer-wrap shimmer-wrap--listening shimmer-wrap--full">
+              <div class="shimmer-wrap shimmer-wrap--listening shimmer-wrap--input-std">
                 <input class="fake-input fake-input--listening" type="text" placeholder="Enter code" disabled>
                 <span class="field-tooltip field-tooltip--listening">Checking emails...</span>
               </div>
@@ -699,7 +842,7 @@
             <p class="fake-page-subtitle">Enter the code we sent to your email</p>
             <label class="fake-label">Verification code</label>
             <div class="field-wrapper field-wrapper--full">
-              <div class="shimmer-wrap shimmer-wrap--filled shimmer-wrap--full">
+              <div class="shimmer-wrap shimmer-wrap--filled shimmer-wrap--input-std">
                 <input class="fake-input fake-input--filled" type="text" value="847293" disabled>
                 <span class="field-tooltip field-tooltip--filled">Code filled</span>
               </div>
@@ -721,7 +864,7 @@
             <p class="fake-page-subtitle">Enter the code we sent to your email</p>
             <label class="fake-label">Verification code</label>
             <div class="field-wrapper field-wrapper--full">
-              <div class="shimmer-wrap shimmer-wrap--copied shimmer-wrap--full">
+              <div class="shimmer-wrap shimmer-wrap--copied shimmer-wrap--input-std">
                 <input class="fake-input fake-input--copied" type="text" placeholder="Enter code" disabled>
                 <span class="field-tooltip field-tooltip--copied">Copied to clipboard</span>
               </div>
@@ -741,7 +884,7 @@
             <p class="fake-page-subtitle">Enter the code we sent to your email</p>
             <label class="fake-label">Verification code</label>
             <div class="field-wrapper field-wrapper--full">
-              <div class="shimmer-wrap shimmer-wrap--timeout shimmer-wrap--full">
+              <div class="shimmer-wrap shimmer-wrap--timeout shimmer-wrap--input-std">
                 <input class="fake-input fake-input--timeout" type="text" placeholder="Enter code" disabled>
                 <span class="field-tooltip field-tooltip--timeout">No code received</span>
               </div>
@@ -947,7 +1090,7 @@
             <p class="fake-page-subtitle">We sent a verification code to j***@gmail.com</p>
             <label class="fake-label">Code</label>
             <div class="field-wrapper field-wrapper--full">
-              <div class="shimmer-wrap shimmer-wrap--listening shimmer-wrap--full">
+              <div class="shimmer-wrap shimmer-wrap--listening shimmer-wrap--input-wide">
                 <input class="fake-input fake-input--wide fake-input--listening" type="text" placeholder="000-000" disabled>
                 <span class="field-tooltip field-tooltip--listening">Checking emails...</span>
               </div>
@@ -967,7 +1110,7 @@
             <p class="fake-page-subtitle">We sent a verification code to j***@gmail.com</p>
             <label class="fake-label">Code</label>
             <div class="field-wrapper field-wrapper--full">
-              <div class="shimmer-wrap shimmer-wrap--filled shimmer-wrap--full">
+              <div class="shimmer-wrap shimmer-wrap--filled shimmer-wrap--input-wide">
                 <input class="fake-input fake-input--wide fake-input--filled" type="text" value="381-742" disabled>
                 <span class="field-tooltip field-tooltip--filled">Code filled</span>
               </div>
@@ -998,7 +1141,7 @@
             <p class="fake-page-title">Security check</p>
             <p class="fake-page-subtitle">Type the code below</p>
             <div class="field-wrapper">
-              <div class="shimmer-wrap shimmer-wrap--listening">
+              <div class="shimmer-wrap shimmer-wrap--listening shimmer-wrap--input-compact">
                 <input class="fake-input fake-input--compact fake-input--listening" type="text" placeholder="Code" disabled>
                 <span class="field-tooltip field-tooltip--listening">Checking emails...</span>
               </div>
@@ -1017,7 +1160,7 @@
             <p class="fake-page-title">Security check</p>
             <p class="fake-page-subtitle">Type the code below</p>
             <div class="field-wrapper">
-              <div class="shimmer-wrap shimmer-wrap--filled">
+              <div class="shimmer-wrap shimmer-wrap--filled shimmer-wrap--input-compact">
                 <input class="fake-input fake-input--compact fake-input--filled" type="text" value="5931" disabled>
                 <span class="field-tooltip field-tooltip--filled">Code filled</span>
               </div>
@@ -1028,7 +1171,407 @@
       </div>
     </div>
 
+    <hr class="proto-divider">
+
+    <!-- ============================================
+         SECTION 6: INLINE TEXT FEEDBACK - STANDARD
+         Shows right-aligned status text inside the field.
+         Not applicable to split OTP inputs.
+         ============================================ -->
+
+    <div class="proto-section">
+      <h2 class="proto-section-title">Inline Text Feedback - Standard Input</h2>
+
+      <div class="proto-row">
+        <!-- Listening -->
+        <div class="proto-col">
+          <div class="proto-state-label">
+            <span class="proto-state-dot proto-state-dot--listening"></span>
+            listening
+          </div>
+          <div class="fake-page">
+            <p class="fake-page-title">Verify your identity</p>
+            <p class="fake-page-subtitle">Enter the code we sent to your email</p>
+            <label class="fake-label">Verification code</label>
+            <div class="field-wrapper field-wrapper--full">
+              <div class="shimmer-wrap shimmer-wrap--listening shimmer-wrap--input-std">
+                <div class="inline-input-wrap inline-input-wrap--full">
+                  <input class="fake-input fake-input--listening fake-input--has-inline" type="text" placeholder="Enter code" disabled>
+                  <span class="inline-text inline-text--listening inline-text--visible">Checking emails...</span>
+                </div>
+              </div>
+            </div>
+            <button class="fake-submit">Verify</button>
+          </div>
+        </div>
+
+        <!-- Filled -->
+        <div class="proto-col">
+          <div class="proto-state-label">
+            <span class="proto-state-dot proto-state-dot--filled"></span>
+            filled
+          </div>
+          <div class="fake-page">
+            <p class="fake-page-title">Verify your identity</p>
+            <p class="fake-page-subtitle">Enter the code we sent to your email</p>
+            <label class="fake-label">Verification code</label>
+            <div class="field-wrapper field-wrapper--full">
+              <div class="shimmer-wrap shimmer-wrap--filled shimmer-wrap--input-std">
+                <div class="inline-input-wrap inline-input-wrap--full">
+                  <input class="fake-input fake-input--filled fake-input--has-inline" type="text" value="847293" disabled>
+                  <span class="inline-text inline-text--filled inline-text--visible">Code filled</span>
+                </div>
+              </div>
+            </div>
+            <button class="fake-submit">Verify</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="proto-row">
+        <!-- Copied -->
+        <div class="proto-col">
+          <div class="proto-state-label">
+            <span class="proto-state-dot proto-state-dot--copied"></span>
+            copied
+          </div>
+          <div class="fake-page">
+            <p class="fake-page-title">Verify your identity</p>
+            <p class="fake-page-subtitle">Enter the code we sent to your email</p>
+            <label class="fake-label">Verification code</label>
+            <div class="field-wrapper field-wrapper--full">
+              <div class="shimmer-wrap shimmer-wrap--copied shimmer-wrap--input-std">
+                <div class="inline-input-wrap inline-input-wrap--full">
+                  <input class="fake-input fake-input--copied fake-input--has-inline" type="text" placeholder="Enter code" disabled>
+                  <span class="inline-text inline-text--copied inline-text--visible">Copied to clipboard</span>
+                </div>
+              </div>
+            </div>
+            <button class="fake-submit">Verify</button>
+          </div>
+        </div>
+
+        <!-- Timeout -->
+        <div class="proto-col">
+          <div class="proto-state-label">
+            <span class="proto-state-dot proto-state-dot--timeout"></span>
+            timeout
+          </div>
+          <div class="fake-page">
+            <p class="fake-page-title">Verify your identity</p>
+            <p class="fake-page-subtitle">Enter the code we sent to your email</p>
+            <label class="fake-label">Verification code</label>
+            <div class="field-wrapper field-wrapper--full">
+              <div class="shimmer-wrap shimmer-wrap--timeout shimmer-wrap--input-std">
+                <div class="inline-input-wrap inline-input-wrap--full">
+                  <input class="fake-input fake-input--timeout fake-input--has-inline" type="text" placeholder="Enter code" disabled>
+                  <span class="inline-text inline-text--timeout inline-text--visible">No code received</span>
+                </div>
+              </div>
+            </div>
+            <button class="fake-submit">Verify</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <hr class="proto-divider">
+
+    <!-- ============================================
+         SECTION 7: INLINE TEXT FEEDBACK - WIDE & COMPACT
+         ============================================ -->
+
+    <div class="proto-section">
+      <h2 class="proto-section-title">Inline Text Feedback - Wide & Compact</h2>
+
+      <div class="proto-row">
+        <!-- Wide - Listening -->
+        <div class="proto-col">
+          <div class="proto-state-label">
+            <span class="proto-state-dot proto-state-dot--listening"></span>
+            wide / listening
+          </div>
+          <div class="fake-page">
+            <p class="fake-page-title">Confirm your login</p>
+            <p class="fake-page-subtitle">We sent a verification code to j***@gmail.com</p>
+            <label class="fake-label">Code</label>
+            <div class="field-wrapper field-wrapper--full">
+              <div class="shimmer-wrap shimmer-wrap--listening shimmer-wrap--input-wide">
+                <div class="inline-input-wrap inline-input-wrap--full inline-input-wrap--wide">
+                  <input class="fake-input fake-input--wide fake-input--listening fake-input--has-inline" type="text" placeholder="000-000" disabled>
+                  <span class="inline-text inline-text--listening inline-text--visible">Checking emails...</span>
+                </div>
+              </div>
+            </div>
+            <button class="fake-submit">Continue</button>
+          </div>
+        </div>
+
+        <!-- Wide - Filled -->
+        <div class="proto-col">
+          <div class="proto-state-label">
+            <span class="proto-state-dot proto-state-dot--filled"></span>
+            wide / filled
+          </div>
+          <div class="fake-page">
+            <p class="fake-page-title">Confirm your login</p>
+            <p class="fake-page-subtitle">We sent a verification code to j***@gmail.com</p>
+            <label class="fake-label">Code</label>
+            <div class="field-wrapper field-wrapper--full">
+              <div class="shimmer-wrap shimmer-wrap--filled shimmer-wrap--input-wide">
+                <div class="inline-input-wrap inline-input-wrap--full inline-input-wrap--wide">
+                  <input class="fake-input fake-input--wide fake-input--filled fake-input--has-inline" type="text" value="381-742" disabled>
+                  <span class="inline-text inline-text--filled inline-text--visible">Code filled</span>
+                </div>
+              </div>
+            </div>
+            <button class="fake-submit">Continue</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="proto-row">
+        <!-- Compact - Listening -->
+        <div class="proto-col">
+          <div class="proto-state-label">
+            <span class="proto-state-dot proto-state-dot--listening"></span>
+            compact / listening
+          </div>
+          <div class="fake-page">
+            <p class="fake-page-title">Security check</p>
+            <p class="fake-page-subtitle">Type the code below</p>
+            <div class="field-wrapper">
+              <div class="shimmer-wrap shimmer-wrap--listening shimmer-wrap--input-compact">
+                <div class="inline-input-wrap inline-input-wrap--compact">
+                  <input class="fake-input fake-input--compact fake-input--listening fake-input--has-inline" type="text" placeholder="Code" disabled>
+                  <span class="inline-text inline-text--listening inline-text--visible">Checking emails...</span>
+                </div>
+              </div>
+            </div>
+            <button class="fake-submit fake-submit--compact">Submit</button>
+          </div>
+        </div>
+
+        <!-- Compact - Filled -->
+        <div class="proto-col">
+          <div class="proto-state-label">
+            <span class="proto-state-dot proto-state-dot--filled"></span>
+            compact / filled
+          </div>
+          <div class="fake-page">
+            <p class="fake-page-title">Security check</p>
+            <p class="fake-page-subtitle">Type the code below</p>
+            <div class="field-wrapper">
+              <div class="shimmer-wrap shimmer-wrap--filled shimmer-wrap--input-compact">
+                <div class="inline-input-wrap inline-input-wrap--compact">
+                  <input class="fake-input fake-input--compact fake-input--filled fake-input--has-inline" type="text" value="5931" disabled>
+                  <span class="inline-text inline-text--filled inline-text--visible">Code filled</span>
+                </div>
+              </div>
+            </div>
+            <button class="fake-submit fake-submit--compact">Submit</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <hr class="proto-divider">
+
+    <!-- ============================================
+         SECTION 8: PLAY DEMO - INTERACTIVE SIMULATION
+         Cycles through states with realistic timing.
+         ============================================ -->
+
+    <div class="proto-section">
+      <h2 class="proto-section-title">Play Demo - State Lifecycle</h2>
+
+      <div class="demo-controls">
+        <button class="demo-play-btn" id="demoPlayBtn">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="5,3 19,12 5,21"/></svg>
+          Play
+        </button>
+        <select class="demo-scenario-select" id="demoScenario">
+          <option value="success">Listening &rarr; Filled (success)</option>
+          <option value="copied">Listening &rarr; Copied (clipboard fallback)</option>
+          <option value="timeout">Listening &rarr; Timeout (no code)</option>
+        </select>
+        <span class="demo-state-indicator" id="demoStateLabel">idle</span>
+      </div>
+
+      <div class="demo-field-area">
+        <div class="fake-page">
+          <p class="fake-page-title">Verify your identity</p>
+          <p class="fake-page-subtitle">Enter the code we sent to your email</p>
+          <label class="fake-label">Verification code</label>
+          <div class="field-wrapper field-wrapper--full">
+            <div class="shimmer-wrap shimmer-wrap--input-std" id="demoShimmerWrap">
+              <div class="inline-input-wrap inline-input-wrap--full">
+                <input class="fake-input fake-input--has-inline" id="demoInput" type="text" placeholder="Enter code" disabled>
+                <span class="inline-text" id="demoInlineText"></span>
+              </div>
+              <span class="field-tooltip" id="demoTooltip"></span>
+            </div>
+          </div>
+          <button class="fake-submit">Verify</button>
+        </div>
+      </div>
+    </div>
+
   </main>
+
+  <!-- Demo Script -->
+  <script>
+    (function() {
+      const btn = document.getElementById('demoPlayBtn');
+      const select = document.getElementById('demoScenario');
+      const stateLabel = document.getElementById('demoStateLabel');
+      const shimmerWrap = document.getElementById('demoShimmerWrap');
+      const input = document.getElementById('demoInput');
+      const inlineText = document.getElementById('demoInlineText');
+      const tooltip = document.getElementById('demoTooltip');
+
+      let running = false;
+      let timeoutIds = [];
+
+      function clearTimers() {
+        timeoutIds.forEach(id => clearTimeout(id));
+        timeoutIds = [];
+      }
+
+      function resetDemo() {
+        clearTimers();
+        running = false;
+        btn.disabled = false;
+        select.disabled = false;
+
+        // Strip all state classes
+        shimmerWrap.className = 'shimmer-wrap shimmer-wrap--input-std';
+        input.className = 'fake-input fake-input--has-inline';
+        input.value = '';
+        input.placeholder = 'Enter code';
+        inlineText.className = 'inline-text';
+        inlineText.textContent = '';
+        tooltip.className = 'field-tooltip';
+        tooltip.textContent = '';
+        stateLabel.textContent = 'idle';
+      }
+
+      function setState(state, text, code) {
+        // Reset classes — remove visible first
+        inlineText.classList.remove('inline-text--visible');
+
+        // Apply state to shimmer, input, tooltip
+        shimmerWrap.className = 'shimmer-wrap shimmer-wrap--input-std shimmer-wrap--' + state;
+        input.className = 'fake-input fake-input--has-inline fake-input--' + state;
+        tooltip.className = 'field-tooltip field-tooltip--' + state;
+
+        // Set text content and value
+        inlineText.textContent = text;
+        tooltip.textContent = text;
+        stateLabel.textContent = state;
+
+        if (code) {
+          input.value = code;
+        } else {
+          input.value = '';
+          input.placeholder = 'Enter code';
+        }
+
+        // Apply state color class
+        inlineText.className = 'inline-text inline-text--' + state;
+
+        // Force reflow so browser paints opacity:0 before we add visible
+        void inlineText.offsetWidth;
+
+        // Now fade in
+        inlineText.classList.add('inline-text--visible');
+      }
+
+      function fadeOutInlineText() {
+        inlineText.classList.remove('inline-text--visible');
+      }
+
+      function scheduleTimeout(fn, delay) {
+        var id = setTimeout(fn, delay);
+        timeoutIds.push(id);
+        return id;
+      }
+
+      // Timing constants
+      // Text: fade in 300ms → hold 1000ms → fade out 300ms = 1600ms per text cycle
+      var FADE = 300;
+      var HOLD = 1000;
+      var TEXT_CYCLE = FADE + HOLD;
+
+      function playScenario(scenario) {
+        // Clear any previous state without re-enabling controls
+        clearTimers();
+        shimmerWrap.className = 'shimmer-wrap shimmer-wrap--input-std';
+        input.className = 'fake-input fake-input--has-inline';
+        input.value = '';
+        input.placeholder = 'Enter code';
+        inlineText.className = 'inline-text';
+        inlineText.textContent = '';
+        tooltip.className = 'field-tooltip';
+        tooltip.textContent = '';
+        stateLabel.textContent = 'starting...';
+
+        running = true;
+        btn.disabled = true;
+        select.disabled = true;
+
+        // T+300: enter listening (shimmer starts, text fades in 300ms)
+        var t = 300;
+        scheduleTimeout(function() {
+          setState('listening', 'Checking emails...', null);
+        }, t);
+
+        // T+300+300+1000 = T+1600: fade out listening text (shimmer keeps going)
+        scheduleTimeout(function() {
+          fadeOutInlineText();
+        }, t + TEXT_CYCLE);
+
+        // Outcome timing depends on scenario
+        var listenDuration = scenario === 'timeout' ? 4500 : 3200;
+        var outcomeT = t + listenDuration;
+
+        var outcomeState, outcomeText, outcomeCode;
+        if (scenario === 'success') {
+          outcomeState = 'filled';
+          outcomeText = 'Code filled';
+          outcomeCode = '847293';
+        } else if (scenario === 'copied') {
+          outcomeState = 'copied';
+          outcomeText = 'Copied to clipboard';
+          outcomeCode = null;
+        } else {
+          outcomeState = 'timeout';
+          outcomeText = 'No code received';
+          outcomeCode = null;
+        }
+
+        // Enter outcome state (shimmer changes, text fades in 300ms)
+        scheduleTimeout(function() {
+          setState(outcomeState, outcomeText, outcomeCode);
+        }, outcomeT);
+
+        // Fade out outcome text after hold
+        scheduleTimeout(function() {
+          fadeOutInlineText();
+        }, outcomeT + TEXT_CYCLE);
+
+        // Reset after fade out completes
+        scheduleTimeout(function() {
+          resetDemo();
+        }, outcomeT + TEXT_CYCLE + FADE + 400);
+      }
+
+      btn.addEventListener('click', function() {
+        if (running) return;
+        playScenario(select.value);
+      });
+    })();
+  </script>
 
   <!-- Design Decisions -->
   <script type="application/json" id="decisions">
@@ -1042,7 +1585,11 @@
     "OTP group wrapper for single tooltip - OTP cells are wrapped in an otp-group-wrap that acts as the hover target. One tooltip for the entire group rather than per-cell tooltips, since the state applies to all cells collectively.",
     "Staggered shimmer on OTP cells - Each cell's rotation starts at a different offset (negative animation-delay), so the bright spot appears to cascade across the cells rather than all pulsing in unison. Creates a wave-like rhythm.",
     "One-shot sweep for terminal states - Filled, copied, and timeout states play the shimmer animation exactly once then stop. A brief flash of color traveling along the border as confirmation, then static.",
-    "Reduced motion fallback - Shimmer animations are completely disabled. The faint colored border remains as the only indicator, which is sufficient for state differentiation without any motion."
+    "Reduced motion fallback - Shimmer animations are completely disabled. The faint colored border remains as the only indicator, which is sufficient for state differentiation without any motion.",
+    "Inline text feedback excluded from split OTP - OTP cells are too narrow for inline text. The shimmer border + hover tooltip pattern remains the only feedback mechanism for split inputs.",
+    "Right-aligned inline text with 300ms fade - Text appears inside the field at the right edge, using the same semantic colors as the shimmer border (blue for listening, green for filled/copied, red for timeout). Opacity transition at 300ms ease-in-out keeps it smooth without being sluggish.",
+    "Extra right padding on inputs with inline text - fake-input--has-inline adds padding-right to prevent the typed/filled code from overlapping the status text. This keeps both values readable simultaneously.",
+    "Play Demo with scenario selector - Interactive demo lets users observe the full state lifecycle with realistic timing. Three scenarios (success, clipboard fallback, timeout) cover all paths. The listening state holds for 3-5 seconds to simulate real email checking latency."
   ]
   </script>
 

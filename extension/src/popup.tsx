@@ -5,7 +5,7 @@
  * Designed for <200ms open time with cached data.
  */
 
-import React, { useEffect, useMemo, useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { ThemeProvider } from './ui/contexts/ThemeContext'
 import { ToastProvider, useToast } from './ui/contexts/ToastContext'
 import { ToastContainer } from './ui/components/ToastContainer'
@@ -33,22 +33,7 @@ function PopupContent() {
   const { showToast } = useToast()
   const { syncError, dismissSyncError } = useSyncErrors()
   const [isManualSyncing, setIsManualSyncing] = useState(false)
-  const [currentTabDomain, setCurrentTabDomain] = useState<string | null>(null)
   const [justSynced, setJustSynced] = useState(false)
-
-  // Get current tab domain for link matching
-  useEffect(() => {
-    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-      if (tabs[0]?.url) {
-        try {
-          const url = new URL(tabs[0].url)
-          setCurrentTabDomain(url.hostname)
-        } catch (e) {
-          console.warn('[Popup] Failed to parse tab URL:', e)
-        }
-      }
-    })
-  }, [])
 
   // Mark codes as seen when popup opens
   useEffect(() => {
@@ -56,9 +41,6 @@ function PopupContent() {
       console.warn('[Popup] Failed to mark codes as seen:', err)
     })
   }, [])
-
-  const hasCodes = useMemo(() => (data?.codes?.length ?? 0) > 0, [data])
-  const hasLinks = useMemo(() => (data?.magicLinks?.length ?? 0) > 0, [data])
 
   const handleCopy = async (code: string) => {
     try {
@@ -128,55 +110,6 @@ function PopupContent() {
     return <LoadingSkeleton />
   }
 
-  /**
-   * Get best code with domain-first logic:
-   * - If 2+ codes: prefer domain-matched (domainAffinity > 0), else most recent
-   * - If 1 code: just return it
-   */
-  const getBestCode = () => {
-    if (!hasCodes || !data.codes.length) return null
-    if (data.codes.length === 1) return data.codes[0]
-
-    // Find domain-matched code (domainAffinity > 0 means matches current tab)
-    const domainMatchedCode = data.codes.find((c) => c.domainAffinity && c.domainAffinity > 0)
-    return domainMatchedCode || data.codes[0]
-  }
-
-  /**
-   * Get best link with domain-first logic:
-   * - If 2+ links: prefer current-domain link, else most recent
-   * - If 1 link: just return it
-   */
-  const getBestLink = () => {
-    if (!hasLinks || !data.magicLinks.length) return null
-    if (data.magicLinks.length === 1) return data.magicLinks[0]
-
-    // Find link matching current tab domain
-    if (currentTabDomain) {
-      const domainMatchedLink = data.magicLinks.find((link) => {
-        try {
-          const linkUrl = new URL(link.url)
-          const linkHostname = linkUrl.hostname
-          // Exact match or subdomain match
-          return (
-            linkHostname === currentTabDomain ||
-            linkHostname.endsWith('.' + currentTabDomain) ||
-            currentTabDomain.endsWith('.' + linkHostname)
-          )
-        } catch (e) {
-          return false
-        }
-      })
-      if (domainMatchedLink) return domainMatchedLink
-    }
-
-    // No domain match: return most recent
-    return data.magicLinks[0]
-  }
-
-  const bestCode = getBestCode()
-  const latestLink = getBestLink()
-
   const isSyncing = isManualSyncing || isAutoSyncing
 
   return (
@@ -199,24 +132,6 @@ function PopupContent() {
         />
       )}
       <main className="popup-main" aria-live="polite">
-        <div className="popup-quick-actions" role="group" aria-label={t('popup_quick_actions')}>
-          <button
-            type="button"
-            className="popup-quick-actions__button popup-quick-actions__button--primary"
-            onClick={() => bestCode && handleCopy(bestCode.code)}
-            disabled={!bestCode}
-          >
-            {t('button_paste_best')}
-          </button>
-          <button
-            type="button"
-            className="popup-quick-actions__button popup-quick-actions__button--secondary"
-            onClick={() => latestLink && handleOpenLink(latestLink)}
-            disabled={!latestLink}
-          >
-            {t('button_open_last')}
-          </button>
-        </div>
         {/* Use unified section if available (V2), otherwise fall back to legacy separate sections */}
         {'items' in data && data.items ? (
           <RecentItemsSection
