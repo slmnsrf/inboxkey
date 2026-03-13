@@ -4,7 +4,7 @@
  * Displays a single verification code with copy button.
  */
 
-import React, { useMemo, useState } from 'react'
+import React, { useId, useMemo, useState } from 'react'
 import { t, timeAgoShort } from '@/lib/i18n'
 import type { PopupCacheCode } from '@/shared/popup-messages'
 
@@ -14,6 +14,7 @@ interface CodeCardProps {
 }
 
 export function CodeCard({ item, onCopy }: CodeCardProps) {
+  const uid = useId()
   const [copying, setCopying] = useState(false)
 
   const handleCopy = async () => {
@@ -46,7 +47,7 @@ export function CodeCard({ item, onCopy }: CodeCardProps) {
     localStorage.getItem('inboxkey.debug.scoring') === 'true'
 
   return (
-    <article className="item-card" data-kind="code" aria-labelledby={`code-${item.id}-from`}>
+    <article className="item-card" data-kind="code" aria-labelledby={`code-${uid}-from`}>
       <div className="item-card__top">
         {meta.senderDomain && (
           <span className="provider-badge">{meta.senderDomain}</span>
@@ -56,7 +57,7 @@ export function CodeCard({ item, onCopy }: CodeCardProps) {
         </span>
       </div>
       <div className="item-card__info">
-        <span id={`code-${item.id}-from`} className="item-card__sender" title={meta.from}>
+        <span id={`code-${uid}-from`} className="item-card__sender" title={meta.from}>
           {meta.from}
         </span>
         <span className="item-card__subject" title={meta.subject || undefined}>

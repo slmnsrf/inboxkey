@@ -4,7 +4,7 @@
  * Displays a single magic link with open button.
  */
 
-import React, { useMemo, useState } from 'react'
+import React, { useId, useMemo, useState } from 'react'
 import { t, timeAgoShort } from '@/lib/i18n'
 import type { PopupCacheMagicLink } from '@/shared/popup-messages'
 
@@ -14,6 +14,7 @@ interface LinkCardProps {
 }
 
 export function LinkCard({ item, onOpen }: LinkCardProps) {
+  const uid = useId()
   const [opening, setOpening] = useState(false)
   const [justOpened, setJustOpened] = useState(false)
 
@@ -50,7 +51,7 @@ export function LinkCard({ item, onOpen }: LinkCardProps) {
   })()
 
   return (
-    <article className="item-card" data-kind="link" aria-labelledby={`link-${item.id}-from`}>
+    <article className="item-card" data-kind="link" aria-labelledby={`link-${uid}-from`}>
       <div className="item-card__top">
         <span className="provider-badge">{meta.from.split('@')[1] || meta.from}</span>
         <span className="time-pill" aria-label={t('aria_received_time', [timeLabel])}>
@@ -58,7 +59,7 @@ export function LinkCard({ item, onOpen }: LinkCardProps) {
         </span>
       </div>
       <div className="item-card__info">
-        <span id={`link-${item.id}-from`} className="item-card__sender" title={meta.from}>
+        <span id={`link-${uid}-from`} className="item-card__sender" title={meta.from}>
           {meta.from}
         </span>
         <span className="item-card__subject" title={meta.subject || undefined}>

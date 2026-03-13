@@ -163,6 +163,8 @@ describe('dismiss control', () => {
     const dismissBtn = field.parentElement!.querySelector('.inboxkey-field-tooltip-dismiss') as HTMLButtonElement
     expect(dismissBtn).toBeTruthy()
     dismissBtn.click()
+    // Dismiss handler is async (awaits onClose), flush microtasks
+    await new Promise(r => setTimeout(r, 0))
     expect(onClose).toHaveBeenCalledOnce()
     expect(field.parentElement).toBe(document.body) // unwrapped after dismiss
   })

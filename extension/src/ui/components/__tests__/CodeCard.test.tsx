@@ -133,9 +133,10 @@ describe('CodeCard', () => {
     mockOnCopy.mockResolvedValue(undefined)
     render(<CodeCard item={baseItem} onCopy={mockOnCopy} />)
 
-    const codePill = screen.getByRole('button', {
+    const codePills = screen.getAllByRole('button', {
       name: new RegExp(`Copy code ${baseItem.code}`, 'i')
     })
+    const codePill = codePills.find(btn => btn.className.includes('code-pill'))!
     fireEvent.click(codePill)
 
     await vi.waitFor(() => {
@@ -167,9 +168,10 @@ describe('CodeCard', () => {
   it('provides descriptive aria-label for code pill button', () => {
     render(<CodeCard item={baseItem} onCopy={mockOnCopy} />)
 
-    const codePill = screen.getByRole('button', {
+    const codePills = screen.getAllByRole('button', {
       name: new RegExp(`Copy code ${baseItem.code}`, 'i')
     })
+    const codePill = codePills.find(btn => btn.className.includes('code-pill'))!
     expect(codePill).toHaveAccessibleName()
     expect(codePill.getAttribute('aria-label')).toContain(baseItem.code)
     expect(codePill.getAttribute('aria-label')).toContain(baseItem.from!)

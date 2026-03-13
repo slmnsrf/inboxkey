@@ -139,8 +139,8 @@ function buildSingleHandle(
       const showDismiss = state === 'listening'
       setTooltipContent(tooltip, TOOLTIP_TEXT[state], showDismiss)
       if (showDismiss) {
-        wireTooltipDismiss(tooltip, () => {
-          options.onClose?.()
+        wireTooltipDismiss(tooltip, async () => {
+          await options.onClose?.()
           handle.hide()
         })
       }
@@ -179,8 +179,8 @@ function buildSingleHandle(
   }
 
   // Wire dismiss button now that handle is defined
-  wireTooltipDismiss(tooltip, () => {
-    options.onClose?.()
+  wireTooltipDismiss(tooltip, async () => {
+    await options.onClose?.()
     handle.hide()
   })
 
@@ -228,8 +228,8 @@ function buildSplitHandle(
       const showDismiss = state === 'listening'
       setTooltipContent(tooltip, TOOLTIP_TEXT[state], showDismiss)
       if (showDismiss) {
-        wireTooltipDismiss(tooltip, () => {
-          options.onClose?.()
+        wireTooltipDismiss(tooltip, async () => {
+          await options.onClose?.()
           handle.hide()
         })
       }
@@ -264,8 +264,8 @@ function buildSplitHandle(
     },
   }
 
-  wireTooltipDismiss(tooltip, () => {
-    options.onClose?.()
+  wireTooltipDismiss(tooltip, async () => {
+    await options.onClose?.()
     handle.hide()
   })
 
