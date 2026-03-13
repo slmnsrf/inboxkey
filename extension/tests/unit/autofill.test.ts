@@ -51,14 +51,10 @@ describe('Autofill', () => {
       width: 200, height: 30, top: 100, left: 50, bottom: 130, right: 250, x: 50, y: 100,
       toJSON: () => ({})
     } as DOMRect)
-
-    // Mock setTimeout
-    vi.useFakeTimers()
   })
 
   afterEach(() => {
     vi.restoreAllMocks()
-    vi.useRealTimers()
   })
 
   describe('autofillCode()', () => {
@@ -70,7 +66,6 @@ describe('Autofill', () => {
       const result = await autofillCode({
         code: '123456',
         field,
-        showFeedback: false,
       })
 
       expect(result).toBe(true)
@@ -85,7 +80,6 @@ describe('Autofill', () => {
       const result = await autofillCode({
         code: '',
         field,
-        showFeedback: false,
       })
 
       expect(result).toBe(false)
@@ -100,7 +94,6 @@ describe('Autofill', () => {
       const result = await autofillCode({
         code: '123456',
         field,
-        showFeedback: false,
       })
 
       expect(result).toBe(false)
@@ -116,7 +109,6 @@ describe('Autofill', () => {
       const result = await autofillCode({
         code: '123456',
         field,
-        showFeedback: false,
       })
 
       expect(result).toBe(false)
@@ -132,7 +124,6 @@ describe('Autofill', () => {
       const result = await autofillCode({
         code: '123456',
         field,
-        showFeedback: false,
       })
 
       expect(result).toBe(false)
@@ -148,7 +139,6 @@ describe('Autofill', () => {
       const result = await autofillCode({
         code: '123456',
         field,
-        showFeedback: false,
       })
 
       expect(result).toBe(false)
@@ -164,7 +154,6 @@ describe('Autofill', () => {
       const result = await autofillCode({
         code: '123456',
         field,
-        showFeedback: false,
       })
 
       expect(result).toBe(false)
@@ -181,7 +170,6 @@ describe('Autofill', () => {
       await autofillCode({
         code: '123456',
         field,
-        showFeedback: false,
       })
 
       expect(focusSpy).toHaveBeenCalled()
@@ -198,7 +186,6 @@ describe('Autofill', () => {
       await autofillCode({
         code: '123456',
         field,
-        showFeedback: false,
       })
 
       expect(inputListener).toHaveBeenCalled()
@@ -215,7 +202,6 @@ describe('Autofill', () => {
       await autofillCode({
         code: '123456',
         field,
-        showFeedback: false,
       })
 
       expect(changeListener).toHaveBeenCalled()
@@ -234,7 +220,6 @@ describe('Autofill', () => {
       await autofillCode({
         code: '123456',
         field,
-        showFeedback: false,
       })
 
       expect(keydownListener).toHaveBeenCalled()
@@ -249,7 +234,6 @@ describe('Autofill', () => {
       await autofillCode({
         code: '123456',
         field,
-        showFeedback: false,
       })
 
       expect(field.getAttribute('data-inboxkey-filled')).toBe('true')
@@ -265,7 +249,6 @@ describe('Autofill', () => {
       await autofillCode({
         code: '123456',
         field,
-        showFeedback: false,
       })
 
       const afterTime = Date.now()
@@ -273,65 +256,6 @@ describe('Autofill', () => {
 
       expect(timestamp).toBeGreaterThanOrEqual(beforeTime)
       expect(timestamp).toBeLessThanOrEqual(afterTime)
-    })
-
-    it('should apply visual feedback when showFeedback=true', async () => {
-      const field = document.createElement('input')
-      field.type = 'text'
-      document.body.appendChild(field)
-
-      await autofillCode({
-        code: '123456',
-        field,
-        showFeedback: true,
-      })
-
-      // Check that styles were applied
-      expect(field.style.backgroundColor).toBeTruthy()
-      expect(field.style.border).toBeTruthy()
-    })
-
-    it('should not apply visual feedback when showFeedback=false', async () => {
-      const field = document.createElement('input')
-      field.type = 'text'
-      document.body.appendChild(field)
-
-      const originalBackground = field.style.backgroundColor
-      const originalBorder = field.style.border
-
-      await autofillCode({
-        code: '123456',
-        field,
-        showFeedback: false,
-      })
-
-      expect(field.style.backgroundColor).toBe(originalBackground)
-      expect(field.style.border).toBe(originalBorder)
-    })
-
-    it('should revert visual feedback after 2 seconds', async () => {
-      const field = document.createElement('input')
-      field.type = 'text'
-      document.body.appendChild(field)
-
-      const originalBackground = field.style.backgroundColor
-      const originalBorder = field.style.border
-
-      await autofillCode({
-        code: '123456',
-        field,
-        showFeedback: true,
-      })
-
-      // Styles should be applied
-      expect(field.style.backgroundColor).not.toBe(originalBackground)
-
-      // Fast-forward 2 seconds
-      vi.advanceTimersByTime(2000)
-
-      // Styles should be reverted
-      expect(field.style.backgroundColor).toBe(originalBackground)
-      expect(field.style.border).toBe(originalBorder)
     })
 
     it('should handle numeric codes', async () => {
@@ -342,7 +266,6 @@ describe('Autofill', () => {
       await autofillCode({
         code: '999999',
         field,
-        showFeedback: false,
       })
 
       expect(field.value).toBe('999999')
@@ -356,7 +279,6 @@ describe('Autofill', () => {
       await autofillCode({
         code: 'ABC123',
         field,
-        showFeedback: false,
       })
 
       expect(field.value).toBe('ABC123')
@@ -370,7 +292,6 @@ describe('Autofill', () => {
       await autofillCode({
         code: '12-34-56',
         field,
-        showFeedback: false,
       })
 
       expect(field.value).toBe('12-34-56')
@@ -385,7 +306,6 @@ describe('Autofill', () => {
       await autofillCode({
         code: '123456',
         field,
-        showFeedback: false,
       })
 
       expect(field.value).toBe('123456')
@@ -407,7 +327,6 @@ describe('Autofill', () => {
       await autofillCode({
         code: '123456',
         field,
-        showFeedback: false,
       })
 
       expect(isFieldFilledByInboxKey(field)).toBe(true)
@@ -421,7 +340,6 @@ describe('Autofill', () => {
       await autofillCode({
         code: '123456',
         field,
-        showFeedback: false,
       })
 
       clearAutofillTracking(field)
@@ -447,7 +365,6 @@ describe('Autofill', () => {
       await autofillCode({
         code: '123456',
         field,
-        showFeedback: false,
       })
 
       const afterTime = Date.now()
@@ -466,7 +383,6 @@ describe('Autofill', () => {
       await autofillCode({
         code: '123456',
         field,
-        showFeedback: false,
       })
 
       clearAutofillTracking(field)
@@ -484,7 +400,6 @@ describe('Autofill', () => {
       await autofillCode({
         code: '123456',
         field,
-        showFeedback: false,
       })
 
       expect(field.hasAttribute('data-inboxkey-filled')).toBe(true)
@@ -502,7 +417,6 @@ describe('Autofill', () => {
       await autofillCode({
         code: '123456',
         field,
-        showFeedback: false,
       })
 
       expect(field.hasAttribute('data-inboxkey-timestamp')).toBe(true)
@@ -526,7 +440,6 @@ describe('Autofill', () => {
       await autofillCode({
         code: '123456',
         field,
-        showFeedback: false,
       })
 
       clearAutofillTracking(field)
@@ -548,7 +461,6 @@ describe('Autofill', () => {
       await autofillCode({
         code: '123456',
         field,
-        showFeedback: false,
       })
 
       expect(submitSpy).not.toHaveBeenCalled()
@@ -572,7 +484,6 @@ describe('Autofill', () => {
       const result = await autofillCode({
         code: '123456',
         field,
-        showFeedback: false,
       })
 
       expect(result).toBe(false)
@@ -588,7 +499,6 @@ describe('Autofill', () => {
       await autofillCode({
         code: longCode,
         field,
-        showFeedback: false,
       })
 
       expect(field.value).toBe(longCode)
@@ -602,7 +512,6 @@ describe('Autofill', () => {
       await autofillCode({
         code: '123 456',
         field,
-        showFeedback: false,
       })
 
       expect(field.value).toBe('123 456')
@@ -616,7 +525,6 @@ describe('Autofill', () => {
       await autofillCode({
         code: '测试123',
         field,
-        showFeedback: false,
       })
 
       expect(field.value).toBe('测试123')
@@ -648,7 +556,6 @@ describe('Autofill', () => {
       const result = await autofillCode({
         code: '1234',
         field: inputs[0],
-        showFeedback: false,
       })
 
       // Strict shape contract: 4 chars != 6 inputs -> reject entirely
@@ -687,7 +594,6 @@ describe('Autofill', () => {
       const result = await autofillCode({
         code: '123',
         field: inputs[0],
-        showFeedback: false,
       })
 
       expect(result).toBe(true)
@@ -720,7 +626,6 @@ describe('Autofill', () => {
       const result = await autofillCode({
         code: '123456',
         field: inputs[0],
-        showFeedback: false,
       })
 
       // Strict shape contract: 6 chars != 3 inputs -> reject entirely

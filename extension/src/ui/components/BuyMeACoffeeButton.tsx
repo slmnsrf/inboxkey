@@ -57,7 +57,7 @@ export function BuyMeACoffeeButton({
       {...anchorProps}
     >
       <span className="buy-coffee-button__icon" aria-hidden="true">
-        <Coffee size={16} />
+        <Coffee size={variant === 'popup' ? 13 : 16} />
       </span>
       <span className="buy-coffee-button__label">{label}</span>
       {children}

@@ -64,16 +64,11 @@ describe('CodeCard', () => {
     vi.useRealTimers()
   })
 
-  it('renders metadata labels and values', () => {
+  it('renders sender, subject, and code values', () => {
     render(<CodeCard item={baseItem} onCopy={mockOnCopy} />)
 
-    expect(screen.getByText('From')).toBeInTheDocument()
     expect(screen.getByText(baseItem.from!)).toBeInTheDocument()
-    expect(screen.getByText('To')).toBeInTheDocument()
-    expect(screen.getByText(baseItem.to!)).toBeInTheDocument()
-    expect(screen.getByText('Subject')).toBeInTheDocument()
     expect(screen.getByText(baseItem.subject!)).toBeInTheDocument()
-    expect(screen.getByText('Code')).toBeInTheDocument()
     expect(screen.getAllByText(baseItem.code)[0]).toBeInTheDocument()
   })
 
@@ -138,9 +133,10 @@ describe('CodeCard', () => {
     mockOnCopy.mockResolvedValue(undefined)
     render(<CodeCard item={baseItem} onCopy={mockOnCopy} />)
 
-    const codePill = screen.getByRole('button', {
+    const codePills = screen.getAllByRole('button', {
       name: new RegExp(`Copy code ${baseItem.code}`, 'i')
     })
+    const codePill = codePills.find(btn => btn.className.includes('code-pill'))!
     fireEvent.click(codePill)
 
     await vi.waitFor(() => {
@@ -172,9 +168,10 @@ describe('CodeCard', () => {
   it('provides descriptive aria-label for code pill button', () => {
     render(<CodeCard item={baseItem} onCopy={mockOnCopy} />)
 
-    const codePill = screen.getByRole('button', {
+    const codePills = screen.getAllByRole('button', {
       name: new RegExp(`Copy code ${baseItem.code}`, 'i')
     })
+    const codePill = codePills.find(btn => btn.className.includes('code-pill'))!
     expect(codePill).toHaveAccessibleName()
     expect(codePill.getAttribute('aria-label')).toContain(baseItem.code)
     expect(codePill.getAttribute('aria-label')).toContain(baseItem.from!)
