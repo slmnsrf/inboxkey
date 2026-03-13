@@ -11,7 +11,7 @@
  * Target: ~220 LOC
  */
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { t } from '@/lib/i18n'
 import { getAccountStatus } from './account-status'
 import { AccountSection } from './shared/AccountSection'
@@ -49,6 +49,31 @@ export function ImapAccountCard({
   const [removeState, setRemoveState] = useState<RemoveState>('idle')
   const [removeError, setRemoveError] = useState<string | null>(null)
   const [removingId, setRemovingId] = useState<string | null>(null)
+  const [bridgeStatus, setBridgeStatus] = useState<'checking' | 'connected' | 'disconnected'>('checking')
+
+  // Check InboxBridge status when IMAP accounts exist
+  useEffect(() => {
+    if (accounts.length === 0) {
+      setBridgeStatus('checking')
+      return
+    }
+
+    let cancelled = false
+    const checkBridge = async () => {
+      try {
+        const client = getNativeClient()
+        const status = await client.checkInstallStatus()
+        if (!cancelled) {
+          setBridgeStatus(status.installed ? 'connected' : 'disconnected')
+        }
+      } catch {
+        if (!cancelled) setBridgeStatus('disconnected')
+      }
+    }
+
+    checkBridge()
+    return () => { cancelled = true }
+  }, [accounts.length])
 
   const handleRemove = async (mailboxId: string) => {
     if (!confirm(t('accounts_remove_confirm'))) {
@@ -110,13 +135,29 @@ export function ImapAccountCard({
         </button>
       }
     >
+      {bridgeStatus === 'disconnected' && accounts.length > 0 && (
+        <div className="alert alert--warning" role="alert" style={{ marginBottom: 'var(--space-3, 12px)' }}>
+          <p>
+            <strong>{t('accounts_imap_bridge_not_installed')}</strong>
+          </p>
+          <p style={{ fontSize: 'var(--font-size-sm)', marginTop: 'var(--space-1, 4px)' }}>
+            {t('accounts_imap_bridge_install_instructions')}
+          </p>
+        </div>
+      )}
       {accounts.length > 0 ? (
         accounts.map((account) => {
-          const { status, label: statusLabel } = getAccountStatus({
+          const { status: accountStatus, label: accountLabel } = getAccountStatus({
             lastSyncedAt: account.lastSyncedAt,
             lastSyncError: account.lastSyncError,
             isSyncing: account.isSyncing,
           })
+
+          // Override status when InboxBridge is disconnected
+          const status = bridgeStatus === 'disconnected' ? 'offline' : accountStatus
+          const statusLabel = bridgeStatus === 'disconnected'
+            ? t('accounts_imap_bridge_not_installed')
+            : accountLabel
 
           const isThisRemoving = removingId === account.id
 
