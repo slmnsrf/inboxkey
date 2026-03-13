@@ -347,7 +347,6 @@ body:has(.modal[aria-hidden="false"]) {
     border: 1px solid ButtonText;
   }
 
-  .popup-quick-actions__button,
   .btn,
   .copy-button,
   .action-button,

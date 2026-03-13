@@ -124,7 +124,7 @@ test.describe('Popup Performance', () => {
     const startTime = Date.now()
 
     // Click first copy button
-    const copyButton = popup.locator('.code-item:has-text("111111") button').first()
+    const copyButton = popup.locator('.item-card[data-kind="code"]:has-text("111111") button').first()
     await copyButton.click()
 
     const interactionTime = Date.now() - startTime
@@ -173,12 +173,12 @@ test.describe('Popup Performance', () => {
     const popup = await openPopup(context, extensionId)
 
     // Click first button to trigger toast
-    const button1 = popup.locator('.code-item:has-text("111111") button').first()
+    const button1 = popup.locator('.item-card[data-kind="code"]:has-text("111111") button').first()
     await button1.click()
 
     // Immediately try to click second button (should not be blocked by toast)
     const startTime = Date.now()
-    const button2 = popup.locator('.code-item:has-text("222222") button').first()
+    const button2 = popup.locator('.item-card[data-kind="code"]:has-text("222222") button').first()
     await button2.click()
     const secondClickTime = Date.now() - startTime
 
@@ -210,7 +210,7 @@ test.describe('Popup Performance', () => {
 
     // Click open button
     const startTime = Date.now()
-    const openButton = popup.locator('.link-item button').first()
+    const openButton = popup.locator('.item-card[data-kind="link"] button').first()
     await openButton.click()
 
     // Verify popup remains responsive (button updates state quickly)
