@@ -45,30 +45,28 @@ export function LinkCard({ item, onOpen }: LinkCardProps) {
 
   const timeLabel = timeAgoShort(item.receivedAt)
 
+  const linkDomain = (() => {
+    try { return new URL(item.url).hostname } catch { return item.url }
+  })()
+
   return (
-    <article className="link-card" data-kind="link" aria-labelledby={`link-${item.id}-from`}>
-      <div className="link-card__body">
-        <div className="card-head">
-          <span className="time-pill" aria-label={t('aria_received_time', [timeLabel])}>
-            {timeLabel}
-          </span>
-        </div>
-        <dl className="meta-grid">
-          <dt className="meta-grid__label">{t('label_from')}</dt>
-          <dd id={`link-${item.id}-from`} className="meta-grid__value" title={meta.from}>
-            {meta.from}
-          </dd>
-          <dt className="meta-grid__label">{t('label_to')}</dt>
-          <dd className="meta-grid__value" title={meta.to || undefined}>
-            {meta.to ?? t('value_not_available')}
-          </dd>
-          <dt className="meta-grid__label">{t('label_subject')}</dt>
-          <dd className="meta-grid__value" title={meta.subject || undefined}>
-            {meta.subject || t('value_not_available')}
-          </dd>
-        </dl>
+    <article className="item-card" data-kind="link" aria-labelledby={`link-${item.id}-from`}>
+      <div className="item-card__top">
+        <span className="provider-badge">{meta.from.split('@')[1] || meta.from}</span>
+        <span className="time-pill" aria-label={t('aria_received_time', [timeLabel])}>
+          {timeLabel}
+        </span>
       </div>
-      <div className="link-card__actions">
+      <div className="item-card__info">
+        <span id={`link-${item.id}-from`} className="item-card__sender" title={meta.from}>
+          {meta.from}
+        </span>
+        <span className="item-card__subject" title={meta.subject || undefined}>
+          {meta.subject || t('value_not_available')}
+        </span>
+      </div>
+      <div className="item-card__actions">
+        <span className="item-card__link-url" title={item.url}>{linkDomain}</span>
         <button
           type="button"
           className={`action-button action-button--secondary ${opening ? 'action-button--loading' : ''} ${justOpened ? 'action-button--success' : ''}`}

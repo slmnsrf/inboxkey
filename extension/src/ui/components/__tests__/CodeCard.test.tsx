@@ -64,16 +64,11 @@ describe('CodeCard', () => {
     vi.useRealTimers()
   })
 
-  it('renders metadata labels and values', () => {
+  it('renders sender, subject, and code values', () => {
     render(<CodeCard item={baseItem} onCopy={mockOnCopy} />)
 
-    expect(screen.getByText('From')).toBeInTheDocument()
     expect(screen.getByText(baseItem.from!)).toBeInTheDocument()
-    expect(screen.getByText('To')).toBeInTheDocument()
-    expect(screen.getByText(baseItem.to!)).toBeInTheDocument()
-    expect(screen.getByText('Subject')).toBeInTheDocument()
     expect(screen.getByText(baseItem.subject!)).toBeInTheDocument()
-    expect(screen.getByText('Code')).toBeInTheDocument()
     expect(screen.getAllByText(baseItem.code)[0]).toBeInTheDocument()
   })
 

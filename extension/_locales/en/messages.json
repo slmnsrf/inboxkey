@@ -619,6 +619,14 @@
     "message": "Manage in Settings",
     "description": "Link text to open blacklist modal in Settings"
   },
+  "domain_toggle_enabled": {
+    "message": "Enabled",
+    "description": "Inline feedback when domain toggle is turned ON"
+  },
+  "domain_toggle_paused": {
+    "message": "Paused",
+    "description": "Inline feedback when domain toggle is turned OFF"
+  },
   "settings_advanced_section": {
     "message": "Advanced",
     "description": "Advanced settings section heading"

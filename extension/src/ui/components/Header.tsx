@@ -33,7 +33,16 @@ export function Header({
     <header className="popup-header">
       <div className="popup-header__row">
         <div className="popup-header__title-group">
-          <h1 className="popup-title">{t('popup_title')}</h1>
+          <h1 className="popup-title">
+            <img
+              src={chrome.runtime.getURL('assets/icon.svg')}
+              alt=""
+              className="popup-title__logo"
+              width={20}
+              height={20}
+            />
+            {t('popup_title')}
+          </h1>
           <div className="popup-header__pills" role="status">
             <span className="header-pill" data-testid="mailbox-pill">
               {mailboxLabel}
