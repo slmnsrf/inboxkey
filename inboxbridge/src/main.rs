@@ -18,7 +18,7 @@ async fn main() {
 }
 
 async fn run_async() -> anyhow::Result<()> {
-    let state = Arc::new(state::AppState::new());
+    let state = Arc::new(state::AppState::new(None));
     let keychain = Arc::new(keychain::KeychainManager::new());
 
     let mut stdin = tokio::io::stdin();
