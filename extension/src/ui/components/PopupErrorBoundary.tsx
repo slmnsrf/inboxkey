@@ -27,6 +27,14 @@ export class PopupErrorBoundary extends React.Component<
 
   render() {
     if (this.state.hasError) {
+      // Detect theme without relying on ThemeProvider (which may have crashed)
+      const isDark = typeof window !== 'undefined'
+        && window.matchMedia?.('(prefers-color-scheme: dark)').matches
+
+      const bg = isDark ? '#1a1a2e' : '#f5f5f7'
+      const text = isDark ? '#e5e7eb' : '#1f2937'
+      const muted = isDark ? '#9ca3af' : '#6b7280'
+
       return (
         <div
           style={{
@@ -39,14 +47,14 @@ export class PopupErrorBoundary extends React.Component<
             padding: 24,
             fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
             textAlign: 'center',
-            color: '#e5e7eb',
-            background: '#1a1a2e',
+            color: text,
+            background: bg,
           }}
         >
           <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 8 }}>
             Something went wrong
           </div>
-          <div style={{ fontSize: 12, color: '#9ca3af', marginBottom: 16 }}>
+          <div style={{ fontSize: 12, color: muted, marginBottom: 16 }}>
             An unexpected error occurred in InboxKey.
           </div>
           <button

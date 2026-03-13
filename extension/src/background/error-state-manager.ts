@@ -129,7 +129,7 @@ export class ErrorStateManager {
       return {
         type: 'auth-expired',
         variant: 'warning',
-        message: error.message,
+        message: 'Account access expired. Reconnect to resume sync.',
         timestamp: Date.now(),
         mailboxId
       }
@@ -140,28 +140,29 @@ export class ErrorStateManager {
       return {
         type: 'sync-failed',
         variant: 'warning',
-        message: error.message,
+        message: 'InboxBridge connection failed. Check that InboxBridge is running.',
         timestamp: Date.now(),
         mailboxId
       }
     }
 
-    // Detect network errors
-    if (errorMsg.includes('network') || errorMsg.includes('fetch')) {
+    // Detect network errors (includes 'connection' for IMAP connectivity errors)
+    if (errorMsg.includes('network') || errorMsg.includes('fetch') ||
+        errorMsg.includes('connection')) {
       return {
         type: 'network-offline',
         variant: 'error',
-        message: error.message,
+        message: 'Network error. Check your connection.',
         timestamp: Date.now(),
         mailboxId
       }
     }
 
-    // Default: sync failed -- pass through the original message
+    // Default: sync failed
     return {
       type: 'sync-failed',
       variant: 'error',
-      message: error.message,
+      message: 'Sync failed. Try again later.',
       timestamp: Date.now(),
       mailboxId
     }

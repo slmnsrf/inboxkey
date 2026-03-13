@@ -133,6 +133,13 @@ export class GmailAPIClient {
         console.warn(`[GmailApi] Failed to fetch message ${messageIds[i]}:`, r.reason)
       }
     }
+
+    // If every fetch failed, surface the error so the sync layer can detect the failure
+    if (messages.length === 0 && messageIds.length > 0) {
+      const first = results.find(r => r.status === 'rejected') as PromiseRejectedResult
+      throw first?.reason ?? new Error('All message fetches failed')
+    }
+
     return messages
   }
 

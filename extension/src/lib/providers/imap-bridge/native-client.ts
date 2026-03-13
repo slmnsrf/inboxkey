@@ -158,30 +158,41 @@ export class NativeMessagingClient {
 
     // Attempt reconnection with exponential backoff
     if (!this.reconnecting && error) {
-      if (this.reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
-        console.warn(`[NativeClient] Giving up reconnection after ${MAX_RECONNECT_ATTEMPTS} attempts`)
-        return
-      }
-
-      this.reconnecting = true;
-      const delay = Math.min(1000 * Math.pow(2, this.reconnectAttempts), MAX_BACKOFF_MS)
-      this.reconnectAttempts++
-
-      console.log(`[NativeClient] Reconnecting in ${delay}ms (attempt ${this.reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS})`)
-      setTimeout(() => {
-        this.reconnecting = false;
-        try {
-          this.connect();
-        } catch (e) {
-          console.error('[NativeClient] Failed to reconnect to InboxBridge:', e);
-        }
-      }, delay);
+      this.scheduleReconnect()
     }
   }
 
   /**
+   * Schedule a reconnection attempt with exponential backoff.
+   * Re-invokes itself on connect() failure until MAX_RECONNECT_ATTEMPTS.
+   */
+  private scheduleReconnect(): void {
+    if (this.reconnecting) return
+
+    if (this.reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
+      console.warn(`[NativeClient] Giving up reconnection after ${MAX_RECONNECT_ATTEMPTS} attempts`)
+      return
+    }
+
+    this.reconnecting = true
+    const delay = Math.min(1000 * Math.pow(2, this.reconnectAttempts), MAX_BACKOFF_MS)
+    this.reconnectAttempts++
+
+    console.log(`[NativeClient] Reconnecting in ${delay}ms (attempt ${this.reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS})`)
+    setTimeout(() => {
+      this.reconnecting = false
+      try {
+        this.connect()
+      } catch (e) {
+        console.error('[NativeClient] Failed to reconnect to InboxBridge:', e)
+        this.scheduleReconnect()
+      }
+    }, delay)
+  }
+
+  /**
    * Reset reconnection backoff counter.
-   * Call when user manually triggers a connection check (e.g., from settings).
+   * Called on successful install status checks and user-triggered connection checks.
    */
   resetBackoff(): void {
     this.reconnectAttempts = 0

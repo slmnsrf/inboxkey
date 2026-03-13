@@ -10,7 +10,7 @@
  * - Polls background for error state changes
  */
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { PopupBridge } from '../services/popup-bridge'
 import type { BannerVariant, BannerType } from '../components/ErrorBanner'
 
@@ -24,11 +24,11 @@ export interface SyncErrorState {
 
 const bridge = new PopupBridge()
 
-export function useSyncErrors() {
+export function useSyncErrors(options?: { onRetrySuccess?: () => void }) {
   const [dismissed, setDismissed] = useState<Set<BannerType>>(new Set())
   const [syncError, setSyncError] = useState<SyncErrorState | null>(null)
   const [isOnline, setIsOnline] = useState(navigator.onLine)
-  const [isRetrying, setIsRetrying] = useState(false)
+  const isRetryingRef = useRef(false)
 
   // Monitor online/offline events
   useEffect(() => {
@@ -77,24 +77,26 @@ export function useSyncErrors() {
           let onAction: (() => void) | undefined
 
           if (errorInfo.type === 'sync-failed') {
-            actionLabel = isRetrying ? 'Retrying...' : 'Retry Sync'
+            actionLabel = 'Retry Sync'
             onAction = async () => {
-              if (isRetrying) return
-              setIsRetrying(true)
+              if (isRetryingRef.current) return
+              isRetryingRef.current = true
+              setSyncError(prev => prev ? { ...prev, actionLabel: 'Retrying...' } : null)
               try {
                 await bridge.triggerSync()
                 // Dismiss banner on successful retry
                 setDismissed((prev) => new Set(prev).add('sync-failed'))
                 setSyncError(null)
+                options?.onRetrySuccess?.()
               } catch (err) {
                 console.error('[useSyncErrors] Retry sync failed:', err)
-                // Update banner message to show retry failed
                 setSyncError(prev => prev ? {
                   ...prev,
+                  actionLabel: 'Retry Sync',
                   message: 'Retry failed. Check your email connections in Settings.'
                 } : null)
               } finally {
-                setIsRetrying(false)
+                isRetryingRef.current = false
               }
             }
           } else if (errorInfo.type === 'auth-expired') {
@@ -138,7 +140,7 @@ export function useSyncErrors() {
       mounted = false
       clearInterval(interval)
     }
-  }, [dismissed, isOnline, isRetrying])
+  }, [dismissed, isOnline])
 
   const dismissSyncError = (type: BannerType) => {
     setDismissed((prev) => new Set(prev).add(type))

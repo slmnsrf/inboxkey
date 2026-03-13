@@ -32,7 +32,7 @@ const linkService = new LinkService()
 function PopupContent() {
   const { data, loading, error, refresh, isSyncing: isAutoSyncing } = usePopupData()
   const { showToast } = useToast()
-  const { syncError, dismissSyncError } = useSyncErrors()
+  const { syncError, dismissSyncError } = useSyncErrors({ onRetrySuccess: refresh })
   const [isManualSyncing, setIsManualSyncing] = useState(false)
   const [justSynced, setJustSynced] = useState(false)
 
