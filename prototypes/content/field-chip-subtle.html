@@ -545,7 +545,6 @@
       position: absolute;
       top: -6px;
       right: 4px;
-      transform: translateY(-100%);
       padding: 4px 10px;
       border-radius: var(--radius-sm);
       font-family: var(--font-system);
@@ -555,7 +554,8 @@
       white-space: nowrap;
       pointer-events: none;
       opacity: 0;
-      transition: opacity var(--duration-fast) var(--easing-default);
+      transform: translateY(calc(-100% + 4px));
+      transition: opacity 300ms ease-in-out, transform 300ms ease-in-out;
       z-index: 10;
     }
 
@@ -575,6 +575,7 @@
     .shimmer-wrap:hover .field-tooltip,
     .otp-group-wrap:hover .field-tooltip {
       opacity: 1;
+      transform: translateY(-100%);
     }
 
     /* State colors */
