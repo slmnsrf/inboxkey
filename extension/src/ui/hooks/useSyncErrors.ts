@@ -28,6 +28,7 @@ export function useSyncErrors() {
   const [dismissed, setDismissed] = useState<Set<BannerType>>(new Set())
   const [syncError, setSyncError] = useState<SyncErrorState | null>(null)
   const [isOnline, setIsOnline] = useState(navigator.onLine)
+  const [isRetrying, setIsRetrying] = useState(false)
 
   // Monitor online/offline events
   useEffect(() => {
@@ -76,8 +77,10 @@ export function useSyncErrors() {
           let onAction: (() => void) | undefined
 
           if (errorInfo.type === 'sync-failed') {
-            actionLabel = 'Retry Sync'
+            actionLabel = isRetrying ? 'Retrying...' : 'Retry Sync'
             onAction = async () => {
+              if (isRetrying) return
+              setIsRetrying(true)
               try {
                 await bridge.triggerSync()
                 // Dismiss banner on successful retry
@@ -85,6 +88,13 @@ export function useSyncErrors() {
                 setSyncError(null)
               } catch (err) {
                 console.error('[useSyncErrors] Retry sync failed:', err)
+                // Update banner message to show retry failed
+                setSyncError(prev => prev ? {
+                  ...prev,
+                  message: 'Retry failed. Check your email connections in Settings.'
+                } : null)
+              } finally {
+                setIsRetrying(false)
               }
             }
           } else if (errorInfo.type === 'auth-expired') {
@@ -128,7 +138,7 @@ export function useSyncErrors() {
       mounted = false
       clearInterval(interval)
     }
-  }, [dismissed, isOnline])
+  }, [dismissed, isOnline, isRetrying])
 
   const dismissSyncError = (type: BannerType) => {
     setDismissed((prev) => new Set(prev).add(type))

@@ -10,7 +10,7 @@
   align-items: center;
   gap: var(--space-3, 12px);
   padding: var(--space-3, 12px) var(--space-4, 16px);
-  margin: 0 var(--space-3, 12px) var(--space-3, 12px);
+  margin: var(--space-3, 12px);
   border-radius: var(--radius-lg, 8px);
   border-left: 4px solid;
   font-size: var(--font-size-sm, 14px);

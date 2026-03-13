@@ -1696,7 +1696,11 @@ body {
 
 .mini-toggle .slider {
   position: absolute;
-  inset: 0;
+  width: 28px;
+  height: 16px;
+  top: 50%;
+  left: 0;
+  transform: translateY(-50%);
   background: var(--color-gray-300);
   border-radius: var(--radius-full);
   transition: background 150ms ease-out;
