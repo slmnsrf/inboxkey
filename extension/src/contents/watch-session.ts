@@ -337,9 +337,9 @@ export class WatchSession {
       if (success) {
         console.log("[WatchSession] Autofill successful")
 
-        // V2: Hide chip immediately after successful autofill (user doesn't need it anymore)
+        // V3: Show green shimmer success state (auto-dismiss handles cleanup)
         if (this.chipHandle) {
-          this.chipHandle.hide()
+          this.chipHandle.update('filled')
         }
         this.updateBadge('success')
       } else {
