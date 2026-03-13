@@ -1696,7 +1696,11 @@ body {
 
 .mini-toggle .slider {
   position: absolute;
-  inset: 0;
+  width: 28px;
+  height: 16px;
+  top: 50%;
+  left: 0;
+  transform: translateY(-50%);
   background: var(--color-gray-300);
   border-radius: var(--radius-full);
   transition: background 150ms ease-out;
@@ -1843,12 +1847,13 @@ body {
 .toast {
   display: flex;
   align-items: center;
-  gap: var(--space-2);
-  min-width: 280px;
-  max-width: 360px;
-  padding: var(--space-3) var(--space-4);
-  border-radius: var(--radius-lg);
+  gap: 6px;
+  min-width: 200px;
+  max-width: 340px;
+  padding: 6px 10px;
+  border-radius: var(--radius-md);
   color: white;
+  font-size: var(--font-size-xs, 12px);
   box-shadow: var(--shadow-toast);
   opacity: 0;
   transform: translateX(40px);
@@ -1880,12 +1885,12 @@ body {
 
 .toast__icon {
   flex-shrink: 0;
-  font-size: var(--font-size-lg);
+  font-size: 14px;
 }
 
 .toast__message {
   flex: 1;
-  font-size: var(--font-size-base);
+  font-size: var(--font-size-xs, 12px);
   line-height: var(--line-height-normal);
 }
 
@@ -1895,8 +1900,8 @@ body {
   border: none;
   color: white;
   cursor: pointer;
-  padding: var(--space-1);
-  font-size: var(--font-size-lg);
+  padding: 2px;
+  font-size: 14px;
   display: flex;
   align-items: center;
   justify-content: center;

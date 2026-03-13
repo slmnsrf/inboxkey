@@ -104,7 +104,11 @@ export class ErrorStateManager {
   }
 
   private async save(state: SyncErrorState): Promise<void> {
-    await chrome.storage.local.set({ [STORAGE_KEY]: state })
+    try {
+      await chrome.storage.local.set({ [STORAGE_KEY]: state })
+    } catch (err) {
+      console.warn('[ErrorStateManager] Failed to persist error state:', err)
+    }
   }
 
   private getDefaultState(): SyncErrorState {
@@ -131,7 +135,18 @@ export class ErrorStateManager {
       }
     }
 
-    // Detect network errors
+    // Detect InboxBridge / native messaging errors
+    if (errorMsg.includes('inboxbridge') || errorMsg.includes('native')) {
+      return {
+        type: 'sync-failed',
+        variant: 'warning',
+        message: 'InboxBridge connection failed. Check that InboxBridge is running.',
+        timestamp: Date.now(),
+        mailboxId
+      }
+    }
+
+    // Detect network errors (includes 'connection' for IMAP connectivity errors)
     if (errorMsg.includes('network') || errorMsg.includes('fetch') ||
         errorMsg.includes('connection')) {
       return {

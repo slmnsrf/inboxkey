@@ -191,7 +191,7 @@ export class OutlookAPIClient {
    * Get full message details for multiple message IDs
    *
    * Similar to GmailAPIClient.getMessages().
-   * Uses Promise.all for parallel fetching (in production, consider batch API).
+   * Uses Promise.allSettled for partial-success tolerance (in production, consider batch API).
    *
    * Note: Microsoft Graph supports batch requests via POST /$batch endpoint
    * for up to 20 requests. This is a future optimization opportunity.
@@ -208,10 +208,27 @@ export class OutlookAPIClient {
       return []
     }
 
-    // Fetch all messages in parallel
-    return await Promise.all(
+    const results = await Promise.allSettled(
       messageIds.map((id) => this.getMessage(accessToken, id))
     )
+
+    const messages: GraphMessage[] = []
+    for (let i = 0; i < results.length; i++) {
+      const r = results[i]
+      if (r.status === 'fulfilled') {
+        messages.push(r.value)
+      } else {
+        console.warn(`[OutlookApi] Failed to fetch message ${messageIds[i]}:`, r.reason)
+      }
+    }
+
+    // If every fetch failed, surface the error so the sync layer can detect the failure
+    if (messages.length === 0 && messageIds.length > 0) {
+      const first = results.find(r => r.status === 'rejected') as PromiseRejectedResult
+      throw first?.reason ?? new Error('All message fetches failed')
+    }
+
+    return messages
   }
 
   /**

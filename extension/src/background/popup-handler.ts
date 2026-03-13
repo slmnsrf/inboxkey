@@ -182,17 +182,46 @@ export class PopupMessageHandler {
             const allSucceeded = adapterResults.every(r => r.success)
             const allFailed = adapterResults.every(r => !r.success)
 
+            // Build user-friendly error descriptions from adapter results
+            const sanitizeReason = (error: string): string => {
+              const lower = error.toLowerCase()
+              if (lower.includes('401') || lower.includes('auth') || lower.includes('token'))
+                return 'Authentication expired'
+              if (lower.includes('network') || lower.includes('fetch') || lower.includes('connection'))
+                return 'Network error'
+              if (lower.includes('429') || lower.includes('rate'))
+                return 'Rate limited'
+              if (lower.includes('timeout'))
+                return 'Request timed out'
+              if (lower.includes('inboxbridge') || lower.includes('native'))
+                return 'InboxBridge unavailable'
+              return 'Sync error'
+            }
+
+            const describeFailedAdapters = (failed: typeof adapterResults) => {
+              return failed.map(r => {
+                const mailbox = mailboxes.find(m => m.id === r.mailboxId)
+                const label = mailbox?.email || r.mailboxId
+                const reason = sanitizeReason(r.error || 'Unknown error')
+                return `${label}: ${reason}`
+              })
+            }
+
             if (allSucceeded) {
               await this.errorManager.recordSuccess()
             } else if (allFailed) {
-              const firstError = adapterResults.find(r => r.error)?.error || 'All adapters failed'
-              await this.errorManager.recordFailure(new Error(firstError))
+              const descriptions = describeFailedAdapters(adapterResults.filter(r => !r.success))
+              await this.errorManager.recordFailure(
+                new Error(descriptions.join('; ')),
+                adapterResults[0]?.mailboxId
+              )
             } else {
               // Partial failure: some adapters succeeded, some failed
               const failedAdapters = adapterResults.filter(r => !r.success)
-              const failedIds = failedAdapters.map(r => r.mailboxId).join(', ')
+              const descriptions = describeFailedAdapters(failedAdapters)
               await this.errorManager.recordFailure(
-                new Error(`Partial sync failure: ${failedAdapters.length} adapter(s) failed (${failedIds})`)
+                new Error(descriptions.join('; ')),
+                failedAdapters[0]?.mailboxId
               )
             }
 
@@ -219,21 +248,20 @@ export class PopupMessageHandler {
 
             // Any failure = failure response (prevents green flash / banner dismissal)
             if (allFailed) {
-              const firstError = adapterResults.find(r => r.error)?.error || 'All adapters failed'
+              const descriptions = describeFailedAdapters(adapterResults.filter(r => !r.success))
               return {
                 success: false,
-                error: firstError,
+                error: `Sync failed: ${descriptions.join('; ')}`,
               }
             }
 
             if (!allSucceeded) {
               // Partial failure: some data was retrieved but not all mailboxes synced
               const failedAdapters = adapterResults.filter(r => !r.success)
-              const failedCount = failedAdapters.length
-              const totalCount = adapterResults.length
+              const descriptions = describeFailedAdapters(failedAdapters)
               return {
                 success: false,
-                error: `Partial sync: ${failedCount}/${totalCount} mailboxes failed`,
+                error: `Partial sync failure: ${descriptions.join('; ')}`,
               }
             }
 

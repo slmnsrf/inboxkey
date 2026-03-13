@@ -135,9 +135,13 @@ export class SessionPoller {
       this.timeoutIds.set(alarmName, timeoutId);
 
       // Schedule chrome.alarm (persistent, but slightly delayed)
-      chrome.alarms.create(alarmName, {
-        when: pollTime,
-      });
+      try {
+        chrome.alarms.create(alarmName, {
+          when: pollTime,
+        });
+      } catch (err) {
+        console.warn(`[SessionPoller] Failed to create alarm ${alarmName}:`, err)
+      }
     });
   }
 
@@ -167,7 +171,7 @@ export class SessionPoller {
       }
 
       // Clear chrome.alarm
-      chrome.alarms.clear(alarmName);
+      try { chrome.alarms.clear(alarmName) } catch { /* orphaned alarm is harmless */ }
 
       // Clear execution tracking
       this.executedPolls.delete(alarmName);
@@ -228,7 +232,7 @@ export class SessionPoller {
       clearTimeout(timeoutId);
       this.timeoutIds.delete(alarmName);
     }
-    chrome.alarms.clear(alarmName);
+    try { chrome.alarms.clear(alarmName) } catch { /* harmless */ }
 
     // Execute the poll callback
     try {

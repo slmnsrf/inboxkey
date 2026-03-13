@@ -10,7 +10,7 @@
  * - Polls background for error state changes
  */
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { PopupBridge } from '../services/popup-bridge'
 import type { BannerVariant, BannerType } from '../components/ErrorBanner'
 
@@ -24,10 +24,11 @@ export interface SyncErrorState {
 
 const bridge = new PopupBridge()
 
-export function useSyncErrors() {
+export function useSyncErrors(options?: { onRetrySuccess?: () => void }) {
   const [dismissed, setDismissed] = useState<Set<BannerType>>(new Set())
   const [syncError, setSyncError] = useState<SyncErrorState | null>(null)
   const [isOnline, setIsOnline] = useState(navigator.onLine)
+  const isRetryingRef = useRef(false)
 
   // Monitor online/offline events
   useEffect(() => {
@@ -78,13 +79,24 @@ export function useSyncErrors() {
           if (errorInfo.type === 'sync-failed') {
             actionLabel = 'Retry Sync'
             onAction = async () => {
+              if (isRetryingRef.current) return
+              isRetryingRef.current = true
+              setSyncError(prev => prev ? { ...prev, actionLabel: 'Retrying...' } : null)
               try {
                 await bridge.triggerSync()
                 // Dismiss banner on successful retry
                 setDismissed((prev) => new Set(prev).add('sync-failed'))
                 setSyncError(null)
+                options?.onRetrySuccess?.()
               } catch (err) {
                 console.error('[useSyncErrors] Retry sync failed:', err)
+                setSyncError(prev => prev ? {
+                  ...prev,
+                  actionLabel: 'Retry Sync',
+                  message: 'Retry failed. Check your email connections in Settings.'
+                } : null)
+              } finally {
+                isRetryingRef.current = false
               }
             }
           } else if (errorInfo.type === 'auth-expired') {
