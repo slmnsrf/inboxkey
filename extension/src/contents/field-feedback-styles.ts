@@ -205,10 +205,10 @@ export function generateFieldFeedbackCSS(theme: 'light' | 'dark'): string {
   color: rgba(${blue}, 0.8);
 }
 
-.inboxkey-shimmer-wrap--listening .inboxkey-inline-text  { color: rgba(${blue}, 0.8); }
-.inboxkey-shimmer-wrap--filled .inboxkey-inline-text     { color: rgba(${green}, 0.8); }
-.inboxkey-shimmer-wrap--copied .inboxkey-inline-text     { color: rgba(${green}, 0.7); }
-.inboxkey-shimmer-wrap--timeout .inboxkey-inline-text    { color: rgba(${red}, 0.8); }
+.inboxkey-shimmer-wrap--listening .inboxkey-inline-text  { color: rgba(${blue}, 0.8); opacity: 0.8; }
+.inboxkey-shimmer-wrap--filled .inboxkey-inline-text     { color: rgba(${green}, 0.8); opacity: 1; }
+.inboxkey-shimmer-wrap--copied .inboxkey-inline-text     { color: rgba(${green}, 0.7); opacity: 1; }
+.inboxkey-shimmer-wrap--timeout .inboxkey-inline-text    { color: rgba(${red}, 0.8); opacity: 1; }
 
 /* --- @supports fallback for browsers without @property --- */
 @supports not (syntax: "<angle>") {
