@@ -191,7 +191,7 @@ export class OutlookAPIClient {
    * Get full message details for multiple message IDs
    *
    * Similar to GmailAPIClient.getMessages().
-   * Uses Promise.all for parallel fetching (in production, consider batch API).
+   * Uses Promise.allSettled for partial-success tolerance (in production, consider batch API).
    *
    * Note: Microsoft Graph supports batch requests via POST /$batch endpoint
    * for up to 20 requests. This is a future optimization opportunity.
