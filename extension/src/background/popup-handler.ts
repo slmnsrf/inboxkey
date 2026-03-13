@@ -183,11 +183,26 @@ export class PopupMessageHandler {
             const allFailed = adapterResults.every(r => !r.success)
 
             // Build user-friendly error descriptions from adapter results
+            const sanitizeReason = (error: string): string => {
+              const lower = error.toLowerCase()
+              if (lower.includes('401') || lower.includes('auth') || lower.includes('token'))
+                return 'Authentication expired'
+              if (lower.includes('network') || lower.includes('fetch') || lower.includes('connection'))
+                return 'Network error'
+              if (lower.includes('429') || lower.includes('rate'))
+                return 'Rate limited'
+              if (lower.includes('timeout'))
+                return 'Request timed out'
+              if (lower.includes('inboxbridge') || lower.includes('native'))
+                return 'InboxBridge unavailable'
+              return 'Sync error'
+            }
+
             const describeFailedAdapters = (failed: typeof adapterResults) => {
               return failed.map(r => {
                 const mailbox = mailboxes.find(m => m.id === r.mailboxId)
                 const label = mailbox?.email || r.mailboxId
-                const reason = r.error || 'Unknown error'
+                const reason = sanitizeReason(r.error || 'Unknown error')
                 return `${label}: ${reason}`
               })
             }

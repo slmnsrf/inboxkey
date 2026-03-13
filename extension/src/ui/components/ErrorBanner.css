@@ -53,11 +53,11 @@
   font-weight: var(--font-weight-medium, 500);
 }
 
-/* Action button */
+/* Action button (32px min-height for compact popup, above WCAG 2.5.8 AA 24px minimum) */
 .error-banner__action {
   flex-shrink: 0;
   min-width: 56px;
-  min-height: 28px;
+  min-height: 32px;
   padding: 4px 10px;
   border-radius: var(--radius-sm, 4px);
   border: 1px solid currentColor;
@@ -88,11 +88,11 @@
   cursor: not-allowed;
 }
 
-/* Close button */
+/* Close button (28px for compact popup, above WCAG 2.5.8 AA 24px minimum) */
 .error-banner__close {
   flex-shrink: 0;
-  width: 24px;
-  height: 24px;
+  width: 28px;
+  height: 28px;
   padding: 0;
   display: flex;
   align-items: center;
