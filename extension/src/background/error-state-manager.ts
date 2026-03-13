@@ -125,29 +125,39 @@ export class ErrorStateManager {
       return {
         type: 'auth-expired',
         variant: 'warning',
-        message: 'Account access expired. Reconnect to resume sync.',
+        message: error.message,
+        timestamp: Date.now(),
+        mailboxId
+      }
+    }
+
+    // Detect InboxBridge / native messaging errors
+    if (errorMsg.includes('inboxbridge') || errorMsg.includes('native')) {
+      return {
+        type: 'sync-failed',
+        variant: 'warning',
+        message: error.message,
         timestamp: Date.now(),
         mailboxId
       }
     }
 
     // Detect network errors
-    if (errorMsg.includes('network') || errorMsg.includes('fetch') ||
-        errorMsg.includes('connection')) {
+    if (errorMsg.includes('network') || errorMsg.includes('fetch')) {
       return {
         type: 'network-offline',
         variant: 'error',
-        message: 'Network error. Check your connection.',
+        message: error.message,
         timestamp: Date.now(),
         mailboxId
       }
     }
 
-    // Default: sync failed
+    // Default: sync failed -- pass through the original message
     return {
       type: 'sync-failed',
       variant: 'error',
-      message: 'Sync failed. Try again later.',
+      message: error.message,
       timestamp: Date.now(),
       mailboxId
     }
