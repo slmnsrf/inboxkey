@@ -41,9 +41,16 @@ const ARIA_TEXT: Record<ChipState, string> = {
 }
 
 const AUTO_DISMISS_MS: Partial<Record<ChipState, number>> = {
-  filled: 1500,
+  filled: 2000,
   copied: 3000,
   timeout: 3000,
+}
+
+const INLINE_TEXT: Record<ChipState, string> = {
+  listening: 'Checking emails...',
+  filled: 'Code filled',
+  copied: 'Copied to clipboard',
+  timeout: 'No code received',
 }
 
 // ─── No-op handle ─────────────────────────────────────────────────────────────
@@ -104,13 +111,9 @@ function buildSingleHandle(
   }
 
   const wrapper = createWrapper(field)
-  const originalParent = wrapper.parentElement! // wrapper is already inserted
 
-  // Tooltip
-  const tooltip = createTooltip('Checking emails', options.onClose, () => {
-    options.onClose?.()
-    handle.hide()
-  })
+  // Tooltip (dismiss button wired after handle is defined)
+  const tooltip = createTooltip('Checking emails', true)
   wrapper.appendChild(tooltip)
 
   // Inline text
@@ -133,15 +136,18 @@ function buildSingleHandle(
       // Swap wrapper state class
       swapStateClass(wrapper, state)
 
-      // Update tooltip content
-      if (state === 'listening') {
-        tooltip.innerHTML = buildTooltipHTML('Checking emails', true, () => {
+      // Update tooltip content (DOM API, no innerHTML)
+      const showDismiss = state === 'listening'
+      setTooltipContent(tooltip, TOOLTIP_TEXT[state], showDismiss)
+      if (showDismiss) {
+        wireTooltipDismiss(tooltip, () => {
           options.onClose?.()
           handle.hide()
         })
-      } else {
-        tooltip.textContent = TOOLTIP_TEXT[state]
       }
+
+      // Update inline text
+      inlineText.textContent = INLINE_TEXT[state]
 
       // Update ARIA region
       liveRegion.textContent = ARIA_TEXT[state]
@@ -165,13 +171,16 @@ function buildSingleHandle(
       resizeObserver.disconnect()
       activeHandles.delete(field)
 
-      // Synchronous DOM unwrap
-      unwrapField(field, wrapper, originalParent)
+      // Synchronous DOM unwrap -- use current parent, not stale reference
+      const currentParent = wrapper.parentElement
+      if (currentParent) {
+        unwrapField(field, wrapper, currentParent)
+      }
     },
   }
 
-  // Rebind dismiss button now that handle is defined
-  wireTooltipDismiss(tooltip, options.onClose, () => {
+  // Wire dismiss button now that handle is defined
+  wireTooltipDismiss(tooltip, () => {
     options.onClose?.()
     handle.hide()
   })
@@ -187,27 +196,21 @@ function buildSplitHandle(
   options: FieldFeedbackOptions
 ): ChipHandle {
   const wrappers: HTMLDivElement[] = []
-  const originalParents: (Element | null)[] = []
   const resizeObservers: ResizeObserver[] = []
 
   for (const input of inputs) {
     if (input.parentElement?.hasAttribute(WRAP_ATTR)) {
       wrappers.push(input.parentElement as HTMLDivElement)
-      originalParents.push(input.parentElement.parentElement)
       continue
     }
     const wrapper = createWrapper(input)
     wrappers.push(wrapper)
-    originalParents.push(wrapper.parentElement)
     resizeObservers.push(attachResizeObserver(input, wrapper))
   }
 
-  // Single tooltip on first wrapper
+  // Single tooltip on first wrapper (dismiss button wired after handle)
   const firstWrapper = wrappers[0]
-  const tooltip = createTooltip('Checking emails', options.onClose, () => {
-    options.onClose?.()
-    handle.hide()
-  })
+  const tooltip = createTooltip('Checking emails', true)
   firstWrapper.appendChild(tooltip)
 
   // ARIA live region on first wrapper (no inline text for split inputs)
@@ -222,13 +225,14 @@ function buildSplitHandle(
         swapStateClass(wrapper, state)
       }
 
-      if (state === 'listening') {
-        tooltip.innerHTML = buildTooltipHTML('Checking emails', true, () => {
+      // Update tooltip (DOM API)
+      const showDismiss = state === 'listening'
+      setTooltipContent(tooltip, TOOLTIP_TEXT[state], showDismiss)
+      if (showDismiss) {
+        wireTooltipDismiss(tooltip, () => {
           options.onClose?.()
           handle.hide()
         })
-      } else {
-        tooltip.textContent = TOOLTIP_TEXT[state]
       }
 
       liveRegion.textContent = ARIA_TEXT[state]
@@ -253,20 +257,23 @@ function buildSplitHandle(
       }
       for (let i = 0; i < inputs.length; i++) {
         const wrapper = wrappers[i]
-        const parent = originalParents[i]
-        if (parent && wrapper.parentElement === parent) {
-          unwrapField(inputs[i], wrapper, parent as HTMLElement)
-        } else if (wrapper.parentElement) {
+        if (wrapper.parentElement) {
           unwrapField(inputs[i], wrapper, wrapper.parentElement)
         }
+        activeHandles.delete(inputs[i])
       }
     },
   }
 
-  wireTooltipDismiss(tooltip, options.onClose, () => {
+  wireTooltipDismiss(tooltip, () => {
     options.onClose?.()
     handle.hide()
   })
+
+  // Register handle for all inputs in the split group
+  for (const input of inputs) {
+    activeHandles.set(input, handle)
+  }
 
   return handle
 }
@@ -335,54 +342,51 @@ function swapStateClass(wrapper: HTMLDivElement, state: ChipState): void {
 }
 
 /**
- * Build the inner HTML string for a tooltip in listening state (includes dismiss button).
- */
-function buildTooltipHTML(
-  text: string,
-  showDismiss: boolean,
-  _onDismiss: () => void
-): string {
-  if (!showDismiss) return text
-  // We return just text here; the button is re-wired after assignment
-  return `${text}<button class="inboxkey-field-tooltip-dismiss" type="button" aria-label="Dismiss InboxKey">×</button>`
-}
-
-/**
- * Create a tooltip element in listening state.
+ * Create a tooltip element. Uses DOM API (no innerHTML) to avoid XSS surface.
  */
 function createTooltip(
-  _text: string,
-  _onClose: FieldFeedbackOptions['onClose'],
-  onDismiss: () => void
+  text: string,
+  showDismiss: boolean
 ): HTMLDivElement {
   const tooltip = document.createElement('div')
   tooltip.className = 'inboxkey-field-tooltip'
-  tooltip.innerHTML = buildTooltipHTML('Checking emails', true, onDismiss)
-
-  wireTooltipDismiss(tooltip, _onClose, onDismiss)
-
+  setTooltipContent(tooltip, text, showDismiss)
   return tooltip
 }
 
 /**
+ * Set tooltip text and optionally add dismiss button (DOM API, no innerHTML).
+ */
+function setTooltipContent(
+  tooltip: HTMLDivElement,
+  text: string,
+  showDismiss: boolean
+): void {
+  // Clear existing content
+  while (tooltip.firstChild) tooltip.removeChild(tooltip.firstChild)
+
+  tooltip.appendChild(document.createTextNode(text))
+
+  if (showDismiss) {
+    const btn = document.createElement('button')
+    btn.className = 'inboxkey-field-tooltip-dismiss'
+    btn.type = 'button'
+    btn.setAttribute('aria-label', 'Dismiss InboxKey')
+    btn.textContent = '\u00D7' // ×
+    tooltip.appendChild(btn)
+  }
+}
+
+/**
  * Attach click listener to dismiss button inside tooltip (if present).
- * Replaces any previous listener by cloning the button.
  */
 function wireTooltipDismiss(
   tooltip: HTMLDivElement,
-  _onClose: FieldFeedbackOptions['onClose'],
   onDismiss: () => void
 ): void {
   const btn = tooltip.querySelector('.inboxkey-field-tooltip-dismiss')
   if (!btn) return
-
-  // Clone to remove old listeners
-  const newBtn = btn.cloneNode(true) as HTMLButtonElement
-  btn.parentNode?.replaceChild(newBtn, btn)
-
-  newBtn.addEventListener('click', () => {
-    onDismiss()
-  })
+  btn.addEventListener('click', () => onDismiss())
 }
 
 /**
