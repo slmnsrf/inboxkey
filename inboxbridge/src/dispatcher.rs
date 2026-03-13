@@ -101,6 +101,27 @@ fn error_response(id: String, code: &str, message: &str) -> Response<Value> {
     }
 }
 
+/// Returns true when the host resolves to a loopback address.
+/// Plaintext IMAP (tls=false) sends credentials in cleartext, so it must
+/// only be allowed for local bridges (e.g. ProtonMail Bridge on 127.0.0.1).
+fn is_loopback_host(host: &str) -> bool {
+    matches!(host, "127.0.0.1" | "::1" | "localhost")
+}
+
+/// Enforces the security policy: plaintext connections are restricted to
+/// loopback addresses only. Returns an (error_code, message) tuple on
+/// violation so the caller can build the RPC error.
+fn validate_tls_policy(host: &str, tls: bool) -> Result<(), (&'static str, &'static str)> {
+    if !tls && !is_loopback_host(host) {
+        return Err((
+            "INVALID_PARAMS",
+            "Plaintext connections are only allowed to localhost/127.0.0.1 (local bridges). \
+             Enable TLS for remote servers.",
+        ));
+    }
+    Ok(())
+}
+
 async fn handle_account_add(
     id: String,
     params: Value,
@@ -113,9 +134,15 @@ async fn handle_account_add(
     let port = params["port"].as_u64().unwrap_or(993) as u16;
     let username = params["username"].as_str().unwrap_or_default();
     let password = params["password"].as_str().unwrap_or_default();
+    let tls = params["tls"].as_bool().unwrap_or(true);
 
     if host.is_empty() || username.is_empty() || password.is_empty() {
         return error_response(id, "INVALID_PARAMS", "Missing required parameters: host, username, or password");
+    }
+
+    // Loopback guard: plaintext only allowed on localhost
+    if let Err((code, msg)) = validate_tls_policy(host, tls) {
+        return error_response(id, code, msg);
     }
 
     // Store password in keychain
@@ -131,7 +158,7 @@ async fn handle_account_add(
         label: label.to_string(),
         host: host.to_string(),
         port,
-        tls: true,
+        tls,
         username: username.to_string(),
     };
 
@@ -191,15 +218,21 @@ async fn handle_account_test(
     let port = params["port"].as_u64().unwrap_or(993) as u16;
     let username = params["username"].as_str().unwrap_or_default();
     let password = params["password"].as_str().unwrap_or_default();
+    let tls = params["tls"].as_bool().unwrap_or(true);
 
     if host.is_empty() || username.is_empty() || password.is_empty() {
         return error_response(id, "INVALID_PARAMS", "Missing required parameters: host, username, or password");
     }
 
+    // Loopback guard: plaintext only allowed on localhost
+    if let Err((code, msg)) = validate_tls_policy(host, tls) {
+        return error_response(id, code, msg);
+    }
+
     let mut client = ImapClient::new();
 
     // Attempt connection
-    match client.connect(host, port, username, password).await {
+    match client.connect(host, port, username, password, tls).await {
         Ok(_) => {
             // Test round-trip time
             let (success, round_trip_ms) = match client.test_connection().await {
@@ -270,7 +303,7 @@ async fn handle_mail_fetch_recent(
 
     // Connect to IMAP
     let mut client = ImapClient::new();
-    if let Err(e) = client.connect(&account.host, account.port, &account.username, &password).await {
+    if let Err(e) = client.connect(&account.host, account.port, &account.username, &password, account.tls).await {
         let error_msg = e.to_string();
         let error_code = if error_msg.contains("authentication") || error_msg.contains("login") {
             "IMAP_AUTH"
