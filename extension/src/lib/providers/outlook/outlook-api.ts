@@ -208,10 +208,20 @@ export class OutlookAPIClient {
       return []
     }
 
-    // Fetch all messages in parallel
-    return await Promise.all(
+    const results = await Promise.allSettled(
       messageIds.map((id) => this.getMessage(accessToken, id))
     )
+
+    const messages: GraphMessage[] = []
+    for (let i = 0; i < results.length; i++) {
+      const r = results[i]
+      if (r.status === 'fulfilled') {
+        messages.push(r.value)
+      } else {
+        console.warn(`[OutlookApi] Failed to fetch message ${messageIds[i]}:`, r.reason)
+      }
+    }
+    return messages
   }
 
   /**

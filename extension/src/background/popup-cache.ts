@@ -334,7 +334,11 @@ export class PopupCacheManager {
    */
   private async saveCache(cache: InternalCache): Promise<void> {
     this.cache = cache
-    await chrome.storage.session.set({ [POPUP_CACHE_KEY]: cache })
+    try {
+      await chrome.storage.session.set({ [POPUP_CACHE_KEY]: cache })
+    } catch (err) {
+      console.warn('[PopupCache] Failed to persist cache to session storage:', err)
+    }
   }
 
   /**

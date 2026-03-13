@@ -9,11 +9,15 @@ type PendingRequest = {
   timeout: number;
 };
 
+const MAX_RECONNECT_ATTEMPTS = 10
+const MAX_BACKOFF_MS = 60_000
+
 export class NativeMessagingClient {
   private port: chrome.runtime.Port | null = null;
   private pendingRequests = new Map<string, PendingRequest>();
   private eventListeners = new Set<(event: any) => void>();
   private reconnecting = false;
+  private reconnectAttempts = 0;
 
   /**
    * Connect to InboxBridge native app
@@ -102,6 +106,7 @@ export class NativeMessagingClient {
     keychain?: string;
   }> {
     try {
+      this.resetBackoff()
       this.connect();
       const result = await this.call('installStatus.get', {}, 5000);
       return {
@@ -121,6 +126,9 @@ export class NativeMessagingClient {
   }
 
   private handleMessage(message: any): void {
+    // Successful message exchange = connection is healthy, reset backoff
+    this.reconnectAttempts = 0
+
     if (message.id && this.pendingRequests.has(message.id)) {
       const { resolve, reject, timeout } = this.pendingRequests.get(message.id)!;
       window.clearTimeout(timeout);
@@ -148,18 +156,35 @@ export class NativeMessagingClient {
     }
     this.pendingRequests.clear();
 
-    // Attempt reconnection if not intentional
+    // Attempt reconnection with exponential backoff
     if (!this.reconnecting && error) {
+      if (this.reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
+        console.warn(`[NativeClient] Giving up reconnection after ${MAX_RECONNECT_ATTEMPTS} attempts`)
+        return
+      }
+
       this.reconnecting = true;
+      const delay = Math.min(1000 * Math.pow(2, this.reconnectAttempts), MAX_BACKOFF_MS)
+      this.reconnectAttempts++
+
+      console.log(`[NativeClient] Reconnecting in ${delay}ms (attempt ${this.reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS})`)
       setTimeout(() => {
         this.reconnecting = false;
         try {
           this.connect();
         } catch (e) {
-          console.error('Failed to reconnect to InboxBridge:', e);
+          console.error('[NativeClient] Failed to reconnect to InboxBridge:', e);
         }
-      }, 5000);
+      }, delay);
     }
+  }
+
+  /**
+   * Reset reconnection backoff counter.
+   * Call when user manually triggers a connection check (e.g., from settings).
+   */
+  resetBackoff(): void {
+    this.reconnectAttempts = 0
   }
 }
 

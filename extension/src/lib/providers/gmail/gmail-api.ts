@@ -110,7 +110,7 @@ export class GmailAPIClient {
 
   /**
    * Batch get multiple messages
-   * Uses Promise.all for efficiency (in production, consider Gmail's batch API)
+   * Uses Promise.allSettled so one failed message doesn't kill the entire batch.
    */
   async getMessages(
     accessToken: string,
@@ -120,10 +120,20 @@ export class GmailAPIClient {
       return []
     }
 
-    // Fetch all messages in parallel
-    return await Promise.all(
+    const results = await Promise.allSettled(
       messageIds.map((id) => this.getMessage(accessToken, id))
     )
+
+    const messages: GmailMessage[] = []
+    for (let i = 0; i < results.length; i++) {
+      const r = results[i]
+      if (r.status === 'fulfilled') {
+        messages.push(r.value)
+      } else {
+        console.warn(`[GmailApi] Failed to fetch message ${messageIds[i]}:`, r.reason)
+      }
+    }
+    return messages
   }
 
   /**
