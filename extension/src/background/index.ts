@@ -241,6 +241,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     return true
   }
 
+
   if (msg.type === "CLEAR_ALL_CODES") {
     handleClearAllCodes(sendResponse)
     return true
@@ -591,7 +592,24 @@ function handleRemoveMailbox(msg: any, sendResponse: (response: any) => void) {
     try {
       // Use StorageFactory to get appropriate storage
       const storage = await StorageFactory.create()
+
+      // Check if this is an IMAP mailbox before removing from storage
+      const allMailboxes = await storage.getMailboxes()
+      const mailbox = allMailboxes.find(m => m.id === msg.mailboxId)
+      const isImap = mailbox?.providerId === 'imap-bridge'
+
       await storage.removeMailbox(msg.mailboxId)
+
+      // Also remove from InboxBridge native app if IMAP
+      if (isImap && mailbox?.imapAccountId) {
+        try {
+          const { getNativeClient } = await import('@/lib/providers/imap-bridge/native-client')
+          const client = getNativeClient()
+          await client.call('account.remove', { accountId: mailbox.imapAccountId })
+        } catch (e) {
+          console.warn('[Background] Failed to remove from native app:', e)
+        }
+      }
 
       // Update popup cache
       const mailboxes = await storage.getMailboxes()

@@ -155,6 +155,8 @@ export interface MailboxInfo {
   email: string
   addedAt: number
   lastSyncedAt: number
+  /** Last sync error message (undefined = no error) */
+  lastSyncError?: string
   /** OAuth token expiry (undefined for IMAP providers) */
   tokenExpiresAt?: number
 }

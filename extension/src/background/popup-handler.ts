@@ -327,6 +327,7 @@ export class PopupMessageHandler {
                 email: m.email,
                 addedAt: m.addedAt,
                 lastSyncedAt: m.lastSyncedAt,
+                lastSyncError: m.lastSyncError,
                 tokenExpiresAt: m.tokenExpiresAt,
                 ...(m.providerId === 'imap-bridge' ? {
                   imapServer: m.imapServer,
