@@ -13,13 +13,12 @@ export type { ChipState, ChipHandle }
  */
 export async function showSessionChip(
   field: HTMLInputElement,
-  sessionTimeoutSeconds?: number,
+  _sessionTimeoutSeconds?: number,
   callbacks?: {
     onClose?: () => void | Promise<void>
   }
 ): Promise<ChipHandle> {
   return showFieldFeedback(field, {
-    sessionTimeoutSeconds,
     onClose: callbacks?.onClose
   })
 }

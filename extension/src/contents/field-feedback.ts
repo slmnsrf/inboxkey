@@ -17,7 +17,6 @@ export interface ChipHandle {
 }
 
 export interface FieldFeedbackOptions {
-  sessionTimeoutSeconds?: number
   onClose?: () => void | Promise<void>
 }
 
