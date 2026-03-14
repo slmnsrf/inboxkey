@@ -10,6 +10,10 @@ use std::collections::HashSet;
 /// Wraps both TLS and plaintext IMAP sessions behind a uniform interface.
 /// Plain (non-TLS) connections are only allowed on loopback -- enforced by
 /// the dispatcher before `connect()` is ever called.
+///
+/// Size difference between variants is acceptable: there is exactly one
+/// instance per ImapClient, never stored in collections.
+#[allow(clippy::large_enum_variant)]
 enum ImapSession {
     Tls(Session<TlsStream<TcpStream>>),
     Plain(Session<TcpStream>),
