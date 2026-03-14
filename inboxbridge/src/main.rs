@@ -1,6 +1,5 @@
 mod protocol;
 mod dispatcher;
-mod errors;
 mod keychain;
 mod state;
 mod imap_client;
