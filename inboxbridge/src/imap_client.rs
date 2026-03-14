@@ -174,7 +174,7 @@ impl ImapClient {
             let fetched = session
                 .uid_fetch_collect(
                     &uid.to_string(),
-                    "(ENVELOPE BODY.PEEK[TEXT]<0.2000>)",
+                    "(ENVELOPE INTERNALDATE BODY.PEEK[TEXT]<0.2000>)",
                 )
                 .await?;
 
@@ -203,25 +203,20 @@ impl ImapClient {
                         .map(|d| String::from_utf8_lossy(d).to_string())
                         .unwrap_or_else(|| Utc::now().to_rfc3339());
 
-                    // FIX 3: Post-filter by actual timestamp.
+                    // FIX 3: Post-filter by INTERNALDATE (server receive time).
                     // IMAP SINCE is day-granular, so without this we'd include all
                     // messages from "today" even if they're hours old and the caller
                     // only asked for the last 10 minutes.
-                    let parsed_date = chrono::DateTime::parse_from_rfc2822(&date)
-                        .or_else(|_| {
-                            chrono::DateTime::parse_from_str(
-                                &date,
-                                "%a, %d %b %Y %H:%M:%S %z",
-                            )
-                        })
-                        .ok();
-
-                    if let Some(dt) = parsed_date {
-                        if dt.timestamp_millis() < cutoff_ms {
+                    // We use INTERNALDATE (not ENVELOPE.date) because SINCE matches
+                    // on INTERNALDATE per RFC 3501. Using ENVELOPE.date would drop
+                    // delayed/forwarded mail that arrived recently but has an old
+                    // Date: header.
+                    if let Some(internal_date) = msg.internal_date() {
+                        if internal_date.timestamp_millis() < cutoff_ms {
                             continue; // Older than the requested window
                         }
                     }
-                    // If date can't be parsed, include the message -- better to
+                    // If INTERNALDATE is missing, include the message -- better to
                     // over-include than miss a verification code.
 
                     let snippet = msg.text()
