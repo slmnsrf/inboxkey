@@ -143,14 +143,16 @@ async fn handle_account_add(
         return error_response(id, code, msg);
     }
 
-    // Store password in keychain
-    let service = format!("InboxBridge:{}", username);
-    if let Err(e) = keychain.store_password(&service, host, password) {
+    // Generate account ID first -- needed for keychain key
+    let account_id = format!("acc_{}", Uuid::new_v4().to_string().replace("-", "").chars().take(8).collect::<String>());
+
+    // Store password in keychain using accountId (unique per account,
+    // avoids collision when same email is used on same host with different ports)
+    let service = format!("InboxBridge:{}", account_id);
+    let keychain_user = format!("{}:{}", host, port);
+    if let Err(e) = keychain.store_password(&service, &keychain_user, password) {
         return error_response(id, "KEYCHAIN_UNAVAILABLE", &format!("Failed to store password: {}", e));
     }
-
-    // Create account
-    let account_id = format!("acc_{}", Uuid::new_v4().to_string().replace("-", "").chars().take(8).collect::<String>());
     let account = Account {
         id: account_id.clone(),
         label: label.to_string(),
@@ -189,9 +191,10 @@ async fn handle_account_remove(
         Err(e) => return error_response(id, "STORAGE_ERROR", &e),
     };
 
-    // Delete password from keychain
-    let service = format!("InboxBridge:{}", account.username);
-    if let Err(e) = keychain.delete_password(&service, &account.host) {
+    // Delete password from keychain (keyed by accountId, not username)
+    let service = format!("InboxBridge:{}", account.id);
+    let keychain_user = format!("{}:{}", account.host, account.port);
+    if let Err(e) = keychain.delete_password(&service, &keychain_user) {
         eprintln!("Warning: Failed to delete password from keychain: {}", e);
         // Continue anyway - don't fail the whole operation
     }
@@ -297,9 +300,10 @@ async fn handle_mail_fetch_recent(
         return error_response(id, code, msg);
     }
 
-    // Get password from keychain
-    let service = format!("InboxBridge:{}", account.username);
-    let password = match keychain.get_password(&service, &account.host) {
+    // Get password from keychain (keyed by accountId)
+    let service = format!("InboxBridge:{}", account.id);
+    let keychain_user = format!("{}:{}", account.host, account.port);
+    let password = match keychain.get_password(&service, &keychain_user) {
         Ok(pwd) => pwd,
         Err(e) => return error_response(id, "KEYCHAIN_UNAVAILABLE", &format!("Failed to retrieve password: {}", e)),
     };
