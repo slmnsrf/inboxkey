@@ -294,6 +294,11 @@ async fn handle_mail_fetch_recent(
         Err(e) => return error_response(id, "STORAGE_ERROR", &e),
     };
 
+    // Defense in depth: re-validate TLS policy in case accounts.json was hand-edited
+    if let Err((code, msg)) = validate_tls_policy(&account.host, account.tls) {
+        return error_response(id, code, msg);
+    }
+
     // Get password from keychain
     let service = format!("InboxBridge:{}", account.username);
     let password = match keychain.get_password(&service, &account.host) {
