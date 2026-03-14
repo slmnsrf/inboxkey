@@ -3,7 +3,7 @@
  * Implements IIMAPProvider interface for IMAP account management
  */
 
-import { getNativeClient } from './native-client';
+import { getNativeClient } from '../../native-messaging';
 import type { IIMAPProvider, EmailMessage, FetchOptions } from './types';
 
 export class IMAPBridgeProvider implements IIMAPProvider {
@@ -20,7 +20,7 @@ export class IMAPBridgeProvider implements IIMAPProvider {
     email: string;
     password: string;
   }): Promise<{ accountId: string }> {
-    const result = await this.client.call('account.add', {
+    const result = await this.client.call<{ accountId: string }>('account.add', {
       label: params.label,
       host: params.server,
       port: params.port,
@@ -39,7 +39,7 @@ export class IMAPBridgeProvider implements IIMAPProvider {
     email: string;
     password: string;
   }): Promise<{ success: boolean; roundTripMs: number }> {
-    const result = await this.client.call('account.test', {
+    const result = await this.client.call<{ success: boolean; roundTripMs?: number }>('account.test', {
       host: params.server,
       port: params.port,
       tls: params.tls,
@@ -62,13 +62,13 @@ export class IMAPBridgeProvider implements IIMAPProvider {
       ? Math.ceil((Date.now() - options.newerThan.getTime()) / 60000)
       : 10;
 
-    const result = await this.client.call('mail.fetchRecent', {
+    const result = await this.client.call<{ messages: Array<{ uid: number; date: string; from: string; subject: string; snippet: string }> }>('mail.fetchRecent', {
       accountId,
       sinceMinutes,
       limit: options?.maxResults || 15
     });
 
-    return result.messages.map((msg: any) => ({
+    return result.messages.map((msg) => ({
       uid: msg.uid,
       date: msg.date,
       from: msg.from,

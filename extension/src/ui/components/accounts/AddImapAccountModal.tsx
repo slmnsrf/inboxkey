@@ -8,7 +8,7 @@
 import React, { useEffect, useState } from 'react'
 import { t } from '@/lib/i18n'
 import { useFocusTrap, useEscapeKey } from '@/ui/hooks/useFocusTrap'
-import { getNativeClient } from '@/lib/providers/imap-bridge/native-client'
+import { getNativeClient } from '@/lib/native-messaging'
 import { INBOXBRIDGE_RELEASES_URL } from '@/lib/constants'
 import { ExternalLink } from 'lucide-react'
 import { CheckIcon } from '../icons/StatusIcons'
@@ -149,7 +149,7 @@ export function AddImapAccountModal({
 
     try {
       const client = getNativeClient()
-      const result = await client.call('account.test', {
+      const result = await client.call<{ success: boolean; error?: string }>('account.test', {
         host: server,
         port: parseInt(port, 10),
         tls: tlsEnabled,
@@ -161,7 +161,7 @@ export function AddImapAccountModal({
         setTestState('success')
 
         // If test succeeded, configure the account
-        const configResult = await client.call('account.add', {
+        const configResult = await client.call<{ accountId: string }>('account.add', {
           label: label || email,
           host: server,
           port: parseInt(port, 10),
