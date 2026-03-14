@@ -47,11 +47,9 @@ fn handle_ping(id: String) -> Response<Value> {
         }),
     };
 
-    Response {
-        v: 1,
-        id,
-        result: Some(serde_json::to_value(result).unwrap()),
-        error: None,
+    match serde_json::to_value(result) {
+        Ok(val) => Response { v: 1, id, result: Some(val), error: None },
+        Err(e) => error_response(id, "INTERNAL_ERROR", &format!("Serialization failed: {}", e)),
     }
 }
 
