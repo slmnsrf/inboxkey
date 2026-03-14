@@ -17,7 +17,7 @@ import { getAccountStatus } from './account-status'
 import { AccountSection } from './shared/AccountSection'
 import { AccountRow } from './shared/AccountRow'
 import { StatefulButton } from './shared/StatefulButton'
-import { getNativeClient } from '@/lib/providers/imap-bridge/native-client'
+import { getNativeClient } from '@/lib/native-messaging'
 
 interface ImapAccountCardProps {
   accounts: Array<{

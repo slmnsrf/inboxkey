@@ -603,7 +603,7 @@ function handleRemoveMailbox(msg: any, sendResponse: (response: any) => void) {
       // Also remove from InboxBridge native app if IMAP
       if (isImap && mailbox?.imapAccountId) {
         try {
-          const { getNativeClient } = await import('@/lib/providers/imap-bridge/native-client')
+          const { getNativeClient } = await import('@/lib/native-messaging')
           const client = getNativeClient()
           await client.call('account.remove', { accountId: mailbox.imapAccountId })
         } catch (e) {
