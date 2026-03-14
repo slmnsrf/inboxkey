@@ -146,13 +146,6 @@ async fn handle_account_add(
     // Generate account ID first -- needed for keychain key
     let account_id = format!("acc_{}", Uuid::new_v4().to_string().replace("-", "").chars().take(8).collect::<String>());
 
-    // Store password in keychain using accountId (unique per account,
-    // avoids collision when same email is used on same host with different ports)
-    let service = format!("InboxBridge:{}", account_id);
-    let keychain_user = format!("{}:{}", host, port);
-    if let Err(e) = keychain.store_password(&service, &keychain_user, password) {
-        return error_response(id, "KEYCHAIN_UNAVAILABLE", &format!("Failed to store password: {}", e));
-    }
     let account = Account {
         id: account_id.clone(),
         label: label.to_string(),
@@ -162,14 +155,27 @@ async fn handle_account_add(
         username: username.to_string(),
     };
 
-    match state.add_account(account) {
-        Ok(_) => Response {
-            v: 1,
-            id,
-            result: Some(json!({"accountId": account_id})),
-            error: None,
-        },
-        Err(e) => error_response(id, "STORAGE_ERROR", &e),
+    // Persist account to disk BEFORE storing password in keychain.
+    // This prevents orphaned keychain entries if the disk write fails.
+    if let Err(e) = state.add_account(account) {
+        return error_response(id, "STORAGE_ERROR", &e);
+    }
+
+    // Store password in keychain using accountId (unique per account,
+    // avoids collision when same email is used on same host with different ports)
+    let service = format!("InboxBridge:{}", account_id);
+    let keychain_user = format!("{}:{}", host, port);
+    if let Err(e) = keychain.store_password(&service, &keychain_user, password) {
+        // Rollback: remove the persisted account since we can't store its password
+        let _ = state.remove_account(&account_id);
+        return error_response(id, "KEYCHAIN_UNAVAILABLE", &format!("Failed to store password: {}", e));
+    }
+
+    Response {
+        v: 1,
+        id,
+        result: Some(json!({"accountId": account_id})),
+        error: None,
     }
 }
 
