@@ -369,6 +369,17 @@ export class NativeMessagingClient {
   }
 
   /**
+   * Alias for request() -- backward compatibility with UI consumers.
+   */
+  async call<T = unknown>(
+    method: string,
+    params?: unknown,
+    timeout?: number
+  ): Promise<T> {
+    return this.request<T>(method, params, timeout ? { timeout } : undefined)
+  }
+
+  /**
    * Health check (ping InboxBridge)
    *
    * Validates connection and retrieves bridge version/protocol info.
@@ -385,6 +396,32 @@ export class NativeMessagingClient {
    */
   async ping(): Promise<PingResult> {
     return this.request<PingResult>('bridge.ping')
+  }
+
+  /**
+   * Check if InboxBridge is installed and reachable.
+   * Returns install status, version, and keychain backend.
+   * Never throws -- returns { installed: false } on any error.
+   */
+  async checkInstallStatus(): Promise<{
+    installed: boolean
+    version?: string
+    keychain?: string
+  }> {
+    try {
+      const result = await this.request<{
+        installed: boolean
+        version: string
+        keychain: string
+      }>('installStatus.get', {}, { timeout: 5000 })
+      return {
+        installed: result.installed,
+        version: result.version,
+        keychain: result.keychain,
+      }
+    } catch {
+      return { installed: false }
+    }
   }
 
   /**

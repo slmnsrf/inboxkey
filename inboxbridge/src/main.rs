@@ -1,6 +1,5 @@
 mod protocol;
 mod dispatcher;
-mod errors;
 mod keychain;
 mod state;
 mod imap_client;
@@ -11,6 +10,19 @@ use std::sync::Arc;
 
 #[tokio::main]
 async fn main() {
+    // --cleanup: delete all keychain entries and exit (used by uninstall scripts)
+    if std::env::args().any(|a| a == "--cleanup") {
+        let state = state::AppState::new(None);
+        for account in state.list_accounts().unwrap_or_default() {
+            let service = format!("InboxBridge:{}", account.id);
+            let user = format!("{}:{}", account.host, account.port);
+            if let Ok(entry) = keyring::Entry::new(&service, &user) {
+                entry.delete_password().ok();
+            }
+        }
+        std::process::exit(0);
+    }
+
     if let Err(e) = run_async().await {
         eprintln!("InboxBridge error: {}", e);
         std::process::exit(1);
@@ -18,7 +30,7 @@ async fn main() {
 }
 
 async fn run_async() -> anyhow::Result<()> {
-    let state = Arc::new(state::AppState::new());
+    let state = Arc::new(state::AppState::new(None));
     let keychain = Arc::new(keychain::KeychainManager::new());
 
     let mut stdin = tokio::io::stdin();

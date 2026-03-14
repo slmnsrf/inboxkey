@@ -1,5 +1,5 @@
 use crate::protocol::{Request, Response, RpcError, PingResult};
-use crate::state::{Account, AppState, Watch};
+use crate::state::{Account, AppState};
 use crate::keychain::KeychainManager;
 use crate::imap_client::ImapClient;
 use serde_json::{json, Value};
@@ -20,8 +20,8 @@ pub async fn dispatch(
         "account.remove" => handle_account_remove(id, request.params, state, keychain).await,
         "account.test" => handle_account_test(id, request.params).await,
         "mail.fetchRecent" => handle_mail_fetch_recent(id, request.params, state, keychain).await,
-        "watch.start" => handle_watch_start(id, request.params, state).await,
-        "watch.stop" => handle_watch_stop(id, request.params, state).await,
+        "watch.start" => error_response(id, "UNIMPLEMENTED", "watch.start is not yet implemented. Use manual sync via mail.fetchRecent."),
+        "watch.stop" => error_response(id, "UNIMPLEMENTED", "watch.stop is not yet implemented."),
         _ => Response {
             v: 1,
             id,
@@ -47,11 +47,9 @@ fn handle_ping(id: String) -> Response<Value> {
         }),
     };
 
-    Response {
-        v: 1,
-        id,
-        result: Some(serde_json::to_value(result).unwrap()),
-        error: None,
+    match serde_json::to_value(result) {
+        Ok(val) => Response { v: 1, id, result: Some(val), error: None },
+        Err(e) => error_response(id, "INTERNAL_ERROR", &format!("Serialization failed: {}", e)),
     }
 }
 
@@ -101,6 +99,27 @@ fn error_response(id: String, code: &str, message: &str) -> Response<Value> {
     }
 }
 
+/// Returns true when the host resolves to a loopback address.
+/// Plaintext IMAP (tls=false) sends credentials in cleartext, so it must
+/// only be allowed for local bridges (e.g. ProtonMail Bridge on 127.0.0.1).
+fn is_loopback_host(host: &str) -> bool {
+    matches!(host, "127.0.0.1" | "::1" | "localhost")
+}
+
+/// Enforces the security policy: plaintext connections are restricted to
+/// loopback addresses only. Returns an (error_code, message) tuple on
+/// violation so the caller can build the RPC error.
+fn validate_tls_policy(host: &str, tls: bool) -> Result<(), (&'static str, &'static str)> {
+    if !tls && !is_loopback_host(host) {
+        return Err((
+            "INVALID_PARAMS",
+            "Plaintext connections are only allowed to localhost/127.0.0.1 (local bridges). \
+             Enable TLS for remote servers.",
+        ));
+    }
+    Ok(())
+}
+
 async fn handle_account_add(
     id: String,
     params: Value,
@@ -113,29 +132,44 @@ async fn handle_account_add(
     let port = params["port"].as_u64().unwrap_or(993) as u16;
     let username = params["username"].as_str().unwrap_or_default();
     let password = params["password"].as_str().unwrap_or_default();
+    let tls = params["tls"].as_bool().unwrap_or(true);
 
     if host.is_empty() || username.is_empty() || password.is_empty() {
         return error_response(id, "INVALID_PARAMS", "Missing required parameters: host, username, or password");
     }
 
-    // Store password in keychain
-    let service = format!("InboxBridge:{}", username);
-    if let Err(e) = keychain.store_password(&service, host, password) {
-        return error_response(id, "KEYCHAIN_UNAVAILABLE", &format!("Failed to store password: {}", e));
+    // Loopback guard: plaintext only allowed on localhost
+    if let Err((code, msg)) = validate_tls_policy(host, tls) {
+        return error_response(id, code, msg);
     }
 
-    // Create account
+    // Generate account ID first -- needed for keychain key
     let account_id = format!("acc_{}", Uuid::new_v4().to_string().replace("-", "").chars().take(8).collect::<String>());
+
     let account = Account {
         id: account_id.clone(),
         label: label.to_string(),
         host: host.to_string(),
         port,
-        tls: true,
+        tls,
         username: username.to_string(),
     };
 
-    state.add_account(account).await;
+    // Persist account to disk BEFORE storing password in keychain.
+    // This prevents orphaned keychain entries if the disk write fails.
+    if let Err(e) = state.add_account(account) {
+        return error_response(id, "STORAGE_ERROR", &e);
+    }
+
+    // Store password in keychain using accountId (unique per account,
+    // avoids collision when same email is used on same host with different ports)
+    let service = format!("InboxBridge:{}", account_id);
+    let keychain_user = format!("{}:{}", host, port);
+    if let Err(e) = keychain.store_password(&service, &keychain_user, password) {
+        // Rollback: remove the persisted account since we can't store its password
+        let _ = state.remove_account(&account_id);
+        return error_response(id, "KEYCHAIN_UNAVAILABLE", &format!("Failed to store password: {}", e));
+    }
 
     Response {
         v: 1,
@@ -157,26 +191,29 @@ async fn handle_account_remove(
     };
 
     // Get account to retrieve username for keychain deletion
-    let account = match state.get_account(account_id).await {
-        Some(acc) => acc,
-        None => return error_response(id, "ACCOUNT_NOT_FOUND", &format!("Account {} not found", account_id)),
+    let account = match state.get_account(account_id) {
+        Ok(Some(acct)) => acct,
+        Ok(None) => return error_response(id, "ACCOUNT_NOT_FOUND", &format!("Account {} not found", account_id)),
+        Err(e) => return error_response(id, "STORAGE_ERROR", &e),
     };
 
-    // Delete password from keychain
-    let service = format!("InboxBridge:{}", account.username);
-    if let Err(e) = keychain.delete_password(&service, &account.host) {
+    // Delete password from keychain (keyed by accountId, not username)
+    let service = format!("InboxBridge:{}", account.id);
+    let keychain_user = format!("{}:{}", account.host, account.port);
+    if let Err(e) = keychain.delete_password(&service, &keychain_user) {
         eprintln!("Warning: Failed to delete password from keychain: {}", e);
         // Continue anyway - don't fail the whole operation
     }
 
     // Remove account from state
-    state.remove_account(account_id).await;
-
-    Response {
-        v: 1,
-        id,
-        result: Some(json!({"success": true})),
-        error: None,
+    match state.remove_account(account_id) {
+        Ok(_) => Response {
+            v: 1,
+            id,
+            result: Some(json!({"success": true})),
+            error: None,
+        },
+        Err(e) => error_response(id, "STORAGE_ERROR", &e),
     }
 }
 
@@ -188,15 +225,21 @@ async fn handle_account_test(
     let port = params["port"].as_u64().unwrap_or(993) as u16;
     let username = params["username"].as_str().unwrap_or_default();
     let password = params["password"].as_str().unwrap_or_default();
+    let tls = params["tls"].as_bool().unwrap_or(true);
 
     if host.is_empty() || username.is_empty() || password.is_empty() {
         return error_response(id, "INVALID_PARAMS", "Missing required parameters: host, username, or password");
     }
 
+    // Loopback guard: plaintext only allowed on localhost
+    if let Err((code, msg)) = validate_tls_policy(host, tls) {
+        return error_response(id, code, msg);
+    }
+
     let mut client = ImapClient::new();
 
     // Attempt connection
-    match client.connect(host, port, username, password).await {
+    match client.connect(host, port, username, password, tls).await {
         Ok(_) => {
             // Test round-trip time
             let (success, round_trip_ms) = match client.test_connection().await {
@@ -252,21 +295,28 @@ async fn handle_mail_fetch_recent(
     let limit = params["limit"].as_u64().unwrap_or(15) as usize;
 
     // Get account
-    let account = match state.get_account(account_id).await {
-        Some(acc) => acc,
-        None => return error_response(id, "ACCOUNT_NOT_FOUND", &format!("Account {} not found", account_id)),
+    let account = match state.get_account(account_id) {
+        Ok(Some(acct)) => acct,
+        Ok(None) => return error_response(id, "ACCOUNT_NOT_FOUND", &format!("Account {} not found", account_id)),
+        Err(e) => return error_response(id, "STORAGE_ERROR", &e),
     };
 
-    // Get password from keychain
-    let service = format!("InboxBridge:{}", account.username);
-    let password = match keychain.get_password(&service, &account.host) {
+    // Defense in depth: re-validate TLS policy in case accounts.json was hand-edited
+    if let Err((code, msg)) = validate_tls_policy(&account.host, account.tls) {
+        return error_response(id, code, msg);
+    }
+
+    // Get password from keychain (keyed by accountId)
+    let service = format!("InboxBridge:{}", account.id);
+    let keychain_user = format!("{}:{}", account.host, account.port);
+    let password = match keychain.get_password(&service, &keychain_user) {
         Ok(pwd) => pwd,
         Err(e) => return error_response(id, "KEYCHAIN_UNAVAILABLE", &format!("Failed to retrieve password: {}", e)),
     };
 
     // Connect to IMAP
     let mut client = ImapClient::new();
-    if let Err(e) = client.connect(&account.host, account.port, &account.username, &password).await {
+    if let Err(e) = client.connect(&account.host, account.port, &account.username, &password, account.tls).await {
         let error_msg = e.to_string();
         let error_code = if error_msg.contains("authentication") || error_msg.contains("login") {
             "IMAP_AUTH"
@@ -294,88 +344,5 @@ async fn handle_mail_fetch_recent(
         id,
         result: Some(json!({"messages": messages})),
         error: None,
-    }
-}
-
-async fn handle_watch_start(
-    id: String,
-    params: Value,
-    state: Arc<AppState>,
-) -> Response<Value> {
-    let account_id = match params["accountId"].as_str() {
-        Some(id) => id,
-        None => return error_response(id, "INVALID_PARAMS", "Missing accountId parameter"),
-    };
-
-    // Verify account exists
-    if state.get_account(account_id).await.is_none() {
-        return error_response(id, "ACCOUNT_NOT_FOUND", &format!("Account {} not found", account_id));
-    }
-
-    // Parse filters
-    let newer_than = params["filters"]["newerThan"].as_str().unwrap_or("10m");
-    let since_minutes = parse_duration_to_minutes(newer_than);
-
-    // Create watch
-    let watch_id = format!("watch_{}", Uuid::new_v4().to_string().replace("-", "").chars().take(8).collect::<String>());
-    let watch = Watch {
-        id: watch_id.clone(),
-        account_id: account_id.to_string(),
-        since_minutes,
-    };
-
-    state.add_watch(watch).await;
-
-    // TODO: Start background polling task (Phase 3)
-    // For MVP, watch is just recorded - polling not yet implemented
-
-    Response {
-        v: 1,
-        id,
-        result: Some(json!({"watchId": watch_id})),
-        error: None,
-    }
-}
-
-async fn handle_watch_stop(
-    id: String,
-    params: Value,
-    state: Arc<AppState>,
-) -> Response<Value> {
-    let watch_id = match params["watchId"].as_str() {
-        Some(id) => id,
-        None => return error_response(id, "INVALID_PARAMS", "Missing watchId parameter"),
-    };
-
-    // Remove watch
-    let removed = state.remove_watch(watch_id).await;
-
-    if !removed {
-        return error_response(id, "WATCH_NOT_FOUND", &format!("Watch {} not found", watch_id));
-    }
-
-    // TODO: Stop background polling task (Phase 3)
-
-    Response {
-        v: 1,
-        id,
-        result: Some(json!({"success": true})),
-        error: None,
-    }
-}
-
-fn parse_duration_to_minutes(duration: &str) -> u32 {
-    // Simple parser for durations like "10m", "1h", "30s"
-    let duration = duration.trim();
-
-    if duration.ends_with('m') {
-        duration.trim_end_matches('m').parse::<u32>().unwrap_or(10)
-    } else if duration.ends_with('h') {
-        duration.trim_end_matches('h').parse::<u32>().unwrap_or(1) * 60
-    } else if duration.ends_with('s') {
-        let seconds = duration.trim_end_matches('s').parse::<u32>().unwrap_or(600);
-        (seconds + 59) / 60 // Round up to minutes
-    } else {
-        10 // Default to 10 minutes
     }
 }
