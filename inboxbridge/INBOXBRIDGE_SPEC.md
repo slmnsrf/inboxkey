@@ -310,6 +310,8 @@ async fn fetch_message(client: &mut Client<TlsStream>, msg_id: u32) -> Result<Em
 
 ## 6. JSON Protocol Specification
 
+> **Note:** This section documents an early design-phase API (`connect`, `listRecent`, `getMessage`, `disconnect`). The actual implementation uses a versioned RPC protocol with different method names (`bridge.ping`, `account.add`, `account.test`, `mail.fetchRecent`, etc.). See **[PROTOCOL.md](PROTOCOL.md)** for the authoritative, up-to-date API reference.
+
 ### 6.1 Message Types (Extension → Native)
 
 **Connect Request**
