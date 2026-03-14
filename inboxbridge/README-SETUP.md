@@ -196,23 +196,36 @@ sudo pacman -S pkg-config openssl gnome-keyring libsecret
 
 ### Test 1: Bridge.Ping (Command Line)
 
-Test the binary directly:
+Test the binary directly. Native Messaging requires **4-byte length-prefixed framing** -- raw `echo` piping will not work. Use the Python test harness:
+
+```bash
+# Run from the inboxbridge/ directory
+python3 test_native_messaging.py
+```
+
+Or use a one-liner with Python to send a framed request:
 
 **macOS/Linux:**
 ```bash
-echo '{"v":1,"id":"test-1","method":"bridge.ping","params":{}}' | ~/.local/bin/inboxbridge
-# or (macOS)
-echo '{"v":1,"id":"test-1","method":"bridge.ping","params":{}}' | ~/Library/Application\ Support/InboxBridge/inboxbridge
+python3 -c "
+import struct, json, subprocess
+req = json.dumps({'v':1,'id':'t','method':'bridge.ping','params':{}}).encode()
+p = subprocess.run(['$HOME/.local/bin/inboxbridge'], input=struct.pack('<I', len(req)) + req,
+    capture_output=True)
+if len(p.stdout) > 4:
+    length = struct.unpack('<I', p.stdout[:4])[0]
+    print(p.stdout[4:4+length].decode())
+"
 ```
 
 **Windows (PowerShell):**
 ```powershell
-echo '{"v":1,"id":"test-1","method":"bridge.ping","params":{}}' | & "C:\Program Files\InboxBridge\inboxbridge.exe"
+python -c "import struct,json,subprocess; req=json.dumps({'v':1,'id':'t','method':'bridge.ping','params':{}}).encode(); p=subprocess.run(['C:/Program Files/InboxBridge/inboxbridge.exe'],input=struct.pack('<I',len(req))+req,capture_output=True); print(p.stdout[4:4+struct.unpack('<I',p.stdout[:4])[0]].decode()) if len(p.stdout)>4 else print('No response')"
 ```
 
 **Expected Output:**
 ```json
-{"v":1,"id":"test-1","result":{"ok":true,"version":"1.0.0","protocolVersion":1}}
+{"v":1,"id":"t","result":{"ok":true,"version":"1.0.0","protocolVersion":1}}
 ```
 
 ### Test 2: Extension Connection
@@ -393,6 +406,9 @@ nc -zv imap.gmail.com 993  # Should show "succeeded"
 
 **PowerShell (as Administrator):**
 ```powershell
+# Clean up stored passwords from OS keychain
+& "C:\Program Files\InboxBridge\inboxbridge.exe" --cleanup
+
 # Remove registry key
 Remove-Item "HKCU:\Software\Google\Chrome\NativeMessagingHosts\com.inboxkey.bridge" -Force
 
@@ -403,6 +419,9 @@ Remove-Item "C:\Program Files\InboxBridge" -Recurse -Force
 ### macOS
 
 ```bash
+# Clean up stored passwords from OS keychain
+~/Library/Application\ Support/InboxBridge/inboxbridge --cleanup
+
 rm -rf ~/Library/Application\ Support/InboxBridge
 rm ~/Library/Application\ Support/Google/Chrome/NativeMessagingHosts/com.inboxkey.bridge.json
 ```
@@ -410,6 +429,9 @@ rm ~/Library/Application\ Support/Google/Chrome/NativeMessagingHosts/com.inboxke
 ### Linux
 
 ```bash
+# Clean up stored passwords from OS keychain
+~/.local/bin/inboxbridge --cleanup
+
 rm ~/.local/bin/inboxbridge
 rm ~/.config/google-chrome/NativeMessagingHosts/com.inboxkey.bridge.json
 rm ~/.config/chromium/NativeMessagingHosts/com.inboxkey.bridge.json
@@ -470,15 +492,10 @@ A: Not yet. Firefox uses a different Native Messaging location. Support planned 
 ./verify-installation.sh
 ```
 
-**Manual Test:**
+**Manual Test (requires length-prefixed framing):**
 ```bash
-# Create test request
-cat > /tmp/test-request.json <<EOF
-{"v":1,"id":"test","method":"bridge.ping","params":{}}
-EOF
-
-# Test binary
-cat /tmp/test-request.json | /path/to/inboxbridge
+# Use the included Python test harness:
+python3 test_native_messaging.py
 ```
 
 ---

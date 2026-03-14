@@ -10,7 +10,8 @@ import subprocess
 import sys
 from pathlib import Path
 
-BINARY_PATH = Path(__file__).parent / "target" / "release" / "inboxbridge"
+_EXE_SUFFIX = ".exe" if sys.platform == "win32" else ""
+BINARY_PATH = Path(__file__).parent / "target" / "release" / f"inboxbridge{_EXE_SUFFIX}"
 
 
 def send_request(request_data):
