@@ -173,10 +173,22 @@ InboxKey is a Manifest V3 Chrome/Chromium extension that keeps verification-code
 
 **Domain Control:** Per-domain toggle via eTLD+1 extraction (`lib/utils/domain.ts`)
 
+### Pre-Flight Guardrails
+
+Between field detection and session start, 4 additive guardrails prevent unnecessary email polling:
+
+1. **No-mailbox check:** Skip if zero mailboxes connected (inside `WatchSession.start()`)
+2. **Focus gate:** Wait for field focus before triggering; supports split-input groups (in `contents/index.ts`)
+3. **Email context check:** Scan nearby DOM for email-related signals in 21 languages; bypass for OTP autocomplete and split-input groups (inside `WatchSession.start()`, uses `email-context-guard.ts` which reuses `EMAIL_PATTERNS` from `signal-classifier.ts`)
+4. **Abort on disconnect:** Cancel background session when content script port disconnects (in `background/index.ts`)
+
+All guardrails are failure-open (proceed on error) and always-on (no user settings).
+
 ### Watch Session Flow
 
 ```
-Field Detected → Port Connection (keep-alive 8s) → START_SESSION →
+Field Detected → Focus Gate → Pre-flight Checks (mailbox, email context) →
+Port Connection (keep-alive 8s) → START_SESSION →
 Background Polling (0s, 5s, 10s) → extraction-core → V2 Matcher →
 SESSION_CODE_FOUND → Autofill (validated) → Complete
 ```
