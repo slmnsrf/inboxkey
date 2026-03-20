@@ -61,7 +61,15 @@ export function hasEmailContext(field: HTMLInputElement): boolean {
  * Falls back to N levels up if no semantic container found.
  */
 function findScanContainer(field: HTMLInputElement): HTMLElement | null {
+  // Handle direct child of shadow root: parentElement is null but
+  // the field is inside a shadow DOM. Jump to the host element.
   let node: HTMLElement | null = field.parentElement
+  if (!node) {
+    const root = field.getRootNode()
+    if (root instanceof ShadowRoot && root.host instanceof HTMLElement) {
+      node = root.host
+    }
+  }
   let depth = 0
 
   while (node && node !== document.body) {

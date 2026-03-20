@@ -150,8 +150,13 @@ export function clearProcessedFields(): void {
         onSessionStarted: (_sessionId: string) => {
           // Session started
         },
-        onCodeFound: (result) => {
-          // Code value intentionally not logged (privacy)
+        onCodeFound: (_result) => {
+          // Code found (any path: autofill, clipboard, fallback).
+          // Clean up focus gate so the field can be re-detected on
+          // SPA resend/retry flows. This fires before autofill attempt,
+          // covering all completion paths including clipboard-only mode
+          // and autofill failure fallback.
+          cleanupFocusGate()
         },
         onAutofill: async (result, targetField) => {
           // Try to autofill the code
@@ -159,9 +164,6 @@ export function clearProcessedFields(): void {
             code: result.code,
             field: targetField,
           })
-          if (success) {
-            cleanupFocusGate()
-          }
           return success
         },
         onTimeout: () => {
