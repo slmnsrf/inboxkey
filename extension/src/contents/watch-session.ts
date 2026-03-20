@@ -15,6 +15,8 @@ import { StorageFactory } from '@/lib/storage/storage-factory'
 import { findAndClickSubmitButton } from './autofill'
 import { isBlacklisted, addBlacklistedUrl } from "@/lib/utils/blacklist"
 import { detectSplitInputGroup } from "@/lib/detection/split-input-detector"
+import { hasEmailContext } from '@/lib/detection/email-context-guard'
+import { AUTOCOMPLETE_VALUES } from '@/lib/detection/patterns'
 
 interface SessionCodeResult {
   code: string
@@ -26,6 +28,7 @@ interface WatchSessionCallbacks {
   onCodeFound: (result: SessionCodeResult) => void
   onTimeout?: () => void
   onCanceled?: () => void
+  onVetoed?: () => void  // Called when a pre-flight guardrail blocks session start
   onSessionStarted?: (sessionId: string) => void
   onAutofill?: (result: SessionCodeResult, field: HTMLInputElement) => Promise<boolean>
 }
@@ -76,6 +79,35 @@ export class WatchSession {
       const enabled = await isDomainEnabled(domain)
       if (!enabled) {
         console.log("[WatchSession] Domain is disabled, skipping watch session")
+        return
+      }
+    }
+
+    // GUARDRAIL 1: No-mailbox check
+    // Skip silently if no mailboxes are connected (failure-open on error)
+    try {
+      const guardStorage = await StorageFactory.create()
+      const mailboxes = await guardStorage.getMailboxes()
+      if (mailboxes.length === 0) {
+        console.log("[WatchSession] No mailboxes connected, skipping watch session")
+        this.callbacks.onVetoed?.()
+        return
+      }
+    } catch (error) {
+      console.warn("[WatchSession] Failed to check mailboxes, proceeding (failure-open):", error)
+    }
+
+    // GUARDRAIL 3: Email context check
+    // Bypass for OTP autocomplete or split-input groups (unambiguous signals)
+    const autocomplete = this.field.getAttribute('autocomplete')?.toLowerCase()
+    const isOtpAutocomplete = autocomplete != null &&
+      (AUTOCOMPLETE_VALUES as readonly string[]).includes(autocomplete)
+    const isSplitInput = detectSplitInputGroup(this.field) !== null
+
+    if (!isOtpAutocomplete && !isSplitInput) {
+      if (!hasEmailContext(this.field)) {
+        console.log("[WatchSession] No email context near field, skipping watch session")
+        this.callbacks.onVetoed?.()
         return
       }
     }
