@@ -126,6 +126,22 @@ export function clearProcessedFields(): void {
       return
     }
 
+    // Shared cleanup: clear processed fields + focus gate state.
+    // Used by all session-end paths (autofill, timeout, cancel, veto)
+    // so the field can be re-detected on SPA resend/retry flows.
+    function cleanupFocusGate(): void {
+      clearProcessedFields()
+      const entry = focusGateRegistry.get(representativeField)
+      if (entry) {
+        for (const input of entry.inputs) {
+          input.removeAttribute('data-inboxkey-focus-gated')
+          input.removeEventListener('focus', entry.handler)
+        }
+        focusGateRegistry.delete(representativeField)
+      }
+      representativeField.removeAttribute('data-inboxkey-focus-gated')
+    }
+
     // Start watch session on representative field
     startWatch(
       representativeField,
@@ -144,30 +160,18 @@ export function clearProcessedFields(): void {
             field: targetField,
           })
           if (success) {
-            clearProcessedFields()
+            cleanupFocusGate()
           }
           return success
         },
         onTimeout: () => {
-          clearProcessedFields()
+          cleanupFocusGate()
         },
         onCanceled: () => {
-          clearProcessedFields()
+          cleanupFocusGate()
         },
         onVetoed: () => {
-          // Clean up so field can be re-detected on next page load / SPA nav
-          clearProcessedFields()
-
-          // Remove focus gate markers and listeners from all group members
-          const entry = focusGateRegistry.get(representativeField)
-          if (entry) {
-            for (const input of entry.inputs) {
-              input.removeAttribute('data-inboxkey-focus-gated')
-              input.removeEventListener('focus', entry.handler)
-            }
-            focusGateRegistry.delete(representativeField)
-          }
-          representativeField.removeAttribute('data-inboxkey-focus-gated')
+          cleanupFocusGate()
         },
       }
     )

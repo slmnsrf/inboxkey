@@ -57,6 +57,7 @@ export function hasEmailContext(field: HTMLInputElement): boolean {
 
 /**
  * Walk up from field to nearest semantic container.
+ * Crosses shadow DOM boundaries via getRootNode().host.
  * Falls back to N levels up if no semantic container found.
  */
 function findScanContainer(field: HTMLInputElement): HTMLElement | null {
@@ -71,7 +72,18 @@ function findScanContainer(field: HTMLInputElement): HTMLElement | null {
     if (depth >= FALLBACK_DEPTH) {
       return node
     }
-    node = node.parentElement
+    const next = node.parentElement
+    if (next) {
+      node = next
+    } else {
+      // Cross shadow DOM boundary: if inside a shadow root, jump to the host element
+      const root = node.getRootNode()
+      if (root instanceof ShadowRoot && root.host instanceof HTMLElement) {
+        node = root.host
+      } else {
+        break
+      }
+    }
   }
 
   return node // document.body or null
