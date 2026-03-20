@@ -538,7 +538,15 @@ export function startWatch(
     activeWatch.stop()
   }
 
-  const session = new WatchSession(field, detectionResult, callbacks)
+  const session = new WatchSession(field, detectionResult, {
+    ...callbacks,
+    onVetoed: () => {
+      if (activeWatch === session) {
+        activeWatch = null
+      }
+      callbacks.onVetoed?.()
+    },
+  })
   activeWatch = session
   lastSessionCreated = now
   void session.start()
