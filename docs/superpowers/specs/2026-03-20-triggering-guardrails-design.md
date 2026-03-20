@@ -1,7 +1,7 @@
 # Email Check Triggering Guardrails
 
 > **Date:** 2026-03-20
-> **Status:** Approved (v4 -- revised per Codex review #3)
+> **Status:** Approved (v5 -- revised per Codex review #4)
 > **Scope:** 4 additive guardrails on the email check triggering algorithm
 
 ## Problem
@@ -26,9 +26,9 @@ Existing system (unchanged):
 New guardrail layer (additive):
   1. Has connected mailboxes?       No -> stop silently, clean up
   2. Has field received focus?       No -> wait for focus (any input in group)
-  3. Email context near field?       Tier 1 or split-input -> bypass
-                                     Tier 2 (non-split) + no email context -> stop, clean up
-                                     Tier 2 (non-split) + email context -> proceed
+  3. Email context near field?       High-certainty signal -> bypass
+                                     Otherwise + no email context -> stop, clean up
+                                     Otherwise + email context -> proceed
   4. (Session runs, background polls)
   5. Port disconnects?               -> cancel session immediately
 ```
@@ -40,7 +40,8 @@ Guardrails 1 and 3 run inside `WatchSession.start()`. If either vetoes, `.start(
 **Fix:** When `.start()` returns early due to a guardrail veto, it must signal the caller. `startWatch()` must handle this by:
 - Nulling `activeWatch` (so a future session can start)
 - Calling `clearProcessedFields()` (so the field can be re-detected if conditions change, e.g., user connects a mailbox and reloads)
-- Removing the `data-inboxkey-focus-gated` attribute from the field (so the focus gate can re-register its listener if the field is re-detected)
+- Removing the `data-inboxkey-focus-gated` attribute from the representative field AND all group member inputs (so the focus gate can re-register listeners if the field is re-detected)
+- For split-input groups: removing the remaining `{ once: true }` focus listeners from unfired group members. Without this, a re-detect adds a second set of listeners, and the next focus fires both old and new, causing duplicate `startWatch()` calls. Implementation: store the group inputs alongside the representative at focus-gate registration time, so cleanup can iterate them.
 
 Implementation: `.start()` returns a boolean or calls a `onVetoed` callback. `startWatch()` checks the result and unwinds if vetoed.
 
@@ -86,15 +87,26 @@ Implementation: `.start()` returns a boolean or calls a `onVetoed` callback. `st
 
 **Where:** Inside `WatchSession.start()` in `watch-session.ts`, after the domain-enabled check, before `chrome.runtime.connect()` opens the port. The `WatchSession` object is constructed in `startWatch()`, but its side-effects only begin on `.start()`. This gate blocks `.start()` from proceeding (triggers blocked-start cleanup if vetoed).
 
-**Bypass criteria (no email context scan needed):**
-- **Tier 1 detections:** Tier 1 matches high-certainty signals like `autocomplete="one-time-code"` and explicit OTP attributes. These are almost certainly verification inputs regardless of surrounding text.
-- **Split-input detections (any tier):** Split-input groups (6 boxes, maxLength=1) are scored in Tier 2 (`tier2-deep.ts:495-502`, +75 points) but are high-certainty OTP patterns. If the detection signals include `split-input` in the reason string, bypass the email context check regardless of tier.
+**Bypass criteria (no email context scan needed).** Not all detections are equally certain. Bypass only for signals that are genuinely unambiguous:
+
+1. **`autocomplete="one-time-code"`** (Tier 1, confidence 1.0): The HTML standard's explicit OTP signal. Unambiguous.
+2. **Exact name/id match** (Tier 1, confidence 0.95): `name="otp"`, `id="code"`, etc. The `ATTRIBUTE_PATTERNS.exact` regex (`^(code|otp|token|pin|mfa|2fa|twofa|verify|verification)$`). These are explicit developer intent.
+3. **Split-input group** (Tier 2, scored +75): 6 boxes with maxLength=1. High-certainty OTP widget pattern. Detected via `detectSplitInputGroup(this.field)` called directly in `WatchSession.start()` (not by parsing the debug `reason` string from `DetectionResult.signals`, which is unstable text).
+
+**Does NOT bypass:**
+- Tier 1 `contains` matches (confidence 0.9): `name="activation_code"`, `name="reservation_code"`, `name="unlock_code"` all match the broad `code|otp|verify|pin|mfa|2fa|twofa|auth|sms` pattern. These are exactly the ambiguous cases the email context check is designed to catch.
+- Tier 1 `inputmode+maxlength` matches (confidence 0.85): A numeric input with maxLength 4-8 is suggestive but not conclusive.
+- All Tier 2 non-split detections: label/placeholder/form-context heuristics.
+
+**How to determine bypass:** `WatchSession` already receives `DetectionResult` (which includes `tier`, `confidence`, and `signals`). The bypass check uses:
+- `confidence >= 95` (covers `autocomplete` at 100 and exact match at 95, excludes `contains` at 90 and `inputmode` at 85). Note: confidence is 0-100 scale in `DetectionResult`.
+- OR `detectSplitInputGroup(this.field) !== null` (direct runtime check, not string parsing).
 
 **Rule:**
-- Tier 1 OR split-input signal present: **bypass** the email context check entirely.
-- Tier 2 (non-split-input): run the email context scan. No email context found = veto (triggers blocked-start cleanup).
+- Confidence >= 95 OR split-input group: **bypass** the email context check.
+- All other detections: run the email context scan. No email context found = veto (triggers blocked-start cleanup).
 
-This preserves all high-certainty detection paths (Tier 1 attributes AND Tier 2 split-input widgets) while adding a safety net for the remaining ambiguous Tier 2 detections that could be promo codes or gift card inputs.
+This narrows the bypass to truly unambiguous signals while catching the broad Tier 1 `contains` matches and all ambiguous Tier 2 detections that could be promo codes or gift card inputs.
 
 **Scan scope:** Walk up from the detected field to its nearest semantic container (`<form>`, `<main>`, `<section>`, `<article>`). Scan text content within that container. Exclude `<header>`, `<footer>`, `<nav>`, and elements with ARIA roles `navigation`, `banner`, `contentinfo`. If no semantic container is found, fall back to scanning 5 DOM levels up from the field.
 
@@ -110,7 +122,7 @@ This preserves all high-certainty detection paths (Tier 1 attributes AND Tier 2 
 
 **Implementation:** New module `lib/detection/email-context-guard.ts` containing the scanning logic. Imports `EMAIL_PATTERNS` from `signal-classifier.ts` (which must be exported). No duplicate keyword list. The module's only job is the scoped DOM scan and signal matching.
 
-**Rationale:** Promo code pages, gift card inputs, and serial number fields pass the Tier 2 label/placeholder heuristics but have no email context. This gate eliminates those false triggers while preserving all Tier 1, split-input, and email-context-positive Tier 2 detections.
+**Rationale:** Promo code pages, gift card inputs, and serial number fields pass the broad Tier 1 `contains` matches and Tier 2 label/placeholder heuristics but have no email context. This gate eliminates those false triggers while preserving high-certainty signals (`autocomplete`, exact name/id, split-input) and all email-context-positive detections.
 
 ### Guardrail 4: Abort on Disconnect
 
@@ -134,8 +146,8 @@ All changes are additive. Existing files modified:
 
 | File | Change |
 |------|--------|
-| `extension/src/contents/index.ts` | Initialize `globalProcessedRepresentatives` before `detectExistingFields()`. Replace direct `handleDetectedField()` calls with focus-gated wrapper. Attach focus listeners to all group members for split-input groups. Add representative field to `globalProcessedRepresentatives` at detection time. Handle blocked-start cleanup from `startWatch()` (including removing `data-inboxkey-focus-gated`). |
-| `extension/src/contents/watch-session.ts` | Add no-mailbox check + email context check (tier/split-input-gated) inside `WatchSession.start()`, before port connection. Signal caller on veto so `startWatch()` can unwind `activeWatch` and processed fields. Pass `DetectionResult` to `WatchSession` so `.start()` can check `tier` and `signals`. |
+| `extension/src/contents/index.ts` | Initialize `globalProcessedRepresentatives` before `detectExistingFields()`. Replace direct `handleDetectedField()` calls with focus-gated wrapper. Attach focus listeners to all group members for split-input groups (store group refs for cleanup). Add representative field to `globalProcessedRepresentatives` at detection time. Handle blocked-start cleanup from `startWatch()` (including removing `data-inboxkey-focus-gated` from representative AND group members, removing unfired focus listeners from group members). |
+| `extension/src/contents/watch-session.ts` | Add no-mailbox check + email context check (confidence + split-input gated) inside `WatchSession.start()`, before port connection. Signal caller on veto so `startWatch()` can unwind `activeWatch`, processed fields, and group listeners. Pass `DetectionResult` to `WatchSession` so `.start()` can check `confidence`. Call `detectSplitInputGroup(field)` directly for split-input bypass. |
 | `extension/src/lib/detection/signal-classifier.ts` | Export `EMAIL_PATTERNS` (currently module-private `const`). |
 | `extension/src/background/index.ts` | Add unconditional `cancelSession()` in `port.onDisconnect` handler when `context.sessionId` exists. |
 
@@ -156,11 +168,13 @@ Each guardrail is independently testable:
    - Verify representative field is in `globalProcessedRepresentatives` even before focus.
    - Verify `globalProcessedRepresentatives` is available during `detectExistingFields()` (init order).
    - Test `autofocus` attribute scenario.
-3. **Email context (tier/split-input-gated):**
-   - Tier 1 + no email context: verify session proceeds (bypass).
-   - Tier 2 split-input + no email context: verify session proceeds (bypass).
-   - Tier 2 non-split + no email context (e.g., "Enter promo code"): verify session blocked, cleanup runs.
-   - Tier 2 non-split + email context present: verify session proceeds.
+3. **Email context (confidence + split-input gated):**
+   - `autocomplete="one-time-code"` (confidence 100) + no email context: verify session proceeds (bypass).
+   - Exact name/id `name="otp"` (confidence 95) + no email context: verify session proceeds (bypass).
+   - Split-input group + no email context: verify session proceeds (bypass via `detectSplitInputGroup`).
+   - Contains match `name="activation_code"` (confidence 90) + no email context: verify session **blocked**, cleanup runs (including group listener removal).
+   - `inputmode+maxlength` match (confidence 85) + no email context: verify session **blocked**.
+   - Tier 2 label match + email context present: verify session proceeds.
    - Verify footer/nav `@` symbols don't trigger (scoping excludes them).
    - Test DOM scan exception, verify session proceeds (failure-open).
    - Verify existing test cases for split-input OTP pages still pass.
@@ -178,6 +192,7 @@ Each guardrail is independently testable:
 
 ## Changelog
 
+- **v5 (Codex review #4):** 3 fixes: (1) Narrowed email context bypass from all-of-Tier-1 to only high-certainty signals: `autocomplete="one-time-code"` (confidence 100), exact name/id matches (confidence 95), and split-input groups. Broad Tier 1 `contains` matches (confidence 90, e.g., `name="activation_code"`) and `inputmode+maxlength` (confidence 85) now run the email context scan. (2) Split-input focus-gate cleanup: on veto, remove focus listeners from ALL unfired group members (not just the representative's attribute), preventing duplicate `startWatch()` calls on re-detect. Store group input refs at registration for cleanup access. (3) Split-input bypass uses `detectSplitInputGroup(field)` directly instead of parsing the debug `reason` string from `DetectionResult.signals`.
 - **v4 (Codex review #3):** 3 fixes: (1) Simplified abort-on-disconnect to unconditional cancel -- the URL-based "restart fallback" was illusory since `sessionContexts` is in-memory only and lost on restart. Removed `originUrl` from `WatchPortContext`. (2) Added split-input bypass for email context check. Split-input is scored in Tier 2 (`tier2-deep.ts:495`), not Tier 1. Without this bypass, common OTP widgets (Steam, banks) would be blocked on pages without email text. Bypass triggers when detection signals include `split-input`. (3) Added init-order requirement: `globalProcessedRepresentatives` must be initialized before `detectExistingFields()` runs.
 - **v3 (Codex review #2):** 4 fixes: (1) Changed email context gating from confidence-based (0-1 scale, wrong) to tier-based. Tier 2 always hits confidence=100 after conversion, so confidence thresholds were ineffective. (2) Focus gate now specifies split-input group handling. (3) Abort-on-disconnect specified `originUrl` storage. (4) Blocked-start cleanup removes `data-inboxkey-focus-gated`.
 - **v2 (Codex review #1):** 4 fixes: (1) Added blocked-start cleanup section. (2) Made email context check confidence-gated instead of hard block. (3) Replaced duplicate keyword list with existing `EMAIL_PATTERNS`. (4) Made abort-on-disconnect conditional on tab existence.
