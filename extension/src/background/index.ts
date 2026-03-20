@@ -336,19 +336,19 @@ function attachPort(context: WatchPortContext, port: chrome.runtime.Port): void 
       context.keepAliveTimer = undefined
     }
 
-    if (context.port === port) {
-      context.port = undefined
-    }
-
     // GUARDRAIL 4: Cancel session on disconnect
-    // Content script is gone, no point continuing to poll.
-    // Snapshot sessionId before async call (cancelSession triggers
-    // cleanupSessionContext which may null context.sessionId).
-    const sessionId = context.sessionId
-    if (sessionId) {
+    // Only cancel if this port is still the active port for the context.
+    // If context.port !== port, a newer port has already replaced this one
+    // (e.g., user switched fields), and context.sessionId points to the
+    // new session. Canceling here would kill the wrong session.
+    if (context.port === port && context.sessionId) {
+      context.port = undefined
+      const sessionId = context.sessionId
       sessionController.cancelSession(sessionId).catch((error) => {
         console.warn("[InboxKey] Failed to cancel session on disconnect:", error)
       })
+    } else if (context.port === port) {
+      context.port = undefined
     }
   })
 

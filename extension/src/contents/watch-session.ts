@@ -70,6 +70,7 @@ export class WatchSession {
     const blacklisted = await isBlacklisted(currentUrl)
     if (blacklisted) {
       console.log("[WatchSession] URL is blacklisted, skipping watch session")
+      this.callbacks.onVetoed?.()
       return
     }
 
@@ -79,6 +80,7 @@ export class WatchSession {
       const enabled = await isDomainEnabled(domain)
       if (!enabled) {
         console.log("[WatchSession] Domain is disabled, skipping watch session")
+        this.callbacks.onVetoed?.()
         return
       }
     }
