@@ -61,6 +61,56 @@ export function clearProcessedFields(): void {
   const detector = new FieldDetector()
 
   /**
+   * Track focus-gated group members and their handler for cleanup on veto.
+   * Key: representative field. Value: { inputs, handler } for removeEventListener.
+   */
+  const focusGateRegistry = new Map<HTMLInputElement, {
+    inputs: HTMLInputElement[]
+    handler: () => void
+  }>()
+
+  /**
+   * Register a focus gate on a detected field.
+   * The field must receive focus before a watch session starts.
+   */
+  function registerFocusGate(
+    representativeField: HTMLInputElement,
+    detectionResult: DetectionResult
+  ): void {
+    // Prevent duplicate registration
+    if (representativeField.hasAttribute('data-inboxkey-focus-gated')) return
+    representativeField.setAttribute('data-inboxkey-focus-gated', 'true')
+
+    // Mark as processed globally (prevents re-detection by MutationObserver)
+    globalProcessedRepresentatives?.add(representativeField)
+
+    // Determine all fields that could receive focus
+    const group = detectSplitInputGroup(representativeField)
+    const allInputs: HTMLInputElement[] = group ? [...group.inputs] : [representativeField]
+
+    // Check if any field already has focus
+    if (allInputs.some(f => document.activeElement === f)) {
+      handleDetectedField(representativeField, detectionResult)
+      return
+    }
+
+    // Create shared handler that triggers on first focus of any group member
+    const handler = () => {
+      // Check shared flag -- only trigger once across the group
+      if (!representativeField.hasAttribute('data-inboxkey-focus-gated')) return
+      handleDetectedField(representativeField, detectionResult)
+    }
+
+    // Store for cleanup
+    focusGateRegistry.set(representativeField, { inputs: allInputs, handler })
+
+    // Attach to all group members
+    for (const input of allInputs) {
+      input.addEventListener('focus', handler, { once: true })
+    }
+  }
+
+  /**
    * Handle field detection and start watch session
    */
   function handleDetectedField(
@@ -104,6 +154,21 @@ export function clearProcessedFields(): void {
         onCanceled: () => {
           clearProcessedFields()
         },
+        onVetoed: () => {
+          // Clean up so field can be re-detected on next page load / SPA nav
+          clearProcessedFields()
+
+          // Remove focus gate markers and listeners from all group members
+          const entry = focusGateRegistry.get(representativeField)
+          if (entry) {
+            for (const input of entry.inputs) {
+              input.removeAttribute('data-inboxkey-focus-gated')
+              input.removeEventListener('focus', entry.handler)
+            }
+            focusGateRegistry.delete(representativeField)
+          }
+          representativeField.removeAttribute('data-inboxkey-focus-gated')
+        },
       }
     )
   }
@@ -133,7 +198,9 @@ export function clearProcessedFields(): void {
 
     // Use the highest confidence result
     const best = results[0]
-    handleDetectedField(best.field, best)
+    const group = detectSplitInputGroup(best.field)
+    const representative = group?.representative || best.field
+    registerFocusGate(representative, best)
   }
 
   /**
@@ -143,8 +210,7 @@ export function clearProcessedFields(): void {
     const pendingFields = new Map<HTMLInputElement, DetectionResult>()
     let debounceTimer: number | null = null
 
-    // Initialize global Set (module-level variable)
-    globalProcessedRepresentatives = new Set<HTMLInputElement>()
+    // globalProcessedRepresentatives already initialized in initialize()
 
     // Clear Set on SPA navigation (assign to module-level variable for cleanup)
     let lastUrl = window.location.href
@@ -192,15 +258,13 @@ export function clearProcessedFields(): void {
             continue
           }
 
-          // Mark representative as processed GLOBALLY (only if still in DOM)
-          if (document.contains(representative)) {
-            globalProcessedRepresentatives?.add(representative)
-          } else {
+          // Skip if not in DOM
+          if (!document.contains(representative)) {
             continue
           }
 
-          // Use the detection result passed from FieldDetector (no re-evaluation needed)
-          handleDetectedField(representative, result)
+          // registerFocusGate handles globalProcessedRepresentatives internally
+          registerFocusGate(representative, result)
         }
       }, 50)  // 50ms debounce window
     })
@@ -210,6 +274,9 @@ export function clearProcessedFields(): void {
    * Initialize the content script
    */
   function initialize(): void {
+    // Initialize processed set BEFORE detection (focus gate needs it)
+    globalProcessedRepresentatives = new Set<HTMLInputElement>()
+
     // Detect fields immediately
     detectExistingFields()
 
