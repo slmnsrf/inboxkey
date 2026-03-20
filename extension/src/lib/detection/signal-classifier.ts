@@ -26,7 +26,7 @@ import type { TextSources, ChannelClassification } from './types'
  * Priority: High-precision patterns that clearly indicate email delivery.
  * Covers: EN, ES, PT, DE, FR, IT, NL, TR, RU, UK, PL, CS, SV, FI, DA, NO, AR, HI, JA, KO, ZH
  */
-const EMAIL_PATTERNS = [
+export const EMAIL_PATTERNS = [
   // ═══════════════════════════════════════════════════════════════
   // Latin Script (Western European + Turkish + Polish + Czech)
   // ═══════════════════════════════════════════════════════════════
