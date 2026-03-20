@@ -339,6 +339,17 @@ function attachPort(context: WatchPortContext, port: chrome.runtime.Port): void 
     if (context.port === port) {
       context.port = undefined
     }
+
+    // GUARDRAIL 4: Cancel session on disconnect
+    // Content script is gone, no point continuing to poll.
+    // Snapshot sessionId before async call (cancelSession triggers
+    // cleanupSessionContext which may null context.sessionId).
+    const sessionId = context.sessionId
+    if (sessionId) {
+      sessionController.cancelSession(sessionId).catch((error) => {
+        console.warn("[InboxKey] Failed to cancel session on disconnect:", error)
+      })
+    }
   })
 
   port.onMessage.addListener((message: WatchPortMessage) => {
