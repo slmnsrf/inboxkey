@@ -1,7 +1,7 @@
 # Email Check Triggering Guardrails
 
 > **Date:** 2026-03-20
-> **Status:** Approved (v2 -- revised per Codex review)
+> **Status:** Approved (v3 -- revised per Codex review #2)
 > **Scope:** 4 additive guardrails on the email check triggering algorithm
 
 ## Problem
@@ -21,15 +21,16 @@ The existing detection system stays completely intact. No changes to Tier 1, Tie
 
 ```
 Existing system (unchanged):
-  Field appears -> Tier 1 + Tier 2 detection -> "This is a code field" (confidence score)
+  Field appears -> Tier 1 + Tier 2 detection -> "This is a code field" (tier + confidence 0-100)
 
 New guardrail layer (additive):
-  1. Has connected mailboxes?   No -> stop silently, clean up
-  2. Has field received focus?   No -> wait for focus
-  3. Email context near field?   No + confidence < 0.9 -> stop silently, clean up
-                                 No + confidence >= 0.9 -> proceed (high-confidence bypass)
+  1. Has connected mailboxes?       No -> stop silently, clean up
+  2. Has field received focus?       No -> wait for focus (any input in group)
+  3. Email context near field?       Tier 1 -> bypass (high-certainty path)
+                                     Tier 2 + no email context -> stop, clean up
+                                     Tier 2 + email context -> proceed
   4. (Session runs, background polls)
-  5. Port disconnects + tab gone? -> cancel session immediately
+  5. Port disconnects + tab gone?    -> cancel session immediately
 ```
 
 ### Blocked-Start Cleanup
@@ -39,6 +40,7 @@ Guardrails 1 and 3 run inside `WatchSession.start()`. If either vetoes, `.start(
 **Fix:** When `.start()` returns early due to a guardrail veto, it must signal the caller. `startWatch()` must handle this by:
 - Nulling `activeWatch` (so a future session can start)
 - Calling `clearProcessedFields()` (so the field can be re-detected if conditions change, e.g., user connects a mailbox and reloads)
+- Removing the `data-inboxkey-focus-gated` attribute from the field (so the focus gate can re-register its listener if the field is re-detected)
 
 Implementation: `.start()` returns a boolean or calls a `onVetoed` callback. `startWatch()` checks the result and unwinds if vetoed.
 
@@ -56,16 +58,25 @@ Implementation: `.start()` returns a boolean or calls a `onVetoed` callback. `st
 
 **Where:** `contents/index.ts`, replacing direct calls to `handleDetectedField()`.
 
-**Behavior:** When the field detection system identifies a code field, instead of immediately starting a watch session, register a one-time focus listener on the field.
+**Behavior:** When the field detection system identifies a code field, instead of immediately starting a watch session, register focus listeners and wait.
 
 - The representative field is added to `globalProcessedRepresentatives` at detection time (not at focus time), so the existing deduplication Set continues to prevent the MutationObserver from re-processing the same field between detection and focus.
-- A `data-inboxkey-focus-gated` attribute on the field prevents duplicate focus listeners.
-- If the field already has focus (`document.activeElement === field`), trigger immediately.
-- If not, the focus listener fires when: (a) the user clicks/tabs into the field, or (b) the page auto-focuses the field via `autofocus` attribute or JS `.focus()` call. Both cases fire the `focus` event, so no special handling is needed for `autofocus` -- the listener catches it naturally regardless of timing.
-- The listener auto-cleans after first fire (`{ once: true }`).
-- If the user never focuses the field, nothing happens.
+- A `data-inboxkey-focus-gated` attribute on the representative field prevents duplicate listener registration.
 
-**Timing note:** `detectExistingFields()` may run before the page's own `autofocus` or JS `.focus()` executes. In this case, `document.activeElement !== field` at detection time, but the focus listener will fire moments later when the browser processes the `autofocus` attribute or the page script calls `.focus()`. No `setTimeout` hack is needed -- the event-driven approach handles this correctly.
+**Split-input group handling:** The content script normalizes detections to a group representative before starting a session (`contents/index.ts` lines 70-72, 186-192). For split-input groups (e.g., 6 separate boxes for a 6-digit code), the user might focus the 3rd or 4th box, not the representative. Therefore:
+- Attach a one-time focus listener to **every input in the group**, not just the representative.
+- When **any** input in the group receives focus, trigger the session for the representative (the same field that `startWatch()` receives).
+- Use a shared flag (the `data-inboxkey-focus-gated` attribute on the representative) to ensure only one session starts regardless of which group member is focused first.
+
+**Single-field handling:** For non-group fields, attach the focus listener to the detected field directly.
+
+**Auto-focus behavior:**
+- If the field (or any group member) already has focus (`document.activeElement === field`), trigger immediately.
+- If not, the focus listener fires when: (a) the user clicks/tabs into the field, or (b) the page auto-focuses the field via `autofocus` attribute or JS `.focus()` call. Both cases fire the `focus` event naturally.
+- The listeners auto-clean after first fire (`{ once: true }`).
+- If the user never focuses any field in the group, nothing happens.
+
+**Timing note:** `detectExistingFields()` may run before the page's own `autofocus` or JS `.focus()` executes. In this case, `document.activeElement` doesn't match at detection time, but the focus listener will fire moments later when the browser processes the `autofocus` attribute or the page script calls `.focus()`. No `setTimeout` hack is needed -- the event-driven approach handles this correctly.
 
 **Rationale:** Verification pages almost always auto-focus the code field. This gate passes those through instantly while blocking drive-by detection on fields the user is scrolling past. The user must be actively engaging with the field.
 
@@ -73,13 +84,15 @@ Implementation: `.start()` returns a boolean or calls a `onVetoed` callback. `st
 
 **Where:** Inside `WatchSession.start()` in `watch-session.ts`, after the domain-enabled check, before `chrome.runtime.connect()` opens the port. The `WatchSession` object is constructed in `startWatch()`, but its side-effects only begin on `.start()`. This gate blocks `.start()` from proceeding (triggers blocked-start cleanup if vetoed).
 
-**Confidence-gated, not a hard block.** The existing detection system intentionally allows strong OTP fields (e.g., `autocomplete="one-time-code"`, split-input groups) once it has ruled out SMS/authenticator-only contexts. A page that says just "Enter verification code" with a 6-digit input is a legitimate detection. A hard email-context block would false-negative these pages, breaking existing behavior and test expectations.
+**Tier-gated, not confidence-gated.** `DetectionResult.confidence` is on a 0-100 scale (converted from internal 0.0-1.0 via `Math.round(confidence * 100)`). Tier 2 caps confidence at `Math.min(score / THRESHOLD, 1.0)`, which means every successful Tier 2 detection gets confidence = 100 after conversion. A confidence threshold would therefore never trigger for Tier 2, defeating the purpose.
+
+Instead, gate on the detection **tier** (which is already present in `DetectionResult.tier`):
 
 **Rule:**
-- If detection confidence >= 0.9 (high-confidence Tier 1 detections like `autocomplete="one-time-code"`): **bypass** the email context check entirely. These fields are almost certainly verification inputs regardless of surrounding text.
-- If detection confidence < 0.9: run the email context scan. No email context found = veto (triggers blocked-start cleanup).
+- **Tier 1 detections:** bypass the email context check entirely. Tier 1 matches high-certainty signals like `autocomplete="one-time-code"`, explicit OTP attributes, and split-input groups. These are almost certainly verification inputs regardless of surrounding text.
+- **Tier 2 detections:** run the email context scan. Tier 2 is the lower-certainty path that catches ambiguous fields via label/placeholder/form-context heuristics. These are the detections most likely to false-positive on promo codes, gift cards, etc. No email context found = veto (triggers blocked-start cleanup).
 
-This preserves the existing high-confidence detection paths while adding a safety net for moderate-confidence detections that could be promo codes or gift card inputs.
+This preserves the existing high-certainty Tier 1 paths while adding a safety net for the ambiguous Tier 2 detections.
 
 **Scan scope:** Walk up from the detected field to its nearest semantic container (`<form>`, `<main>`, `<section>`, `<article>`). Scan text content within that container. Exclude `<header>`, `<footer>`, `<nav>`, and elements with ARIA roles `navigation`, `banner`, `contentinfo`. If no semantic container is found, fall back to scanning 5 DOM levels up from the field.
 
@@ -95,7 +108,7 @@ This preserves the existing high-confidence detection paths while adding a safet
 
 **Implementation:** New module `lib/detection/email-context-guard.ts` containing the scanning logic. Imports `EMAIL_PATTERNS` from `signal-classifier.ts` (which must be exported). No duplicate keyword list. The module's only job is the scoped DOM scan and signal matching.
 
-**Rationale:** Promo code pages, gift card inputs, and serial number fields pass the moderate-confidence heuristics but have no email context. This gate eliminates those false triggers while preserving all high-confidence and email-context-positive detections.
+**Rationale:** Promo code pages, gift card inputs, and serial number fields pass the Tier 2 heuristics but have no email context. This gate eliminates those false triggers while preserving all Tier 1 and email-context-positive Tier 2 detections.
 
 ### Guardrail 4: Abort on Disconnect
 
@@ -103,12 +116,14 @@ This preserves the existing high-confidence detection paths while adding a safet
 
 **Behavior:** When a port disconnect is detected, check whether the tab still exists at the same URL before canceling. Port disconnects happen for multiple reasons: user navigated away, tab closed, page unloaded, OR MV3 service worker restart. The current code deliberately falls back to `chrome.tabs.sendMessage()` when the port is gone (background/index.ts line 473-476), which handles the service-worker-restart case where the tab is still there.
 
+**Baseline URL:** The `START_SESSION` message already includes the page `url`. Store it in `WatchPortContext` at session start (add an `originUrl?: string` field to the `WatchPortContext` interface). This provides the baseline for the URL comparison in the disconnect handler.
+
 **New behavior:** In the `onDisconnect` handler, after clearing the keepalive timer and nulling the port:
 1. Check `chrome.tabs.get(context.tabId)` to see if the tab still exists.
-2. If the tab no longer exists OR its URL has changed: cancel the session via `sessionController.cancelSession(context.sessionId)`. The internal `cancelSession` -> `deliverSessionCompletion` -> `cleanupSessionContext` chain handles full cleanup (port message will throw and be caught, `sessionContexts` is deleted internally). After `cancelSession` returns, clear `context.sessionId`.
+2. If the tab no longer exists OR its URL differs from `context.originUrl`: cancel the session via `sessionController.cancelSession(context.sessionId)`. The internal `cancelSession` -> `deliverSessionCompletion` -> `cleanupSessionContext` chain handles full cleanup. After `cancelSession` returns, clear `context.sessionId`.
 3. If the tab still exists at the same URL: do NOT cancel. The session can still deliver results via `chrome.tabs.sendMessage()` fallback (handles service worker restart gracefully).
 
-**Rationale:** Polling with nobody listening wastes email API quota. But blindly canceling on every disconnect would break the existing fallback delivery path that handles MV3 service worker restarts. The tab-existence check distinguishes "user left" from "port died but tab is still there."
+**Rationale:** Polling with nobody listening wastes email API quota. But blindly canceling on every disconnect would break the existing fallback delivery path that handles MV3 service worker restarts. The tab-existence + URL check distinguishes "user left" from "port died but tab is still there."
 
 ## Integration Points
 
@@ -116,10 +131,10 @@ All changes are additive. Existing files modified:
 
 | File | Change |
 |------|--------|
-| `extension/src/contents/index.ts` | Replace direct `handleDetectedField()` calls with focus-gated wrapper. Add representative field to `globalProcessedRepresentatives` at detection time. Handle blocked-start cleanup from `startWatch()`. |
-| `extension/src/contents/watch-session.ts` | Add no-mailbox check + email context check inside `WatchSession.start()`, before port connection. Signal caller on veto so `startWatch()` can unwind `activeWatch` and processed fields. |
+| `extension/src/contents/index.ts` | Replace direct `handleDetectedField()` calls with focus-gated wrapper. Attach focus listeners to all group members for split-input groups. Add representative field to `globalProcessedRepresentatives` at detection time. Handle blocked-start cleanup from `startWatch()` (including removing `data-inboxkey-focus-gated`). |
+| `extension/src/contents/watch-session.ts` | Add no-mailbox check + email context check (tier-gated) inside `WatchSession.start()`, before port connection. Signal caller on veto so `startWatch()` can unwind `activeWatch` and processed fields. |
 | `extension/src/lib/detection/signal-classifier.ts` | Export `EMAIL_PATTERNS` (currently module-private `const`). |
-| `extension/src/background/index.ts` | Add tab-existence check + conditional `cancelSession()` in `port.onDisconnect` handler. |
+| `extension/src/background/index.ts` | Add `originUrl` field to `WatchPortContext`. Store URL from `START_SESSION` message. Add tab-existence + URL check + conditional `cancelSession()` in `port.onDisconnect` handler. |
 
 New file:
 
@@ -131,17 +146,22 @@ New file:
 
 Each guardrail is independently testable:
 
-1. **No-mailbox:** Mock storage with zero mailboxes, verify `WatchSession.start()` returns early without opening a port. Verify `activeWatch` is cleaned up and field can be re-detected. Mock storage failure, verify session proceeds (failure-open).
-2. **Focus gate:** Create detected field without focus, verify no session. Verify representative field is in `globalProcessedRepresentatives` even before focus. Focus the field, verify session starts. Test `autofocus` attribute scenario.
-3. **Email context (confidence-gated):**
-   - High confidence (>= 0.9) + no email context: verify session proceeds (bypass).
-   - Moderate confidence (< 0.9) + no email context (e.g., "Enter promo code"): verify session blocked, cleanup runs.
-   - Moderate confidence + email context present: verify session proceeds.
+1. **No-mailbox:** Mock storage with zero mailboxes, verify `WatchSession.start()` returns early without opening a port. Verify `activeWatch` is cleaned up, `data-inboxkey-focus-gated` removed, and field can be re-detected. Mock storage failure, verify session proceeds (failure-open).
+2. **Focus gate:**
+   - Single field: create detected field without focus, verify no session. Focus the field, verify session starts.
+   - Split-input group: create 6-input group, focus the 4th input, verify session starts for representative.
+   - Verify representative field is in `globalProcessedRepresentatives` even before focus.
+   - Test `autofocus` attribute scenario.
+3. **Email context (tier-gated):**
+   - Tier 1 + no email context: verify session proceeds (bypass).
+   - Tier 2 + no email context (e.g., "Enter promo code"): verify session blocked, cleanup runs.
+   - Tier 2 + email context present: verify session proceeds.
    - Verify footer/nav `@` symbols don't trigger (scoping excludes them).
    - Test DOM scan exception, verify session proceeds (failure-open).
-   - Verify existing test cases for "Verification Code" pages still pass (high confidence bypass).
+   - Verify existing test cases for "Verification Code" pages detected via Tier 1 still pass.
 4. **Abort on disconnect:**
    - Disconnect port + tab gone: verify `cancelSession()` called, no further polls.
+   - Disconnect port + tab URL changed: verify `cancelSession()` called.
    - Disconnect port + tab still at same URL: verify session NOT canceled, fallback delivery preserved.
 
 ## Non-Goals
@@ -153,4 +173,5 @@ Each guardrail is independently testable:
 
 ## Changelog
 
-- **v2 (Codex review):** 4 fixes: (1) Added blocked-start cleanup section -- when `.start()` vetoes, `startWatch()` unwinds `activeWatch` and `globalProcessedRepresentatives`. (2) Made email context check confidence-gated (>= 0.9 bypasses) instead of hard block, preserving existing high-confidence detection paths. (3) Replaced duplicate keyword list with import of existing `EMAIL_PATTERNS` from `signal-classifier.ts`. (4) Made abort-on-disconnect conditional on tab existence to preserve the `chrome.tabs.sendMessage()` fallback delivery path for MV3 service worker restarts.
+- **v3 (Codex review #2):** 4 fixes: (1) Changed email context gating from confidence-based (0-1 scale, wrong) to tier-based. Tier 1 bypasses, Tier 2 runs the scan. Tier 2 always hits confidence=100 after conversion, so confidence thresholds were ineffective. (2) Focus gate now specifies split-input group handling: attach listeners to all inputs in the group, trigger session for representative when any member is focused. (3) Abort-on-disconnect now specifies adding `originUrl` to `WatchPortContext` (stored from `START_SESSION` message) as the baseline for URL comparison. (4) Blocked-start cleanup now also removes `data-inboxkey-focus-gated` attribute to allow re-detection.
+- **v2 (Codex review #1):** 4 fixes: (1) Added blocked-start cleanup section -- when `.start()` vetoes, `startWatch()` unwinds `activeWatch` and `globalProcessedRepresentatives`. (2) Made email context check confidence-gated instead of hard block. (3) Replaced duplicate keyword list with import of existing `EMAIL_PATTERNS` from `signal-classifier.ts`. (4) Made abort-on-disconnect conditional on tab existence to preserve the `chrome.tabs.sendMessage()` fallback delivery path for MV3 service worker restarts.
