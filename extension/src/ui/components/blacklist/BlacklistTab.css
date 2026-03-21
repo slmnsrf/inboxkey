@@ -86,7 +86,7 @@
 /* Error and Warning Messages */
 .blacklist-error {
   padding: var(--space-2, 8px) var(--space-3, 12px);
-  background: var(--color-error-bg, #991B1B);
+  background: var(--color-error-light);
   color: var(--color-error-text, #FEE2E2);
   border-radius: var(--radius-md, 6px);
   font-size: var(--font-size-sm, 14px);
@@ -293,7 +293,7 @@
 }
 
 .btn--danger:hover:not(:disabled) {
-  background: var(--color-error-bg, #FEE2E2);
+  background: var(--color-error-light);
   color: var(--color-error, #EF4444);
 }
 
@@ -312,7 +312,7 @@
   padding: var(--space-4, 16px);
   border: 1px solid rgba(239, 68, 68, 0.25);
   border-radius: var(--radius-md, 6px);
-  background: var(--color-error-bg, #991B1B);
+  background: var(--color-error-light);
 }
 
 .confirm-inline__text {
