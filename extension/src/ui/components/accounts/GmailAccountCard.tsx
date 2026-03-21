@@ -156,7 +156,7 @@ export function GmailAccountCard({
             type="button"
             onClick={() => setShowLimitModal(true)}
             className="inline-link-button"
-            aria-label="Learn why only one Gmail account is allowed"
+            aria-label={t('accounts_gmail_limit_learn_why_aria')}
           >
             {t('accounts_gmail_limit_learn_why')}
           </button>

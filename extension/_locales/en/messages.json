@@ -1192,23 +1192,27 @@
     "description": "Gmail provider name in accounts panel"
   },
   "accounts_microcopy_gmail": {
-    "message": "Read-only access. Only verification emails are scanned, nothing else.",
-    "description": "Gmail section description with trust signal"
+    "message": "Read-only access. Only verification emails are scanned, nothing else. Gmail is limited to one account per browser profile due to a Chrome API restriction.",
+    "description": "Gmail section description with trust signal and limit explanation"
   },
   "accounts_microcopy_gmail_limit": {
-    "message": "Only one Gmail account allowed",
+    "message": "One account per browser profile",
     "description": "Gmail single-account constraint for row design"
   },
   "accounts_gmail_limit_learn_why": {
-    "message": "Learn why.",
-    "description": "Learn why link for Gmail limitation"
+    "message": "Learn more.",
+    "description": "Link to open Gmail limitation explanation modal"
+  },
+  "accounts_gmail_limit_learn_why_aria": {
+    "message": "Learn why Gmail is limited to one account",
+    "description": "Accessible label for Gmail limitation link"
   },
   "accounts_gmail_limit_modal_title": {
-    "message": "Why Only One Gmail Account?",
+    "message": "Why one Gmail account?",
     "description": "Modal title explaining Gmail single-account limitation"
   },
   "accounts_gmail_limit_modal_body": {
-    "message": "Gmail uses Chrome's built-in authentication, which only supports one account at a time.\n\nUnlike Outlook (which uses PKCE), Google requires a backend server to enable multiple accounts. I don't add a backend because it would compromise your privacy. All your email stays on your device, always.\n\nIf Google adds PKCE support in the future like Microsoft did, I'll update the extension to support multiple Gmail accounts.",
+    "message": "Chrome provides a built-in sign-in API that extensions use to access Gmail. This API only allows one Google account per browser profile. It is a browser-level restriction, not a choice.\n\nTo support multiple accounts, a backend server would be needed to handle Google's authentication. That would mean your email data passes through someone else's server. That is not something this extension will ever do.\n\nIf Google changes their API to support multiple accounts without a server (like Microsoft already does for Outlook), this limitation will be removed.\n\nIn the meantime, multiple Gmail accounts can be used by creating separate Chrome profiles, or by connecting additional accounts via IMAP through InboxBridge.",
     "description": "Detailed explanation of Gmail single-account technical limitation"
   },
   "accounts_empty_gmail": {
