@@ -81,23 +81,15 @@
   font-size: var(--font-size-sm);
 }
 
-.provider-dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
+.provider-logo {
+  width: 18px;
+  height: 18px;
   flex-shrink: 0;
+  object-fit: contain;
 }
 
-.provider-dot--gmail {
-  background: var(--color-gmail);
-}
-
-.provider-dot--outlook {
-  background: var(--color-outlook);
-}
-
-.provider-dot--imap {
-  background: var(--color-gray-400);
+.provider-logo--imap {
+  color: var(--color-text-tertiary);
 }
 
 .status-chip {

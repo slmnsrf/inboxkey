@@ -1,15 +1,19 @@
 import React from 'react';
+import { Server } from 'lucide-react';
 import { t } from '@/lib/i18n';
 import { InlineAlert } from './InlineAlert';
+
+import gmailLogo from 'url:~assets/providers/gmail.svg';
+import outlookLogo from 'url:~assets/providers/microsoft-outlook.svg';
 
 type ProviderType = 'gmail' | 'outlook' | 'imap-bridge';
 type FeedbackType = 'success' | 'error' | 'warning' | 'info';
 
-/** Maps provider type to the CSS modifier class for the colored dot. */
-const PROVIDER_DOT_CLASS: Record<ProviderType, string> = {
-  gmail: 'provider-dot--gmail',
-  outlook: 'provider-dot--outlook',
-  'imap-bridge': 'provider-dot--imap',
+/** Maps provider type to the imported logo URL (null = use icon fallback). */
+const PROVIDER_LOGOS: Record<ProviderType, string | null> = {
+  gmail: gmailLogo,
+  outlook: outlookLogo,
+  'imap-bridge': null,
 };
 
 interface AccountSectionProps {
@@ -33,7 +37,7 @@ interface AccountSectionProps {
  * AccountSection - Header wrapper for provider sections
  *
  * Provides consistent structure across all provider cards:
- * - Header with provider dot, name, optional counter, and status chip
+ * - Header with provider logo, name, optional counter, and status chip
  * - Children content (account rows or empty state)
  * - Description text (microcopy) after the content
  * - Inline feedback for success/error states
@@ -68,10 +72,17 @@ export function AccountSection({
       <div className="accounts-section__header">
         <div className="provider-card-header">
           <h3 className="accounts-section__title">
-            <span
-              className={`provider-dot ${PROVIDER_DOT_CLASS[provider]}`}
-              aria-hidden="true"
-            />
+            {PROVIDER_LOGOS[provider] ? (
+              <img
+                src={PROVIDER_LOGOS[provider]!}
+                alt=""
+                className="provider-logo"
+                width="18"
+                height="18"
+              />
+            ) : (
+              <Server size={16} className="provider-logo provider-logo--imap" aria-hidden="true" />
+            )}
             {displayName}
           </h3>
           {showCounter && (
