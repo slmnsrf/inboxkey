@@ -1,0 +1,1535 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="status" content="Ideation">
+  <meta name="date" content="2026-03-21">
+  <meta name="category" content="components">
+  <title>Provider Logos - InboxKey Prototype</title>
+  <link rel="stylesheet" href="../shared/tokens.css">
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    /* ============================
+       PAGE LAYOUT
+       ============================ */
+
+    *, *::before, *::after { box-sizing: border-box; }
+    body { margin: 0; }
+
+    .proto-canvas {
+      padding: var(--space-6) var(--space-8);
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-8);
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    .page-title {
+      margin: 0;
+      font-size: var(--font-size-3xl);
+      font-weight: var(--font-weight-bold);
+      color: var(--color-text-primary);
+      letter-spacing: -0.03em;
+    }
+
+    .page-subtitle {
+      margin: var(--space-2) 0 0;
+      font-size: var(--font-size-base);
+      color: var(--color-text-secondary);
+      line-height: var(--line-height-normal);
+    }
+
+    /* ============================
+       VARIANT SECTIONS
+       ============================ */
+
+    .variant {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-4);
+    }
+
+    .variant__header {
+      padding-bottom: var(--space-3);
+      border-bottom: 1px solid var(--color-border);
+    }
+
+    .variant__number {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 24px;
+      height: 24px;
+      border-radius: var(--radius-full);
+      background: var(--color-primary);
+      color: var(--color-text-inverse);
+      font-size: var(--font-size-xs);
+      font-weight: var(--font-weight-bold);
+      margin-right: var(--space-2);
+    }
+
+    .variant__title {
+      margin: 0;
+      font-size: var(--font-size-xl);
+      font-weight: var(--font-weight-semibold);
+      color: var(--color-text-primary);
+    }
+
+    .variant__description {
+      margin: var(--space-1) 0 0;
+      font-size: var(--font-size-sm);
+      color: var(--color-text-tertiary);
+    }
+
+    .variant__demos {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: var(--space-4);
+    }
+
+    .variant__demo-label {
+      font-size: var(--font-size-xs);
+      font-weight: var(--font-weight-medium);
+      color: var(--color-text-tertiary);
+      text-transform: uppercase;
+      letter-spacing: var(--letter-spacing-wider);
+      margin-bottom: var(--space-2);
+    }
+
+    /* ============================
+       SHARED PROVIDER CARD STYLES
+       ============================ */
+
+    .accounts-section {
+      display: grid;
+      gap: var(--space-4);
+      padding: var(--space-5);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      background: var(--surface-card);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .accounts-section__header {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: baseline;
+      gap: var(--space-2);
+      justify-content: space-between;
+    }
+
+    .accounts-section__title {
+      margin: 0;
+      font-size: var(--font-size-xl);
+      font-weight: var(--font-weight-semibold);
+      letter-spacing: -0.02em;
+      color: var(--color-text-primary);
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+    }
+
+    .accounts-section__right {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+    }
+
+    .slot-counter {
+      font-size: var(--font-size-xs);
+      font-weight: var(--font-weight-medium);
+      color: var(--color-text-tertiary);
+    }
+
+    .status-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-1);
+      padding: 2px var(--space-3);
+      border-radius: var(--radius-full);
+      font-size: var(--font-size-xs);
+      font-weight: var(--font-weight-medium);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .status-chip--connected {
+      color: var(--color-success-dark);
+      background: rgba(16, 185, 129, 0.12);
+    }
+
+    .status-chip--disconnected {
+      color: var(--color-text-tertiary);
+      background: var(--surface-card-muted);
+      border: 1px solid var(--color-border);
+    }
+
+    /* Account row */
+    .account-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--space-3);
+      padding: var(--space-3) var(--space-4);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+      background: var(--surface-card-muted);
+      transition: border-color var(--duration-fast) ease-out;
+    }
+
+    .account-row:hover {
+      border-color: var(--color-border-hover);
+    }
+
+    .account-row__info {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .account-row__email {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+      font-weight: var(--font-weight-medium);
+      color: var(--color-text-primary);
+      font-size: var(--font-size-sm);
+    }
+
+    .account-row__meta {
+      font-size: var(--font-size-xs);
+      color: var(--color-text-tertiary);
+    }
+
+    .account-row__actions {
+      display: flex;
+      gap: var(--space-2);
+      flex-shrink: 0;
+    }
+
+    /* Status dot */
+    .status-dot {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .status-dot--online { background: var(--color-success); }
+
+    /* Provider dot (current approach) */
+    .provider-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .provider-dot--gmail { background: var(--color-gmail); }
+    .provider-dot--outlook { background: var(--color-outlook); }
+    .provider-dot--imap { background: var(--color-gray-400); }
+
+    /* Empty slot */
+    .empty-slot {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: var(--space-3);
+      padding: var(--space-6) var(--space-4);
+      border: 1px dashed var(--color-border-strong);
+      border-radius: var(--radius-md);
+      text-align: center;
+      color: var(--color-text-secondary);
+      background: var(--surface-card-muted);
+    }
+
+    .empty-slot__icon {
+      width: 48px;
+      height: 48px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: var(--radius-lg);
+      background: var(--color-bg-secondary);
+      color: var(--color-text-tertiary);
+    }
+
+    .empty-slot__text {
+      margin: 0;
+      font-size: var(--font-size-sm);
+      max-width: 280px;
+    }
+
+    /* Microcopy */
+    .microcopy {
+      margin: 0;
+      font-size: var(--font-size-xs);
+      color: var(--color-text-tertiary);
+      line-height: var(--line-height-normal);
+    }
+
+    /* Buttons */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: var(--space-2);
+      padding: var(--space-2) var(--space-4);
+      border-radius: var(--radius-md);
+      font-family: var(--font-system);
+      font-size: var(--font-size-sm);
+      font-weight: var(--font-weight-medium);
+      cursor: pointer;
+      border: none;
+      transition: background var(--duration-fast) ease-out;
+      min-height: 36px;
+      text-decoration: none;
+    }
+
+    .btn--primary {
+      background: var(--color-primary);
+      color: var(--color-text-inverse);
+    }
+
+    .btn--primary:hover {
+      background: var(--color-primary-hover);
+    }
+
+    .btn--ghost {
+      background: transparent;
+      color: var(--color-text-secondary);
+      border: 1px solid var(--color-border);
+    }
+
+    .btn--ghost:hover {
+      background: var(--surface-card-muted);
+    }
+
+    .btn--sm {
+      padding: var(--space-1) var(--space-3);
+      font-size: var(--font-size-xs);
+      min-height: 28px;
+    }
+
+    .btn--icon {
+      padding: var(--space-1);
+      min-height: 28px;
+      min-width: 28px;
+      border-radius: var(--radius-md);
+      background: transparent;
+      color: var(--color-text-tertiary);
+      border: none;
+      cursor: pointer;
+    }
+
+    .btn--icon:hover {
+      background: var(--color-bg-secondary);
+      color: var(--color-text-secondary);
+    }
+
+    /* ============================
+       INLINE SVG LOGO SIZES
+       ============================ */
+
+    .logo-16 { width: 16px; height: 16px; flex-shrink: 0; }
+    .logo-20 { width: 20px; height: 20px; flex-shrink: 0; }
+    .logo-24 { width: 24px; height: 24px; flex-shrink: 0; }
+    .logo-28 { width: 28px; height: 28px; flex-shrink: 0; }
+    .logo-32 { width: 32px; height: 32px; flex-shrink: 0; }
+    .logo-36 { width: 36px; height: 36px; flex-shrink: 0; }
+    .logo-48 { width: 48px; height: 48px; flex-shrink: 0; }
+    .logo-64 { width: 64px; height: 64px; flex-shrink: 0; }
+    .logo-96 { width: 96px; height: 96px; flex-shrink: 0; }
+
+    /* ============================
+       VARIANT 2: LOGO IN CONTAINER
+       ============================ */
+
+    .provider-icon-container {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: var(--radius-md);
+      flex-shrink: 0;
+    }
+
+    .provider-icon-container--gmail {
+      width: 36px;
+      height: 36px;
+      background: rgba(234, 67, 53, 0.08);
+    }
+
+    .provider-icon-container--outlook {
+      width: 36px;
+      height: 36px;
+      background: rgba(0, 120, 212, 0.08);
+    }
+
+    .provider-icon-container--imap {
+      width: 36px;
+      height: 36px;
+      background: var(--color-bg-secondary);
+      color: var(--color-text-tertiary);
+    }
+
+    [data-theme="dark"] .provider-icon-container--gmail {
+      background: rgba(234, 67, 53, 0.15);
+    }
+
+    [data-theme="dark"] .provider-icon-container--outlook {
+      background: rgba(0, 120, 212, 0.15);
+    }
+
+    /* ============================
+       VARIANT 3: WATERMARK
+       ============================ */
+
+    .section-with-watermark {
+      position: relative;
+      overflow: hidden;
+    }
+
+    .section-watermark {
+      position: absolute;
+      top: -10px;
+      right: -10px;
+      opacity: 0.05;
+      pointer-events: none;
+    }
+
+    [data-theme="dark"] .section-watermark {
+      opacity: 0.08;
+    }
+
+    /* ============================
+       VARIANT 5: LOGO + TEXT BADGE PILL
+       ============================ */
+
+    .provider-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-2);
+      padding: var(--space-1) var(--space-3) var(--space-1) var(--space-2);
+      border-radius: var(--radius-full);
+      font-size: var(--font-size-base);
+      font-weight: var(--font-weight-semibold);
+    }
+
+    .provider-pill--gmail {
+      background: rgba(234, 67, 53, 0.08);
+      color: var(--color-gmail);
+      border: 1px solid rgba(234, 67, 53, 0.15);
+    }
+
+    .provider-pill--outlook {
+      background: rgba(0, 120, 212, 0.08);
+      color: var(--color-outlook);
+      border: 1px solid rgba(0, 120, 212, 0.15);
+    }
+
+    .provider-pill--imap {
+      background: var(--color-bg-secondary);
+      color: var(--color-text-secondary);
+      border: 1px solid var(--color-border);
+    }
+
+    [data-theme="dark"] .provider-pill--gmail {
+      background: rgba(234, 67, 53, 0.12);
+      border-color: rgba(234, 67, 53, 0.25);
+    }
+
+    [data-theme="dark"] .provider-pill--outlook {
+      background: rgba(0, 120, 212, 0.12);
+      border-color: rgba(0, 120, 212, 0.25);
+    }
+
+    /* ============================
+       VARIANT 6: LOGO-ONLY TITLE
+       ============================ */
+
+    .logo-only-title {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+    }
+
+    /* ============================
+       VARIANT 7: EMPTY STATE LOGO
+       ============================ */
+
+    .empty-slot__logo {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .empty-slot__logo--subtle {
+      opacity: 0.5;
+    }
+
+    /* ============================
+       COMPARISON GRID
+       ============================ */
+
+    .comparison-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: var(--space-4);
+    }
+
+    .comparison-row > div {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-2);
+    }
+
+    @media (max-width: 768px) {
+      .comparison-row {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Toolbar -->
+  <div class="proto-toolbar">
+    <div class="proto-toolbar__left">
+      <span class="proto-toolbar__title">Provider Logos</span>
+      <span class="proto-toolbar__status" data-status="ideation">Ideation</span>
+      <span class="proto-toolbar__date">2026-03-21</span>
+    </div>
+    <div class="proto-toolbar__right">
+      <button class="proto-decisions-toggle">Decisions</button>
+      <div class="proto-theme-toggle" role="group" aria-label="Theme">
+        <button type="button" aria-pressed="true" data-theme-btn="light">Light</button>
+        <button type="button" aria-pressed="false" data-theme-btn="dark">Dark</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Decisions panel -->
+  <div class="proto-decisions-panel" role="dialog" aria-label="Design decisions">
+    <button class="proto-decisions-close" aria-label="Close decisions">&times;</button>
+    <h3>Design Decisions</h3>
+    <ol></ol>
+  </div>
+
+  <main class="proto-canvas">
+    <div>
+      <h1 class="page-title">Provider Logo Integration</h1>
+      <p class="page-subtitle">
+        Exploring different ways to use Gmail, Outlook, and IMAP provider logos
+        in the InboxKey accounts page. Each variant shows Gmail (1 connected account),
+        Outlook (disconnected/empty), and IMAP (2 connected accounts).
+      </p>
+    </div>
+
+    <!-- ========================================================
+         VARIANT 0: CURRENT (BASELINE)
+         ======================================================== -->
+
+    <section class="variant">
+      <div class="variant__header">
+        <h2 class="variant__title"><span class="variant__number">0</span>Current (Baseline)</h2>
+        <p class="variant__description">The existing approach: colored dots + text labels. Shown for direct comparison.</p>
+      </div>
+      <div class="comparison-row">
+        <!-- Gmail: 1 connected -->
+        <div>
+          <div class="variant__demo-label">Gmail (1 account)</div>
+          <div class="accounts-section">
+            <div class="accounts-section__header">
+              <h2 class="accounts-section__title">
+                <span class="provider-dot provider-dot--gmail" aria-hidden="true"></span>
+                Gmail
+              </h2>
+              <div class="accounts-section__right">
+                <span class="slot-counter">1/1</span>
+                <span class="status-chip status-chip--connected">Connected</span>
+              </div>
+            </div>
+            <div class="account-row">
+              <div class="account-row__info">
+                <span class="account-row__email">
+                  <span class="status-dot status-dot--online" aria-label="Online"></span>
+                  sarah@gmail.com
+                </span>
+                <span class="account-row__meta">Synced 2 min ago</span>
+              </div>
+              <div class="account-row__actions">
+                <button class="btn--icon" aria-label="Sync"><i data-lucide="refresh-cw" style="width:14px;height:14px"></i></button>
+                <button class="btn--icon" aria-label="Disconnect"><i data-lucide="log-out" style="width:14px;height:14px"></i></button>
+              </div>
+            </div>
+            <p class="microcopy">Gmail is limited to one account (browser limitation).</p>
+          </div>
+        </div>
+
+        <!-- Outlook: disconnected -->
+        <div>
+          <div class="variant__demo-label">Outlook (disconnected)</div>
+          <div class="accounts-section">
+            <div class="accounts-section__header">
+              <h2 class="accounts-section__title">
+                <span class="provider-dot provider-dot--outlook" aria-hidden="true"></span>
+                Outlook
+              </h2>
+              <div class="accounts-section__right">
+                <span class="status-chip status-chip--disconnected">No accounts</span>
+              </div>
+            </div>
+            <div class="empty-slot">
+              <div class="empty-slot__icon">
+                <i data-lucide="mail" style="width:24px;height:24px"></i>
+              </div>
+              <p class="empty-slot__text">Connect your Outlook account to detect verification codes automatically.</p>
+              <button class="btn btn--primary">Connect Outlook</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- IMAP: 2 accounts -->
+        <div>
+          <div class="variant__demo-label">IMAP (2 accounts)</div>
+          <div class="accounts-section">
+            <div class="accounts-section__header">
+              <h2 class="accounts-section__title">
+                <span class="provider-dot provider-dot--imap" aria-hidden="true"></span>
+                IMAP
+              </h2>
+              <div class="accounts-section__right">
+                <span class="slot-counter">2/10</span>
+                <span class="status-chip status-chip--connected">Connected</span>
+              </div>
+            </div>
+            <div class="account-row">
+              <div class="account-row__info">
+                <span class="account-row__email">
+                  <span class="status-dot status-dot--online" aria-label="Online"></span>
+                  user@protonmail.com
+                </span>
+                <span class="account-row__meta">Synced 5 min ago</span>
+              </div>
+              <div class="account-row__actions">
+                <button class="btn--icon" aria-label="Sync"><i data-lucide="refresh-cw" style="width:14px;height:14px"></i></button>
+                <button class="btn--icon" aria-label="Remove"><i data-lucide="trash-2" style="width:14px;height:14px"></i></button>
+              </div>
+            </div>
+            <div class="account-row">
+              <div class="account-row__info">
+                <span class="account-row__email">
+                  <span class="status-dot status-dot--online" aria-label="Online"></span>
+                  me@fastmail.com
+                </span>
+                <span class="account-row__meta">Synced 8 min ago</span>
+              </div>
+              <div class="account-row__actions">
+                <button class="btn--icon" aria-label="Sync"><i data-lucide="refresh-cw" style="width:14px;height:14px"></i></button>
+                <button class="btn--icon" aria-label="Remove"><i data-lucide="trash-2" style="width:14px;height:14px"></i></button>
+              </div>
+            </div>
+            <p class="microcopy">Multiple IMAP accounts can be connected.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+
+    <!-- ========================================================
+         VARIANT 1: LOGO REPLACING DOT
+         ======================================================== -->
+
+    <section class="variant">
+      <div class="variant__header">
+        <h2 class="variant__title"><span class="variant__number">1</span>Logo Replacing Dot</h2>
+        <p class="variant__description">Small logo (18px) replaces the colored dot before the provider name. Minimal change, strong brand recognition.</p>
+      </div>
+      <div class="comparison-row">
+        <!-- Gmail -->
+        <div>
+          <div class="variant__demo-label">Gmail (1 account)</div>
+          <div class="accounts-section">
+            <div class="accounts-section__header">
+              <h2 class="accounts-section__title">
+                <svg class="logo-20" viewBox="0 49.4 512 399.42" aria-hidden="true"><g fill="none" fill-rule="evenodd"><g fill-rule="nonzero"><path fill="#4285f4" d="M34.91 448.818h81.454V251L0 163.727V413.91c0 19.287 15.622 34.91 34.91 34.91z"/><path fill="#34a853" d="M395.636 448.818h81.455c19.287 0 34.909-15.622 34.909-34.909V163.727L395.636 251z"/><path fill="#fbbc04" d="M395.636 99.727V251L512 163.727v-46.545c0-43.142-49.25-67.782-83.782-41.891z"/></g><path fill="#ea4335" d="M116.364 251V99.727L256 204.455 395.636 99.727V251L256 355.727z"/><path fill="#c5221f" fill-rule="nonzero" d="M0 117.182v46.545L116.364 251V99.727L83.782 75.291C49.25 49.4 0 74.04 0 117.18z"/></g></svg>
+                Gmail
+              </h2>
+              <div class="accounts-section__right">
+                <span class="slot-counter">1/1</span>
+                <span class="status-chip status-chip--connected">Connected</span>
+              </div>
+            </div>
+            <div class="account-row">
+              <div class="account-row__info">
+                <span class="account-row__email">
+                  <span class="status-dot status-dot--online" aria-label="Online"></span>
+                  sarah@gmail.com
+                </span>
+                <span class="account-row__meta">Synced 2 min ago</span>
+              </div>
+              <div class="account-row__actions">
+                <button class="btn--icon" aria-label="Sync"><i data-lucide="refresh-cw" style="width:14px;height:14px"></i></button>
+                <button class="btn--icon" aria-label="Disconnect"><i data-lucide="log-out" style="width:14px;height:14px"></i></button>
+              </div>
+            </div>
+            <p class="microcopy">Gmail is limited to one account (browser limitation).</p>
+          </div>
+        </div>
+
+        <!-- Outlook -->
+        <div>
+          <div class="variant__demo-label">Outlook (disconnected)</div>
+          <div class="accounts-section">
+            <div class="accounts-section__header">
+              <h2 class="accounts-section__title">
+                <svg class="logo-20" viewBox="60 90.4 570.02 539.67" aria-hidden="true"><defs><linearGradient id="v1oa" x1="9.989" x2="30.932" y1="22.365" y2="9.375" gradientTransform="scale(15)" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#20a7fa"/><stop offset=".4" stop-color="#3bd5ff"/><stop offset="1" stop-color="#c4b0ff"/></linearGradient><linearGradient id="v1ob" x1="17.197" x2="28.856" y1="26.794" y2="8.126" gradientTransform="scale(15)" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#165ad9"/><stop offset=".501" stop-color="#1880e5"/><stop offset="1" stop-color="#8587ff"/></linearGradient><linearGradient id="v1od" x1="24.053" x2="44.51" y1="31.11" y2="18.018" gradientTransform="scale(15)" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#1a43a6"/><stop offset=".492" stop-color="#2052cb"/><stop offset="1" stop-color="#5f20cb"/></linearGradient><radialGradient id="v1oj" cx="0" cy="0" r="1" gradientTransform="matrix(-170.86087 259.7254 -674.01813 -443.40415 278.562 412.979)" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#49deff"/><stop offset=".724" stop-color="#29c3ff"/></radialGradient><radialGradient id="v1ol" cx="0" cy="0" r="1" gradientTransform="rotate(46.924 -378.504 245.25) scale(315.927)" gradientUnits="userSpaceOnUse"><stop offset=".039" stop-color="#0091ff"/><stop offset=".919" stop-color="#183dad"/></radialGradient></defs><path d="m463.984 140.145-344.347 218.27-29.614-46.72v-40.257a43.26 43.26 0 0 1 19.72-36.293L309.91 105.258c30.496-19.79 69.777-19.793 100.277-.008Z" fill="url(#v1oa)"/><path d="M407.102 103.34a91.293 91.293 0 0 1 3.082 1.914l156.214 101.332-387.336 245.52-59.437-93.77L403.895 177.8c26.925-17.102 28.105-55.57 3.207-74.461Z" fill="url(#v1ob)"/><path d="M333.602 498.988 179.066 452.11 507.63 243.836c27.672-17.54 27.601-57.938-.133-75.379l-1.48-.93 4.261 2.649 99.996 64.867a43.263 43.263 0 0 1 19.723 36.3v38.962Z" fill="url(#v1od)"/><path d="M405.402 630.035H183.738c-51.777 0-93.75-41.972-93.75-93.75v-264.34a44.473 44.473 0 0 0 20.754 37.621l327.582 206.52a61.737 61.737 0 0 1 28.809 52.226c-.004 34.09-27.64 61.723-61.73 61.723Z" fill="url(#v1oj)"/><path d="M108.75 345h142.5c26.926 0 48.75 21.824 48.75 48.75v142.5c0 26.926-21.824 48.75-48.75 48.75h-142.5C81.824 585 60 563.176 60 536.25v-142.5C60 366.824 81.824 345 108.75 345Z" fill="url(#v1ol)"/><path d="M179.387 534c-19.848 0-36.137-6.21-48.875-18.625-12.739-12.414-19.11-28.617-19.11-48.605 0-21.11 6.465-38.18 19.395-51.22C143.73 402.517 160.66 396 181.594 396c19.781 0 35.879 6.238 48.297 18.715 12.484 12.476 18.726 28.93 18.726 49.351 0 20.985-6.469 37.899-19.398 50.75C216.352 527.606 199.742 534 179.387 534Z" fill="#fff"/></svg>
+                Outlook
+              </h2>
+              <div class="accounts-section__right">
+                <span class="status-chip status-chip--disconnected">No accounts</span>
+              </div>
+            </div>
+            <div class="empty-slot">
+              <div class="empty-slot__icon">
+                <i data-lucide="mail" style="width:24px;height:24px"></i>
+              </div>
+              <p class="empty-slot__text">Connect your Outlook account to detect verification codes automatically.</p>
+              <button class="btn btn--primary">Connect Outlook</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- IMAP -->
+        <div>
+          <div class="variant__demo-label">IMAP (2 accounts)</div>
+          <div class="accounts-section">
+            <div class="accounts-section__header">
+              <h2 class="accounts-section__title">
+                <i data-lucide="server" style="width:18px;height:18px;color:var(--color-gray-400);flex-shrink:0"></i>
+                IMAP
+              </h2>
+              <div class="accounts-section__right">
+                <span class="slot-counter">2/10</span>
+                <span class="status-chip status-chip--connected">Connected</span>
+              </div>
+            </div>
+            <div class="account-row">
+              <div class="account-row__info">
+                <span class="account-row__email">
+                  <span class="status-dot status-dot--online" aria-label="Online"></span>
+                  user@protonmail.com
+                </span>
+                <span class="account-row__meta">Synced 5 min ago</span>
+              </div>
+              <div class="account-row__actions">
+                <button class="btn--icon" aria-label="Sync"><i data-lucide="refresh-cw" style="width:14px;height:14px"></i></button>
+                <button class="btn--icon" aria-label="Remove"><i data-lucide="trash-2" style="width:14px;height:14px"></i></button>
+              </div>
+            </div>
+            <div class="account-row">
+              <div class="account-row__info">
+                <span class="account-row__email">
+                  <span class="status-dot status-dot--online" aria-label="Online"></span>
+                  me@fastmail.com
+                </span>
+                <span class="account-row__meta">Synced 8 min ago</span>
+              </div>
+              <div class="account-row__actions">
+                <button class="btn--icon" aria-label="Sync"><i data-lucide="refresh-cw" style="width:14px;height:14px"></i></button>
+                <button class="btn--icon" aria-label="Remove"><i data-lucide="trash-2" style="width:14px;height:14px"></i></button>
+              </div>
+            </div>
+            <p class="microcopy">Multiple IMAP accounts can be connected.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+
+    <!-- ========================================================
+         VARIANT 2: LOGO IN SECTION HEADER CARD
+         ======================================================== -->
+
+    <section class="variant">
+      <div class="variant__header">
+        <h2 class="variant__title"><span class="variant__number">2</span>Logo in Container</h2>
+        <p class="variant__description">Larger logo (24px) in a tinted rounded container (36px), similar to how Settings tabs use icons. More prominent brand presence.</p>
+      </div>
+      <div class="comparison-row">
+        <!-- Gmail -->
+        <div>
+          <div class="variant__demo-label">Gmail (1 account)</div>
+          <div class="accounts-section">
+            <div class="accounts-section__header" style="align-items:center">
+              <h2 class="accounts-section__title" style="gap:var(--space-3)">
+                <div class="provider-icon-container provider-icon-container--gmail">
+                  <svg class="logo-24" viewBox="0 49.4 512 399.42" aria-hidden="true"><g fill="none" fill-rule="evenodd"><g fill-rule="nonzero"><path fill="#4285f4" d="M34.91 448.818h81.454V251L0 163.727V413.91c0 19.287 15.622 34.91 34.91 34.91z"/><path fill="#34a853" d="M395.636 448.818h81.455c19.287 0 34.909-15.622 34.909-34.909V163.727L395.636 251z"/><path fill="#fbbc04" d="M395.636 99.727V251L512 163.727v-46.545c0-43.142-49.25-67.782-83.782-41.891z"/></g><path fill="#ea4335" d="M116.364 251V99.727L256 204.455 395.636 99.727V251L256 355.727z"/><path fill="#c5221f" fill-rule="nonzero" d="M0 117.182v46.545L116.364 251V99.727L83.782 75.291C49.25 49.4 0 74.04 0 117.18z"/></g></svg>
+                </div>
+                Gmail
+              </h2>
+              <div class="accounts-section__right">
+                <span class="slot-counter">1/1</span>
+                <span class="status-chip status-chip--connected">Connected</span>
+              </div>
+            </div>
+            <div class="account-row">
+              <div class="account-row__info">
+                <span class="account-row__email">
+                  <span class="status-dot status-dot--online" aria-label="Online"></span>
+                  sarah@gmail.com
+                </span>
+                <span class="account-row__meta">Synced 2 min ago</span>
+              </div>
+              <div class="account-row__actions">
+                <button class="btn--icon" aria-label="Sync"><i data-lucide="refresh-cw" style="width:14px;height:14px"></i></button>
+                <button class="btn--icon" aria-label="Disconnect"><i data-lucide="log-out" style="width:14px;height:14px"></i></button>
+              </div>
+            </div>
+            <p class="microcopy">Gmail is limited to one account (browser limitation).</p>
+          </div>
+        </div>
+
+        <!-- Outlook -->
+        <div>
+          <div class="variant__demo-label">Outlook (disconnected)</div>
+          <div class="accounts-section">
+            <div class="accounts-section__header" style="align-items:center">
+              <h2 class="accounts-section__title" style="gap:var(--space-3)">
+                <div class="provider-icon-container provider-icon-container--outlook">
+                  <svg class="logo-24" viewBox="60 90.4 570.02 539.67" aria-hidden="true"><defs><linearGradient id="v2oa" x1="9.989" x2="30.932" y1="22.365" y2="9.375" gradientTransform="scale(15)" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#20a7fa"/><stop offset=".4" stop-color="#3bd5ff"/><stop offset="1" stop-color="#c4b0ff"/></linearGradient><linearGradient id="v2ob" x1="17.197" x2="28.856" y1="26.794" y2="8.126" gradientTransform="scale(15)" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#165ad9"/><stop offset=".501" stop-color="#1880e5"/><stop offset="1" stop-color="#8587ff"/></linearGradient><linearGradient id="v2od" x1="24.053" x2="44.51" y1="31.11" y2="18.018" gradientTransform="scale(15)" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#1a43a6"/><stop offset=".492" stop-color="#2052cb"/><stop offset="1" stop-color="#5f20cb"/></linearGradient><radialGradient id="v2oj" cx="0" cy="0" r="1" gradientTransform="matrix(-170.86087 259.7254 -674.01813 -443.40415 278.562 412.979)" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#49deff"/><stop offset=".724" stop-color="#29c3ff"/></radialGradient><radialGradient id="v2ol" cx="0" cy="0" r="1" gradientTransform="rotate(46.924 -378.504 245.25) scale(315.927)" gradientUnits="userSpaceOnUse"><stop offset=".039" stop-color="#0091ff"/><stop offset=".919" stop-color="#183dad"/></radialGradient></defs><path d="m463.984 140.145-344.347 218.27-29.614-46.72v-40.257a43.26 43.26 0 0 1 19.72-36.293L309.91 105.258c30.496-19.79 69.777-19.793 100.277-.008Z" fill="url(#v2oa)"/><path d="M407.102 103.34a91.293 91.293 0 0 1 3.082 1.914l156.214 101.332-387.336 245.52-59.437-93.77L403.895 177.8c26.925-17.102 28.105-55.57 3.207-74.461Z" fill="url(#v2ob)"/><path d="M333.602 498.988 179.066 452.11 507.63 243.836c27.672-17.54 27.601-57.938-.133-75.379l-1.48-.93 4.261 2.649 99.996 64.867a43.263 43.263 0 0 1 19.723 36.3v38.962Z" fill="url(#v2od)"/><path d="M405.402 630.035H183.738c-51.777 0-93.75-41.972-93.75-93.75v-264.34a44.473 44.473 0 0 0 20.754 37.621l327.582 206.52a61.737 61.737 0 0 1 28.809 52.226c-.004 34.09-27.64 61.723-61.73 61.723Z" fill="url(#v2oj)"/><path d="M108.75 345h142.5c26.926 0 48.75 21.824 48.75 48.75v142.5c0 26.926-21.824 48.75-48.75 48.75h-142.5C81.824 585 60 563.176 60 536.25v-142.5C60 366.824 81.824 345 108.75 345Z" fill="url(#v2ol)"/><path d="M179.387 534c-19.848 0-36.137-6.21-48.875-18.625-12.739-12.414-19.11-28.617-19.11-48.605 0-21.11 6.465-38.18 19.395-51.22C143.73 402.517 160.66 396 181.594 396c19.781 0 35.879 6.238 48.297 18.715 12.484 12.476 18.726 28.93 18.726 49.351 0 20.985-6.469 37.899-19.398 50.75C216.352 527.606 199.742 534 179.387 534Z" fill="#fff"/></svg>
+                </div>
+                Outlook
+              </h2>
+              <div class="accounts-section__right">
+                <span class="status-chip status-chip--disconnected">No accounts</span>
+              </div>
+            </div>
+            <div class="empty-slot">
+              <div class="empty-slot__icon">
+                <i data-lucide="mail" style="width:24px;height:24px"></i>
+              </div>
+              <p class="empty-slot__text">Connect your Outlook account to detect verification codes automatically.</p>
+              <button class="btn btn--primary">Connect Outlook</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- IMAP -->
+        <div>
+          <div class="variant__demo-label">IMAP (2 accounts)</div>
+          <div class="accounts-section">
+            <div class="accounts-section__header" style="align-items:center">
+              <h2 class="accounts-section__title" style="gap:var(--space-3)">
+                <div class="provider-icon-container provider-icon-container--imap">
+                  <i data-lucide="server" style="width:20px;height:20px"></i>
+                </div>
+                IMAP
+              </h2>
+              <div class="accounts-section__right">
+                <span class="slot-counter">2/10</span>
+                <span class="status-chip status-chip--connected">Connected</span>
+              </div>
+            </div>
+            <div class="account-row">
+              <div class="account-row__info">
+                <span class="account-row__email">
+                  <span class="status-dot status-dot--online" aria-label="Online"></span>
+                  user@protonmail.com
+                </span>
+                <span class="account-row__meta">Synced 5 min ago</span>
+              </div>
+              <div class="account-row__actions">
+                <button class="btn--icon" aria-label="Sync"><i data-lucide="refresh-cw" style="width:14px;height:14px"></i></button>
+                <button class="btn--icon" aria-label="Remove"><i data-lucide="trash-2" style="width:14px;height:14px"></i></button>
+              </div>
+            </div>
+            <div class="account-row">
+              <div class="account-row__info">
+                <span class="account-row__email">
+                  <span class="status-dot status-dot--online" aria-label="Online"></span>
+                  me@fastmail.com
+                </span>
+                <span class="account-row__meta">Synced 8 min ago</span>
+              </div>
+              <div class="account-row__actions">
+                <button class="btn--icon" aria-label="Sync"><i data-lucide="refresh-cw" style="width:14px;height:14px"></i></button>
+                <button class="btn--icon" aria-label="Remove"><i data-lucide="trash-2" style="width:14px;height:14px"></i></button>
+              </div>
+            </div>
+            <p class="microcopy">Multiple IMAP accounts can be connected.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+
+    <!-- ========================================================
+         VARIANT 3: WATERMARK BACKGROUND
+         ======================================================== -->
+
+    <section class="variant">
+      <div class="variant__header">
+        <h2 class="variant__title"><span class="variant__number">3</span>Background Watermark</h2>
+        <p class="variant__description">Large, faded logo (96px, 5% opacity) positioned in the top-right corner of each section card as a subtle brand watermark. Adds visual richness without competing with content.</p>
+      </div>
+      <div class="comparison-row">
+        <!-- Gmail -->
+        <div>
+          <div class="variant__demo-label">Gmail (1 account)</div>
+          <div class="accounts-section section-with-watermark">
+            <div class="section-watermark">
+              <svg class="logo-96" viewBox="0 49.4 512 399.42" aria-hidden="true"><g fill="none" fill-rule="evenodd"><g fill-rule="nonzero"><path fill="#4285f4" d="M34.91 448.818h81.454V251L0 163.727V413.91c0 19.287 15.622 34.91 34.91 34.91z"/><path fill="#34a853" d="M395.636 448.818h81.455c19.287 0 34.909-15.622 34.909-34.909V163.727L395.636 251z"/><path fill="#fbbc04" d="M395.636 99.727V251L512 163.727v-46.545c0-43.142-49.25-67.782-83.782-41.891z"/></g><path fill="#ea4335" d="M116.364 251V99.727L256 204.455 395.636 99.727V251L256 355.727z"/><path fill="#c5221f" fill-rule="nonzero" d="M0 117.182v46.545L116.364 251V99.727L83.782 75.291C49.25 49.4 0 74.04 0 117.18z"/></g></svg>
+            </div>
+            <div class="accounts-section__header">
+              <h2 class="accounts-section__title">
+                <span class="provider-dot provider-dot--gmail" aria-hidden="true"></span>
+                Gmail
+              </h2>
+              <div class="accounts-section__right">
+                <span class="slot-counter">1/1</span>
+                <span class="status-chip status-chip--connected">Connected</span>
+              </div>
+            </div>
+            <div class="account-row">
+              <div class="account-row__info">
+                <span class="account-row__email">
+                  <span class="status-dot status-dot--online" aria-label="Online"></span>
+                  sarah@gmail.com
+                </span>
+                <span class="account-row__meta">Synced 2 min ago</span>
+              </div>
+              <div class="account-row__actions">
+                <button class="btn--icon" aria-label="Sync"><i data-lucide="refresh-cw" style="width:14px;height:14px"></i></button>
+                <button class="btn--icon" aria-label="Disconnect"><i data-lucide="log-out" style="width:14px;height:14px"></i></button>
+              </div>
+            </div>
+            <p class="microcopy">Gmail is limited to one account (browser limitation).</p>
+          </div>
+        </div>
+
+        <!-- Outlook -->
+        <div>
+          <div class="variant__demo-label">Outlook (disconnected)</div>
+          <div class="accounts-section section-with-watermark">
+            <div class="section-watermark">
+              <svg class="logo-96" viewBox="60 90.4 570.02 539.67" aria-hidden="true"><defs><linearGradient id="v3oa" x1="9.989" x2="30.932" y1="22.365" y2="9.375" gradientTransform="scale(15)" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#20a7fa"/><stop offset=".4" stop-color="#3bd5ff"/><stop offset="1" stop-color="#c4b0ff"/></linearGradient><linearGradient id="v3ob" x1="17.197" x2="28.856" y1="26.794" y2="8.126" gradientTransform="scale(15)" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#165ad9"/><stop offset=".501" stop-color="#1880e5"/><stop offset="1" stop-color="#8587ff"/></linearGradient><linearGradient id="v3od" x1="24.053" x2="44.51" y1="31.11" y2="18.018" gradientTransform="scale(15)" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#1a43a6"/><stop offset=".492" stop-color="#2052cb"/><stop offset="1" stop-color="#5f20cb"/></linearGradient><radialGradient id="v3oj" cx="0" cy="0" r="1" gradientTransform="matrix(-170.86087 259.7254 -674.01813 -443.40415 278.562 412.979)" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#49deff"/><stop offset=".724" stop-color="#29c3ff"/></radialGradient><radialGradient id="v3ol" cx="0" cy="0" r="1" gradientTransform="rotate(46.924 -378.504 245.25) scale(315.927)" gradientUnits="userSpaceOnUse"><stop offset=".039" stop-color="#0091ff"/><stop offset=".919" stop-color="#183dad"/></radialGradient></defs><path d="m463.984 140.145-344.347 218.27-29.614-46.72v-40.257a43.26 43.26 0 0 1 19.72-36.293L309.91 105.258c30.496-19.79 69.777-19.793 100.277-.008Z" fill="url(#v3oa)"/><path d="M407.102 103.34a91.293 91.293 0 0 1 3.082 1.914l156.214 101.332-387.336 245.52-59.437-93.77L403.895 177.8c26.925-17.102 28.105-55.57 3.207-74.461Z" fill="url(#v3ob)"/><path d="M333.602 498.988 179.066 452.11 507.63 243.836c27.672-17.54 27.601-57.938-.133-75.379l-1.48-.93 4.261 2.649 99.996 64.867a43.263 43.263 0 0 1 19.723 36.3v38.962Z" fill="url(#v3od)"/><path d="M405.402 630.035H183.738c-51.777 0-93.75-41.972-93.75-93.75v-264.34a44.473 44.473 0 0 0 20.754 37.621l327.582 206.52a61.737 61.737 0 0 1 28.809 52.226c-.004 34.09-27.64 61.723-61.73 61.723Z" fill="url(#v3oj)"/><path d="M108.75 345h142.5c26.926 0 48.75 21.824 48.75 48.75v142.5c0 26.926-21.824 48.75-48.75 48.75h-142.5C81.824 585 60 563.176 60 536.25v-142.5C60 366.824 81.824 345 108.75 345Z" fill="url(#v3ol)"/><path d="M179.387 534c-19.848 0-36.137-6.21-48.875-18.625-12.739-12.414-19.11-28.617-19.11-48.605 0-21.11 6.465-38.18 19.395-51.22C143.73 402.517 160.66 396 181.594 396c19.781 0 35.879 6.238 48.297 18.715 12.484 12.476 18.726 28.93 18.726 49.351 0 20.985-6.469 37.899-19.398 50.75C216.352 527.606 199.742 534 179.387 534Z" fill="#fff"/></svg>
+            </div>
+            <div class="accounts-section__header">
+              <h2 class="accounts-section__title">
+                <span class="provider-dot provider-dot--outlook" aria-hidden="true"></span>
+                Outlook
+              </h2>
+              <div class="accounts-section__right">
+                <span class="status-chip status-chip--disconnected">No accounts</span>
+              </div>
+            </div>
+            <div class="empty-slot">
+              <div class="empty-slot__icon">
+                <i data-lucide="mail" style="width:24px;height:24px"></i>
+              </div>
+              <p class="empty-slot__text">Connect your Outlook account to detect verification codes automatically.</p>
+              <button class="btn btn--primary">Connect Outlook</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- IMAP -->
+        <div>
+          <div class="variant__demo-label">IMAP (2 accounts)</div>
+          <div class="accounts-section section-with-watermark">
+            <div class="section-watermark" style="opacity:0.04">
+              <i data-lucide="server" style="width:96px;height:96px;color:var(--color-gray-400)"></i>
+            </div>
+            <div class="accounts-section__header">
+              <h2 class="accounts-section__title">
+                <span class="provider-dot provider-dot--imap" aria-hidden="true"></span>
+                IMAP
+              </h2>
+              <div class="accounts-section__right">
+                <span class="slot-counter">2/10</span>
+                <span class="status-chip status-chip--connected">Connected</span>
+              </div>
+            </div>
+            <div class="account-row">
+              <div class="account-row__info">
+                <span class="account-row__email">
+                  <span class="status-dot status-dot--online" aria-label="Online"></span>
+                  user@protonmail.com
+                </span>
+                <span class="account-row__meta">Synced 5 min ago</span>
+              </div>
+              <div class="account-row__actions">
+                <button class="btn--icon" aria-label="Sync"><i data-lucide="refresh-cw" style="width:14px;height:14px"></i></button>
+                <button class="btn--icon" aria-label="Remove"><i data-lucide="trash-2" style="width:14px;height:14px"></i></button>
+              </div>
+            </div>
+            <div class="account-row">
+              <div class="account-row__info">
+                <span class="account-row__email">
+                  <span class="status-dot status-dot--online" aria-label="Online"></span>
+                  me@fastmail.com
+                </span>
+                <span class="account-row__meta">Synced 8 min ago</span>
+              </div>
+              <div class="account-row__actions">
+                <button class="btn--icon" aria-label="Sync"><i data-lucide="refresh-cw" style="width:14px;height:14px"></i></button>
+                <button class="btn--icon" aria-label="Remove"><i data-lucide="trash-2" style="width:14px;height:14px"></i></button>
+              </div>
+            </div>
+            <p class="microcopy">Multiple IMAP accounts can be connected.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+
+    <!-- ========================================================
+         VARIANT 4: LOGO IN ACCOUNT ROW
+         ======================================================== -->
+
+    <section class="variant">
+      <div class="variant__header">
+        <h2 class="variant__title"><span class="variant__number">4</span>Logo in Account Row</h2>
+        <p class="variant__description">Small logo (16px) before the email address in each account row, replacing the status dot. The provider identity moves closer to the individual account.</p>
+      </div>
+      <div class="comparison-row">
+        <!-- Gmail -->
+        <div>
+          <div class="variant__demo-label">Gmail (1 account)</div>
+          <div class="accounts-section">
+            <div class="accounts-section__header">
+              <h2 class="accounts-section__title">Gmail</h2>
+              <div class="accounts-section__right">
+                <span class="slot-counter">1/1</span>
+                <span class="status-chip status-chip--connected">Connected</span>
+              </div>
+            </div>
+            <div class="account-row">
+              <div class="account-row__info">
+                <span class="account-row__email">
+                  <svg class="logo-16" viewBox="0 49.4 512 399.42" aria-hidden="true"><g fill="none" fill-rule="evenodd"><g fill-rule="nonzero"><path fill="#4285f4" d="M34.91 448.818h81.454V251L0 163.727V413.91c0 19.287 15.622 34.91 34.91 34.91z"/><path fill="#34a853" d="M395.636 448.818h81.455c19.287 0 34.909-15.622 34.909-34.909V163.727L395.636 251z"/><path fill="#fbbc04" d="M395.636 99.727V251L512 163.727v-46.545c0-43.142-49.25-67.782-83.782-41.891z"/></g><path fill="#ea4335" d="M116.364 251V99.727L256 204.455 395.636 99.727V251L256 355.727z"/><path fill="#c5221f" fill-rule="nonzero" d="M0 117.182v46.545L116.364 251V99.727L83.782 75.291C49.25 49.4 0 74.04 0 117.18z"/></g></svg>
+                  sarah@gmail.com
+                </span>
+                <span class="account-row__meta">Synced 2 min ago</span>
+              </div>
+              <div class="account-row__actions">
+                <button class="btn--icon" aria-label="Sync"><i data-lucide="refresh-cw" style="width:14px;height:14px"></i></button>
+                <button class="btn--icon" aria-label="Disconnect"><i data-lucide="log-out" style="width:14px;height:14px"></i></button>
+              </div>
+            </div>
+            <p class="microcopy">Gmail is limited to one account (browser limitation).</p>
+          </div>
+        </div>
+
+        <!-- Outlook -->
+        <div>
+          <div class="variant__demo-label">Outlook (disconnected)</div>
+          <div class="accounts-section">
+            <div class="accounts-section__header">
+              <h2 class="accounts-section__title">Outlook</h2>
+              <div class="accounts-section__right">
+                <span class="status-chip status-chip--disconnected">No accounts</span>
+              </div>
+            </div>
+            <div class="empty-slot">
+              <div class="empty-slot__icon">
+                <i data-lucide="mail" style="width:24px;height:24px"></i>
+              </div>
+              <p class="empty-slot__text">Connect your Outlook account to detect verification codes automatically.</p>
+              <button class="btn btn--primary">Connect Outlook</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- IMAP -->
+        <div>
+          <div class="variant__demo-label">IMAP (2 accounts)</div>
+          <div class="accounts-section">
+            <div class="accounts-section__header">
+              <h2 class="accounts-section__title">IMAP</h2>
+              <div class="accounts-section__right">
+                <span class="slot-counter">2/10</span>
+                <span class="status-chip status-chip--connected">Connected</span>
+              </div>
+            </div>
+            <div class="account-row">
+              <div class="account-row__info">
+                <span class="account-row__email">
+                  <i data-lucide="server" style="width:14px;height:14px;color:var(--color-gray-400);flex-shrink:0"></i>
+                  user@protonmail.com
+                </span>
+                <span class="account-row__meta">Synced 5 min ago</span>
+              </div>
+              <div class="account-row__actions">
+                <button class="btn--icon" aria-label="Sync"><i data-lucide="refresh-cw" style="width:14px;height:14px"></i></button>
+                <button class="btn--icon" aria-label="Remove"><i data-lucide="trash-2" style="width:14px;height:14px"></i></button>
+              </div>
+            </div>
+            <div class="account-row">
+              <div class="account-row__info">
+                <span class="account-row__email">
+                  <i data-lucide="server" style="width:14px;height:14px;color:var(--color-gray-400);flex-shrink:0"></i>
+                  me@fastmail.com
+                </span>
+                <span class="account-row__meta">Synced 8 min ago</span>
+              </div>
+              <div class="account-row__actions">
+                <button class="btn--icon" aria-label="Sync"><i data-lucide="refresh-cw" style="width:14px;height:14px"></i></button>
+                <button class="btn--icon" aria-label="Remove"><i data-lucide="trash-2" style="width:14px;height:14px"></i></button>
+              </div>
+            </div>
+            <p class="microcopy">Multiple IMAP accounts can be connected.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+
+    <!-- ========================================================
+         VARIANT 5: LOGO + TEXT BADGE PILL
+         ======================================================== -->
+
+    <section class="variant">
+      <div class="variant__header">
+        <h2 class="variant__title"><span class="variant__number">5</span>Logo + Text Badge Pill</h2>
+        <p class="variant__description">Logo combined with a styled badge: the provider logo and name form a single tinted pill element, replacing the plain text title.</p>
+      </div>
+      <div class="comparison-row">
+        <!-- Gmail -->
+        <div>
+          <div class="variant__demo-label">Gmail (1 account)</div>
+          <div class="accounts-section">
+            <div class="accounts-section__header" style="align-items:center">
+              <div class="provider-pill provider-pill--gmail">
+                <svg class="logo-20" viewBox="0 49.4 512 399.42" aria-hidden="true"><g fill="none" fill-rule="evenodd"><g fill-rule="nonzero"><path fill="#4285f4" d="M34.91 448.818h81.454V251L0 163.727V413.91c0 19.287 15.622 34.91 34.91 34.91z"/><path fill="#34a853" d="M395.636 448.818h81.455c19.287 0 34.909-15.622 34.909-34.909V163.727L395.636 251z"/><path fill="#fbbc04" d="M395.636 99.727V251L512 163.727v-46.545c0-43.142-49.25-67.782-83.782-41.891z"/></g><path fill="#ea4335" d="M116.364 251V99.727L256 204.455 395.636 99.727V251L256 355.727z"/><path fill="#c5221f" fill-rule="nonzero" d="M0 117.182v46.545L116.364 251V99.727L83.782 75.291C49.25 49.4 0 74.04 0 117.18z"/></g></svg>
+                Gmail
+              </div>
+              <div class="accounts-section__right">
+                <span class="slot-counter">1/1</span>
+                <span class="status-chip status-chip--connected">Connected</span>
+              </div>
+            </div>
+            <div class="account-row">
+              <div class="account-row__info">
+                <span class="account-row__email">
+                  <span class="status-dot status-dot--online" aria-label="Online"></span>
+                  sarah@gmail.com
+                </span>
+                <span class="account-row__meta">Synced 2 min ago</span>
+              </div>
+              <div class="account-row__actions">
+                <button class="btn--icon" aria-label="Sync"><i data-lucide="refresh-cw" style="width:14px;height:14px"></i></button>
+                <button class="btn--icon" aria-label="Disconnect"><i data-lucide="log-out" style="width:14px;height:14px"></i></button>
+              </div>
+            </div>
+            <p class="microcopy">Gmail is limited to one account (browser limitation).</p>
+          </div>
+        </div>
+
+        <!-- Outlook -->
+        <div>
+          <div class="variant__demo-label">Outlook (disconnected)</div>
+          <div class="accounts-section">
+            <div class="accounts-section__header" style="align-items:center">
+              <div class="provider-pill provider-pill--outlook">
+                <svg class="logo-20" viewBox="60 90.4 570.02 539.67" aria-hidden="true"><defs><linearGradient id="v5oa" x1="9.989" x2="30.932" y1="22.365" y2="9.375" gradientTransform="scale(15)" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#20a7fa"/><stop offset=".4" stop-color="#3bd5ff"/><stop offset="1" stop-color="#c4b0ff"/></linearGradient><linearGradient id="v5ob" x1="17.197" x2="28.856" y1="26.794" y2="8.126" gradientTransform="scale(15)" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#165ad9"/><stop offset=".501" stop-color="#1880e5"/><stop offset="1" stop-color="#8587ff"/></linearGradient><linearGradient id="v5od" x1="24.053" x2="44.51" y1="31.11" y2="18.018" gradientTransform="scale(15)" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#1a43a6"/><stop offset=".492" stop-color="#2052cb"/><stop offset="1" stop-color="#5f20cb"/></linearGradient><radialGradient id="v5oj" cx="0" cy="0" r="1" gradientTransform="matrix(-170.86087 259.7254 -674.01813 -443.40415 278.562 412.979)" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#49deff"/><stop offset=".724" stop-color="#29c3ff"/></radialGradient><radialGradient id="v5ol" cx="0" cy="0" r="1" gradientTransform="rotate(46.924 -378.504 245.25) scale(315.927)" gradientUnits="userSpaceOnUse"><stop offset=".039" stop-color="#0091ff"/><stop offset=".919" stop-color="#183dad"/></radialGradient></defs><path d="m463.984 140.145-344.347 218.27-29.614-46.72v-40.257a43.26 43.26 0 0 1 19.72-36.293L309.91 105.258c30.496-19.79 69.777-19.793 100.277-.008Z" fill="url(#v5oa)"/><path d="M407.102 103.34a91.293 91.293 0 0 1 3.082 1.914l156.214 101.332-387.336 245.52-59.437-93.77L403.895 177.8c26.925-17.102 28.105-55.57 3.207-74.461Z" fill="url(#v5ob)"/><path d="M333.602 498.988 179.066 452.11 507.63 243.836c27.672-17.54 27.601-57.938-.133-75.379l-1.48-.93 4.261 2.649 99.996 64.867a43.263 43.263 0 0 1 19.723 36.3v38.962Z" fill="url(#v5od)"/><path d="M405.402 630.035H183.738c-51.777 0-93.75-41.972-93.75-93.75v-264.34a44.473 44.473 0 0 0 20.754 37.621l327.582 206.52a61.737 61.737 0 0 1 28.809 52.226c-.004 34.09-27.64 61.723-61.73 61.723Z" fill="url(#v5oj)"/><path d="M108.75 345h142.5c26.926 0 48.75 21.824 48.75 48.75v142.5c0 26.926-21.824 48.75-48.75 48.75h-142.5C81.824 585 60 563.176 60 536.25v-142.5C60 366.824 81.824 345 108.75 345Z" fill="url(#v5ol)"/><path d="M179.387 534c-19.848 0-36.137-6.21-48.875-18.625-12.739-12.414-19.11-28.617-19.11-48.605 0-21.11 6.465-38.18 19.395-51.22C143.73 402.517 160.66 396 181.594 396c19.781 0 35.879 6.238 48.297 18.715 12.484 12.476 18.726 28.93 18.726 49.351 0 20.985-6.469 37.899-19.398 50.75C216.352 527.606 199.742 534 179.387 534Z" fill="#fff"/></svg>
+                Outlook
+              </div>
+              <div class="accounts-section__right">
+                <span class="status-chip status-chip--disconnected">No accounts</span>
+              </div>
+            </div>
+            <div class="empty-slot">
+              <div class="empty-slot__icon">
+                <i data-lucide="mail" style="width:24px;height:24px"></i>
+              </div>
+              <p class="empty-slot__text">Connect your Outlook account to detect verification codes automatically.</p>
+              <button class="btn btn--primary">Connect Outlook</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- IMAP -->
+        <div>
+          <div class="variant__demo-label">IMAP (2 accounts)</div>
+          <div class="accounts-section">
+            <div class="accounts-section__header" style="align-items:center">
+              <div class="provider-pill provider-pill--imap">
+                <i data-lucide="server" style="width:16px;height:16px;flex-shrink:0"></i>
+                IMAP
+              </div>
+              <div class="accounts-section__right">
+                <span class="slot-counter">2/10</span>
+                <span class="status-chip status-chip--connected">Connected</span>
+              </div>
+            </div>
+            <div class="account-row">
+              <div class="account-row__info">
+                <span class="account-row__email">
+                  <span class="status-dot status-dot--online" aria-label="Online"></span>
+                  user@protonmail.com
+                </span>
+                <span class="account-row__meta">Synced 5 min ago</span>
+              </div>
+              <div class="account-row__actions">
+                <button class="btn--icon" aria-label="Sync"><i data-lucide="refresh-cw" style="width:14px;height:14px"></i></button>
+                <button class="btn--icon" aria-label="Remove"><i data-lucide="trash-2" style="width:14px;height:14px"></i></button>
+              </div>
+            </div>
+            <div class="account-row">
+              <div class="account-row__info">
+                <span class="account-row__email">
+                  <span class="status-dot status-dot--online" aria-label="Online"></span>
+                  me@fastmail.com
+                </span>
+                <span class="account-row__meta">Synced 8 min ago</span>
+              </div>
+              <div class="account-row__actions">
+                <button class="btn--icon" aria-label="Sync"><i data-lucide="refresh-cw" style="width:14px;height:14px"></i></button>
+                <button class="btn--icon" aria-label="Remove"><i data-lucide="trash-2" style="width:14px;height:14px"></i></button>
+              </div>
+            </div>
+            <p class="microcopy">Multiple IMAP accounts can be connected.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+
+    <!-- ========================================================
+         VARIANT 6: LOGO ONLY (NO TEXT)
+         ======================================================== -->
+
+    <section class="variant">
+      <div class="variant__header">
+        <h2 class="variant__title"><span class="variant__number">6</span>Logo Only (No Text)</h2>
+        <p class="variant__description">The logo alone (28px) replaces both the dot and the text label. Relies on visual recognition. IMAP still needs text since it has no recognizable logo.</p>
+      </div>
+      <div class="comparison-row">
+        <!-- Gmail -->
+        <div>
+          <div class="variant__demo-label">Gmail (1 account)</div>
+          <div class="accounts-section">
+            <div class="accounts-section__header" style="align-items:center">
+              <div class="logo-only-title">
+                <svg class="logo-28" viewBox="0 49.4 512 399.42" role="img" aria-label="Gmail"><g fill="none" fill-rule="evenodd"><g fill-rule="nonzero"><path fill="#4285f4" d="M34.91 448.818h81.454V251L0 163.727V413.91c0 19.287 15.622 34.91 34.91 34.91z"/><path fill="#34a853" d="M395.636 448.818h81.455c19.287 0 34.909-15.622 34.909-34.909V163.727L395.636 251z"/><path fill="#fbbc04" d="M395.636 99.727V251L512 163.727v-46.545c0-43.142-49.25-67.782-83.782-41.891z"/></g><path fill="#ea4335" d="M116.364 251V99.727L256 204.455 395.636 99.727V251L256 355.727z"/><path fill="#c5221f" fill-rule="nonzero" d="M0 117.182v46.545L116.364 251V99.727L83.782 75.291C49.25 49.4 0 74.04 0 117.18z"/></g></svg>
+              </div>
+              <div class="accounts-section__right">
+                <span class="slot-counter">1/1</span>
+                <span class="status-chip status-chip--connected">Connected</span>
+              </div>
+            </div>
+            <div class="account-row">
+              <div class="account-row__info">
+                <span class="account-row__email">
+                  <span class="status-dot status-dot--online" aria-label="Online"></span>
+                  sarah@gmail.com
+                </span>
+                <span class="account-row__meta">Synced 2 min ago</span>
+              </div>
+              <div class="account-row__actions">
+                <button class="btn--icon" aria-label="Sync"><i data-lucide="refresh-cw" style="width:14px;height:14px"></i></button>
+                <button class="btn--icon" aria-label="Disconnect"><i data-lucide="log-out" style="width:14px;height:14px"></i></button>
+              </div>
+            </div>
+            <p class="microcopy">Gmail is limited to one account (browser limitation).</p>
+          </div>
+        </div>
+
+        <!-- Outlook -->
+        <div>
+          <div class="variant__demo-label">Outlook (disconnected)</div>
+          <div class="accounts-section">
+            <div class="accounts-section__header" style="align-items:center">
+              <div class="logo-only-title">
+                <svg class="logo-28" viewBox="60 90.4 570.02 539.67" role="img" aria-label="Outlook"><defs><linearGradient id="v6oa" x1="9.989" x2="30.932" y1="22.365" y2="9.375" gradientTransform="scale(15)" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#20a7fa"/><stop offset=".4" stop-color="#3bd5ff"/><stop offset="1" stop-color="#c4b0ff"/></linearGradient><linearGradient id="v6ob" x1="17.197" x2="28.856" y1="26.794" y2="8.126" gradientTransform="scale(15)" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#165ad9"/><stop offset=".501" stop-color="#1880e5"/><stop offset="1" stop-color="#8587ff"/></linearGradient><linearGradient id="v6od" x1="24.053" x2="44.51" y1="31.11" y2="18.018" gradientTransform="scale(15)" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#1a43a6"/><stop offset=".492" stop-color="#2052cb"/><stop offset="1" stop-color="#5f20cb"/></linearGradient><radialGradient id="v6oj" cx="0" cy="0" r="1" gradientTransform="matrix(-170.86087 259.7254 -674.01813 -443.40415 278.562 412.979)" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#49deff"/><stop offset=".724" stop-color="#29c3ff"/></radialGradient><radialGradient id="v6ol" cx="0" cy="0" r="1" gradientTransform="rotate(46.924 -378.504 245.25) scale(315.927)" gradientUnits="userSpaceOnUse"><stop offset=".039" stop-color="#0091ff"/><stop offset=".919" stop-color="#183dad"/></radialGradient></defs><path d="m463.984 140.145-344.347 218.27-29.614-46.72v-40.257a43.26 43.26 0 0 1 19.72-36.293L309.91 105.258c30.496-19.79 69.777-19.793 100.277-.008Z" fill="url(#v6oa)"/><path d="M407.102 103.34a91.293 91.293 0 0 1 3.082 1.914l156.214 101.332-387.336 245.52-59.437-93.77L403.895 177.8c26.925-17.102 28.105-55.57 3.207-74.461Z" fill="url(#v6ob)"/><path d="M333.602 498.988 179.066 452.11 507.63 243.836c27.672-17.54 27.601-57.938-.133-75.379l-1.48-.93 4.261 2.649 99.996 64.867a43.263 43.263 0 0 1 19.723 36.3v38.962Z" fill="url(#v6od)"/><path d="M405.402 630.035H183.738c-51.777 0-93.75-41.972-93.75-93.75v-264.34a44.473 44.473 0 0 0 20.754 37.621l327.582 206.52a61.737 61.737 0 0 1 28.809 52.226c-.004 34.09-27.64 61.723-61.73 61.723Z" fill="url(#v6oj)"/><path d="M108.75 345h142.5c26.926 0 48.75 21.824 48.75 48.75v142.5c0 26.926-21.824 48.75-48.75 48.75h-142.5C81.824 585 60 563.176 60 536.25v-142.5C60 366.824 81.824 345 108.75 345Z" fill="url(#v6ol)"/><path d="M179.387 534c-19.848 0-36.137-6.21-48.875-18.625-12.739-12.414-19.11-28.617-19.11-48.605 0-21.11 6.465-38.18 19.395-51.22C143.73 402.517 160.66 396 181.594 396c19.781 0 35.879 6.238 48.297 18.715 12.484 12.476 18.726 28.93 18.726 49.351 0 20.985-6.469 37.899-19.398 50.75C216.352 527.606 199.742 534 179.387 534Z" fill="#fff"/></svg>
+              </div>
+              <div class="accounts-section__right">
+                <span class="status-chip status-chip--disconnected">No accounts</span>
+              </div>
+            </div>
+            <div class="empty-slot">
+              <div class="empty-slot__icon">
+                <i data-lucide="mail" style="width:24px;height:24px"></i>
+              </div>
+              <p class="empty-slot__text">Connect your Outlook account to detect verification codes automatically.</p>
+              <button class="btn btn--primary">Connect Outlook</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- IMAP: still needs text label -->
+        <div>
+          <div class="variant__demo-label">IMAP (2 accounts) - text fallback</div>
+          <div class="accounts-section">
+            <div class="accounts-section__header" style="align-items:center">
+              <h2 class="accounts-section__title">
+                <i data-lucide="server" style="width:20px;height:20px;color:var(--color-gray-400);flex-shrink:0"></i>
+                IMAP
+              </h2>
+              <div class="accounts-section__right">
+                <span class="slot-counter">2/10</span>
+                <span class="status-chip status-chip--connected">Connected</span>
+              </div>
+            </div>
+            <div class="account-row">
+              <div class="account-row__info">
+                <span class="account-row__email">
+                  <span class="status-dot status-dot--online" aria-label="Online"></span>
+                  user@protonmail.com
+                </span>
+                <span class="account-row__meta">Synced 5 min ago</span>
+              </div>
+              <div class="account-row__actions">
+                <button class="btn--icon" aria-label="Sync"><i data-lucide="refresh-cw" style="width:14px;height:14px"></i></button>
+                <button class="btn--icon" aria-label="Remove"><i data-lucide="trash-2" style="width:14px;height:14px"></i></button>
+              </div>
+            </div>
+            <div class="account-row">
+              <div class="account-row__info">
+                <span class="account-row__email">
+                  <span class="status-dot status-dot--online" aria-label="Online"></span>
+                  me@fastmail.com
+                </span>
+                <span class="account-row__meta">Synced 8 min ago</span>
+              </div>
+              <div class="account-row__actions">
+                <button class="btn--icon" aria-label="Sync"><i data-lucide="refresh-cw" style="width:14px;height:14px"></i></button>
+                <button class="btn--icon" aria-label="Remove"><i data-lucide="trash-2" style="width:14px;height:14px"></i></button>
+              </div>
+            </div>
+            <p class="microcopy">Multiple IMAP accounts can be connected.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+
+    <!-- ========================================================
+         VARIANT 7: LOGO IN EMPTY STATE
+         ======================================================== -->
+
+    <section class="variant">
+      <div class="variant__header">
+        <h2 class="variant__title"><span class="variant__number">7</span>Logo in Empty State</h2>
+        <p class="variant__description">Large logo (48-64px) replaces the generic Mail/Server icon in the disconnected empty state. Creates a stronger visual anchor for what the user is about to connect.</p>
+      </div>
+      <div class="comparison-row">
+        <!-- Gmail empty -->
+        <div>
+          <div class="variant__demo-label">Gmail (disconnected)</div>
+          <div class="accounts-section">
+            <div class="accounts-section__header">
+              <h2 class="accounts-section__title">
+                <span class="provider-dot provider-dot--gmail" aria-hidden="true"></span>
+                Gmail
+              </h2>
+              <div class="accounts-section__right">
+                <span class="status-chip status-chip--disconnected">No accounts</span>
+              </div>
+            </div>
+            <div class="empty-slot">
+              <div class="empty-slot__logo">
+                <svg class="logo-48" viewBox="0 49.4 512 399.42" aria-hidden="true"><g fill="none" fill-rule="evenodd"><g fill-rule="nonzero"><path fill="#4285f4" d="M34.91 448.818h81.454V251L0 163.727V413.91c0 19.287 15.622 34.91 34.91 34.91z"/><path fill="#34a853" d="M395.636 448.818h81.455c19.287 0 34.909-15.622 34.909-34.909V163.727L395.636 251z"/><path fill="#fbbc04" d="M395.636 99.727V251L512 163.727v-46.545c0-43.142-49.25-67.782-83.782-41.891z"/></g><path fill="#ea4335" d="M116.364 251V99.727L256 204.455 395.636 99.727V251L256 355.727z"/><path fill="#c5221f" fill-rule="nonzero" d="M0 117.182v46.545L116.364 251V99.727L83.782 75.291C49.25 49.4 0 74.04 0 117.18z"/></g></svg>
+              </div>
+              <p class="empty-slot__text">Verification codes from Gmail can be detected and filled automatically. Nothing leaves this device.</p>
+              <button class="btn btn--primary">Connect Gmail</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Outlook empty -->
+        <div>
+          <div class="variant__demo-label">Outlook (disconnected)</div>
+          <div class="accounts-section">
+            <div class="accounts-section__header">
+              <h2 class="accounts-section__title">
+                <span class="provider-dot provider-dot--outlook" aria-hidden="true"></span>
+                Outlook
+              </h2>
+              <div class="accounts-section__right">
+                <span class="status-chip status-chip--disconnected">No accounts</span>
+              </div>
+            </div>
+            <div class="empty-slot">
+              <div class="empty-slot__logo">
+                <svg class="logo-48" viewBox="60 90.4 570.02 539.67" aria-hidden="true"><defs><linearGradient id="v7oa" x1="9.989" x2="30.932" y1="22.365" y2="9.375" gradientTransform="scale(15)" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#20a7fa"/><stop offset=".4" stop-color="#3bd5ff"/><stop offset="1" stop-color="#c4b0ff"/></linearGradient><linearGradient id="v7ob" x1="17.197" x2="28.856" y1="26.794" y2="8.126" gradientTransform="scale(15)" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#165ad9"/><stop offset=".501" stop-color="#1880e5"/><stop offset="1" stop-color="#8587ff"/></linearGradient><linearGradient id="v7od" x1="24.053" x2="44.51" y1="31.11" y2="18.018" gradientTransform="scale(15)" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#1a43a6"/><stop offset=".492" stop-color="#2052cb"/><stop offset="1" stop-color="#5f20cb"/></linearGradient><radialGradient id="v7oj" cx="0" cy="0" r="1" gradientTransform="matrix(-170.86087 259.7254 -674.01813 -443.40415 278.562 412.979)" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#49deff"/><stop offset=".724" stop-color="#29c3ff"/></radialGradient><radialGradient id="v7ol" cx="0" cy="0" r="1" gradientTransform="rotate(46.924 -378.504 245.25) scale(315.927)" gradientUnits="userSpaceOnUse"><stop offset=".039" stop-color="#0091ff"/><stop offset=".919" stop-color="#183dad"/></radialGradient></defs><path d="m463.984 140.145-344.347 218.27-29.614-46.72v-40.257a43.26 43.26 0 0 1 19.72-36.293L309.91 105.258c30.496-19.79 69.777-19.793 100.277-.008Z" fill="url(#v7oa)"/><path d="M407.102 103.34a91.293 91.293 0 0 1 3.082 1.914l156.214 101.332-387.336 245.52-59.437-93.77L403.895 177.8c26.925-17.102 28.105-55.57 3.207-74.461Z" fill="url(#v7ob)"/><path d="M333.602 498.988 179.066 452.11 507.63 243.836c27.672-17.54 27.601-57.938-.133-75.379l-1.48-.93 4.261 2.649 99.996 64.867a43.263 43.263 0 0 1 19.723 36.3v38.962Z" fill="url(#v7od)"/><path d="M405.402 630.035H183.738c-51.777 0-93.75-41.972-93.75-93.75v-264.34a44.473 44.473 0 0 0 20.754 37.621l327.582 206.52a61.737 61.737 0 0 1 28.809 52.226c-.004 34.09-27.64 61.723-61.73 61.723Z" fill="url(#v7oj)"/><path d="M108.75 345h142.5c26.926 0 48.75 21.824 48.75 48.75v142.5c0 26.926-21.824 48.75-48.75 48.75h-142.5C81.824 585 60 563.176 60 536.25v-142.5C60 366.824 81.824 345 108.75 345Z" fill="url(#v7ol)"/><path d="M179.387 534c-19.848 0-36.137-6.21-48.875-18.625-12.739-12.414-19.11-28.617-19.11-48.605 0-21.11 6.465-38.18 19.395-51.22C143.73 402.517 160.66 396 181.594 396c19.781 0 35.879 6.238 48.297 18.715 12.484 12.476 18.726 28.93 18.726 49.351 0 20.985-6.469 37.899-19.398 50.75C216.352 527.606 199.742 534 179.387 534Z" fill="#fff"/></svg>
+              </div>
+              <p class="empty-slot__text">Outlook and Microsoft 365 accounts are supported. All scanning happens locally on this device.</p>
+              <button class="btn btn--primary">Connect Outlook</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- IMAP empty -->
+        <div>
+          <div class="variant__demo-label">IMAP (disconnected)</div>
+          <div class="accounts-section">
+            <div class="accounts-section__header">
+              <h2 class="accounts-section__title">
+                <span class="provider-dot provider-dot--imap" aria-hidden="true"></span>
+                IMAP
+              </h2>
+              <div class="accounts-section__right">
+                <span class="status-chip status-chip--disconnected">No accounts</span>
+              </div>
+            </div>
+            <div class="empty-slot">
+              <div class="empty-slot__icon" style="width:56px;height:56px">
+                <i data-lucide="server" style="width:28px;height:28px"></i>
+              </div>
+              <p class="empty-slot__text">ProtonMail, Fastmail, Yahoo, and most other providers are supported. Everything stays local.</p>
+              <button class="btn btn--primary">Add IMAP Account</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+
+    <!-- ========================================================
+         VARIANT 8: COMBINED (RECOMMENDED)
+         ======================================================== -->
+
+    <section class="variant">
+      <div class="variant__header">
+        <h2 class="variant__title"><span class="variant__number">8</span>Combined: Logo in Container + Logo Empty State</h2>
+        <p class="variant__description">The recommended combination: Variant 2 (logo in tinted container) for section headers, plus Variant 7 (logo in empty state). This gives the strongest brand presence without removing any text labels or sacrificing accessibility.</p>
+      </div>
+      <div class="comparison-row">
+        <!-- Gmail connected -->
+        <div>
+          <div class="variant__demo-label">Gmail (1 account)</div>
+          <div class="accounts-section">
+            <div class="accounts-section__header" style="align-items:center">
+              <h2 class="accounts-section__title" style="gap:var(--space-3)">
+                <div class="provider-icon-container provider-icon-container--gmail">
+                  <svg class="logo-24" viewBox="0 49.4 512 399.42" aria-hidden="true"><g fill="none" fill-rule="evenodd"><g fill-rule="nonzero"><path fill="#4285f4" d="M34.91 448.818h81.454V251L0 163.727V413.91c0 19.287 15.622 34.91 34.91 34.91z"/><path fill="#34a853" d="M395.636 448.818h81.455c19.287 0 34.909-15.622 34.909-34.909V163.727L395.636 251z"/><path fill="#fbbc04" d="M395.636 99.727V251L512 163.727v-46.545c0-43.142-49.25-67.782-83.782-41.891z"/></g><path fill="#ea4335" d="M116.364 251V99.727L256 204.455 395.636 99.727V251L256 355.727z"/><path fill="#c5221f" fill-rule="nonzero" d="M0 117.182v46.545L116.364 251V99.727L83.782 75.291C49.25 49.4 0 74.04 0 117.18z"/></g></svg>
+                </div>
+                Gmail
+              </h2>
+              <div class="accounts-section__right">
+                <span class="slot-counter">1/1</span>
+                <span class="status-chip status-chip--connected">Connected</span>
+              </div>
+            </div>
+            <div class="account-row">
+              <div class="account-row__info">
+                <span class="account-row__email">
+                  <span class="status-dot status-dot--online" aria-label="Online"></span>
+                  sarah@gmail.com
+                </span>
+                <span class="account-row__meta">Synced 2 min ago</span>
+              </div>
+              <div class="account-row__actions">
+                <button class="btn--icon" aria-label="Sync"><i data-lucide="refresh-cw" style="width:14px;height:14px"></i></button>
+                <button class="btn--icon" aria-label="Disconnect"><i data-lucide="log-out" style="width:14px;height:14px"></i></button>
+              </div>
+            </div>
+            <p class="microcopy">Gmail is limited to one account (browser limitation).</p>
+          </div>
+        </div>
+
+        <!-- Outlook empty (shows logo in empty state) -->
+        <div>
+          <div class="variant__demo-label">Outlook (disconnected)</div>
+          <div class="accounts-section">
+            <div class="accounts-section__header" style="align-items:center">
+              <h2 class="accounts-section__title" style="gap:var(--space-3)">
+                <div class="provider-icon-container provider-icon-container--outlook">
+                  <svg class="logo-24" viewBox="60 90.4 570.02 539.67" aria-hidden="true"><defs><linearGradient id="v8oa" x1="9.989" x2="30.932" y1="22.365" y2="9.375" gradientTransform="scale(15)" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#20a7fa"/><stop offset=".4" stop-color="#3bd5ff"/><stop offset="1" stop-color="#c4b0ff"/></linearGradient><linearGradient id="v8ob" x1="17.197" x2="28.856" y1="26.794" y2="8.126" gradientTransform="scale(15)" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#165ad9"/><stop offset=".501" stop-color="#1880e5"/><stop offset="1" stop-color="#8587ff"/></linearGradient><linearGradient id="v8od" x1="24.053" x2="44.51" y1="31.11" y2="18.018" gradientTransform="scale(15)" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#1a43a6"/><stop offset=".492" stop-color="#2052cb"/><stop offset="1" stop-color="#5f20cb"/></linearGradient><radialGradient id="v8oj" cx="0" cy="0" r="1" gradientTransform="matrix(-170.86087 259.7254 -674.01813 -443.40415 278.562 412.979)" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#49deff"/><stop offset=".724" stop-color="#29c3ff"/></radialGradient><radialGradient id="v8ol" cx="0" cy="0" r="1" gradientTransform="rotate(46.924 -378.504 245.25) scale(315.927)" gradientUnits="userSpaceOnUse"><stop offset=".039" stop-color="#0091ff"/><stop offset=".919" stop-color="#183dad"/></radialGradient></defs><path d="m463.984 140.145-344.347 218.27-29.614-46.72v-40.257a43.26 43.26 0 0 1 19.72-36.293L309.91 105.258c30.496-19.79 69.777-19.793 100.277-.008Z" fill="url(#v8oa)"/><path d="M407.102 103.34a91.293 91.293 0 0 1 3.082 1.914l156.214 101.332-387.336 245.52-59.437-93.77L403.895 177.8c26.925-17.102 28.105-55.57 3.207-74.461Z" fill="url(#v8ob)"/><path d="M333.602 498.988 179.066 452.11 507.63 243.836c27.672-17.54 27.601-57.938-.133-75.379l-1.48-.93 4.261 2.649 99.996 64.867a43.263 43.263 0 0 1 19.723 36.3v38.962Z" fill="url(#v8od)"/><path d="M405.402 630.035H183.738c-51.777 0-93.75-41.972-93.75-93.75v-264.34a44.473 44.473 0 0 0 20.754 37.621l327.582 206.52a61.737 61.737 0 0 1 28.809 52.226c-.004 34.09-27.64 61.723-61.73 61.723Z" fill="url(#v8oj)"/><path d="M108.75 345h142.5c26.926 0 48.75 21.824 48.75 48.75v142.5c0 26.926-21.824 48.75-48.75 48.75h-142.5C81.824 585 60 563.176 60 536.25v-142.5C60 366.824 81.824 345 108.75 345Z" fill="url(#v8ol)"/><path d="M179.387 534c-19.848 0-36.137-6.21-48.875-18.625-12.739-12.414-19.11-28.617-19.11-48.605 0-21.11 6.465-38.18 19.395-51.22C143.73 402.517 160.66 396 181.594 396c19.781 0 35.879 6.238 48.297 18.715 12.484 12.476 18.726 28.93 18.726 49.351 0 20.985-6.469 37.899-19.398 50.75C216.352 527.606 199.742 534 179.387 534Z" fill="#fff"/></svg>
+                </div>
+                Outlook
+              </h2>
+              <div class="accounts-section__right">
+                <span class="status-chip status-chip--disconnected">No accounts</span>
+              </div>
+            </div>
+            <div class="empty-slot">
+              <div class="empty-slot__logo">
+                <svg class="logo-48" viewBox="60 90.4 570.02 539.67" aria-hidden="true" style="opacity:0.7"><defs><linearGradient id="v8eoa" x1="9.989" x2="30.932" y1="22.365" y2="9.375" gradientTransform="scale(15)" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#20a7fa"/><stop offset=".4" stop-color="#3bd5ff"/><stop offset="1" stop-color="#c4b0ff"/></linearGradient><linearGradient id="v8eob" x1="17.197" x2="28.856" y1="26.794" y2="8.126" gradientTransform="scale(15)" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#165ad9"/><stop offset=".501" stop-color="#1880e5"/><stop offset="1" stop-color="#8587ff"/></linearGradient><linearGradient id="v8eod" x1="24.053" x2="44.51" y1="31.11" y2="18.018" gradientTransform="scale(15)" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#1a43a6"/><stop offset=".492" stop-color="#2052cb"/><stop offset="1" stop-color="#5f20cb"/></linearGradient><radialGradient id="v8eoj" cx="0" cy="0" r="1" gradientTransform="matrix(-170.86087 259.7254 -674.01813 -443.40415 278.562 412.979)" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#49deff"/><stop offset=".724" stop-color="#29c3ff"/></radialGradient><radialGradient id="v8eol" cx="0" cy="0" r="1" gradientTransform="rotate(46.924 -378.504 245.25) scale(315.927)" gradientUnits="userSpaceOnUse"><stop offset=".039" stop-color="#0091ff"/><stop offset=".919" stop-color="#183dad"/></radialGradient></defs><path d="m463.984 140.145-344.347 218.27-29.614-46.72v-40.257a43.26 43.26 0 0 1 19.72-36.293L309.91 105.258c30.496-19.79 69.777-19.793 100.277-.008Z" fill="url(#v8eoa)"/><path d="M407.102 103.34a91.293 91.293 0 0 1 3.082 1.914l156.214 101.332-387.336 245.52-59.437-93.77L403.895 177.8c26.925-17.102 28.105-55.57 3.207-74.461Z" fill="url(#v8eob)"/><path d="M333.602 498.988 179.066 452.11 507.63 243.836c27.672-17.54 27.601-57.938-.133-75.379l-1.48-.93 4.261 2.649 99.996 64.867a43.263 43.263 0 0 1 19.723 36.3v38.962Z" fill="url(#v8eod)"/><path d="M405.402 630.035H183.738c-51.777 0-93.75-41.972-93.75-93.75v-264.34a44.473 44.473 0 0 0 20.754 37.621l327.582 206.52a61.737 61.737 0 0 1 28.809 52.226c-.004 34.09-27.64 61.723-61.73 61.723Z" fill="url(#v8eoj)"/><path d="M108.75 345h142.5c26.926 0 48.75 21.824 48.75 48.75v142.5c0 26.926-21.824 48.75-48.75 48.75h-142.5C81.824 585 60 563.176 60 536.25v-142.5C60 366.824 81.824 345 108.75 345Z" fill="url(#v8eol)"/><path d="M179.387 534c-19.848 0-36.137-6.21-48.875-18.625-12.739-12.414-19.11-28.617-19.11-48.605 0-21.11 6.465-38.18 19.395-51.22C143.73 402.517 160.66 396 181.594 396c19.781 0 35.879 6.238 48.297 18.715 12.484 12.476 18.726 28.93 18.726 49.351 0 20.985-6.469 37.899-19.398 50.75C216.352 527.606 199.742 534 179.387 534Z" fill="#fff"/></svg>
+              </div>
+              <p class="empty-slot__text">Outlook and Microsoft 365 accounts are supported. All scanning happens locally on this device.</p>
+              <button class="btn btn--primary">Connect Outlook</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- IMAP connected -->
+        <div>
+          <div class="variant__demo-label">IMAP (2 accounts)</div>
+          <div class="accounts-section">
+            <div class="accounts-section__header" style="align-items:center">
+              <h2 class="accounts-section__title" style="gap:var(--space-3)">
+                <div class="provider-icon-container provider-icon-container--imap">
+                  <i data-lucide="server" style="width:20px;height:20px"></i>
+                </div>
+                IMAP
+              </h2>
+              <div class="accounts-section__right">
+                <span class="slot-counter">2/10</span>
+                <span class="status-chip status-chip--connected">Connected</span>
+              </div>
+            </div>
+            <div class="account-row">
+              <div class="account-row__info">
+                <span class="account-row__email">
+                  <span class="status-dot status-dot--online" aria-label="Online"></span>
+                  user@protonmail.com
+                </span>
+                <span class="account-row__meta">Synced 5 min ago</span>
+              </div>
+              <div class="account-row__actions">
+                <button class="btn--icon" aria-label="Sync"><i data-lucide="refresh-cw" style="width:14px;height:14px"></i></button>
+                <button class="btn--icon" aria-label="Remove"><i data-lucide="trash-2" style="width:14px;height:14px"></i></button>
+              </div>
+            </div>
+            <div class="account-row">
+              <div class="account-row__info">
+                <span class="account-row__email">
+                  <span class="status-dot status-dot--online" aria-label="Online"></span>
+                  me@fastmail.com
+                </span>
+                <span class="account-row__meta">Synced 8 min ago</span>
+              </div>
+              <div class="account-row__actions">
+                <button class="btn--icon" aria-label="Sync"><i data-lucide="refresh-cw" style="width:14px;height:14px"></i></button>
+                <button class="btn--icon" aria-label="Remove"><i data-lucide="trash-2" style="width:14px;height:14px"></i></button>
+              </div>
+            </div>
+            <p class="microcopy">Multiple IMAP accounts can be connected.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Decisions -->
+  <script type="application/json" id="decisions">
+  [
+    "Variant 0 baseline included for direct comparison - Without seeing the current colored-dot approach side by side, it is impossible to judge whether logos actually improve the UI. The baseline anchors every comparison.",
+    "SVG gradient IDs namespaced per variant - Each variant uses unique gradient/filter IDs (v1oa, v2oa, etc.) to prevent SVG definition collisions when multiple copies of the Outlook logo appear on the same page. Without this, only the first defined gradient would render and later variants would break.",
+    "IMAP uses Lucide Server icon consistently across all variants - IMAP has no official brand logo, so a generic Server icon from Lucide provides consistent visual weight. Using an abstract server icon avoids implying IMAP is a specific service while still differentiating it from Gmail/Outlook.",
+    "Logo-only variant (6) still keeps text for IMAP - Gmail and Outlook logos are universally recognizable and can stand alone. IMAP is a protocol name, not a brand with visual recognition, so removing the text label would confuse users who do not know what the server icon means.",
+    "Variant 8 (combined) proposed as the recommended approach - Combining the tinted container header (Variant 2) with provider logos in empty states (Variant 7) provides the strongest brand signal at both key moments: when viewing connected accounts and when deciding to connect a new one. It preserves all text labels for accessibility.",
+    "Tinted container background uses provider brand colors with low opacity - The rgba backgrounds (8% light, 15% dark) for Gmail red and Outlook blue create visual brand association without competing with the actual logo colors. The opacity is tuned separately for dark mode to maintain visibility against dark surfaces.",
+    "Watermark variant (3) uses pointer-events:none - The large background logo must not interfere with clicks on buttons and links that overlap its position. pointer-events:none ensures complete passthrough."
+  ]
+  </script>
+
+  <script src="../shared/theme-switcher.js"></script>
+  <script>
+    // Initialize Lucide icons
+    if (typeof lucide !== 'undefined') {
+      lucide.createIcons();
+    }
+  </script>
+</body>
+</html>
