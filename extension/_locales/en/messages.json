@@ -1740,21 +1740,25 @@
     "message": "Detects login and verification pages so codes can be offered for autofill.",
     "description": "Permission reason: tabs"
   },
-  "security_perm_activetab_reason": {
-    "message": "Checks the current tab for code input fields so verification codes can be inserted.",
-    "description": "Permission reason: activeTab"
-  },
   "security_perm_storage_reason": {
     "message": "Saves preferences and settings locally in Chrome's encrypted storage.",
     "description": "Permission reason: storage"
   },
-  "security_perm_scripting_reason": {
-    "message": "Places the autofill chip on login pages so codes can be inserted into form fields.",
-    "description": "Permission reason: scripting"
+  "security_perm_alarms_reason": {
+    "message": "Schedules periodic email checks in the background.",
+    "description": "Permission reason: alarms"
+  },
+  "security_perm_notifications_reason": {
+    "message": "Can show system notifications for detected verification codes.",
+    "description": "Permission reason: notifications"
   },
   "security_perm_nativemessaging_reason": {
     "message": "Communicates with the local InboxBridge helper for IMAP accounts. Only active if installed.",
     "description": "Permission reason: nativeMessaging"
+  },
+  "security_perm_hostpermissions_reason": {
+    "message": "Allows the autofill chip to appear on any website where a verification code field is detected.",
+    "description": "Permission reason: host_permissions"
   },
 
   "security_opensource_title": {

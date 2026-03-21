@@ -21,7 +21,7 @@ interface AddImapAccountModalProps {
     server: string
     port: number
     label: string
-  }) => void
+  }) => void | Promise<void>
   onCancel: () => void
   /** Prefilled data for reconnect/edit */
   prefillData?: {
@@ -193,17 +193,20 @@ export function AddImapAccountModal({
           password: password,
         })
 
-        // Show success state briefly, then close
-        setTestState('success')
-        setTimeout(() => {
-          onConfirm({
+        // Let the parent store the mailbox before showing success
+        try {
+          await onConfirm({
             accountId: configResult.accountId,
             email,
             server,
             port: parseInt(port, 10),
             label: trimmedLabel,
           })
-        }, 500)
+          setTestState('success')
+        } catch {
+          setTestState('error')
+          setTestError(t('accounts_imap_error_generic'))
+        }
       } else {
         setTestState('error')
         setTestError(result.error || t('accounts_imap_error_generic'))
