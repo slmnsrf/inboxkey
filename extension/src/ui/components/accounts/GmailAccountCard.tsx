@@ -254,15 +254,22 @@ export function GmailAccountCard({
             <Mail size={24} aria-hidden="true" />
           </div>
           <p className="empty-slot__text">{t('accounts_empty_gmail')}</p>
-          <StatefulButton
-            state={connectionState}
-            onClick={handleConnect}
-            idleText={t('accounts_connect_gmail')}
-            loadingText={getStageLabel(connectionStage)}
-            variant="primary"
-            disabled={disabled}
-            aria-label={t('aria_connect_gmail_account')}
-          />
+          {connectionState === 'loading' ? (
+            <div className="connecting-status" role="status" aria-live="polite">
+              <span className="connecting-spinner" aria-hidden="true" />
+              <span>{getStageLabel(connectionStage)}</span>
+            </div>
+          ) : (
+            <StatefulButton
+              state={connectionState}
+              onClick={handleConnect}
+              idleText={t('accounts_connect_gmail')}
+              loadingText={getStageLabel(connectionStage)}
+              variant="primary"
+              disabled={disabled}
+              aria-label={t('aria_connect_gmail_account')}
+            />
+          )}
         </div>
       )}
     </AccountSection>

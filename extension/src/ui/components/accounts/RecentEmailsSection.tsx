@@ -52,7 +52,16 @@ export function RecentEmailsSection({
             return (
               <article key={item.id} className="recent-card">
                 <header className="recent-card__meta">
-                  <span>{providerLabel}</span>
+                  <span className="provider-badge">
+                    <span
+                      className={`provider-badge__dot provider-badge__dot--${item.provider || 'imap'}`}
+                      aria-hidden="true"
+                    />
+                    <span>{providerLabel}</span>
+                  </span>
+                  <span className="meta-dot" aria-hidden="true" />
+                  <span>{item.from || t('value_not_available')}</span>
+                  <span className="meta-dot" aria-hidden="true" />
                   <span aria-label={t('aria_received_time', [item.receivedLabel])}>
                     {item.receivedLabel}
                   </span>
@@ -60,9 +69,6 @@ export function RecentEmailsSection({
                 <h4 className="recent-card__title">
                   {item.subject || t('value_not_available')}
                 </h4>
-                <p className="accounts-section__description">
-                  {item.from || t('value_not_available')}
-                </p>
                 <div className="recent-actions">
                   {item.kind === 'code' && item.code && (
                     <>
