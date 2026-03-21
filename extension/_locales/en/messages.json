@@ -1568,5 +1568,144 @@
         "example": "security@inboxkey.com"
       }
     }
+  },
+
+  "about_hero_name": {
+    "message": "InboxKey",
+    "description": "About hero: product name"
+  },
+  "about_version_aria": {
+    "message": "Copy version to clipboard: $VERSION$",
+    "description": "About hero: version badge ARIA label",
+    "placeholders": {
+      "version": {
+        "content": "$1",
+        "example": "v1.4.2+a3f8c01e"
+      }
+    }
+  },
+  "about_version_click_hint": {
+    "message": "Click to copy",
+    "description": "About hero: version badge hover tooltip"
+  },
+  "about_version_copied": {
+    "message": "Version copied to clipboard",
+    "description": "About hero: toast after copying version"
+  },
+  "about_version_copy_failed": {
+    "message": "Failed to copy version",
+    "description": "About hero: toast when copy fails"
+  },
+  "about_devnote_heading": {
+    "message": "Why this exists",
+    "description": "About: developer note heading"
+  },
+  "about_devnote_p1": {
+    "message": "I built InboxKey because I was tired of switching between tabs to copy verification codes. It sounds small, but it interrupts your flow dozens of times a week.",
+    "description": "About: developer note paragraph 1"
+  },
+  "about_devnote_p2": {
+    "message": "Email access is sensitive. I know that. That is exactly why everything is open-source, runs locally, and will never phone home. You should not have to trust a stranger with your inbox. You should be able to verify.",
+    "description": "About: developer note paragraph 2"
+  },
+  "about_devnote_signature": {
+    "message": "Selman, the dev",
+    "description": "About: developer note signature"
+  },
+  "about_resources_title": {
+    "message": "Resources",
+    "description": "About: resources section heading"
+  },
+  "about_resource_source": {
+    "message": "Source Code",
+    "description": "About: source code link label"
+  },
+  "about_resource_source_hint": {
+    "message": "View on GitHub",
+    "description": "About: source code link hint"
+  },
+  "about_resource_issues": {
+    "message": "Report an Issue",
+    "description": "About: issues link label"
+  },
+  "about_resource_issues_hint": {
+    "message": "Bugs and feedback",
+    "description": "About: issues link hint"
+  },
+  "about_resource_privacy": {
+    "message": "Privacy Policy",
+    "description": "About: privacy policy link label"
+  },
+  "about_resource_privacy_hint": {
+    "message": "Nothing leaves your device",
+    "description": "About: privacy policy link hint"
+  },
+  "about_support_heading": {
+    "message": "If this saves you time",
+    "description": "About: support section heading"
+  },
+  "about_support_body": {
+    "message": "InboxKey is free and always will be. A coffee keeps development going and lets me know someone out there finds it useful. Thank you.",
+    "description": "About: support section message"
+  },
+  "about_support_optional": {
+    "message": "Totally optional. Never nags, never blocks features.",
+    "description": "About: support section disclaimer"
+  },
+  "about_license": {
+    "message": "Apache-2.0 License",
+    "description": "About footer: license badge"
+  },
+  "about_credits_made_by": {
+    "message": "Made with care by",
+    "description": "About footer: credits prefix"
+  },
+  "about_credits_verified": {
+    "message": "Verified publisher. Reproducible builds.",
+    "description": "About footer: credits secondary line"
+  },
+  "about_verify_toggle": {
+    "message": "How to verify this build",
+    "description": "About: build verification toggle label"
+  },
+  "about_verify_intro": {
+    "message": "The version badge above shows the exact git commit this build was made from. To verify what code is running:",
+    "description": "About: build verification intro"
+  },
+  "about_verify_step1_label": {
+    "message": "1. Read the source:",
+    "description": "About: build verify step 1 label"
+  },
+  "about_verify_step1_text": {
+    "message": "Click the version badge to open the exact commit on GitHub. Every line of code that went into this build is visible there.",
+    "description": "About: build verify step 1 text"
+  },
+  "about_verify_step2_label": {
+    "message": "2. Inspect the installed extension:",
+    "description": "About: build verify step 2 label"
+  },
+  "about_verify_step2_text_before": {
+    "message": "Open",
+    "description": "About: build verify step 2 text before code"
+  },
+  "about_verify_step2_text_after": {
+    "message": ", find InboxKey, enable Developer mode, and click Details to browse the installed files.",
+    "description": "About: build verify step 2 text after code"
+  },
+  "about_verify_step3_label": {
+    "message": "3. Build from source:",
+    "description": "About: build verify step 3 label"
+  },
+  "about_verify_step3_text_before": {
+    "message": "Clone the repository, check out the commit shown above, and run",
+    "description": "About: build verify step 3 text before code"
+  },
+  "about_verify_step3_text_after": {
+    "message": "to produce your own build.",
+    "description": "About: build verify step 3 text after code"
+  },
+  "about_verify_closing": {
+    "message": "No trust required. The code is public, the build is traceable, and the installed files are inspectable.",
+    "description": "About: build verification closing statement"
   }
 }
