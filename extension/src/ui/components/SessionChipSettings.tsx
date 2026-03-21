@@ -45,7 +45,7 @@ export function SessionChipSettings() {
       // Update ARIA live region for screen readers
       const statusEl = document.getElementById('session-chip-status')
       if (statusEl) {
-        statusEl.textContent = `Session status chips ${newValue ? 'enabled' : 'disabled'}`
+        statusEl.textContent = `On-page indicator ${newValue ? 'enabled' : 'disabled'}`
       }
 
       showToast(t('toast_settings_saved'), 'success')
@@ -57,7 +57,7 @@ export function SessionChipSettings() {
       // Announce error to screen readers
       const statusEl = document.getElementById('session-chip-status')
       if (statusEl) {
-        statusEl.textContent = 'Failed to save session chip setting'
+        statusEl.textContent = 'Failed to save indicator setting'
       }
 
       showToast(t('error_generic'), 'error')
@@ -74,7 +74,7 @@ export function SessionChipSettings() {
       // Update ARIA live region for screen readers
       const statusEl = document.getElementById('session-chip-status')
       if (statusEl) {
-        statusEl.textContent = `Email check timeout set to ${value} seconds`
+        statusEl.textContent = `Check duration set to ${value} seconds`
       }
 
       showToast(t('toast_settings_saved'), 'success')
@@ -134,10 +134,10 @@ export function SessionChipSettings() {
         <div className="setting-row" aria-labelledby="session-timeout-label">
           <div className="setting-row__info">
             <label htmlFor="session-timeout" id="session-timeout-label" className="setting-row__label">
-              Email check timeout
+              {t('settings_session_timeout_label')}
             </label>
             <p className="setting-row__description">
-              How long to wait for verification codes (10-120 seconds)
+              {t('settings_session_timeout_description')}
             </p>
           </div>
           <div className="setting-row__control" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '8px' }}>
@@ -160,7 +160,7 @@ export function SessionChipSettings() {
         </div>
 
         <p id="session-timeout-help" className="session-chip-settings-card__hint">
-          Higher timeouts allow more checks. Fast providers: 20-30s (5-6 checks). Slow providers: 60-120s (9-12 checks).
+          {t('settings_session_timeout_hint')}
         </p>
 
         <span id="session-chip-status" className="sr-only" role="status" aria-live="polite" aria-atomic="true"></span>

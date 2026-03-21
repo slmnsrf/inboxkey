@@ -6,6 +6,7 @@
  */
 
 import React from 'react'
+import { t } from '@/lib/i18n'
 
 export interface BlacklistManageButtonProps {
   onClick: () => void
@@ -15,9 +16,9 @@ export function BlacklistManageButton({ onClick }: BlacklistManageButtonProps) {
   return (
     <div className="setting-row">
       <div className="setting-row__info">
-        <p className="setting-row__label">Manage Ignored Sites</p>
+        <p className="setting-row__label">{t('settings_blacklist_label')}</p>
         <p className="setting-row__description">
-          Prevent InboxKey from starting sessions on specific domains or URLs
+          {t('settings_blacklist_description')}
         </p>
       </div>
       <div className="setting-row__control">
@@ -27,7 +28,7 @@ export function BlacklistManageButton({ onClick }: BlacklistManageButtonProps) {
           onClick={onClick}
           data-testid="blacklist-manage-button"
         >
-          Manage
+          {t('settings_blacklist_manage_button')}
         </button>
       </div>
     </div>

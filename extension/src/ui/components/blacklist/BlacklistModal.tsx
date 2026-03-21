@@ -10,6 +10,7 @@ import React, { useState, useEffect } from 'react'
 import { Modal } from '@/ui/components/Modal'
 import { BlacklistDomainTab } from './BlacklistDomainTab'
 import { BlacklistUrlTab } from './BlacklistUrlTab'
+import { t } from '@/lib/i18n'
 import './BlacklistModal.css'
 
 export type BlacklistTab = 'domains' | 'urls'
@@ -40,7 +41,7 @@ export function BlacklistModal({ isOpen, onClose, initialTab = 'domains' }: Blac
     <Modal
       isOpen={isOpen}
       onClose={handleClose}
-      title="Manage Ignored Sites"
+      title={t('settings_blacklist_modal_title')}
       size="large"
       className="blacklist-modal"
     >

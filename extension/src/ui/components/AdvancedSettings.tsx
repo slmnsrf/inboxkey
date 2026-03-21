@@ -131,6 +131,7 @@ export function AdvancedSettings() {
             {isExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
           </span>
           <h3 id="advanced-heading">{t('settings_advanced_section')}</h3>
+          <span className="advanced-settings-card__hint-label">{t('settings_advanced_hint')}</span>
         </button>
       </div>
 
@@ -161,7 +162,7 @@ export function AdvancedSettings() {
           </div>
 
           <p id="domains-enabled-help" className="advanced-settings-card__hint">
-            When enabled, InboxKey will work on all domains by default. You can still disable it for specific domains using the toggle in the popup.
+            {t('settings_advanced_default_enabled_hint')}
           </p>
 
           <div className="setting-divider" />
@@ -191,7 +192,7 @@ export function AdvancedSettings() {
           </div>
 
           <p id="banking-blocklist-help" className="advanced-settings-card__hint">
-            Covers 150+ major banks worldwide. You can still enable InboxKey for specific banks using the toggle in the popup.
+            {t('settings_advanced_banking_blocklist_hint')}
           </p>
           <span id="banking-blocklist-status" className="sr-only" role="status" aria-live="polite" aria-atomic="true"></span>
 
@@ -203,18 +204,17 @@ export function AdvancedSettings() {
                 <div className="setting-row__info">
                   <label htmlFor="extended-button-detection" className="setting-row__label">
                     <span className="beta-badge">BETA</span>
-                    Extended Button Detection
+                    {t('settings_advanced_extended_detection')}
                   </label>
                   <p className="setting-row__description">
-                    Detects custom button components (Vue.js, React) used by modern websites.
+                    {t('settings_advanced_extended_detection_desc')}
                   </p>
                   <div className="setting-row__warning">
                     <span className="warning-icon">
                       <WarningIcon size={16} />
                     </span>
                     <span className="warning-text">
-                      <strong>Note:</strong> May occasionally interact with navigation elements.
-                      Only enable if your sites use custom button components.
+                      {t('settings_advanced_extended_detection_warning')}
                     </span>
                   </div>
                 </div>
@@ -235,28 +235,28 @@ export function AdvancedSettings() {
               <span id="extended-button-status" className="sr-only" role="status" aria-live="polite" aria-atomic="true"></span>
 
               <details className="setting-details">
-                <summary className="setting-details__summary">What does this detect?</summary>
+                <summary className="setting-details__summary">{t('settings_advanced_extended_detection_details_summary')}</summary>
                 <div className="setting-details__content">
                   <div className="detection-types">
                     <div className="detection-type">
-                      <strong className="detection-type__label">Standard (always enabled):</strong>
+                      <strong className="detection-type__label">{t('settings_advanced_detection_standard_label')}</strong>
                       <code className="detection-type__code">&lt;button&gt;</code>,
                       <code className="detection-type__code">&lt;input type="submit"&gt;</code>
                     </div>
                     <div className="detection-type">
-                      <strong className="detection-type__label">Extended (when enabled):</strong>
+                      <strong className="detection-type__label">{t('settings_advanced_detection_extended_label')}</strong>
                       <code className="detection-type__code">&lt;a&gt;</code> tags,
                       <code className="detection-type__code">role="button"</code> elements
                     </div>
                   </div>
                   <p className="setting-details__note">
-                    <strong>Safety:</strong> Extended detection includes 11 protection layers to prevent clicking dangerous buttons.
+                    {t('settings_advanced_detection_safety_note')}
                   </p>
                 </div>
               </details>
 
               <p id="extended-button-detection-help" className="advanced-settings-card__hint">
-                This feature is in beta and may occasionally click unintended buttons. Monitor its behavior and disable if issues occur.
+                {t('settings_advanced_extended_detection_hint')}
               </p>
             </>
           )}

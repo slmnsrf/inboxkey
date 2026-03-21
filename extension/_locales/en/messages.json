@@ -632,20 +632,80 @@
     "description": "Advanced settings section heading"
   },
   "settings_advanced_default_enabled": {
-    "message": "New domains enabled by default",
+    "message": "Active on all sites by default",
     "description": "Advanced setting: default domain state"
   },
   "settings_advanced_default_enabled_desc": {
-    "message": "Control whether InboxKey is active on new domains by default",
+    "message": "When enabled, InboxKey works on all sites. It can still be turned off per site from the popup.",
     "description": "Advanced setting: default domain state description"
   },
   "settings_advanced_banking_blocklist": {
-    "message": "Disable on banking sites",
+    "message": "Skip banking sites",
     "description": "Advanced setting: banking blocklist toggle"
   },
   "settings_advanced_banking_blocklist_desc": {
-    "message": "Automatically disable InboxKey on major banking sites.",
+    "message": "InboxKey is automatically disabled on known banking and financial sites.",
     "description": "Advanced setting: banking blocklist description"
+  },
+  "settings_advanced_default_enabled_hint": {
+    "message": "When enabled, InboxKey works on all sites. It can still be turned off per site from the popup.",
+    "description": "Advanced setting: default domain state hint"
+  },
+  "settings_advanced_banking_blocklist_hint": {
+    "message": "Covers 150+ major banks worldwide. Individual banks can still be enabled from the popup.",
+    "description": "Advanced setting: banking blocklist hint"
+  },
+  "settings_advanced_hint": {
+    "message": "Usually not needed",
+    "description": "Advanced settings section hint"
+  },
+  "settings_advanced_extended_detection": {
+    "message": "Extended Button Detection",
+    "description": "Advanced setting: extended button detection label"
+  },
+  "settings_advanced_extended_detection_desc": {
+    "message": "Some websites use non-standard buttons that are harder to detect. This helps find them.",
+    "description": "Advanced setting: extended button detection description"
+  },
+  "settings_advanced_extended_detection_warning": {
+    "message": "Heads up: On rare occasions, a wrong element might be detected as a button. Only needed if submit buttons are being missed on some sites.",
+    "description": "Advanced setting: extended button detection warning"
+  },
+  "settings_advanced_extended_detection_hint": {
+    "message": "This feature is in beta. Monitor its behavior and disable if issues occur.",
+    "description": "Advanced setting: extended button detection hint"
+  },
+  "settings_advanced_extended_detection_details_summary": {
+    "message": "How does this work?",
+    "description": "Advanced setting: extended detection details summary"
+  },
+  "settings_advanced_detection_standard_label": {
+    "message": "Standard (always on):",
+    "description": "Advanced setting: standard detection label"
+  },
+  "settings_advanced_detection_extended_label": {
+    "message": "Extended (when enabled):",
+    "description": "Advanced setting: extended detection label"
+  },
+  "settings_advanced_detection_safety_note": {
+    "message": "Links and custom elements styled as buttons are also detected.",
+    "description": "Advanced setting: detection safety note"
+  },
+  "settings_blacklist_label": {
+    "message": "Ignored sites",
+    "description": "Blacklist manage button label"
+  },
+  "settings_blacklist_description": {
+    "message": "Sites where InboxKey will not look for verification codes.",
+    "description": "Blacklist manage button description"
+  },
+  "settings_blacklist_manage_button": {
+    "message": "Manage",
+    "description": "Blacklist manage button text"
+  },
+  "settings_blacklist_modal_title": {
+    "message": "Ignored Sites",
+    "description": "Blacklist modal title"
   },
   "error_domain_load": {
     "message": "Failed to load domain state",
@@ -832,35 +892,47 @@
     "description": "System theme status description"
   },
   "settings_appearance_hint": {
-    "message": "Theme changes apply immediately",
+    "message": "System matches your operating system preference automatically.",
     "description": "Appearance settings hint"
   },
   "settings_session_chips_heading": {
-    "message": "In-Page Status Notifications",
+    "message": "On-Page Indicator",
     "description": "Session chip settings heading"
   },
   "settings_session_chips_description": {
-    "message": "Control visibility of status messages that appear on web pages.",
+    "message": "A small floating badge appears on pages while emails are being checked for codes.",
     "description": "Session chip settings description"
   },
   "settings_session_chips_toggle_label": {
-    "message": "Show in-page notifications",
+    "message": "Show indicator",
     "description": "Session chip toggle label"
   },
   "settings_session_chips_toggle_description": {
-    "message": "Display floating status messages near verification fields when codes are detected.",
+    "message": "A floating badge is shown on pages while a code check is running.",
     "description": "Session chip toggle description"
   },
   "settings_session_chips_hint": {
-    "message": "When disabled, codes are still detected and copied to clipboard. Only the on-page messages are hidden.",
+    "message": "When disabled, codes are still detected and processed. Only the on-page badge is hidden.",
     "description": "Session chip settings hint"
+  },
+  "settings_session_timeout_label": {
+    "message": "Check duration",
+    "description": "Session timeout slider label"
+  },
+  "settings_session_timeout_description": {
+    "message": "How long to keep looking for a verification code after a check starts.",
+    "description": "Session timeout slider description"
+  },
+  "settings_session_timeout_hint": {
+    "message": "20-30 seconds is enough for most email providers. Increase this if codes tend to arrive slowly.",
+    "description": "Session timeout hint"
   },
   "data_management_heading": {
     "message": "Data Management",
     "description": "Data management heading"
   },
   "data_management_description": {
-    "message": "Manage stored codes and cache",
+    "message": "All data is stored locally in the browser. Nothing is sent to any server, ever.",
     "description": "Data management description"
   },
   "button_clear_all_codes": {
@@ -870,6 +942,46 @@
   "button_clear_cache": {
     "message": "Clear cache",
     "description": "Button to clear cache"
+  },
+  "data_clear_codes_description": {
+    "message": "All saved verification codes are permanently deleted. This cannot be undone.",
+    "description": "Description for clearing all codes"
+  },
+  "data_clear_cache_description": {
+    "message": "Cached email data and detection results are cleared. Settings and accounts are kept.",
+    "description": "Description for clearing cache"
+  },
+  "data_clear_codes_confirm_label": {
+    "message": "Confirm clearing codes",
+    "description": "ARIA label for clear codes confirmation"
+  },
+  "data_clear_codes_confirm_message": {
+    "message": "This will permanently delete all saved codes. This cannot be undone.",
+    "description": "Inline confirmation message for clearing codes"
+  },
+  "data_clear_codes_yes": {
+    "message": "Yes, clear all",
+    "description": "Confirm button for clearing codes"
+  },
+  "data_clear_cache_confirm_label": {
+    "message": "Confirm clearing cache",
+    "description": "ARIA label for clear cache confirmation"
+  },
+  "data_clear_cache_confirm_message": {
+    "message": "Cached email data and detection results will be cleared. Settings and accounts are kept.",
+    "description": "Inline confirmation message for clearing cache"
+  },
+  "data_clear_cache_yes": {
+    "message": "Yes, clear cache",
+    "description": "Confirm button for clearing cache"
+  },
+  "data_clearing": {
+    "message": "Clearing...",
+    "description": "Loading state while clearing data"
+  },
+  "data_cancel": {
+    "message": "Cancel",
+    "description": "Cancel button for inline confirmation"
   },
   "about_version_line": {
     "message": "Version $1",
@@ -1044,7 +1156,7 @@
     "description": "Automation settings heading"
   },
   "automation_description": {
-    "message": "Control how InboxKey handles verification codes",
+    "message": "When a verification code is detected, what should happen next?",
     "description": "Automation settings description"
   },
   "automation_manual_title": {
@@ -1052,7 +1164,7 @@
     "description": "Manual automation level title"
   },
   "automation_manual_description": {
-    "message": "Click icon to detect codes (no auto-detection)",
+    "message": "Codes are detected and shown. Nothing else happens automatically.",
     "description": "Manual automation description"
   },
   "automation_clipboard_title": {
@@ -1060,7 +1172,7 @@
     "description": "Clipboard automation level title"
   },
   "automation_clipboard_description": {
-    "message": "Auto-detect and copy to clipboard (no autofill)",
+    "message": "The code is copied to the clipboard automatically when detected.",
     "description": "Clipboard automation description"
   },
   "automation_autofill_title": {
@@ -1068,7 +1180,7 @@
     "description": "Autofill automation level title"
   },
   "automation_autofill_description": {
-    "message": "Auto-detect and autofill (default)",
+    "message": "The code is filled into the input field on the page automatically.",
     "description": "Autofill automation description"
   },
   "automation_full_title": {
@@ -1076,11 +1188,11 @@
     "description": "Full automation level title"
   },
   "automation_full_description": {
-    "message": "Auto-detect, autofill, and auto-submit",
+    "message": "The code is filled in and the submit button is clicked automatically.",
     "description": "Full automation description"
   },
   "automation_full_warning": {
-    "message": "Auto-submit may be risky on untrusted sites",
+    "message": "The submit button is clicked without confirmation. Best used on sites you trust.",
     "description": "Warning for full automation"
   },
   "automation_hint": {
