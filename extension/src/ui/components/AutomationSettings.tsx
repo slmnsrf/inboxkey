@@ -2,12 +2,12 @@ import React, { useState, useEffect } from 'react'
 import { useToast } from '@/ui/contexts/ToastContext'
 import { t } from '@/lib/i18n'
 import type { AutomationLevel } from '@/lib/storage/schema'
-import { Lock, ClipboardCopy, TextCursorInput, Bot } from 'lucide-react'
+import { Lock, ClipboardCopy, TextCursorInput, Bot, X } from 'lucide-react'
 import { InfoIcon } from '@/ui/components/icons/StatusIcons'
 
 interface AutomationOption {
   value: AutomationLevel
-  level: number
+  dots: number
   icon: React.ReactNode
   titleKey: string
   descriptionKey: string
@@ -16,28 +16,28 @@ interface AutomationOption {
 const AUTOMATION_LEVELS: AutomationOption[] = [
   {
     value: 'manual',
-    level: 1,
+    dots: 1,
     icon: <Lock size={16} />,
     titleKey: 'automation_manual_title',
     descriptionKey: 'automation_manual_description',
   },
   {
     value: 'clipboard',
-    level: 2,
+    dots: 2,
     icon: <ClipboardCopy size={16} />,
     titleKey: 'automation_clipboard_title',
     descriptionKey: 'automation_clipboard_description',
   },
   {
     value: 'autofill',
-    level: 3,
+    dots: 3,
     icon: <TextCursorInput size={16} />,
     titleKey: 'automation_autofill_title',
     descriptionKey: 'automation_autofill_description',
   },
   {
     value: 'full-automation',
-    level: 4,
+    dots: 4,
     icon: <Bot size={16} />,
     titleKey: 'automation_full_title',
     descriptionKey: 'automation_full_description',
@@ -47,6 +47,7 @@ const AUTOMATION_LEVELS: AutomationOption[] = [
 export function AutomationSettings() {
   const [level, setLevel] = useState<AutomationLevel>('autofill')
   const [isLoading, setIsLoading] = useState(true)
+  const [warningDismissed, setWarningDismissed] = useState(false)
   const { showToast } = useToast()
 
   // Load from storage on mount
@@ -70,6 +71,9 @@ export function AutomationSettings() {
   // Save to storage on change
   const handleChange = async (newLevel: AutomationLevel) => {
     setLevel(newLevel)
+    if (newLevel === 'full-automation') {
+      setWarningDismissed(false)
+    }
 
     try {
       // Send message to background to update settings
@@ -129,8 +133,13 @@ export function AutomationSettings() {
                   <span className="automation-level-card__title">
                     {t(option.titleKey)}
                   </span>
-                  <span className="automation-level-card__level" aria-label={`Level ${option.level}`}>
-                    {option.level}
+                  <span className="automation-level-card__dots" aria-label={`Level ${option.dots} of 4`}>
+                    {Array.from({ length: 4 }, (_, i) => (
+                      <span
+                        key={i}
+                        className={`automation-dot${i < option.dots ? ' automation-dot--filled' : ''}`}
+                      />
+                    ))}
                   </span>
                 </div>
                 <p className="automation-level-card__description">
@@ -142,10 +151,18 @@ export function AutomationSettings() {
         })}
       </div>
 
-      {level === 'full-automation' && (
-        <div className="automation-warning">
+      {level === 'full-automation' && !warningDismissed && (
+        <div className="automation-warning" role="alert">
           <InfoIcon size={16} />
           <span>{t('automation_full_warning')}</span>
+          <button
+            type="button"
+            className="automation-warning__dismiss"
+            onClick={() => setWarningDismissed(true)}
+            aria-label={t('aria_dismiss_alert')}
+          >
+            <X size={14} />
+          </button>
         </div>
       )}
 

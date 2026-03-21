@@ -16,7 +16,7 @@ interface TabNavigationProps {
   onTabChange: (tab: Tab) => void
 }
 
-const TABS: Tab[] = ['accounts', 'security', 'settings', 'about']
+const TABS: Tab[] = ['accounts', 'settings', 'security', 'about']
 
 export function TabNavigation({ activeTab, onTabChange }: TabNavigationProps) {
   /**
