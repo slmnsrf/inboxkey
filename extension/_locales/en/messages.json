@@ -1284,27 +1284,27 @@
     "description": "Custom provider option in preset dropdown"
   },
   "accounts_imap_provider_gmail": {
-    "message": "Gmail (imap.gmail.com:993)",
+    "message": "Gmail",
     "description": "Gmail provider option in preset dropdown"
   },
   "accounts_imap_provider_yahoo": {
-    "message": "Yahoo Mail (imap.mail.yahoo.com:993)",
+    "message": "Yahoo Mail",
     "description": "Yahoo provider option in preset dropdown"
   },
   "accounts_imap_provider_outlook": {
-    "message": "Outlook / Office 365 (outlook.office365.com:993)",
+    "message": "Outlook / Office 365",
     "description": "Outlook provider option in preset dropdown"
   },
   "accounts_imap_provider_icloud": {
-    "message": "iCloud Mail (imap.mail.me.com:993)",
+    "message": "iCloud Mail",
     "description": "iCloud provider option in preset dropdown"
   },
   "accounts_imap_provider_protonmail": {
-    "message": "ProtonMail Bridge (127.0.0.1:1143)",
+    "message": "ProtonMail Bridge",
     "description": "ProtonMail provider option in preset dropdown"
   },
   "accounts_imap_provider_fastmail": {
-    "message": "FastMail (imap.fastmail.com:993)",
+    "message": "FastMail",
     "description": "FastMail provider option in preset dropdown"
   },
   "accounts_imap_reconnect_title": {
@@ -1352,7 +1352,7 @@
     "description": "Label for IMAP password field"
   },
   "accounts_imap_password_hint": {
-    "message": "Gmail, Yahoo, and Outlook require an app-specific password instead of your main account password.",
+    "message": "An app-specific password is required instead of the regular account password for Gmail, Yahoo, and Outlook.",
     "description": "Hint for IMAP password field"
   },
   "accounts_imap_password_help_link": {
@@ -1407,6 +1407,26 @@
     "message": "Update Account",
     "description": "Button to update IMAP account"
   },
+  "accounts_imap_test_and_add": {
+    "message": "Test & Add Account",
+    "description": "Combined button to test connection and add IMAP account"
+  },
+  "accounts_imap_test_and_update": {
+    "message": "Test & Update",
+    "description": "Combined button to test connection and update IMAP account"
+  },
+  "accounts_imap_testing_connection": {
+    "message": "Testing connection...",
+    "description": "Button text while testing IMAP connection"
+  },
+  "accounts_imap_adding": {
+    "message": "Adding account...",
+    "description": "Button text while adding IMAP account after successful test"
+  },
+  "accounts_imap_connected": {
+    "message": "Connected",
+    "description": "Button text shown briefly after successful connection and account creation"
+  },
   "modal_cancel": {
     "message": "Cancel",
     "description": "Cancel button in modals"
@@ -1420,19 +1440,19 @@
     "description": "Generic IMAP connection error"
   },
   "accounts_imap_error_auth": {
-    "message": "Authentication failed. For Gmail/Yahoo/Outlook, you must use an app-specific password, not your regular password. Check your credentials and try again.",
+    "message": "Authentication failed. For Gmail, Yahoo, and Outlook, an app-specific password is required.",
     "description": "IMAP authentication error"
   },
   "accounts_imap_error_timeout": {
-    "message": "Connection timeout. Check your server address and port (usually 993). If correct, check your firewall or network settings.",
+    "message": "The server did not respond. Check the server address for typos, and verify that the port is correct.",
     "description": "IMAP timeout error"
   },
   "accounts_imap_error_keychain": {
-    "message": "Cannot save password to system keychain. On macOS: System Settings → Privacy & Security → InboxBridge. On Windows: Check Credential Manager permissions.",
+    "message": "The password could not be stored in the operating system keychain. Restart the computer or check system permissions.",
     "description": "IMAP keychain error"
   },
   "accounts_imap_error_tls": {
-    "message": "SSL/TLS connection error. Standard port is 993 with TLS enabled. For port 143, disable TLS. Check your provider's IMAP settings.",
+    "message": "A secure connection could not be established. The standard port for TLS is 993. For port 143, TLS should be disabled.",
     "description": "IMAP TLS/SSL connection error"
   },
   "accounts_imap_error_bridge_not_running": {

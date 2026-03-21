@@ -10,7 +10,7 @@ import { t } from '@/lib/i18n'
 import { useFocusTrap, useEscapeKey } from '@/ui/hooks/useFocusTrap'
 import { getNativeClient } from '@/lib/native-messaging'
 import { INBOXBRIDGE_RELEASES_URL } from '@/lib/constants'
-import { ExternalLink } from 'lucide-react'
+import { ExternalLink, Loader2 } from 'lucide-react'
 import { CheckIcon } from '../icons/StatusIcons'
 
 interface AddImapAccountModalProps {
@@ -32,7 +32,7 @@ interface AddImapAccountModalProps {
   }
 }
 
-type TestState = 'idle' | 'testing' | 'success' | 'error'
+type TestState = 'idle' | 'testing' | 'adding' | 'success' | 'error'
 
 export function AddImapAccountModal({
   isOpen,
@@ -41,7 +41,6 @@ export function AddImapAccountModal({
   prefillData,
 }: AddImapAccountModalProps) {
   const modalRef = useFocusTrap(isOpen)
-  useEscapeKey(onCancel, isOpen)
 
   // Form state
   const [providerPreset, setProviderPreset] = useState('custom')
@@ -57,7 +56,16 @@ export function AddImapAccountModal({
   const [testState, setTestState] = useState<TestState>('idle')
   const [testError, setTestError] = useState<string | null>(null)
   const [bridgeInstalled, setBridgeInstalled] = useState<boolean | null>(null)
-  const [accountId, setAccountId] = useState<string | null>(null)
+
+  // Prevent modal close during async operations
+  const isBusy = testState === 'testing' || testState === 'adding'
+
+  const handleCancel = () => {
+    if (isBusy) return
+    onCancel()
+  }
+
+  useEscapeKey(handleCancel, isOpen)
 
   // Provider presets for common IMAP services
   const providerPresets = {
@@ -87,6 +95,20 @@ export function AddImapAccountModal({
     setTlsEnabled(config.tls)
   }
 
+  // Reset preset to custom when user manually edits server/port/tls
+  const handleServerChange = (value: string) => {
+    setServer(value)
+    setProviderPreset('custom')
+  }
+  const handlePortChange = (value: string) => {
+    setPort(value)
+    setProviderPreset('custom')
+  }
+  const handleTlsChange = (value: boolean) => {
+    setTlsEnabled(value)
+    setProviderPreset('custom')
+  }
+
   // Check if InboxBridge is installed when modal opens
   useEffect(() => {
     if (isOpen) {
@@ -108,16 +130,14 @@ export function AddImapAccountModal({
         setTlsEnabled(true)
         setTestState('idle')
         setTestError(null)
-        setAccountId(null)
       }
     }
   }, [isOpen, prefillData])
 
-  // Auto-disable TLS for port 993 (standard IMAPS port)
+  // Auto-toggle TLS based on port
   useEffect(() => {
-    if (port === '993') {
-      setTlsEnabled(true)
-    }
+    if (port === '993') setTlsEnabled(true)
+    else if (port === '143' || port === '1143') setTlsEnabled(false)
   }, [port])
 
   // Prevent body scroll when modal is open
@@ -143,7 +163,7 @@ export function AddImapAccountModal({
     }
   }
 
-  const handleTestConnection = async () => {
+  const handleTestAndAdd = async () => {
     setTestState('testing')
     setTestError(null)
 
@@ -158,11 +178,12 @@ export function AddImapAccountModal({
       })
 
       if (result.success) {
-        setTestState('success')
+        // Test passed, now add the account
+        setTestState('adding')
 
-        // If test succeeded, configure the account
+        const trimmedLabel = label?.trim() || email
         const configResult = await client.call<{ accountId: string }>('account.add', {
-          label: label || email,
+          label: trimmedLabel,
           host: server,
           port: parseInt(port, 10),
           tls: tlsEnabled,
@@ -170,7 +191,17 @@ export function AddImapAccountModal({
           password: password,
         })
 
-        setAccountId(configResult.accountId)
+        // Show success state briefly, then close
+        setTestState('success')
+        setTimeout(() => {
+          onConfirm({
+            accountId: configResult.accountId,
+            email,
+            server,
+            port: parseInt(port, 10),
+            label: trimmedLabel,
+          })
+        }, 500)
       } else {
         setTestState('error')
         setTestError(result.error || t('accounts_imap_error_generic'))
@@ -203,28 +234,14 @@ export function AddImapAccountModal({
     }
   }
 
-  const handleAdd = () => {
-    if (!accountId) return
-
-    onConfirm({
-      accountId,
-      email,
-      server,
-      port: parseInt(port, 10),
-      label: label || email,
-    })
-  }
-
   if (!isOpen) return null
 
   const isFormValid = email && server && port && password
-  const canTest = isFormValid && testState !== 'testing'
-  const canAdd = testState === 'success' && accountId
 
   return (
     <div
       className="modal-overlay"
-      onClick={onCancel}
+      onClick={handleCancel}
       role="presentation"
     >
       <div
@@ -317,7 +334,7 @@ export function AddImapAccountModal({
                 type="text"
                 className="form-input"
                 value={server}
-                onChange={(e) => setServer(e.target.value)}
+                onChange={(e) => handleServerChange(e.target.value)}
                 placeholder="imap.gmail.com"
                 required
                 aria-required="true"
@@ -336,7 +353,7 @@ export function AddImapAccountModal({
                   type="number"
                   className="form-input"
                   value={port}
-                  onChange={(e) => setPort(e.target.value)}
+                  onChange={(e) => handlePortChange(e.target.value)}
                   placeholder="993"
                   required
                   aria-required="true"
@@ -355,7 +372,7 @@ export function AddImapAccountModal({
                     id="imap-tls"
                     type="checkbox"
                     checked={tlsEnabled}
-                    onChange={(e) => setTlsEnabled(e.target.checked)}
+                    onChange={(e) => handleTlsChange(e.target.checked)}
                     disabled={bridgeInstalled === false || port === '993'}
                   />
                   <label htmlFor="imap-tls" className="form-checkbox-label">
@@ -425,19 +442,6 @@ export function AddImapAccountModal({
               <p className="form-hint">{t('accounts_imap_label_hint')}</p>
             </div>
 
-            <div className="form-actions">
-              <button
-                type="button"
-                className="btn btn--secondary"
-                onClick={handleTestConnection}
-                disabled={!canTest || bridgeInstalled === false}
-              >
-                {testState === 'testing'
-                  ? t('accounts_imap_testing')
-                  : t('accounts_imap_test_connection')}
-              </button>
-            </div>
-
             {testState === 'success' && (
               <div className="alert alert--success" role="status">
                 <CheckIcon size={16} /> {t('accounts_imap_test_success')}
@@ -467,6 +471,7 @@ export function AddImapAccountModal({
           {/* Screen reader status announcements */}
           <div className="sr-only" role="status" aria-live="polite" aria-atomic="true">
             {testState === 'testing' && t('accounts_imap_testing')}
+            {testState === 'adding' && t('accounts_imap_adding')}
             {testState === 'success' && t('accounts_imap_test_success')}
             {testState === 'error' && testError && testError}
           </div>
@@ -475,18 +480,22 @@ export function AddImapAccountModal({
         <div className="modal-footer">
           <button
             type="button"
-            onClick={onCancel}
+            onClick={handleCancel}
             className="btn btn--secondary"
+            disabled={isBusy}
           >
             {t('modal_cancel')}
           </button>
           <button
             type="button"
-            onClick={handleAdd}
+            onClick={handleTestAndAdd}
             className="btn btn--primary"
-            disabled={!canAdd}
+            disabled={!isFormValid || isBusy || testState === 'success' || bridgeInstalled === false}
           >
-            {prefillData ? t('accounts_imap_update') : t('accounts_imap_add_button')}
+            {testState === 'testing' && <><Loader2 size={14} className="spin" /> {t('accounts_imap_testing_connection')}</>}
+            {testState === 'adding' && <><Loader2 size={14} className="spin" /> {t('accounts_imap_adding')}</>}
+            {testState === 'success' && <><CheckIcon size={14} /> {t('accounts_imap_connected')}</>}
+            {(testState === 'idle' || testState === 'error') && (prefillData ? t('accounts_imap_test_and_update') : t('accounts_imap_test_and_add'))}
           </button>
         </div>
       </div>
