@@ -1105,7 +1105,11 @@
   },
   "settings_trust_see_source": {
     "message": "See",
-    "description": "Trust banner GitHub link label"
+    "description": "Trust banner GitHub link label (unused)"
+  },
+  "settings_trust_see_github": {
+    "message": "See GitHub Source",
+    "description": "Trust banner GitHub link with icon"
   },
   "settings_trust_see_source_aria": {
     "message": "View source code on GitHub",

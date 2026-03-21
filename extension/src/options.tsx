@@ -18,7 +18,7 @@ import { AdvancedSettings } from './ui/components/AdvancedSettings'
 import { BuyMeACoffeeButton } from './ui/components/BuyMeACoffeeButton'
 import { BlacklistManageButton } from './ui/components/blacklist/BlacklistManageButton'
 import { BlacklistModal } from './ui/components/blacklist/BlacklistModal'
-import { KeyRound, ShieldCheck, EyeOff, Code2, Zap, MessageSquare, Palette, Globe, Settings as SettingsIcon } from 'lucide-react'
+import { KeyRound, ShieldCheck, EyeOff, Code2, Zap, MessageSquare, Palette, Globe, Settings as SettingsIcon, Github } from 'lucide-react'
 import { t } from './lib/i18n'
 import { GITHUB_REPO_URL } from './lib/constants'
 import './options.css'
@@ -252,8 +252,8 @@ function OptionsApp() {
                     rel="noopener noreferrer"
                     aria-label={t('settings_trust_see_source_aria')}
                   >
-                    <span className="trust-pillar__icon" aria-hidden="true"><Code2 size={18} /></span>
-                    <span className="trust-pillar__label">{t('settings_trust_open_source')}</span>
+                    <span className="trust-pillar__icon" aria-hidden="true"><Github size={18} /></span>
+                    <span className="trust-pillar__label">{t('settings_trust_see_github')}</span>
                   </a>
                 </div>
               </section>

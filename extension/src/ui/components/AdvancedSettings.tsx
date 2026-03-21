@@ -14,7 +14,6 @@ import type { AutomationLevel } from '@/lib/storage/schema'
 
 export function AdvancedSettings() {
   const { showToast } = useToast()
-  const [domainsEnabledByDefault, setDomainsEnabledByDefault] = useState<boolean>(true)
   const [extendedButtonDetection, setExtendedButtonDetection] = useState<boolean>(false)
   const [automationLevel, setAutomationLevel] = useState<AutomationLevel>('autofill')
   const [disableOnBankingSites, setDisableOnBankingSites] = useState<boolean>(true)
@@ -44,7 +43,6 @@ export function AdvancedSettings() {
       setLoading(true)
       const storage = await StorageFactory.create()
       const settings = await storage.getSettings()
-      setDomainsEnabledByDefault(settings.domainsEnabledByDefault ?? true)
       setExtendedButtonDetection(settings.extendedButtonDetection ?? false)
       setAutomationLevel(settings.automationLevel || 'autofill')
       setDisableOnBankingSites(settings.disableOnBankingSites ?? false)
@@ -53,23 +51,6 @@ export function AdvancedSettings() {
       showToast(t('toast_settings_failed'), 'error')
     } finally {
       setLoading(false)
-    }
-  }
-
-  const handleToggle = async () => {
-    try {
-      const newValue = !domainsEnabledByDefault
-      setDomainsEnabledByDefault(newValue) // Optimistic update
-
-      const storage = await StorageFactory.create()
-      await storage.updateSettings({ domainsEnabledByDefault: newValue })
-
-      showToast(t('toast_settings_saved'), 'success')
-    } catch (error) {
-      console.error('[AdvancedSettings] Failed to save setting:', error)
-      // Revert on error
-      setDomainsEnabledByDefault(!domainsEnabledByDefault)
-      showToast(t('toast_settings_failed'), 'error')
     }
   }
 
@@ -153,31 +134,6 @@ export function AdvancedSettings() {
 
       {isExpanded && (
         <div id="advanced-settings-content" className="advanced-settings-card__content">
-          <div className="setting-row">
-            <div className="setting-row__info">
-              <label htmlFor="domains-enabled-by-default" className="setting-row__label">
-                {t('settings_advanced_default_enabled')}
-              </label>
-              <p className="setting-row__description">
-                {t('settings_advanced_default_enabled_desc')}
-              </p>
-            </div>
-            <div className="setting-row__control">
-              <label className="toggle">
-                <input
-                  id="domains-enabled-by-default"
-                  type="checkbox"
-                  checked={domainsEnabledByDefault}
-                  onChange={handleToggle}
-                  disabled={loading}
-                />
-                <span className="slider" />
-              </label>
-            </div>
-          </div>
-
-          <div className="setting-divider" />
-
           <div className="setting-row">
             <div className="setting-row__info">
               <label htmlFor="disable-on-banking-sites" className="setting-row__label">
