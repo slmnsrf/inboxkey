@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="status" content="Ideation">
-  <meta name="date" content="2026-03-09">
+  <meta name="date" content="2026-03-20">
   <meta name="category" content="settings">
   <title>Settings Tab - InboxKey Prototype</title>
   <link rel="stylesheet" href="../shared/tokens.css">
@@ -1102,6 +1102,294 @@
     }
 
     /* ============================
+       PROTOTYPE STATE CONTROLS
+       ============================ */
+
+    .proto-state-controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--space-3);
+      align-items: center;
+    }
+
+    .proto-state-controls label {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-2);
+      font-size: var(--font-size-xs);
+      color: var(--color-text-secondary);
+      cursor: pointer;
+    }
+
+    .proto-state-controls select {
+      padding: 2px var(--space-2);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-sm);
+      background: var(--surface-card);
+      color: var(--color-text-primary);
+      font-size: var(--font-size-xs);
+      font-family: var(--font-system);
+    }
+
+    .proto-separator {
+      width: 1px;
+      height: 20px;
+      background: var(--color-border);
+    }
+
+    /* ============================
+       INLINE CONFIRMATION PATTERN
+       ============================ */
+
+    .confirm-inline {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-2);
+      padding: var(--space-3);
+      border-radius: var(--radius-md);
+      background: var(--color-error-light);
+      border: 1px solid var(--color-error);
+      animation: confirm-slide-in var(--duration-slow) var(--easing-out);
+    }
+
+    .confirm-inline__message {
+      font-size: var(--font-size-sm);
+      color: var(--color-error);
+      font-weight: var(--font-weight-medium);
+      line-height: var(--line-height-normal);
+    }
+
+    .confirm-inline__actions {
+      display: flex;
+      gap: var(--space-2);
+    }
+
+    .confirm-inline__actions .btn {
+      font-size: var(--font-size-xs);
+      padding: var(--space-1) var(--space-3);
+      min-height: 28px;
+    }
+
+    @keyframes confirm-slide-in {
+      from {
+        opacity: 0;
+        transform: translateY(-4px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    /* ============================
+       TOAST VARIANTS
+       ============================ */
+
+    .toast--error {
+      background: var(--color-error);
+    }
+
+    .toast--error i {
+      color: var(--color-text-inverse);
+    }
+
+    /* ============================
+       AUTOMATION WARNING DISMISS
+       ============================ */
+
+    .automation-warning__dismiss {
+      flex-shrink: 0;
+      margin-left: auto;
+      background: none;
+      border: none;
+      padding: var(--space-1);
+      cursor: pointer;
+      color: var(--color-warning-dark);
+      opacity: 0.7;
+      transition: opacity var(--duration-fast) ease-out;
+      display: flex;
+      align-items: center;
+    }
+
+    .automation-warning__dismiss:hover {
+      opacity: 1;
+    }
+
+    .automation-warning__dismiss:focus-visible {
+      outline: 2px solid var(--color-warning-dark);
+      outline-offset: 2px;
+      border-radius: var(--radius-sm);
+    }
+
+    /* ============================
+       DISABLED TOGGLE LABEL
+       ============================ */
+
+    .setting-row--disabled {
+      opacity: 0.5;
+      pointer-events: none;
+    }
+
+    .setting-row--disabled .toggle {
+      cursor: not-allowed;
+    }
+
+    .setting-row__disabled-hint {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-1);
+      margin-top: var(--space-1);
+      font-size: var(--font-size-xs);
+      color: var(--color-text-tertiary);
+      font-style: italic;
+    }
+
+    /* ============================
+       LOADING SKELETON STATE
+       ============================ */
+
+    .settings-loading {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-5);
+    }
+
+    .skeleton-card {
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-xl);
+      background: var(--surface-card);
+      box-shadow: var(--shadow-sm);
+      padding: var(--space-5);
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-3);
+    }
+
+    .skeleton-bar {
+      border-radius: var(--radius-md);
+      background: var(--color-bg-secondary);
+      animation: skeleton-shimmer 1.8s ease-in-out infinite;
+    }
+
+    .skeleton-bar--title {
+      width: 45%;
+      height: 20px;
+    }
+
+    .skeleton-bar--desc {
+      width: 70%;
+      height: 14px;
+    }
+
+    .skeleton-bar--row {
+      width: 100%;
+      height: 48px;
+    }
+
+    .skeleton-bar--half {
+      width: 50%;
+      height: 48px;
+    }
+
+    .skeleton-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: var(--space-3);
+    }
+
+    @keyframes skeleton-shimmer {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+
+    /* ============================
+       RANGE SLIDER HINT (adaptive)
+       ============================ */
+
+    .range-hint {
+      margin: var(--space-2) 0 0 0;
+      font-size: var(--font-size-xs);
+      color: var(--color-text-tertiary);
+      line-height: var(--line-height-normal);
+      transition: color var(--duration-fast) ease-out;
+    }
+
+    .range-hint--caution {
+      color: var(--color-warning-dark);
+    }
+
+    /* ============================
+       LONG DOMAIN TRUNCATION
+       ============================ */
+
+    .blacklist-row__label {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      max-width: 100%;
+    }
+
+    .blacklist-domain-list {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-2);
+      margin-top: var(--space-3);
+    }
+
+    .blacklist-domain-item {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+      padding: var(--space-2) var(--space-3);
+      border-radius: var(--radius-md);
+      background: var(--color-bg-secondary);
+      font-size: var(--font-size-sm);
+      color: var(--color-text-secondary);
+    }
+
+    .blacklist-domain-item__name {
+      flex: 1;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-family: var(--font-mono);
+      font-size: var(--font-size-xs);
+    }
+
+    /* ============================
+       EMPTY STATE
+       ============================ */
+
+    .empty-state-inline {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+      padding: var(--space-3) var(--space-4);
+      border-radius: var(--radius-lg);
+      background: var(--surface-card-muted);
+      border: 1px dashed var(--color-border);
+    }
+
+    .empty-state-inline__icon {
+      flex-shrink: 0;
+      color: var(--color-text-tertiary);
+    }
+
+    .empty-state-inline__text {
+      font-size: var(--font-size-sm);
+      color: var(--color-text-tertiary);
+    }
+
+    /* ============================
+       RESET DEFAULTS CARD
+       ============================ */
+
+    .data-action-card--reset {
+      border-style: dashed;
+    }
+
+    /* ============================
        RESPONSIVE
        ============================ */
 
@@ -1138,6 +1426,10 @@
         align-items: flex-start;
         gap: var(--space-2);
       }
+
+      .skeleton-grid {
+        grid-template-columns: 1fr;
+      }
     }
   </style>
 </head>
@@ -1150,9 +1442,39 @@
     <div class="proto-toolbar__left">
       <span class="proto-toolbar__title">Settings Tab</span>
       <span class="proto-toolbar__status" data-status="ideation">Ideation</span>
-      <span class="proto-toolbar__date">2026-03-09</span>
+      <span class="proto-toolbar__date">2026-03-20</span>
     </div>
     <div class="proto-toolbar__right">
+      <div class="proto-state-controls">
+        <label>
+          State:
+          <select id="ctrl-page-state">
+            <option value="default" selected>Default</option>
+            <option value="loading">Loading</option>
+            <option value="save-error">Save Error</option>
+          </select>
+        </label>
+        <div class="proto-separator"></div>
+        <label>
+          Auto level:
+          <select id="ctrl-auto-level">
+            <option value="manual">Manual</option>
+            <option value="clipboard">Clipboard</option>
+            <option value="autofill" selected>Autofill</option>
+            <option value="full-automation">Full Auto</option>
+          </select>
+        </label>
+        <label>
+          Ignored sites:
+          <select id="ctrl-ignored-sites">
+            <option value="3" selected>3 sites</option>
+            <option value="0">Empty (0)</option>
+            <option value="1">1 site</option>
+            <option value="long">Long domains</option>
+          </select>
+        </label>
+      </div>
+      <div class="proto-separator"></div>
       <div class="proto-theme-toggle">
         <button data-theme-btn="light" aria-pressed="true">Light</button>
         <button data-theme-btn="dark" aria-pressed="false">Dark</button>
@@ -1185,7 +1507,7 @@
             </div>
             <div>
               <h1 class="brand__title">InboxKey</h1>
-              <p class="privacy-line">Private. Local. Open Source.</p>
+              <p class="privacy-line">Local-only. No servers. Open source.</p>
             </div>
           </div>
           <div class="options-header__actions">
@@ -1199,25 +1521,6 @@
             </a>
           </div>
         </header>
-
-        <!-- ======== TRUST BANNER ======== -->
-        <div class="trust-banner" role="region" aria-label="Trust pillars">
-          <p class="trust-banner__headline">Your codes never leave your device</p>
-          <div class="trust-banner__pillars">
-            <div class="trust-pillar">
-              <span class="trust-pillar__icon"><i data-lucide="shield-check" style="width:16px;height:16px"></i></span>
-              <span class="trust-pillar__label">100% Local</span>
-            </div>
-            <div class="trust-pillar">
-              <span class="trust-pillar__icon"><i data-lucide="eye-off" style="width:16px;height:16px"></i></span>
-              <span class="trust-pillar__label">Zero Tracking</span>
-            </div>
-            <div class="trust-pillar">
-              <span class="trust-pillar__icon"><i data-lucide="lock" style="width:16px;height:16px"></i></span>
-              <span class="trust-pillar__label">Open Source</span>
-            </div>
-          </div>
-        </div>
 
         <!-- ======== TAB NAVIGATION ======== -->
         <nav class="tab-navigation" role="tablist" aria-label="Options tabs">
@@ -1235,8 +1538,37 @@
           </button>
         </nav>
 
+        <!-- ======== LOADING SKELETON (hidden by default) ======== -->
+        <div class="settings-loading" id="settings-loading" style="display: none;" aria-hidden="true" aria-label="Loading settings">
+          <div class="skeleton-card">
+            <div class="skeleton-bar skeleton-bar--title"></div>
+            <div class="skeleton-bar skeleton-bar--desc"></div>
+            <div class="skeleton-grid">
+              <div class="skeleton-bar skeleton-bar--row"></div>
+              <div class="skeleton-bar skeleton-bar--row"></div>
+              <div class="skeleton-bar skeleton-bar--row"></div>
+              <div class="skeleton-bar skeleton-bar--row"></div>
+            </div>
+          </div>
+          <div class="skeleton-card">
+            <div class="skeleton-bar skeleton-bar--title"></div>
+            <div class="skeleton-bar skeleton-bar--desc"></div>
+            <div class="skeleton-bar skeleton-bar--row"></div>
+            <div class="skeleton-bar skeleton-bar--row"></div>
+          </div>
+          <div class="skeleton-card">
+            <div class="skeleton-bar skeleton-bar--title"></div>
+            <div class="skeleton-bar skeleton-bar--desc"></div>
+            <div class="skeleton-grid">
+              <div class="skeleton-bar skeleton-bar--half"></div>
+              <div class="skeleton-bar skeleton-bar--half"></div>
+              <div class="skeleton-bar skeleton-bar--half"></div>
+            </div>
+          </div>
+        </div>
+
         <!-- ======== SETTINGS CONTENT ======== -->
-        <div class="settings-content" role="tabpanel" aria-label="Settings">
+        <div class="settings-content" id="settings-content" role="tabpanel" aria-label="Settings">
 
           <!-- ============================================
                1. AUTOMATION LEVEL
@@ -1249,7 +1581,7 @@
                 Automation Level
               </h2>
               <p class="settings-card__description">
-                Control how InboxKey handles detected verification codes. Choose the level of automation that matches your comfort.
+                When a verification code is detected, what should happen next?
               </p>
             </div>
             <div class="settings-card__body">
@@ -1261,7 +1593,7 @@
                     <span class="automation-card__icon"><i data-lucide="lock" style="width:16px;height:16px"></i></span>
                     <span class="automation-card__title">Manual</span>
                   </div>
-                  <p class="automation-card__desc">Only detect and display codes. You copy and paste manually.</p>
+                  <p class="automation-card__desc">Codes are detected and shown. Nothing else happens automatically.</p>
                 </label>
 
                 <label class="automation-card" id="auto-clipboard">
@@ -1270,7 +1602,7 @@
                     <span class="automation-card__icon"><i data-lucide="clipboard-copy" style="width:16px;height:16px"></i></span>
                     <span class="automation-card__title">Copy to Clipboard</span>
                   </div>
-                  <p class="automation-card__desc">Automatically copy the code to your clipboard when detected.</p>
+                  <p class="automation-card__desc">The code is copied to the clipboard automatically when detected.</p>
                 </label>
 
                 <label class="automation-card automation-card--active" id="auto-autofill">
@@ -1279,7 +1611,7 @@
                     <span class="automation-card__icon"><i data-lucide="text-cursor-input" style="width:16px;height:16px"></i></span>
                     <span class="automation-card__title">Autofill</span>
                   </div>
-                  <p class="automation-card__desc">Automatically fill the code into the input field on the page.</p>
+                  <p class="automation-card__desc">The code is filled into the input field on the page automatically.</p>
                 </label>
 
                 <label class="automation-card" id="auto-full">
@@ -1288,16 +1620,19 @@
                     <span class="automation-card__icon"><i data-lucide="bot" style="width:16px;height:16px"></i></span>
                     <span class="automation-card__title">Full Automation</span>
                   </div>
-                  <p class="automation-card__desc">Autofill the code and click the submit button automatically.</p>
+                  <p class="automation-card__desc">The code is filled in and the submit button is clicked automatically.</p>
                 </label>
               </div>
 
-              <div class="automation-warning" id="full-auto-warning" style="display: none;">
+              <div class="automation-warning" id="full-auto-warning" role="alert" style="display: none;">
                 <i data-lucide="alert-triangle" style="width:16px;height:16px"></i>
-                <span>Full automation will click the submit button. Make sure you trust the site before enabling this.</span>
+                <span>The submit button is clicked without confirmation. Best used on sites you trust.</span>
+                <button class="automation-warning__dismiss" id="full-auto-warning-dismiss" type="button" aria-label="Dismiss warning">
+                  <i data-lucide="x" style="width:14px;height:14px"></i>
+                </button>
               </div>
 
-              <p class="settings-hint">You can change this at any time. Autofill is recommended for most users.</p>
+              <p class="settings-hint">This can be changed at any time. Autofill works well for most people.</p>
             </div>
           </div>
 
@@ -1308,17 +1643,21 @@
             <div class="settings-card__header">
               <h2 class="settings-card__title">
                 <span class="settings-card__title-icon"><i data-lucide="message-square" style="width:16px;height:16px"></i></span>
-                Session Status Chips
+                On-Page Indicator
               </h2>
               <p class="settings-card__description">
-                Control the floating notification chips that show session status on web pages.
+                A small floating badge appears on pages while emails are being checked for codes.
               </p>
             </div>
             <div class="settings-card__body">
-              <div class="setting-row">
+              <div class="setting-row" id="indicator-row">
                 <div class="setting-row__info">
-                  <label for="toggle-session-chips" class="setting-row__label">Show status chips</label>
-                  <p class="setting-row__description">Display a small floating indicator on pages while InboxKey is checking for codes.</p>
+                  <label for="toggle-session-chips" class="setting-row__label">Show indicator</label>
+                  <p class="setting-row__description">A floating badge is shown on pages while a code check is running.</p>
+                  <p class="setting-row__disabled-hint" id="indicator-disabled-hint" style="display: none;">
+                    <i data-lucide="info" style="width:12px;height:12px"></i>
+                    Not available in Manual mode. No session is created.
+                  </p>
                 </div>
                 <div class="setting-row__control">
                   <label class="toggle">
@@ -1332,8 +1671,8 @@
 
               <div class="setting-row">
                 <div class="setting-row__info">
-                  <label for="session-timeout" class="setting-row__label">Email check timeout</label>
-                  <p class="setting-row__description">How long to wait for verification codes (10-120 seconds).</p>
+                  <label for="session-timeout" class="setting-row__label">Check duration</label>
+                  <p class="setting-row__description">How long to keep looking for a verification code after a check starts.</p>
                 </div>
                 <div class="setting-row__control">
                   <div class="range-control">
@@ -1343,7 +1682,7 @@
                 </div>
               </div>
 
-              <p class="settings-hint">Higher timeouts allow more checks. Fast providers: 20-30s (5-6 checks). Slow providers: 60-120s (9-12 checks).</p>
+              <p class="range-hint" id="range-hint">20-30 seconds is enough for most email providers. Increase this if codes tend to arrive slowly.</p>
             </div>
           </div>
 
@@ -1358,7 +1697,7 @@
                 Theme
               </h2>
               <p class="settings-card__description">
-                Choose how InboxKey looks. System will match your operating system preference.
+                System matches your operating system preference automatically.
               </p>
             </div>
             <div class="settings-card__body">
@@ -1428,23 +1767,45 @@
             <div class="settings-card__header">
               <h2 class="settings-card__title">
                 <span class="settings-card__title-icon"><i data-lucide="globe" style="width:16px;height:16px"></i></span>
-                Site Management
+                Ignored Sites
               </h2>
               <p class="settings-card__description">
-                Control which websites InboxKey is active on.
+                InboxKey can be turned off for specific websites.
               </p>
             </div>
             <div class="settings-card__body">
-              <div class="blacklist-row">
+              <!-- Populated state (default) -->
+              <div class="blacklist-row" id="blacklist-populated">
                 <div class="blacklist-row__info">
                   <p class="blacklist-row__label">
                     <i data-lucide="ban" style="width:16px;height:16px;color:var(--color-text-tertiary)"></i>
-                    Manage Ignored Sites
-                    <span class="blacklist-row__count">3</span>
+                    Ignored sites
+                    <span class="blacklist-row__count" id="blacklist-count">3</span>
                   </p>
-                  <p class="blacklist-row__description">Prevent InboxKey from starting sessions on specific domains or URLs.</p>
+                  <p class="blacklist-row__description">Sites where InboxKey will not look for verification codes.</p>
                 </div>
                 <button class="btn btn--secondary" type="button">Manage</button>
+              </div>
+
+              <!-- Empty state (hidden by default) -->
+              <div class="empty-state-inline" id="blacklist-empty" style="display: none;">
+                <span class="empty-state-inline__icon">
+                  <i data-lucide="check-circle" style="width:16px;height:16px"></i>
+                </span>
+                <span class="empty-state-inline__text">No ignored sites. InboxKey is active on all sites.</span>
+              </div>
+
+              <!-- Long domain preview (hidden by default) -->
+              <div class="blacklist-domain-list" id="blacklist-long-domains" style="display: none;">
+                <div class="blacklist-domain-item">
+                  <span class="blacklist-domain-item__name" title="my-very-long-company-internal-portal.subdomain.enterprise-solutions.example.co.uk">my-very-long-company-internal-portal.subdomain.enterprise-solutions.example.co.uk</span>
+                </div>
+                <div class="blacklist-domain-item">
+                  <span class="blacklist-domain-item__name" title="cloud-authentication-service.region-eu-west-1.provider.io">cloud-authentication-service.region-eu-west-1.provider.io</span>
+                </div>
+                <div class="blacklist-domain-item">
+                  <span class="blacklist-domain-item__name" title="app.short.com">app.short.com</span>
+                </div>
               </div>
             </div>
           </div>
@@ -1460,32 +1821,85 @@
                 Data Management
               </h2>
               <p class="settings-card__description">
-                Manage your locally stored data. All data stays on your device and is never sent anywhere.
+                All data is stored locally in the browser. Nothing is sent to any server, ever.
               </p>
             </div>
             <div class="settings-card__body">
               <div class="data-actions">
-                <div class="data-action-card">
+                <div class="data-action-card" id="card-clear-codes">
                   <div class="data-action-card__title">
                     <i data-lucide="trash-2" style="width:14px;height:14px;color:var(--color-error)"></i>
                     Clear All Codes
                   </div>
-                  <p class="data-action-card__desc">Delete all saved verification codes from local storage. This cannot be undone.</p>
-                  <button class="btn btn--danger data-action-card__btn" type="button" id="btn-clear-codes">
-                    <i data-lucide="trash-2" style="width:14px;height:14px"></i>
-                    Clear Codes
-                  </button>
+                  <p class="data-action-card__desc">All saved verification codes are permanently deleted. This cannot be undone.</p>
+                  <!-- Default: show button -->
+                  <div id="clear-codes-default">
+                    <button class="btn btn--danger data-action-card__btn" type="button" id="btn-clear-codes">
+                      <i data-lucide="trash-2" style="width:14px;height:14px"></i>
+                      Clear Codes
+                    </button>
+                  </div>
+                  <!-- Confirmation step (hidden) -->
+                  <div class="confirm-inline" id="clear-codes-confirm" style="display: none;" role="alertdialog" aria-label="Confirm clearing codes">
+                    <span class="confirm-inline__message">This will permanently delete all saved codes. This cannot be undone.</span>
+                    <div class="confirm-inline__actions">
+                      <button class="btn btn--danger" type="button" id="btn-clear-codes-yes">
+                        <i data-lucide="trash-2" style="width:12px;height:12px"></i>
+                        Yes, clear all
+                      </button>
+                      <button class="btn btn--ghost" type="button" id="btn-clear-codes-cancel">Cancel</button>
+                    </div>
+                  </div>
                 </div>
-                <div class="data-action-card">
+                <div class="data-action-card" id="card-clear-cache">
                   <div class="data-action-card__title">
                     <i data-lucide="hard-drive" style="width:14px;height:14px;color:var(--color-text-tertiary)"></i>
                     Clear Cache
                   </div>
-                  <p class="data-action-card__desc">Clear cached email data and detection results. Settings and accounts are preserved.</p>
-                  <button class="btn btn--secondary data-action-card__btn" type="button" id="btn-clear-cache">
-                    <i data-lucide="refresh-cw" style="width:14px;height:14px"></i>
-                    Clear Cache
-                  </button>
+                  <p class="data-action-card__desc">Cached email data and detection results are cleared. Settings and accounts are kept.</p>
+                  <!-- Default: show button -->
+                  <div id="clear-cache-default">
+                    <button class="btn btn--secondary data-action-card__btn" type="button" id="btn-clear-cache">
+                      <i data-lucide="refresh-cw" style="width:14px;height:14px"></i>
+                      Clear Cache
+                    </button>
+                  </div>
+                  <!-- Confirmation step (hidden) -->
+                  <div class="confirm-inline" id="clear-cache-confirm" style="display: none;" role="alertdialog" aria-label="Confirm clearing cache">
+                    <span class="confirm-inline__message">Cached email data and detection results will be cleared. Settings and accounts are kept.</span>
+                    <div class="confirm-inline__actions">
+                      <button class="btn btn--danger" type="button" id="btn-clear-cache-yes">
+                        <i data-lucide="trash-2" style="width:12px;height:12px"></i>
+                        Yes, clear cache
+                      </button>
+                      <button class="btn btn--ghost" type="button" id="btn-clear-cache-cancel">Cancel</button>
+                    </div>
+                  </div>
+                </div>
+                <div class="data-action-card data-action-card--reset">
+                  <div class="data-action-card__title">
+                    <i data-lucide="rotate-ccw" style="width:14px;height:14px;color:var(--color-text-tertiary)"></i>
+                    Reset to Defaults
+                  </div>
+                  <p class="data-action-card__desc">All settings are reverted to their original values. Accounts and saved codes are not affected.</p>
+                  <!-- Default: show button -->
+                  <div id="reset-defaults-default">
+                    <button class="btn btn--secondary data-action-card__btn" type="button" id="btn-reset-defaults">
+                      <i data-lucide="rotate-ccw" style="width:14px;height:14px"></i>
+                      Reset Settings
+                    </button>
+                  </div>
+                  <!-- Confirmation step (hidden) -->
+                  <div class="confirm-inline" id="reset-defaults-confirm" style="display: none;" role="alertdialog" aria-label="Confirm resetting settings">
+                    <span class="confirm-inline__message">All settings will be reverted to defaults. Accounts and saved codes are not affected.</span>
+                    <div class="confirm-inline__actions">
+                      <button class="btn btn--danger" type="button" id="btn-reset-defaults-yes">
+                        <i data-lucide="rotate-ccw" style="width:12px;height:12px"></i>
+                        Yes, reset
+                      </button>
+                      <button class="btn btn--ghost" type="button" id="btn-reset-defaults-cancel">Cancel</button>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -1506,14 +1920,14 @@
                 <i data-lucide="chevron-down" style="width:14px;height:14px"></i>
               </span>
               <span class="advanced-toggle__label">Advanced Settings</span>
-              <span class="advanced-toggle__hint">For power users</span>
+              <span class="advanced-toggle__hint">Usually not needed</span>
             </button>
 
             <div class="advanced-content" id="advanced-content">
               <div class="setting-row">
                 <div class="setting-row__info">
-                  <label for="toggle-domains-default" class="setting-row__label">Enable on all domains by default</label>
-                  <p class="setting-row__description">When enabled, InboxKey will work on all domains. You can still disable it per site using the popup toggle.</p>
+                  <label for="toggle-domains-default" class="setting-row__label">Active on all sites by default</label>
+                  <p class="setting-row__description">When on, InboxKey runs on every site. Individual sites can still be turned off from the popup.</p>
                 </div>
                 <div class="setting-row__control">
                   <label class="toggle">
@@ -1527,8 +1941,8 @@
 
               <div class="setting-row">
                 <div class="setting-row__info">
-                  <label for="toggle-banking" class="setting-row__label">Disable on banking sites</label>
-                  <p class="setting-row__description">Automatically disable InboxKey on known banking and financial sites for added security.</p>
+                  <label for="toggle-banking" class="setting-row__label">Skip banking sites</label>
+                  <p class="setting-row__description">InboxKey is automatically disabled on known banking and financial sites.</p>
                 </div>
                 <div class="setting-row__control">
                   <label class="toggle">
@@ -1539,7 +1953,7 @@
                   </label>
                 </div>
               </div>
-              <p class="settings-hint">Covers 150+ major banks worldwide. You can still enable InboxKey for specific banks using the popup toggle.</p>
+              <p class="settings-hint">Covers 150+ major banks worldwide. Individual banks can still be enabled from the popup.</p>
 
               <div class="setting-row" id="extended-detection-row" style="display: none;">
                 <div class="setting-row__info">
@@ -1547,11 +1961,11 @@
                     Extended Button Detection
                     <span class="badge-beta">BETA</span>
                   </label>
-                  <p class="setting-row__description">Detects custom button components (Vue.js, React) used by modern websites.</p>
+                  <p class="setting-row__description">Some websites use non-standard buttons that are harder to detect. This helps find them.</p>
                   <div class="warning-callout">
                     <span class="warning-callout__icon"><i data-lucide="alert-triangle" style="width:14px;height:14px"></i></span>
                     <span class="warning-callout__text">
-                      <strong>Note:</strong> May occasionally interact with navigation elements. Only enable if your sites use custom button components.
+                      <strong>Heads up:</strong> On rare occasions, a wrong element might be detected as a button. Only needed if submit buttons are being missed on some sites.
                     </span>
                   </div>
                 </div>
@@ -1566,18 +1980,16 @@
               </div>
 
               <details class="expandable-details" id="detection-details" style="display: none;">
-                <summary>What does this detect?</summary>
+                <summary>How does this work?</summary>
                 <div class="expandable-details__content">
                   <p style="margin:0 0 var(--space-2) 0;">
-                    <strong>Standard (always enabled):</strong>
-                    <code>&lt;button&gt;</code>, <code>&lt;input type="submit"&gt;</code>
+                    <strong>Standard (always on):</strong> Regular <code>&lt;button&gt;</code> and <code>&lt;input type="submit"&gt;</code> elements are detected.
                   </p>
                   <p style="margin:0 0 var(--space-2) 0;">
-                    <strong>Extended (when enabled):</strong>
-                    <code>&lt;a&gt;</code> tags, <code>role="button"</code> elements
+                    <strong>Extended (when enabled):</strong> Links and custom elements styled as buttons are also detected.
                   </p>
                   <p style="margin:0;color:var(--color-text-tertiary);">
-                    <strong>Safety:</strong> Extended detection includes 11 protection layers to prevent clicking dangerous buttons.
+                    Multiple safety checks are in place to avoid clicking anything dangerous, like navigation links or delete buttons.
                   </p>
                 </div>
               </details>
@@ -1586,6 +1998,25 @@
 
         </div>
         <!-- /settings-content -->
+
+        <!-- ======== TRUST BANNER (bottom) ======== -->
+        <div class="trust-banner" role="region" aria-label="Trust pillars">
+          <p class="trust-banner__headline">Everything stays on your device. Nothing is sent anywhere.</p>
+          <div class="trust-banner__pillars">
+            <div class="trust-pillar">
+              <span class="trust-pillar__icon"><i data-lucide="shield-check" style="width:16px;height:16px"></i></span>
+              <span class="trust-pillar__label">Runs locally</span>
+            </div>
+            <div class="trust-pillar">
+              <span class="trust-pillar__icon"><i data-lucide="eye-off" style="width:16px;height:16px"></i></span>
+              <span class="trust-pillar__label">No tracking</span>
+            </div>
+            <div class="trust-pillar">
+              <span class="trust-pillar__icon"><i data-lucide="code-2" style="width:16px;height:16px"></i></span>
+              <span class="trust-pillar__label">Open source</span>
+            </div>
+          </div>
+        </div>
 
       </div>
       <!-- /options-shell -->
@@ -1597,7 +2028,8 @@
        TOAST
        ======================== -->
   <div class="toast" id="toast" role="status" aria-live="polite">
-    <i data-lucide="check-circle" style="width:16px;height:16px"></i>
+    <i data-lucide="check-circle" id="toast-icon-success" style="width:16px;height:16px"></i>
+    <i data-lucide="alert-circle" id="toast-icon-error" style="width:16px;height:16px;display:none"></i>
     <span id="toast-message">Settings saved</span>
   </div>
 
@@ -1614,12 +2046,27 @@
     "iOS Settings-inspired grouped cards - Settings are organized into clearly labeled card groups (Behavior, Appearance, Sites, Data, Advanced) with section headings above each card, matching iOS Settings visual hierarchy. This reduces cognitive load compared to a flat list of toggles.",
     "Automation level as visual radio cards - The four automation levels (Manual, Clipboard, Autofill, Full Automation) are displayed as selectable cards in a 2x2 grid rather than a dropdown or list, because each level needs a description to help users understand the trade-offs. The active card uses a primary color border and tinted background for clear visual feedback.",
     "Theme preview cards with mini-UI mockups - Each theme option (Light, Dark, System) includes a small visual preview showing what the UI will look like, so users can see the difference before selecting. The System option uses a split diagonal gradient to represent automatic switching. This is more informative than plain text labels.",
-    "Collapsible Advanced section - Advanced settings (domain defaults, banking blocklist, extended button detection) are hidden behind a collapsible section to avoid overwhelming typical users. The toggle uses a chevron icon that rotates on expansion, and a 'For power users' hint signals that most users can ignore this section.",
+    "Collapsible Advanced section - Advanced settings (domain defaults, banking blocklist, extended button detection) are hidden behind a collapsible section to avoid overwhelming typical users. The toggle uses a chevron icon that rotates on expansion, and a 'Usually not needed' hint signals that most users can skip this section without feeling excluded or labelled.",
     "Extended Button Detection conditionally shown - The beta 'Extended Button Detection' toggle and its details panel only appear when Full Automation mode is selected, because it is irrelevant for other automation levels. This prevents confusion and keeps the advanced section clean.",
     "Data management as side-by-side action cards - Clear Codes and Clear Cache are presented as distinct cards rather than inline rows because they are destructive actions that deserve visual separation and clear descriptions. The danger button uses error-light background that transitions to solid red on hover, providing a progressive warning.",
     "Range slider for email check timeout - A range slider (10-120s, step 10) with a live output value provides a more tactile and constrained interaction compared to a free-form number input. The value display updates in real-time to give immediate feedback.",
-    "Blacklist manage button with count badge - The ignored sites row includes a count badge showing how many sites are currently blacklisted, giving users a quick status overview without needing to open the management modal. This follows the iOS pattern of showing counts on navigation rows.",
-    "Toast feedback for all toggle interactions - Every toggle and button triggers a brief toast notification confirming the action, providing immediate feedback that the setting was saved successfully. The toast auto-dismisses after 2 seconds to avoid being disruptive."
+    "Ignored sites with count badge - The ignored sites row includes a count badge showing how many sites are currently disabled, giving a quick status overview without needing to open the management modal. Renamed from 'Manage Ignored Sites' to reduce redundancy with the card title.",
+    "Toast feedback for all toggle interactions - Every toggle and button triggers a brief toast notification confirming the action, providing immediate feedback that the setting was saved successfully. The toast auto-dismisses after 2 seconds to avoid being disruptive.",
+    "Passive voice and 3rd-person copy throughout - All setting descriptions use passive constructions ('The code is filled in', 'Codes are detected and shown') instead of imperative or 1st-person voice ('We fill the code', 'Control how InboxKey handles'). This matches the product's calm, trustworthy tone and avoids personifying the extension.",
+    "Header tagline matches storytelling spec - Changed from 'Private. Local. Open Source.' to 'Local-only. No servers. Open source.' to align with the official status line ('Local-only - No servers') from the storytelling document and to state facts rather than adjectives.",
+    "Trust pillar copy and icon corrections - 'Zero Tracking' changed to 'No tracking' and '100% Local' to 'Runs locally' to avoid marketing-style phrasing. Open Source pillar icon changed from lock to code-2, which is semantically accurate.",
+    "Session Status Chips renamed to On-Page Indicator - 'Session Status Chips' is internal jargon. 'On-Page Indicator' describes the feature from the user's perspective without leaking implementation terminology.",
+    "Extended detection copy de-jargoned - Removed references to Vue.js, React, and '11 protection layers'. Users do not need to know the technical stack; they need to know what the setting does and when to use it. Safety messaging is honest without counting implementation details.",
+    "Inline confirmation replaces browser confirm() - Destructive actions (Clear Codes, Clear Cache, Reset to Defaults) now use an inline confirm/cancel pattern instead of the native browser confirm() dialog. The inline pattern keeps the user in context, avoids jarring OS-level modals, and uses the error color scheme to reinforce the destructive nature of the action. Cancel is a ghost button to deprioritize it visually while keeping it easily reachable.",
+    "Empty ignored sites as dashed-border placeholder - When no sites are ignored, a dashed-border inline state with a check-circle icon and reassuring text ('No ignored sites. InboxKey is active on all sites.') replaces the count badge row. This is more informative than hiding the section entirely or showing '0'.",
+    "Adaptive range slider hint text - The hint below the check duration slider changes based on the selected value: a caution message at 10s (may miss slow providers), neutral guidance at 20-30s, and a note about battery impact at 120s. This prevents users from unknowingly setting suboptimal values without blocking them from doing so.",
+    "Error toast variant for save failures - A red-styled toast variant communicates storage write failures. Uses alert-circle icon instead of check-circle and the error background color. The error toast uses the same positioning and timing as the success toast for consistency.",
+    "Dismissable Full Automation warning - The auto-submit warning includes an X button so users who understand the risk can dismiss it. The warning reappears each time Full Automation is re-selected, ensuring the risk is communicated on every mode switch without being permanently annoying to power users.",
+    "Disabled indicator toggle in Manual mode - The 'Show indicator' toggle is disabled and grayed out when Manual mode is selected because there is no active session to display an indicator for. A small italic hint explains why. This prevents confusion from toggling a setting that would have no visible effect.",
+    "Loading skeleton with shimmer animation - A skeleton state with pulsing bars mimics the layout of the actual settings cards. This is shown briefly when settings load from Chrome storage. The shimmer uses a simple opacity pulse via CSS animation, which is automatically suppressed by the prefers-reduced-motion media query in tokens.css.",
+    "Reset to Defaults in data management - Added alongside Clear Codes and Clear Cache with a dashed border to visually distinguish it as a non-destructive reset. The copy explicitly states that accounts and saved codes are not affected, which is the most common concern when seeing 'reset' options.",
+    "Long domain name truncation with ellipsis - Domain names in the ignored sites list use text-overflow: ellipsis with a monospace font. The full domain is visible on hover via the browser's native tooltip. This prevents layout breakage from extremely long subdomains while keeping the domain readable.",
+    "Toolbar state controls for stakeholder review - Dropdown controls in the prototype toolbar allow toggling between Default/Loading/Error states, automation levels, and ignored sites variants (empty, populated, long domains) without editing code. This pattern matches the accounts prototype and makes design review sessions faster."
   ]
   </script>
 
@@ -1641,21 +2088,54 @@
       // ---- Toast helper ----
       var toastEl = document.getElementById('toast');
       var toastMsg = document.getElementById('toast-message');
+      var toastIconSuccess = document.getElementById('toast-icon-success');
+      var toastIconError = document.getElementById('toast-icon-error');
       var toastTimer = null;
 
-      function showToast(message) {
+      function showToast(message, type) {
+        type = type || 'success';
         if (toastTimer) clearTimeout(toastTimer);
         toastMsg.textContent = message;
+
+        // Toggle icon and style
+        if (type === 'error') {
+          toastEl.classList.add('toast--error');
+          if (toastIconSuccess) toastIconSuccess.style.display = 'none';
+          if (toastIconError) toastIconError.style.display = 'inline';
+        } else {
+          toastEl.classList.remove('toast--error');
+          if (toastIconSuccess) toastIconSuccess.style.display = 'inline';
+          if (toastIconError) toastIconError.style.display = 'none';
+        }
+
         toastEl.classList.add('show');
         toastTimer = setTimeout(function () {
           toastEl.classList.remove('show');
-        }, 2000);
+        }, 3000);
       }
 
       // ---- SR status announcer ----
       var srStatus = document.getElementById('sr-status');
       function announce(text) {
         if (srStatus) srStatus.textContent = text;
+      }
+
+      // ---- Indicator disabled state management ----
+      var indicatorRow = document.getElementById('indicator-row');
+      var indicatorToggle = document.getElementById('toggle-session-chips');
+      var indicatorHint = document.getElementById('indicator-disabled-hint');
+
+      function setIndicatorDisabled(disabled) {
+        if (!indicatorRow) return;
+        if (disabled) {
+          indicatorRow.classList.add('setting-row--disabled');
+          indicatorToggle.disabled = true;
+          indicatorHint.style.display = 'flex';
+        } else {
+          indicatorRow.classList.remove('setting-row--disabled');
+          indicatorToggle.disabled = false;
+          indicatorHint.style.display = 'none';
+        }
       }
 
       // ---- Toggle switches ----
@@ -1675,42 +2155,66 @@
       var autoWarning = document.getElementById('full-auto-warning');
       var extendedRow = document.getElementById('extended-detection-row');
       var detectionDetails = document.getElementById('detection-details');
+      var warningDismissed = false;
+
+      function setAutomationLevel(val) {
+        var labels = {
+          'manual': 'Manual',
+          'clipboard': 'Copy to Clipboard',
+          'autofill': 'Autofill',
+          'full-automation': 'Full Automation'
+        };
+
+        // Update card visuals
+        autoCards.forEach(function (c) {
+          var radio = c.querySelector('input[type="radio"]');
+          if (radio.value === val) {
+            c.classList.add('automation-card--active');
+            radio.checked = true;
+          } else {
+            c.classList.remove('automation-card--active');
+            radio.checked = false;
+          }
+        });
+
+        // Show/hide full-automation warning (reset dismissed state on new selection)
+        warningDismissed = false;
+        if (autoWarning) {
+          autoWarning.style.display = val === 'full-automation' ? 'flex' : 'none';
+        }
+
+        // Show/hide extended button detection (only in full-automation)
+        if (extendedRow) {
+          extendedRow.style.display = val === 'full-automation' ? 'flex' : 'none';
+        }
+        if (detectionDetails) {
+          detectionDetails.style.display = val === 'full-automation' ? 'block' : 'none';
+        }
+
+        // Disable indicator toggle in manual mode
+        setIndicatorDisabled(val === 'manual');
+
+        return labels[val] || val;
+      }
 
       autoCards.forEach(function (card) {
         var radio = card.querySelector('input[type="radio"]');
         radio.addEventListener('change', function () {
-          // Remove active from all
-          autoCards.forEach(function (c) {
-            c.classList.remove('automation-card--active');
-          });
-          // Add active to selected
-          card.classList.add('automation-card--active');
-
-          var val = this.value;
-          var labels = {
-            'manual': 'Manual',
-            'clipboard': 'Copy to Clipboard',
-            'autofill': 'Autofill',
-            'full-automation': 'Full Automation'
-          };
-
-          showToast('Automation set to ' + (labels[val] || val));
-          announce('Automation level changed to ' + (labels[val] || val));
-
-          // Show/hide full-automation warning
-          if (autoWarning) {
-            autoWarning.style.display = val === 'full-automation' ? 'flex' : 'none';
-          }
-
-          // Show/hide extended button detection (only in full-automation)
-          if (extendedRow) {
-            extendedRow.style.display = val === 'full-automation' ? 'flex' : 'none';
-          }
-          if (detectionDetails) {
-            detectionDetails.style.display = val === 'full-automation' ? 'block' : 'none';
-          }
+          var label = setAutomationLevel(this.value);
+          showToast('Automation set to ' + label);
+          announce('Automation level changed to ' + label);
         });
       });
+
+      // ---- Full automation warning dismiss ----
+      var warningDismissBtn = document.getElementById('full-auto-warning-dismiss');
+      if (warningDismissBtn) {
+        warningDismissBtn.addEventListener('click', function () {
+          warningDismissed = true;
+          if (autoWarning) autoWarning.style.display = 'none';
+          announce('Full automation warning dismissed');
+        });
+      }
 
       // ---- Theme cards ----
       var themeCards = document.querySelectorAll('.theme-card');
@@ -1736,13 +2240,33 @@
         });
       });
 
-      // ---- Range slider live output ----
+      // ---- Range slider live output + adaptive hints ----
       var rangeInput = document.getElementById('session-timeout');
       var rangeOutput = document.querySelector('.range-control__value');
+      var rangeHint = document.getElementById('range-hint');
+
+      function updateRangeHint(value) {
+        if (!rangeHint) return;
+        var v = parseInt(value, 10);
+        if (v <= 10) {
+          rangeHint.textContent = 'Very short. Some slower email providers may not deliver in time.';
+          rangeHint.classList.add('range-hint--caution');
+        } else if (v <= 30) {
+          rangeHint.textContent = '20-30 seconds is enough for most email providers. Increase this if codes tend to arrive slowly.';
+          rangeHint.classList.remove('range-hint--caution');
+        } else if (v <= 60) {
+          rangeHint.textContent = 'A reasonable duration for slower providers. No significant impact on performance.';
+          rangeHint.classList.remove('range-hint--caution');
+        } else {
+          rangeHint.textContent = 'Long check duration. This may keep the session indicator visible for a while and use more background processing.';
+          rangeHint.classList.add('range-hint--caution');
+        }
+      }
 
       if (rangeInput && rangeOutput) {
         rangeInput.addEventListener('input', function () {
           rangeOutput.textContent = this.value + 's';
+          updateRangeHint(this.value);
         });
         rangeInput.addEventListener('change', function () {
           showToast('Timeout set to ' + this.value + 's');
@@ -1762,33 +2286,142 @@
         });
       }
 
-      // ---- Data management buttons ----
-      var btnClearCodes = document.getElementById('btn-clear-codes');
-      var btnClearCache = document.getElementById('btn-clear-cache');
+      // ---- Inline confirmation helper ----
+      function setupInlineConfirm(triggerId, defaultId, confirmId, yesId, cancelId, onConfirm) {
+        var trigger = document.getElementById(triggerId);
+        var defaultEl = document.getElementById(defaultId);
+        var confirmEl = document.getElementById(confirmId);
+        var yesBtn = document.getElementById(yesId);
+        var cancelBtn = document.getElementById(cancelId);
 
-      if (btnClearCodes) {
-        btnClearCodes.addEventListener('click', function () {
-          if (confirm('Are you sure you want to clear all saved codes? This cannot be undone.')) {
-            showToast('All codes cleared');
-            announce('All saved verification codes have been cleared');
-          }
+        if (!trigger || !defaultEl || !confirmEl || !yesBtn || !cancelBtn) return;
+
+        trigger.addEventListener('click', function () {
+          defaultEl.style.display = 'none';
+          confirmEl.style.display = 'flex';
+          yesBtn.focus();
+        });
+
+        cancelBtn.addEventListener('click', function () {
+          confirmEl.style.display = 'none';
+          defaultEl.style.display = 'block';
+          trigger.focus();
+        });
+
+        yesBtn.addEventListener('click', function () {
+          confirmEl.style.display = 'none';
+          defaultEl.style.display = 'block';
+          onConfirm();
         });
       }
 
-      if (btnClearCache) {
-        btnClearCache.addEventListener('click', function () {
-          if (confirm('Clear all cached data? Your settings and accounts will be preserved.')) {
-            showToast('Cache cleared');
-            announce('Cache has been cleared');
-          }
-        });
-      }
+      // Clear Codes
+      setupInlineConfirm(
+        'btn-clear-codes', 'clear-codes-default', 'clear-codes-confirm',
+        'btn-clear-codes-yes', 'btn-clear-codes-cancel',
+        function () {
+          showToast('All codes cleared');
+          announce('All saved verification codes have been cleared');
+        }
+      );
+
+      // Clear Cache
+      setupInlineConfirm(
+        'btn-clear-cache', 'clear-cache-default', 'clear-cache-confirm',
+        'btn-clear-cache-yes', 'btn-clear-cache-cancel',
+        function () {
+          showToast('Cache cleared');
+          announce('Cache has been cleared');
+        }
+      );
+
+      // Reset to Defaults
+      setupInlineConfirm(
+        'btn-reset-defaults', 'reset-defaults-default', 'reset-defaults-confirm',
+        'btn-reset-defaults-yes', 'btn-reset-defaults-cancel',
+        function () {
+          showToast('All settings have been reset to defaults');
+          announce('All settings have been reset to default values');
+        }
+      );
 
       // ---- Blacklist manage button ----
-      var blacklistBtn = document.querySelector('.blacklist-row .btn');
+      var blacklistBtn = document.querySelector('#blacklist-populated .btn');
       if (blacklistBtn) {
         blacklistBtn.addEventListener('click', function () {
-          showToast('Blacklist manager would open here');
+          showToast('Ignored sites manager would open here');
+        });
+      }
+
+      // ================================================
+      // PROTOTYPE STATE CONTROLS
+      // ================================================
+
+      var ctrlPageState = document.getElementById('ctrl-page-state');
+      var ctrlAutoLevel = document.getElementById('ctrl-auto-level');
+      var ctrlIgnoredSites = document.getElementById('ctrl-ignored-sites');
+
+      var settingsContent = document.getElementById('settings-content');
+      var settingsLoading = document.getElementById('settings-loading');
+
+      // -- Page state control --
+      if (ctrlPageState) {
+        ctrlPageState.addEventListener('change', function () {
+          var val = this.value;
+
+          if (val === 'loading') {
+            settingsContent.style.display = 'none';
+            settingsLoading.style.display = 'flex';
+            settingsLoading.setAttribute('aria-hidden', 'false');
+          } else {
+            settingsLoading.style.display = 'none';
+            settingsLoading.setAttribute('aria-hidden', 'true');
+            settingsContent.style.display = 'flex';
+          }
+
+          if (val === 'save-error') {
+            showToast('Setting could not be saved. Try again.', 'error');
+          }
+        });
+      }
+
+      // -- Automation level control --
+      if (ctrlAutoLevel) {
+        ctrlAutoLevel.addEventListener('change', function () {
+          var label = setAutomationLevel(this.value);
+          showToast('Automation set to ' + label);
+          announce('Automation level changed to ' + label);
+        });
+      }
+
+      // -- Ignored sites control --
+      var blacklistPopulated = document.getElementById('blacklist-populated');
+      var blacklistEmpty = document.getElementById('blacklist-empty');
+      var blacklistLongDomains = document.getElementById('blacklist-long-domains');
+      var blacklistCount = document.getElementById('blacklist-count');
+
+      function setIgnoredSitesState(val) {
+        // Hide all variants
+        blacklistPopulated.style.display = 'none';
+        blacklistEmpty.style.display = 'none';
+        blacklistLongDomains.style.display = 'none';
+
+        if (val === '0') {
+          blacklistEmpty.style.display = 'flex';
+        } else if (val === 'long') {
+          blacklistPopulated.style.display = 'flex';
+          blacklistCount.textContent = '3';
+          blacklistLongDomains.style.display = 'flex';
+        } else {
+          blacklistPopulated.style.display = 'flex';
+          blacklistCount.textContent = val;
+          if (val === '1') blacklistCount.textContent = '1';
+        }
+      }
+
+      if (ctrlIgnoredSites) {
+        ctrlIgnoredSites.addEventListener('change', function () {
+          setIgnoredSitesState(this.value);
         });
       }
 
