@@ -161,6 +161,7 @@ export function ImapAccountCard({
           return (
             <AccountRow
               key={account.id}
+              className={account.lastSyncError ? 'account-row--error' : ''}
               email={account.email}
               statusDot={
                 <span
