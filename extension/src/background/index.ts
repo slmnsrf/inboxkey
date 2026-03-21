@@ -267,6 +267,11 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     return true
   }
 
+  if (msg.type === "RESET_SETTINGS") {
+    handleResetSettings(sendResponse)
+    return true
+  }
+
   if (msg.type === "FETCH_CODE") {
     console.warn(
       "[InboxKey] FETCH_CODE is deprecated. SessionController now manages polling."
@@ -833,6 +838,31 @@ function handleSetDomainPreference(msg: any, sendResponse: (response: any) => vo
     }
   })().catch((error) => {
     console.error("[Background] handleSetDomainPreference unhandled rejection:", error)
+  })
+}
+
+/**
+ * Handle RESET_SETTINGS requests.
+ * Resets all user settings to factory defaults.
+ */
+function handleResetSettings(sendResponse: (response: any) => void) {
+  ;(async () => {
+    try {
+      const storage = await StorageFactory.create()
+      const { DEFAULT_SETTINGS } = await import("@/lib/storage/schema")
+      await storage.updateSettings({ ...DEFAULT_SETTINGS })
+
+      console.log("[Background] Settings reset to defaults")
+      sendResponse({ success: true })
+    } catch (error) {
+      console.error("[Background] Failed to reset settings:", error)
+      sendResponse({
+        success: false,
+        error: error instanceof Error ? error.message : String(error),
+      })
+    }
+  })().catch((error) => {
+    console.error("[Background] handleResetSettings unhandled rejection:", error)
   })
 }
 

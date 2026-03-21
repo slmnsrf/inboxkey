@@ -16,15 +16,15 @@ import {
   Key,
   User,
   AppWindow,
-  MousePointerClick,
   HardDrive,
-  Code2,
   Cable,
   Github,
   BookOpenCheck,
   PackageCheck,
   ArrowRight,
   Mail,
+  Bell,
+  Globe,
 } from 'lucide-react'
 import { t } from '@/lib/i18n'
 import { GITHUB_REPO_URL } from '@/lib/constants'
@@ -143,9 +143,14 @@ const SECTIONS: SectionData[] = [
 
 const PERMISSIONS: PermissionData[] = [
   {
-    icon: <User size={16} />,
-    code: 'identity',
-    reasonKey: 'security_perm_identity_reason',
+    icon: <HardDrive size={16} />,
+    code: 'storage',
+    reasonKey: 'security_perm_storage_reason',
+  },
+  {
+    icon: <Clock size={16} />,
+    code: 'alarms',
+    reasonKey: 'security_perm_alarms_reason',
   },
   {
     icon: <AppWindow size={16} />,
@@ -153,24 +158,24 @@ const PERMISSIONS: PermissionData[] = [
     reasonKey: 'security_perm_tabs_reason',
   },
   {
-    icon: <MousePointerClick size={16} />,
-    code: 'activeTab',
-    reasonKey: 'security_perm_activetab_reason',
+    icon: <User size={16} />,
+    code: 'identity',
+    reasonKey: 'security_perm_identity_reason',
   },
   {
-    icon: <HardDrive size={16} />,
-    code: 'storage',
-    reasonKey: 'security_perm_storage_reason',
-  },
-  {
-    icon: <Code2 size={16} />,
-    code: 'scripting',
-    reasonKey: 'security_perm_scripting_reason',
+    icon: <Bell size={16} />,
+    code: 'notifications',
+    reasonKey: 'security_perm_notifications_reason',
   },
   {
     icon: <Cable size={16} />,
     code: 'nativeMessaging',
     reasonKey: 'security_perm_nativemessaging_reason',
+  },
+  {
+    icon: <Globe size={16} />,
+    code: 'host_permissions (https://*/*)',
+    reasonKey: 'security_perm_hostpermissions_reason',
   },
 ]
 
