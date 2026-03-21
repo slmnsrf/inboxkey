@@ -35,8 +35,8 @@
 
 .accounts-section__description {
   margin: 0;
-  color: var(--color-text-secondary);
-  font-size: var(--font-size-sm);
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-xs);
 }
 
 .provider-grid {
@@ -264,6 +264,10 @@
   background-color: var(--color-error);
 }
 
+.status-dot--warning {
+  background: var(--color-warning);
+}
+
 .imap-actions {
   display: inline-flex;
   align-items: center;
@@ -317,10 +321,15 @@
 .recent-card {
   display: grid;
   gap: var(--space-2);
-  padding: var(--space-3);
+  padding: var(--space-3) var(--space-4);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
-  background: var(--surface-card);
+  background: var(--surface-card-muted);
+  transition: border-color var(--duration-fast) var(--easing-out);
+}
+
+.recent-card:hover {
+  border-color: var(--color-border-hover);
 }
 
 .recent-card__meta {
@@ -669,6 +678,7 @@
 .btn--sm {
   padding: var(--space-1) var(--space-3);
   font-size: var(--font-size-sm);
+  min-height: 28px;
 }
 
 /* Stateful Button States */
@@ -785,10 +795,19 @@
   align-items: center;
   justify-content: space-between;
   gap: var(--space-3);
-  padding: var(--space-3);
+  padding: var(--space-3) var(--space-4);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
-  background: var(--color-surface);
+  background: var(--surface-card-muted);
+  transition: border-color var(--duration-fast) var(--easing-out);
+}
+
+.account-row:hover {
+  border-color: var(--color-border-hover);
+}
+
+.account-row--error {
+  border-color: rgba(239, 68, 68, 0.15);
 }
 
 .account-row__info {
@@ -803,11 +822,15 @@
   align-items: center;
   gap: var(--space-2);
   font-weight: 500;
+  max-width: 280px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .account-row__meta {
-  font-size: var(--font-size-sm);
-  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
 }
 
 .account-row__actions {
@@ -891,5 +914,18 @@
 
   .form-row {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .account-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-3);
+  }
+
+  .account-row__actions {
+    width: 100%;
+    justify-content: flex-end;
   }
 }

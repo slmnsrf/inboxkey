@@ -623,6 +623,17 @@ body,
   outline-offset: 2px;
 }
 
+.btn--danger-ghost {
+  background: transparent;
+  color: var(--color-error);
+  border: 1px solid transparent;
+}
+
+.btn--danger-ghost:hover {
+  background: var(--color-error-light);
+  border-color: var(--color-error);
+}
+
 .loading-spinner {
   display: inline-block;
   flex-shrink: 0;
