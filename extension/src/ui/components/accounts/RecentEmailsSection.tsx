@@ -1,4 +1,5 @@
 import React from 'react'
+import { Inbox } from 'lucide-react'
 import { formatProvider, t } from '@/lib/i18n'
 import type { RecentItem } from './types'
 
@@ -26,10 +27,6 @@ export function RecentEmailsSection({
         </h3>
       </div>
 
-      <p className="accounts-section__description">
-        {t('accounts_recent_description')}
-      </p>
-
       {disabled && (
         <div className="empty-state" role="status">
           {t('accounts_recent_loading')}
@@ -38,7 +35,10 @@ export function RecentEmailsSection({
 
       {!disabled && visibleItems.length === 0 && (
         <div className="empty-state" role="note">
-          {t('accounts_recent_empty')}
+          <div className="empty-state__icon">
+            <Inbox size={24} aria-hidden="true" />
+          </div>
+          <p>{t('accounts_recent_empty')}</p>
         </div>
       )}
 
@@ -91,6 +91,10 @@ export function RecentEmailsSection({
           })}
         </div>
       )}
+
+      <p className="accounts-section__description">
+        {t('accounts_recent_description')}
+      </p>
     </section>
   )
 }
