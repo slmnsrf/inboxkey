@@ -27,8 +27,8 @@ export function AdvancedSettings() {
       await chrome.runtime.sendMessage({ type: 'RESET_SETTINGS' })
       setConfirmingReset(false)
       showToast(t('toast_settings_reset'), 'success')
-      // Reload settings to reflect defaults
-      loadSettings()
+      // Reload the page after a brief delay so the user sees the success toast
+      setTimeout(() => window.location.reload(), 1000)
     } catch {
       showToast(t('toast_settings_reset_failed'), 'error')
       setConfirmingReset(false)
@@ -84,7 +84,9 @@ export function AdvancedSettings() {
       // Update ARIA live region for screen readers
       const statusEl = document.getElementById('extended-button-status')
       if (statusEl) {
-        statusEl.textContent = `Extended button detection ${newValue ? 'enabled' : 'disabled'}`
+        statusEl.textContent = newValue
+          ? t('aria_extended_detection_enabled')
+          : t('aria_extended_detection_disabled')
       }
 
       showToast(t('toast_settings_saved'), 'success')
@@ -96,7 +98,7 @@ export function AdvancedSettings() {
       // Announce error to screen readers
       const statusEl = document.getElementById('extended-button-status')
       if (statusEl) {
-        statusEl.textContent = 'Failed to save extended button detection setting'
+        statusEl.textContent = t('aria_save_extended_detection_failed')
       }
 
       showToast(t('toast_settings_failed'), 'error')
@@ -114,7 +116,9 @@ export function AdvancedSettings() {
       // Update ARIA live region for screen readers
       const statusEl = document.getElementById('banking-blocklist-status')
       if (statusEl) {
-        statusEl.textContent = `Banking site blocklist ${newValue ? 'enabled' : 'disabled'}`
+        statusEl.textContent = newValue
+          ? t('aria_banking_blocklist_enabled')
+          : t('aria_banking_blocklist_disabled')
       }
 
       showToast(t('toast_settings_saved'), 'success')
@@ -125,7 +129,7 @@ export function AdvancedSettings() {
       // Announce error to screen readers
       const statusEl = document.getElementById('banking-blocklist-status')
       if (statusEl) {
-        statusEl.textContent = 'Failed to save banking blocklist setting'
+        statusEl.textContent = t('aria_save_banking_blocklist_failed')
       }
 
       showToast(t('toast_settings_failed'), 'error')

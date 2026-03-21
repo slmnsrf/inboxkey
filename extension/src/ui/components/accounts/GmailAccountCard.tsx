@@ -21,6 +21,7 @@ import { getAccountStatus } from './account-status'
 import { AccountSection } from './shared/AccountSection'
 import { AccountRow } from './shared/AccountRow'
 import { StatefulButton } from './shared/StatefulButton'
+import { getConnectionErrorMessage } from './shared/connection-errors'
 import { Modal } from '../Modal'
 
 interface GmailAccountCardProps {
@@ -167,6 +168,7 @@ export function GmailAccountCard({
       isConnected={!!account}
       feedbackMessage={connectionError || undefined}
       feedbackType="error"
+      feedbackAutoDismiss={connectionError !== t('toast_oauth_cancelled')}
     >
       {account ? (
         <>
@@ -247,23 +249,10 @@ export function GmailAccountCard({
             loadingText={getStageLabel(connectionStage)}
             variant="primary"
             disabled={disabled}
-            aria-label="Connect Gmail account"
+            aria-label={t('aria_connect_gmail_account')}
           />
         </div>
       )}
     </AccountSection>
   )
-}
-
-function getConnectionErrorMessage(error: unknown): string {
-  if (error instanceof Error) {
-    if (error.message.includes('cancelled')) return t('toast_oauth_cancelled')
-    if (error.message.includes('PROFILE_')) return t('toast_connect_profile_failed')
-    if (error.message.includes('network')) return t('toast_connect_network_error')
-    if (error.message.includes('credentials') || error.message.includes('invalid_client')) {
-      return t('toast_connect_invalid_credentials')
-    }
-    return `${t('toast_connect_failed')}: ${error.message}`
-  }
-  return t('toast_connect_failed')
 }

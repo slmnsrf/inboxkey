@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
+import { t } from '@/lib/i18n';
 import { CheckIcon, XIcon, WarningIcon, InfoIcon } from '@/ui/components/icons/StatusIcons';
 
 type AlertVariant = 'success' | 'error' | 'warning' | 'info';
@@ -70,7 +71,7 @@ export function InlineAlert({
           type="button"
           onClick={handleDismiss}
           className="inline-alert__dismiss"
-          aria-label="Dismiss alert"
+          aria-label={t('aria_dismiss_alert')}
         >
           <X size={14} />
         </button>

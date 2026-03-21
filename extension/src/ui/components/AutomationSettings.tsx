@@ -92,7 +92,7 @@ export function AutomationSettings() {
   if (isLoading) {
     return (
       <div className="automation-settings-card">
-        <p>{t('accounts_loading_profile')}</p>
+        <p>{t('status_loading')}</p>
       </div>
     )
   }

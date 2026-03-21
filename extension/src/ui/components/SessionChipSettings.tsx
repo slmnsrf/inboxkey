@@ -4,7 +4,7 @@
  * Controls visibility of in-page session status chips (floating notifications).
  */
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { StorageFactory } from '@/lib/storage/storage-factory'
 import { useToast } from '@/ui/contexts/ToastContext'
 import { t } from '@/lib/i18n'
@@ -13,7 +13,16 @@ export function SessionChipSettings() {
   const { showToast } = useToast()
   const [showSessionChips, setShowSessionChips] = useState<boolean>(true)
   const [sessionTimeoutSeconds, setSessionTimeoutSeconds] = useState<number>(20)
+  const [displayTimeout, setDisplayTimeout] = useState<number>(20)
   const [loading, setLoading] = useState<boolean>(true)
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  // Clean up debounce timer on unmount
+  useEffect(() => {
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current)
+    }
+  }, [])
 
   useEffect(() => {
     loadSettings()
@@ -25,7 +34,9 @@ export function SessionChipSettings() {
       const storage = await StorageFactory.create()
       const settings = await storage.getSettings()
       setShowSessionChips(settings.showSessionChips ?? true)
-      setSessionTimeoutSeconds(settings.sessionTimeoutSeconds ?? 20)
+      const timeout = settings.sessionTimeoutSeconds ?? 20
+      setSessionTimeoutSeconds(timeout)
+      setDisplayTimeout(timeout)
     } catch (error) {
       console.error('[SessionChipSettings] Failed to load settings:', error)
       showToast(t('error_generic'), 'error')
@@ -45,7 +56,9 @@ export function SessionChipSettings() {
       // Update ARIA live region for screen readers
       const statusEl = document.getElementById('session-chip-status')
       if (statusEl) {
-        statusEl.textContent = `On-page indicator ${newValue ? 'enabled' : 'disabled'}`
+        statusEl.textContent = newValue
+          ? t('aria_session_chip_enabled')
+          : t('aria_session_chip_disabled')
       }
 
       showToast(t('toast_settings_saved'), 'success')
@@ -57,24 +70,23 @@ export function SessionChipSettings() {
       // Announce error to screen readers
       const statusEl = document.getElementById('session-chip-status')
       if (statusEl) {
-        statusEl.textContent = 'Failed to save indicator setting'
+        statusEl.textContent = t('aria_save_indicator_failed')
       }
 
       showToast(t('error_generic'), 'error')
     }
   }
 
-  const handleTimeoutChange = async (value: number) => {
+  const saveTimeout = useCallback(async (value: number) => {
     try {
-      setSessionTimeoutSeconds(value) // Optimistic update
-
       const storage = await StorageFactory.create()
       await storage.updateSettings({ sessionTimeoutSeconds: value })
+      setSessionTimeoutSeconds(value)
 
       // Update ARIA live region for screen readers
       const statusEl = document.getElementById('session-chip-status')
       if (statusEl) {
-        statusEl.textContent = `Check duration set to ${value} seconds`
+        statusEl.textContent = t('aria_check_duration_set', [String(value)])
       }
 
       showToast(t('toast_settings_saved'), 'success')
@@ -86,11 +98,22 @@ export function SessionChipSettings() {
       // Announce error to screen readers
       const statusEl = document.getElementById('session-chip-status')
       if (statusEl) {
-        statusEl.textContent = 'Failed to save timeout setting'
+        statusEl.textContent = t('aria_save_timeout_failed')
       }
 
       showToast(t('error_generic'), 'error')
     }
+  }, [showToast])
+
+  const handleTimeoutChange = (value: number) => {
+    // Update display immediately for responsive UI
+    setDisplayTimeout(value)
+
+    // Debounce the actual storage write
+    if (debounceRef.current) clearTimeout(debounceRef.current)
+    debounceRef.current = setTimeout(() => {
+      saveTimeout(value)
+    }, 500)
   }
 
   return (
@@ -140,14 +163,14 @@ export function SessionChipSettings() {
               min="10"
               max="120"
               step="10"
-              value={sessionTimeoutSeconds}
+              value={displayTimeout}
               onChange={(e) => handleTimeoutChange(Number(e.target.value))}
               disabled={loading}
               aria-describedby="session-timeout-help"
               style={{ width: '200px' }}
             />
             <output htmlFor="session-timeout" style={{ fontSize: '14px', fontWeight: 500 }}>
-              {sessionTimeoutSeconds}s
+              {displayTimeout}s
             </output>
           </div>
         </div>

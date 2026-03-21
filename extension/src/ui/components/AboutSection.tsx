@@ -181,6 +181,7 @@ export function AboutSection() {
       {/* Build Verification */}
       <div className="about-build-verify">
         <button
+          id="about-build-verify-toggle"
           className="about-build-verify__toggle"
           type="button"
           aria-expanded={verifyOpen}
