@@ -20,6 +20,7 @@ import { autofillCode } from './autofill'
 import type { DetectionResult } from '@/lib/types'
 import { isExtensionEnabled } from '@/lib/utils/domain'
 import { detectSplitInputGroup } from '@/lib/detection/split-input-detector'
+import { hasEmailContext } from '@/lib/detection/email-context-guard'
 
 /**
  * Global Set to track processed representative fields across all batches
@@ -70,8 +71,38 @@ export function clearProcessedFields(): void {
   }>()
 
   /**
+   * Determine if the focus gate should be bypassed for this field.
+   * Bypasses when detection confidence is high AND email context is present,
+   * or when the field has an OTP autocomplete attribute.
+   * Fail-closed: returns false on any error (keeps the gate active).
+   */
+  function shouldBypassFocusGate(
+    field: HTMLInputElement,
+    detectionResult: DetectionResult
+  ): boolean {
+    try {
+      // Always bypass for OTP autocomplete values
+      const autocomplete = field.getAttribute('autocomplete')?.toLowerCase() || ''
+      if (['one-time-code', 'one-time-password', 'otp'].includes(autocomplete)) {
+        return true
+      }
+
+      // Bypass when Tier 1 confidence is high AND email context is present
+      if (detectionResult.confidence >= 90 && hasEmailContext(field)) {
+        return true
+      }
+
+      return false
+    } catch {
+      // Fail-closed: if anything goes wrong, keep the gate active
+      return false
+    }
+  }
+
+  /**
    * Register a focus gate on a detected field.
    * The field must receive focus before a watch session starts.
+   * Bypassed when shouldBypassFocusGate() returns true.
    */
   function registerFocusGate(
     representativeField: HTMLInputElement,
@@ -206,7 +237,11 @@ export function clearProcessedFields(): void {
     const best = results[0]
     const group = detectSplitInputGroup(best.field)
     const representative = group?.representative || best.field
-    registerFocusGate(representative, best)
+    if (shouldBypassFocusGate(representative, best)) {
+      handleDetectedField(representative, best)
+    } else {
+      registerFocusGate(representative, best)
+    }
   }
 
   /**
@@ -269,8 +304,13 @@ export function clearProcessedFields(): void {
             continue
           }
 
-          // registerFocusGate handles globalProcessedRepresentatives internally
-          registerFocusGate(representative, result)
+          // Bypass focus gate for high-confidence fields with email context
+          if (shouldBypassFocusGate(representative, result)) {
+            globalProcessedRepresentatives?.add(representative)
+            handleDetectedField(representative, result)
+          } else {
+            registerFocusGate(representative, result)
+          }
         }
       }, 50)  // 50ms debounce window
     })

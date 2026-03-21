@@ -6,17 +6,17 @@
  * - AccountRow layout primitive
  * - Multi-account support
  * - Modal-based Add/Reconnect flows (managed by parent)
- * - StatefulButton for Remove operation only
+ * - Plain buttons for Retry/Remove/Refresh operations
  *
  * Target: ~220 LOC
  */
 
 import React, { useState, useEffect } from 'react'
+import { Server, Plus, RefreshCw } from 'lucide-react'
 import { t } from '@/lib/i18n'
 import { getAccountStatus } from './account-status'
 import { AccountSection } from './shared/AccountSection'
 import { AccountRow } from './shared/AccountRow'
-import { StatefulButton } from './shared/StatefulButton'
 import { getNativeClient } from '@/lib/native-messaging'
 
 interface ImapAccountCardProps {
@@ -49,6 +49,7 @@ export function ImapAccountCard({
   const [removeState, setRemoveState] = useState<RemoveState>('idle')
   const [removeError, setRemoveError] = useState<string | null>(null)
   const [removingId, setRemovingId] = useState<string | null>(null)
+  const [confirmingRemoveId, setConfirmingRemoveId] = useState<string | null>(null)
   const [bridgeStatus, setBridgeStatus] = useState<'checking' | 'connected' | 'disconnected'>('checking')
 
   // Check InboxBridge status when IMAP accounts exist
@@ -76,10 +77,7 @@ export function ImapAccountCard({
   }, [accounts.length])
 
   const handleRemove = async (mailboxId: string) => {
-    if (!confirm(t('accounts_remove_confirm'))) {
-      return
-    }
-
+    setConfirmingRemoveId(null)
     setRemovingId(mailboxId)
     setRemoveState('loading')
     setRemoveError(null)
@@ -113,16 +111,18 @@ export function ImapAccountCard({
       description={t('accounts_imap_description')}
       accountCount={accounts.length}
       maxAccounts={maxAccounts}
+      isConnected={accounts.length > 0}
       feedbackMessage={removeError || undefined}
       feedbackType="error"
       actionButton={
         <button
           type="button"
-          className="btn btn--primary"
+          className="btn btn--secondary btn--sm"
           onClick={onAddImap}
           disabled={disabled}
-          aria-label="Add IMAP account"
+          aria-label={t('accounts_imap_add')}
         >
+          <Plus size={14} aria-hidden="true" />
           {t('accounts_imap_add')}
         </button>
       }
@@ -161,6 +161,7 @@ export function ImapAccountCard({
           return (
             <AccountRow
               key={account.id}
+              className={account.lastSyncError ? 'account-row--error' : ''}
               email={account.email}
               statusDot={
                 <span
@@ -176,26 +177,63 @@ export function ImapAccountCard({
                   : undefined
               }
               actions={
-                <>
-                  <button
-                    type="button"
-                    className="btn btn--secondary"
-                    onClick={() => onReconnectImap(account.id)}
-                    disabled={disabled}
-                    aria-label={`Reconnect ${account.email}`}
-                  >
-                    {t('accounts_reconnect')}
-                  </button>
-                  <StatefulButton
-                    state={isThisRemoving ? removeState : 'idle'}
-                    onClick={() => handleRemove(account.id)}
-                    idleText={t('accounts_remove_button')}
-                    loadingText={t('accounts_removing')}
-                    variant="danger"
-                    disabled={disabled}
-                    aria-label={`Remove ${account.email}`}
-                  />
-                </>
+                confirmingRemoveId === account.id ? (
+                  <div className="confirm-inline" role="alertdialog" aria-label={t('accounts_remove_confirm')}>
+                    <p className="confirm-inline__text">{t('accounts_remove_confirm')}</p>
+                    <div className="confirm-inline__actions">
+                      <button
+                        type="button"
+                        className="btn btn--danger-ghost btn--sm"
+                        onClick={() => handleRemove(account.id)}
+                        disabled={disabled || (isThisRemoving && removeState === 'loading')}
+                        aria-busy={isThisRemoving && removeState === 'loading'}
+                      >
+                        {isThisRemoving && removeState === 'loading' ? t('accounts_removing') : t('accounts_remove_confirm_button')}
+                      </button>
+                      <button
+                        type="button"
+                        className="btn btn--secondary btn--sm"
+                        onClick={() => setConfirmingRemoveId(null)}
+                        disabled={disabled || removeState === 'loading'}
+                      >
+                        {t('accounts_remove_cancel')}
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    {account.lastSyncError ? (
+                      <button
+                        type="button"
+                        className="btn btn--secondary btn--sm"
+                        onClick={() => onReconnectImap(account.id)}
+                        disabled={disabled}
+                        aria-label={t('aria_reconnect_imap', [account.email])}
+                      >
+                        {t('accounts_imap_retry')}
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        className="btn btn--ghost btn--sm"
+                        onClick={() => onReconnectImap(account.id)}
+                        disabled={disabled}
+                        aria-label={t('aria_reconnect_imap', [account.email])}
+                      >
+                        <RefreshCw size={13} aria-hidden="true" />
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      className="btn btn--danger-ghost btn--sm"
+                      onClick={() => setConfirmingRemoveId(account.id)}
+                      disabled={disabled}
+                      aria-label={t('aria_remove_imap', [account.email])}
+                    >
+                      {t('accounts_remove_button')}
+                    </button>
+                  </>
+                )
               }
             >
               {/* Host info as additional metadata */}
@@ -210,12 +248,30 @@ export function ImapAccountCard({
                   {displayLabel}
                 </span>
               )}
+              {account.lastSyncError && (
+                <div className="imap-error-detail">
+                  <span className="imap-error-detail__message">
+                    {account.lastSyncError}
+                  </span>
+                </div>
+              )}
             </AccountRow>
           )
         })
       ) : (
-        <div className="empty-state" role="note">
-          {t('accounts_empty_imap')}
+        <div className="empty-slot" role="note">
+          <div className="empty-slot__icon">
+            <Server size={24} aria-hidden="true" />
+          </div>
+          <p className="empty-slot__text">{t('accounts_empty_imap')}</p>
+          <button
+            type="button"
+            className="btn btn--primary"
+            onClick={onAddImap}
+            disabled={disabled}
+          >
+            {t('accounts_imap_add_cta')}
+          </button>
         </div>
       )}
     </AccountSection>

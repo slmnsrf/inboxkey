@@ -1,4 +1,5 @@
 import React from 'react'
+import { Inbox, Copy, ExternalLink } from 'lucide-react'
 import { formatProvider, t } from '@/lib/i18n'
 import type { RecentItem } from './types'
 
@@ -21,14 +22,10 @@ export function RecentEmailsSection({
   return (
     <section className="accounts-section" aria-labelledby="recent-emails-title">
       <div className="accounts-section__header">
-        <h3 id="recent-emails-title" className="accounts-section__title">
+        <h3 id="recent-emails-title" className="accounts-section__title" style={{ fontSize: 'var(--font-size-lg)' }}>
           {t('accounts_recent_title')}
         </h3>
       </div>
-
-      <p className="accounts-section__description">
-        {t('accounts_recent_description')}
-      </p>
 
       {disabled && (
         <div className="empty-state" role="status">
@@ -38,7 +35,10 @@ export function RecentEmailsSection({
 
       {!disabled && visibleItems.length === 0 && (
         <div className="empty-state" role="note">
-          {t('accounts_recent_empty')}
+          <div className="empty-state__icon">
+            <Inbox size={24} aria-hidden="true" />
+          </div>
+          <p>{t('accounts_recent_empty')}</p>
         </div>
       )}
 
@@ -52,7 +52,16 @@ export function RecentEmailsSection({
             return (
               <article key={item.id} className="recent-card">
                 <header className="recent-card__meta">
-                  <span>{providerLabel}</span>
+                  <span className="provider-badge">
+                    <span
+                      className={`provider-badge__dot provider-badge__dot--${item.provider || 'imap'}`}
+                      aria-hidden="true"
+                    />
+                    <span>{providerLabel}</span>
+                  </span>
+                  <span className="meta-dot" aria-hidden="true" />
+                  <span>{item.from || t('value_not_available')}</span>
+                  <span className="meta-dot" aria-hidden="true" />
                   <span aria-label={t('aria_received_time', [item.receivedLabel])}>
                     {item.receivedLabel}
                   </span>
@@ -60,18 +69,16 @@ export function RecentEmailsSection({
                 <h4 className="recent-card__title">
                   {item.subject || t('value_not_available')}
                 </h4>
-                <p className="accounts-section__description">
-                  {item.from || t('value_not_available')}
-                </p>
                 <div className="recent-actions">
                   {item.kind === 'code' && item.code && (
                     <>
                       <span className="recent-code">{item.code}</span>
                       <button
                         type="button"
-                        className="btn btn--secondary"
+                        className="btn btn--primary btn--sm"
                         onClick={() => onCopyCode?.(item)}
                       >
+                        <Copy size={13} aria-hidden="true" />
                         {t('button_copy')}
                       </button>
                     </>
@@ -79,10 +86,11 @@ export function RecentEmailsSection({
                   {item.kind === 'link' && item.url && (
                     <button
                       type="button"
-                      className="btn btn--primary"
+                      className="btn btn--secondary btn--sm"
                       onClick={() => onOpenLink?.(item)}
                     >
-                      {t('button_open')}
+                      <ExternalLink size={13} aria-hidden="true" />
+                      {t('button_open_link')}
                     </button>
                   )}
                 </div>
@@ -91,6 +99,7 @@ export function RecentEmailsSection({
           })}
         </div>
       )}
+
     </section>
   )
 }

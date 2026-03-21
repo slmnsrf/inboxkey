@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="status" content="Ideation">
-  <meta name="date" content="2026-03-09">
+  <meta name="date" content="2026-03-20">
   <meta name="category" content="settings">
   <title>Accounts Panel - InboxKey Prototype</title>
   <link rel="stylesheet" href="../shared/tokens.css">
@@ -891,6 +891,360 @@
     .accounts-section {
       position: relative;
     }
+
+    /* ============================
+       WARNING BANNER (token expired, oauth cancelled)
+       ============================ */
+
+    .warning-banner {
+      display: flex;
+      align-items: flex-start;
+      gap: var(--space-2);
+      border-radius: var(--radius-md);
+      padding: var(--space-2) var(--space-3);
+      background: var(--color-warning-light);
+      color: var(--color-warning-dark);
+      font-size: var(--font-size-sm);
+      border: 1px solid rgba(245, 158, 11, 0.2);
+    }
+
+    .warning-banner a {
+      color: inherit;
+      font-weight: var(--font-weight-medium);
+    }
+
+    /* ============================
+       INFO BANNER (oauth cancelled scope hint)
+       ============================ */
+
+    .info-banner {
+      display: flex;
+      align-items: flex-start;
+      gap: var(--space-2);
+      border-radius: var(--radius-md);
+      padding: var(--space-2) var(--space-3);
+      background: var(--color-primary-light);
+      color: var(--color-primary);
+      font-size: var(--font-size-sm);
+      border: 1px solid rgba(0, 122, 255, 0.15);
+    }
+
+    /* ============================
+       SYNCING STATE
+       ============================ */
+
+    .syncing-indicator {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+      font-size: var(--font-size-xs);
+      color: var(--color-primary);
+      font-weight: var(--font-weight-medium);
+    }
+
+    .syncing-spinner {
+      width: 14px;
+      height: 14px;
+      border: 2px solid var(--color-primary-light);
+      border-top-color: var(--color-primary);
+      border-radius: 50%;
+      animation: spin 600ms linear infinite;
+      flex-shrink: 0;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .syncing-spinner {
+        animation: none;
+        border-top-color: var(--color-primary-light);
+        border-left-color: var(--color-primary);
+      }
+      .connecting-dots span {
+        animation: none;
+        opacity: 0.6;
+      }
+    }
+
+    /* ============================
+       DISABLED BUTTON STATE
+       ============================ */
+
+    .btn[disabled],
+    .btn--disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+      pointer-events: none;
+    }
+
+    /* ============================
+       TOOLTIP / HINT
+       ============================ */
+
+    .btn-with-hint {
+      position: relative;
+    }
+
+    .btn-hint {
+      display: none;
+      position: absolute;
+      bottom: calc(100% + var(--space-2));
+      left: 50%;
+      transform: translateX(-50%);
+      white-space: nowrap;
+      padding: var(--space-1) var(--space-3);
+      border-radius: var(--radius-md);
+      background: var(--color-gray-800);
+      color: var(--color-text-inverse);
+      font-size: var(--font-size-xs);
+      font-weight: var(--font-weight-medium);
+      pointer-events: none;
+      z-index: 10;
+    }
+
+    [data-theme="dark"] .btn-hint {
+      background: var(--color-gray-200);
+      color: var(--color-text-primary);
+    }
+
+    .btn-hint::after {
+      content: '';
+      position: absolute;
+      top: 100%;
+      left: 50%;
+      transform: translateX(-50%);
+      border: 5px solid transparent;
+      border-top-color: var(--color-gray-800);
+    }
+
+    [data-theme="dark"] .btn-hint::after {
+      border-top-color: var(--color-gray-200);
+    }
+
+    .btn-with-hint:hover .btn-hint,
+    .btn-with-hint:focus-within .btn-hint {
+      display: block;
+    }
+
+    /* ============================
+       CONFIRMATION DIALOG (inline)
+       ============================ */
+
+    .confirm-inline {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-3);
+      padding: var(--space-4);
+      border: 1px solid rgba(239, 68, 68, 0.25);
+      border-radius: var(--radius-md);
+      background: var(--color-error-light);
+    }
+
+    .confirm-inline__text {
+      margin: 0;
+      font-size: var(--font-size-sm);
+      color: var(--color-error-dark);
+      line-height: var(--line-height-relaxed);
+    }
+
+    .confirm-inline__actions {
+      display: flex;
+      gap: var(--space-2);
+    }
+
+    .btn--danger {
+      background: var(--color-error);
+      color: var(--color-text-inverse);
+      border: none;
+    }
+
+    .btn--danger:hover {
+      background: var(--color-error-hover);
+    }
+
+    /* ============================
+       UPDATE HINT (InboxBridge)
+       ============================ */
+
+    .update-hint {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+      padding: var(--space-2) var(--space-3);
+      border-radius: var(--radius-md);
+      background: var(--color-primary-light);
+      border: 1px solid rgba(0, 122, 255, 0.12);
+      font-size: var(--font-size-xs);
+      color: var(--color-primary);
+    }
+
+    .update-hint a {
+      color: inherit;
+      font-weight: var(--font-weight-semibold);
+    }
+
+    /* ============================
+       OFFLINE BANNER (page-level)
+       ============================ */
+
+    .offline-banner {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+      padding: var(--space-2) var(--space-4);
+      background: var(--color-warning-light);
+      color: var(--color-warning-dark);
+      font-size: var(--font-size-sm);
+      font-weight: var(--font-weight-medium);
+      border-bottom: 1px solid rgba(245, 158, 11, 0.2);
+      justify-content: center;
+    }
+
+    /* ============================
+       FIRST-RUN WELCOME
+       ============================ */
+
+    .first-run-welcome {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: var(--space-4);
+      padding: var(--space-8) var(--space-6);
+      text-align: center;
+    }
+
+    .first-run-welcome__icon {
+      width: 64px;
+      height: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: var(--radius-xl);
+      background: var(--color-primary-light);
+      color: var(--color-primary);
+    }
+
+    .first-run-welcome__title {
+      margin: 0;
+      font-size: var(--font-size-lg);
+      font-weight: var(--font-weight-semibold);
+      color: var(--color-text-primary);
+    }
+
+    .first-run-welcome__desc {
+      margin: 0;
+      font-size: var(--font-size-sm);
+      color: var(--color-text-secondary);
+      max-width: 360px;
+      line-height: var(--line-height-relaxed);
+    }
+
+    .first-run-welcome__ctas {
+      display: flex;
+      gap: var(--space-3);
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    /* ============================
+       LONG EMAIL TRUNCATION
+       ============================ */
+
+    .account-row__email-text {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      max-width: 280px;
+    }
+
+    @media (max-width: 640px) {
+      .account-row__email-text {
+        max-width: 180px;
+      }
+    }
+
+    /* ============================
+       IMAP ERROR TYPES
+       ============================ */
+
+    .imap-error-detail {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-1);
+    }
+
+    .imap-error-detail__type {
+      font-weight: var(--font-weight-medium);
+      color: var(--color-error-dark);
+      font-size: var(--font-size-sm);
+    }
+
+    .imap-error-detail__hint {
+      color: var(--color-text-tertiary);
+      font-size: var(--font-size-xs);
+    }
+
+    /* ============================
+       TOAST NOTIFICATION
+       ============================ */
+
+    .toast {
+      position: fixed;
+      bottom: var(--space-6);
+      right: var(--space-6);
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+      padding: var(--space-3) var(--space-4);
+      border-radius: var(--radius-lg);
+      background: var(--color-gray-800);
+      color: var(--color-text-inverse);
+      font-size: var(--font-size-sm);
+      font-weight: var(--font-weight-medium);
+      box-shadow: var(--shadow-lg);
+      z-index: 100;
+      animation: toastIn 300ms cubic-bezier(0.16, 1, 0.3, 1) both;
+    }
+
+    [data-theme="dark"] .toast {
+      background: var(--color-gray-200);
+      color: var(--color-text-primary);
+    }
+
+    .toast--hiding {
+      animation: toastOut 300ms ease-in both;
+    }
+
+    @keyframes toastIn {
+      from {
+        opacity: 0;
+        transform: translateY(16px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes toastOut {
+      from {
+        opacity: 1;
+        transform: translateY(0);
+      }
+      to {
+        opacity: 0;
+        transform: translateY(16px);
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .toast {
+        animation: none;
+        opacity: 1;
+      }
+      .toast--hiding {
+        animation: none;
+        opacity: 0;
+      }
+    }
   </style>
 </head>
 <body>
@@ -901,7 +1255,7 @@
     <div class="proto-toolbar__left">
       <span class="proto-toolbar__title">Accounts Panel</span>
       <span class="proto-toolbar__status" data-status="ideation">Ideation</span>
-      <span class="proto-toolbar__date">2026-03-09</span>
+      <span class="proto-toolbar__date">2026-03-20</span>
     </div>
     <div class="proto-toolbar__right">
       <div class="proto-state-controls">
@@ -911,7 +1265,11 @@
             <option value="connected" selected>Connected</option>
             <option value="disconnected">Disconnected</option>
             <option value="connecting">Connecting...</option>
+            <option value="syncing">Syncing</option>
             <option value="error">Error</option>
+            <option value="oauth-cancelled">OAuth Cancelled</option>
+            <option value="token-expired">Token Expired</option>
+            <option value="max-reached">Max Reached (1/1)</option>
           </select>
         </label>
         <label>
@@ -920,6 +1278,9 @@
             <option value="connected">Connected</option>
             <option value="disconnected" selected>Disconnected</option>
             <option value="connecting">Connecting...</option>
+            <option value="syncing">Syncing</option>
+            <option value="oauth-cancelled">OAuth Cancelled</option>
+            <option value="token-expired">Token Expired</option>
           </select>
         </label>
         <label>
@@ -928,6 +1289,11 @@
             <option value="2accounts" selected>2 accounts</option>
             <option value="0accounts">No accounts</option>
             <option value="1account">1 account</option>
+            <option value="max-reached">Max (10/10)</option>
+            <option value="net-error">Network error</option>
+            <option value="auth-error">Auth error</option>
+            <option value="tls-error">TLS error</option>
+            <option value="bridge-update">Bridge update</option>
           </select>
         </label>
         <label>
@@ -939,8 +1305,21 @@
         </label>
         <div class="proto-separator"></div>
         <label>
+          Page:
+          <select id="ctrl-page">
+            <option value="normal" selected>Normal</option>
+            <option value="first-run">First Run</option>
+            <option value="offline">Offline</option>
+          </select>
+        </label>
+        <div class="proto-separator"></div>
+        <label>
           <input type="checkbox" id="ctrl-labels">
           Labels
+        </label>
+        <label>
+          <input type="checkbox" id="ctrl-confirm-demo">
+          Confirm demo
         </label>
       </div>
       <div class="proto-separator"></div>
@@ -966,6 +1345,11 @@
        ======================================== -->
   <main class="proto-canvas">
     <div class="options-container">
+      <!-- Offline banner (page-level, hidden by default) -->
+      <div class="offline-banner" id="offline-banner" style="display:none" role="status" aria-live="polite">
+        <i data-lucide="wifi-off" style="width:16px;height:16px;flex-shrink:0"></i>
+        <span>Offline. Cached codes are still available. Sync will resume when the connection is restored.</span>
+      </div>
       <div class="options-shell">
 
         <!-- HEADER -->
@@ -976,7 +1360,7 @@
             </span>
             <div>
               <h1 class="brand__title">InboxKey</h1>
-              <p class="privacy-line">Your data stays on your device</p>
+              <p class="privacy-line">Local-only &middot; No servers</p>
             </div>
           </div>
           <div class="options-header__actions">
@@ -987,31 +1371,6 @@
             </a>
           </div>
         </header>
-
-        <!-- TRUST BANNER -->
-        <section class="trust-banner">
-          <p class="trust-banner__headline">Privacy-first email verification for everyone</p>
-          <div class="trust-banner__pillars">
-            <div class="trust-pillar">
-              <span class="trust-pillar__icon" aria-hidden="true">
-                <i data-lucide="puzzle" style="width:16px;height:16px"></i>
-              </span>
-              <span class="trust-pillar__label">Open Source</span>
-            </div>
-            <div class="trust-pillar">
-              <span class="trust-pillar__icon" aria-hidden="true">
-                <i data-lucide="lock" style="width:16px;height:16px"></i>
-              </span>
-              <span class="trust-pillar__label">Local Only</span>
-            </div>
-            <div class="trust-pillar">
-              <span class="trust-pillar__icon" aria-hidden="true">
-                <i data-lucide="shield-check" style="width:16px;height:16px"></i>
-              </span>
-              <span class="trust-pillar__label">Safe &amp; Secure</span>
-            </div>
-          </div>
-        </section>
 
         <!-- TAB NAVIGATION -->
         <nav class="tab-navigation" role="tablist">
@@ -1073,7 +1432,7 @@
                     <button class="btn btn--danger-ghost btn--sm">Disconnect</button>
                   </div>
                 </div>
-                <p class="microcopy">Gmail uses Chrome's built-in identity. Limited to 1 account.</p>
+                <p class="microcopy">Read-only access. Only verification emails are scanned, nothing else.</p>
               </div>
 
               <!-- Disconnected state -->
@@ -1082,7 +1441,7 @@
                   <div class="empty-slot__icon">
                     <i data-lucide="mail" style="width:24px;height:24px"></i>
                   </div>
-                  <p class="empty-slot__text">Connect your Gmail account to autofill verification codes from your inbox.</p>
+                  <p class="empty-slot__text">Verification codes from Gmail can be detected and filled automatically. Nothing leaves this device.</p>
                   <button class="btn btn--primary">Connect Gmail</button>
                 </div>
               </div>
@@ -1101,11 +1460,90 @@
               <div id="gmail-error" style="display:none">
                 <div class="error-banner">
                   <i data-lucide="alert-circle" style="width:16px;height:16px;flex-shrink:0;margin-top:1px"></i>
-                  <span>Connection failed: OAuth credentials are not configured. <a href="#" style="color:inherit;font-weight:500">Learn more</a></span>
+                  <span>Connection failed. Google did not complete the sign-in. <a href="#" style="color:inherit;font-weight:500">Learn more</a></span>
                 </div>
                 <div class="empty-slot" style="border-style:solid;border-color:rgba(239,68,68,0.15)">
                   <button class="btn btn--primary">Retry Connection</button>
                 </div>
+              </div>
+
+              <!-- OAuth cancelled state -->
+              <div id="gmail-oauth-cancelled" style="display:none">
+                <div class="info-banner" role="status">
+                  <i data-lucide="info" style="width:16px;height:16px;flex-shrink:0;margin-top:1px"></i>
+                  <span>Sign-in was cancelled. Review scopes in <a href="#" style="color:inherit;font-weight:500">About &gt; Privacy</a>. Connect when ready.</span>
+                </div>
+                <div class="empty-slot" style="margin-top:var(--space-3)">
+                  <div class="empty-slot__icon">
+                    <i data-lucide="mail" style="width:24px;height:24px"></i>
+                  </div>
+                  <p class="empty-slot__text">Nothing leaves this device. Only verification emails are scanned.</p>
+                  <button class="btn btn--primary">Connect Gmail</button>
+                </div>
+              </div>
+
+              <!-- Token expired state -->
+              <div id="gmail-token-expired" style="display:none">
+                <div class="warning-banner" role="alert">
+                  <i data-lucide="clock" style="width:16px;height:16px;flex-shrink:0;margin-top:1px"></i>
+                  <span>Connection expired. Reconnect to resume sync.</span>
+                </div>
+                <div class="account-row" style="margin-top:var(--space-3);border-color:rgba(245,158,11,0.2)">
+                  <div class="account-row__info">
+                    <span class="account-row__email">
+                      <span class="status-dot status-dot--warning" aria-label="Expired"></span>
+                      user@gmail.com
+                    </span>
+                    <span class="account-row__meta">Last synced 3 hours ago</span>
+                  </div>
+                  <div class="account-row__actions">
+                    <button class="btn btn--primary btn--sm">Reconnect</button>
+                    <button class="btn btn--danger-ghost btn--sm">Disconnect</button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Syncing state -->
+              <div id="gmail-syncing" style="display:none">
+                <div class="account-row">
+                  <div class="account-row__info">
+                    <span class="account-row__email">
+                      <span class="status-dot status-dot--online" aria-label="Online"></span>
+                      user@gmail.com
+                    </span>
+                    <span class="account-row__meta">
+                      <span class="syncing-indicator" role="status" aria-live="polite">
+                        <span class="syncing-spinner" aria-hidden="true"></span>
+                        Checking for new codes...
+                      </span>
+                    </span>
+                  </div>
+                  <div class="account-row__actions">
+                    <button class="btn btn--secondary btn--sm" disabled aria-label="Sync in progress">
+                      <i data-lucide="refresh-cw" style="width:13px;height:13px"></i>
+                    </button>
+                    <button class="btn btn--danger-ghost btn--sm">Disconnect</button>
+                  </div>
+                </div>
+                <p class="microcopy">Last synced 2 minutes ago. Read-only access.</p>
+              </div>
+
+              <!-- Max accounts reached state -->
+              <div id="gmail-max-reached" style="display:none">
+                <div class="account-row">
+                  <div class="account-row__info">
+                    <span class="account-row__email">
+                      <span class="status-dot status-dot--online" aria-label="Online"></span>
+                      user@gmail.com
+                    </span>
+                    <span class="account-row__meta">Synced 2 minutes ago</span>
+                  </div>
+                  <div class="account-row__actions">
+                    <button class="btn btn--secondary btn--sm">Reconnect</button>
+                    <button class="btn btn--danger-ghost btn--sm">Disconnect</button>
+                  </div>
+                </div>
+                <p class="microcopy">Gmail is limited to one account (browser limitation). Disconnect the current account to connect a different one.</p>
               </div>
             </div>
 
@@ -1137,7 +1575,7 @@
                     <button class="btn btn--danger-ghost btn--sm">Disconnect</button>
                   </div>
                 </div>
-                <p class="microcopy">Outlook supports multiple accounts via secure PKCE authentication.</p>
+                <p class="microcopy">Read-only access. Multiple Outlook accounts can be connected.</p>
               </div>
 
               <!-- Disconnected state -->
@@ -1146,7 +1584,7 @@
                   <div class="empty-slot__icon">
                     <i data-lucide="mail" style="width:24px;height:24px"></i>
                   </div>
-                  <p class="empty-slot__text">Connect your Outlook or Microsoft 365 account to autofill verification codes.</p>
+                  <p class="empty-slot__text">Outlook and Microsoft 365 accounts are supported. All scanning happens locally on this device.</p>
                   <button class="btn btn--primary">Connect Outlook</button>
                 </div>
               </div>
@@ -1159,6 +1597,67 @@
                   </div>
                   Opening Microsoft sign-in...
                 </div>
+              </div>
+
+              <!-- OAuth cancelled state -->
+              <div id="outlook-oauth-cancelled" style="display:none">
+                <div class="info-banner" role="status">
+                  <i data-lucide="info" style="width:16px;height:16px;flex-shrink:0;margin-top:1px"></i>
+                  <span>Sign-in was cancelled. Review scopes in <a href="#" style="color:inherit;font-weight:500">About &gt; Privacy</a>. Connect when ready.</span>
+                </div>
+                <div class="empty-slot" style="margin-top:var(--space-3)">
+                  <div class="empty-slot__icon">
+                    <i data-lucide="mail" style="width:24px;height:24px"></i>
+                  </div>
+                  <p class="empty-slot__text">All scanning happens locally on this device.</p>
+                  <button class="btn btn--primary">Connect Outlook</button>
+                </div>
+              </div>
+
+              <!-- Token expired state -->
+              <div id="outlook-token-expired" style="display:none">
+                <div class="warning-banner" role="alert">
+                  <i data-lucide="clock" style="width:16px;height:16px;flex-shrink:0;margin-top:1px"></i>
+                  <span>Connection expired. Reconnect to resume sync.</span>
+                </div>
+                <div class="account-row" style="margin-top:var(--space-3);border-color:rgba(245,158,11,0.2)">
+                  <div class="account-row__info">
+                    <span class="account-row__email">
+                      <span class="status-dot status-dot--warning" aria-label="Expired"></span>
+                      user@outlook.com
+                    </span>
+                    <span class="account-row__meta">Last synced 6 hours ago</span>
+                  </div>
+                  <div class="account-row__actions">
+                    <button class="btn btn--primary btn--sm">Reconnect</button>
+                    <button class="btn btn--danger-ghost btn--sm">Disconnect</button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Syncing state -->
+              <div id="outlook-syncing" style="display:none">
+                <div class="account-row">
+                  <div class="account-row__info">
+                    <span class="account-row__email">
+                      <span class="status-dot status-dot--online" aria-label="Online"></span>
+                      user@outlook.com
+                    </span>
+                    <span class="account-row__meta">
+                      <span class="syncing-indicator" role="status" aria-live="polite">
+                        <span class="syncing-spinner" aria-hidden="true"></span>
+                        Checking for new codes...
+                      </span>
+                    </span>
+                  </div>
+                  <div class="account-row__actions">
+                    <button class="btn btn--secondary btn--sm" disabled aria-label="Sync in progress">
+                      <i data-lucide="refresh-cw" style="width:13px;height:13px"></i>
+                    </button>
+                    <button class="btn btn--danger-ghost btn--sm">Disconnect</button>
+                  </div>
+                </div>
+                <p class="microcopy">Last synced 5 minutes ago. Read-only access.</p>
               </div>
             </div>
 
@@ -1180,7 +1679,7 @@
                   Add Account
                 </button>
               </div>
-              <p class="accounts-section__description">Connect any email provider via IMAP. Requires the InboxBridge desktop companion.</p>
+              <p class="accounts-section__description">For other email providers. Requires InboxBridge, a small open-source companion app that runs on this computer.</p>
 
               <!-- 2 accounts state -->
               <div id="imap-2accounts">
@@ -1241,8 +1740,130 @@
                   <div class="empty-slot__icon">
                     <i data-lucide="server" style="width:24px;height:24px"></i>
                   </div>
-                  <p class="empty-slot__text">Add any IMAP-compatible email account. Works with ProtonMail, Fastmail, Yahoo, and more.</p>
+                  <p class="empty-slot__text">ProtonMail, Fastmail, Yahoo, and most other providers are supported. Everything stays local.</p>
                   <button class="btn btn--primary">Add IMAP Account</button>
+                </div>
+              </div>
+
+              <!-- Max accounts reached state -->
+              <div id="imap-max-reached" style="display:none">
+                <div style="display:grid;gap:var(--space-2)">
+                  <div class="account-row">
+                    <div class="account-row__info">
+                      <span class="account-row__email">
+                        <span class="status-dot status-dot--online"></span>
+                        <span class="account-row__email-text">hello@protonmail.com</span>
+                      </span>
+                      <span class="account-row__meta">imap.protonmail.ch:993 &middot; Synced 1 min ago</span>
+                    </div>
+                    <div class="account-row__actions">
+                      <button class="btn btn--ghost btn--sm">
+                        <i data-lucide="refresh-cw" style="width:13px;height:13px"></i>
+                      </button>
+                      <button class="btn btn--danger-ghost btn--sm">Remove</button>
+                    </div>
+                  </div>
+                  <div class="account-row">
+                    <div class="account-row__info">
+                      <span class="account-row__email">
+                        <span class="status-dot status-dot--online"></span>
+                        <span class="account-row__email-text">very.long.username+newsletter-signup@subdomain.example.com</span>
+                      </span>
+                      <span class="account-row__meta">imap.example.com:993 &middot; Synced 3 min ago</span>
+                    </div>
+                    <div class="account-row__actions">
+                      <button class="btn btn--ghost btn--sm">
+                        <i data-lucide="refresh-cw" style="width:13px;height:13px"></i>
+                      </button>
+                      <button class="btn btn--danger-ghost btn--sm">Remove</button>
+                    </div>
+                  </div>
+                </div>
+                <p class="microcopy" style="margin-top:var(--space-2)">Account limit reached. Remove an account to add a new one.</p>
+              </div>
+
+              <!-- Network error state -->
+              <div id="imap-net-error" style="display:none">
+                <div class="account-row" style="border-color:rgba(239,68,68,0.15)">
+                  <div class="account-row__info">
+                    <span class="account-row__email">
+                      <span class="status-dot status-dot--offline"></span>
+                      hello@protonmail.com
+                    </span>
+                    <div class="imap-error-detail">
+                      <span class="imap-error-detail__type">Server unreachable</span>
+                      <span class="imap-error-detail__hint">imap.protonmail.ch:993 did not respond. Check the network connection or try again later.</span>
+                    </div>
+                  </div>
+                  <div class="account-row__actions">
+                    <button class="btn btn--secondary btn--sm">Retry</button>
+                    <button class="btn btn--danger-ghost btn--sm">Remove</button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Auth error state -->
+              <div id="imap-auth-error" style="display:none">
+                <div class="account-row" style="border-color:rgba(239,68,68,0.15)">
+                  <div class="account-row__info">
+                    <span class="account-row__email">
+                      <span class="status-dot status-dot--offline"></span>
+                      hello@protonmail.com
+                    </span>
+                    <div class="imap-error-detail">
+                      <span class="imap-error-detail__type">Authentication failed</span>
+                      <span class="imap-error-detail__hint">The server rejected the credentials. Update the password in InboxBridge and try again.</span>
+                    </div>
+                  </div>
+                  <div class="account-row__actions">
+                    <button class="btn btn--secondary btn--sm">Retry</button>
+                    <button class="btn btn--danger-ghost btn--sm">Remove</button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- TLS error state -->
+              <div id="imap-tls-error" style="display:none">
+                <div class="account-row" style="border-color:rgba(239,68,68,0.15)">
+                  <div class="account-row__info">
+                    <span class="account-row__email">
+                      <span class="status-dot status-dot--offline"></span>
+                      hello@protonmail.com
+                    </span>
+                    <div class="imap-error-detail">
+                      <span class="imap-error-detail__type">Secure connection failed</span>
+                      <span class="imap-error-detail__hint">Could not establish a secure connection to imap.protonmail.ch:993. The server certificate may be invalid or expired.</span>
+                    </div>
+                  </div>
+                  <div class="account-row__actions">
+                    <button class="btn btn--secondary btn--sm">Retry</button>
+                    <button class="btn btn--danger-ghost btn--sm">Remove</button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Bridge update available state -->
+              <div id="imap-bridge-update" style="display:none">
+                <div class="update-hint" role="status">
+                  <i data-lucide="info" style="width:14px;height:14px;flex-shrink:0"></i>
+                  <span>A newer version of InboxBridge is expected (v1.3.0). The installed version is v1.2.0. <a href="https://github.com/slmnsrf/inboxkey/releases" target="_blank" rel="noopener noreferrer">Download update</a></span>
+                </div>
+                <div style="display:grid;gap:var(--space-2);margin-top:var(--space-3)">
+                  <div class="account-row">
+                    <div class="account-row__info">
+                      <span class="account-row__email">
+                        <span class="status-dot status-dot--online"></span>
+                        hello@protonmail.com
+                      </span>
+                      <span class="account-row__meta">imap.protonmail.ch:993 &middot; Synced 1 min ago</span>
+                    </div>
+                    <div class="account-row__actions">
+                      <button class="btn btn--ghost btn--sm">
+                        <i data-lucide="refresh-cw" style="width:13px;height:13px"></i>
+                      </button>
+                      <button class="btn btn--danger-ghost btn--sm">Remove</button>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -1345,7 +1966,33 @@
                   <div class="empty-state__icon">
                     <i data-lucide="inbox" style="width:24px;height:24px"></i>
                   </div>
-                  <p>No verification emails yet. They will appear here when detected.</p>
+                  <p>No verification emails detected yet. When one arrives, it will show up here automatically.</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- ========================
+                 REMOVAL CONFIRMATION DEMO
+                 ======================== -->
+            <div class="accounts-section" id="confirm-section" style="display:none">
+              <span class="scenario-label">Removal Confirm</span>
+              <h2 class="accounts-section__title" style="font-size:var(--font-size-lg)">Account Removal</h2>
+              <div class="account-row" style="opacity:0.5">
+                <div class="account-row__info">
+                  <span class="account-row__email">
+                    <span class="status-dot status-dot--online"></span>
+                    hello@protonmail.com
+                  </span>
+                  <span class="account-row__meta">imap.protonmail.ch:993</span>
+                </div>
+              </div>
+              <div class="confirm-inline" role="alertdialog" aria-labelledby="confirm-title" aria-describedby="confirm-desc">
+                <p class="confirm-inline__text" id="confirm-desc">
+                  All sync data for this account will be deleted. This cannot be undone.
+                </p>
+                <div class="confirm-inline__actions">
+                  <button class="btn btn--danger btn--sm">Remove Account</button>
+                  <button class="btn btn--secondary btn--sm" id="confirm-cancel-btn">Cancel</button>
                 </div>
               </div>
             </div>
@@ -1353,9 +2000,67 @@
           </div>
         </div>
 
+        <!-- ========================
+             FIRST-RUN WELCOME (replaces accounts panel)
+             ======================== -->
+        <div class="section" id="first-run-section" style="display:none">
+          <div class="first-run-welcome">
+            <div class="first-run-welcome__icon" aria-hidden="true">
+              <i data-lucide="key-round" style="width:32px;height:32px"></i>
+            </div>
+            <h2 class="first-run-welcome__title">Connect a mailbox to get started</h2>
+            <p class="first-run-welcome__desc">
+              Verification codes and sign-in links are detected automatically. Everything is processed locally on this device. Nothing is sent anywhere.
+            </p>
+            <div class="first-run-welcome__ctas">
+              <button class="btn btn--primary">
+                <i data-lucide="mail" style="width:16px;height:16px"></i>
+                Connect Gmail
+              </button>
+              <button class="btn btn--secondary">
+                <i data-lucide="mail" style="width:16px;height:16px"></i>
+                Connect Outlook
+              </button>
+              <button class="btn btn--ghost">
+                <i data-lucide="server" style="width:16px;height:16px"></i>
+                Add IMAP Account
+              </button>
+            </div>
+            <p class="microcopy">Read-only access. Only verification emails are scanned.</p>
+          </div>
+        </div>
+
+        <!-- TRUST BANNER (bottom) -->
+        <section class="trust-banner">
+          <p class="trust-banner__headline">Everything stays on your device. Nothing is sent anywhere.</p>
+          <div class="trust-banner__pillars">
+            <div class="trust-pillar">
+              <span class="trust-pillar__icon" aria-hidden="true">
+                <i data-lucide="shield-check" style="width:16px;height:16px"></i>
+              </span>
+              <span class="trust-pillar__label">Runs locally</span>
+            </div>
+            <div class="trust-pillar">
+              <span class="trust-pillar__icon" aria-hidden="true">
+                <i data-lucide="eye-off" style="width:16px;height:16px"></i>
+              </span>
+              <span class="trust-pillar__label">No tracking</span>
+            </div>
+            <div class="trust-pillar">
+              <span class="trust-pillar__icon" aria-hidden="true">
+                <i data-lucide="code-2" style="width:16px;height:16px"></i>
+              </span>
+              <span class="trust-pillar__label">Open source</span>
+            </div>
+          </div>
+        </section>
+
       </div>
     </div>
   </main>
+
+  <!-- Toast container -->
+  <div id="toast-container"></div>
 
   <!-- ========================================
        DESIGN DECISIONS (MANDATORY)
@@ -1373,7 +2078,22 @@
     "Inline error with contextual action - Error state shows a colored banner with the error message PLUS keeps the connect button visible as 'Retry Connection'. No modal interruption -- the user stays in context.",
     "Recent emails toggle (All/Codes/Links) - Segmented control allows filtering without page navigation. Active state uses primary color fill for clear indication. Positioned in the section header to save vertical space.",
     "Monospace code display with dark chip - Verification codes displayed in monospace font on a dark chip (#1C1C1E) with letter-spacing for readability. Inverted in dark mode to maintain contrast. The large font-size (16px) makes codes easy to verify at a glance.",
-    "Prototype interactive controls - Top toolbar dropdowns change account states in real-time, allowing stakeholders to review all edge cases without editing HTML. Labels checkbox shows section identifiers for clearer communication during design reviews."
+    "Prototype interactive controls - Top toolbar dropdowns change account states in real-time, allowing stakeholders to review all edge cases without editing HTML. Labels checkbox shows section identifiers for clearer communication during design reviews.",
+    "Canonical privacy tagline - Header privacy line changed from 'Your data stays on your device' to 'Local-only - No servers' to match the canonical phrase defined in ui-ux-principles.md and storytelling.md. Consistency across all surfaces reinforces the core trust message.",
+    "Trust banner rewrite for honesty over marketing - Headline changed from 'Privacy-first email verification for everyone' (marketing speak) to 'Email access is sensitive. Here is how trust is earned.' Acknowledges the real concern users have instead of cheerleading past it. Third pillar changed from vague 'Safe and Secure' to concrete 'Read-Only Access' which is verifiable and specific.",
+    "Jargon removal across all provider sections - Removed 'OAuth credentials', 'PKCE authentication', 'Chrome built-in identity', and 'via IMAP' from user-facing copy. These terms mean nothing to most users and violate the storytelling doc's explicit 'Do Not' list. Replaced with plain descriptions of what actually happens.",
+    "Trust-reinforcing microcopy in empty states - Empty/disconnected states now include 'Nothing leaves this device' or 'Everything stays local' messaging. These are the moments where users decide whether to connect sensitive email access, so trust signals belong right at the point of decision, not just in a banner above.",
+    "OAuth cancelled as distinct state from error - Per edge-cases.md, cancellation is a deliberate user choice, not a failure. Uses a calm info-banner (blue) instead of an error-banner (red). The copy 'Review scopes in About > Privacy. Connect when ready.' respects the user's hesitation and points them toward verifiable proof rather than pressuring a retry.",
+    "Token expired uses warning color, not error - Expiration is a predictable event, not a system failure. Warning-yellow (amber) communicates 'action needed' without alarm. A single 'Reconnect' button per user-journeys.md journey #6, plus 'Disconnect' as an escape hatch.",
+    "Syncing state shows spinner plus contextual text - 'Checking for new codes...' is more informative than a bare spinner. The sync button is disabled during sync to prevent duplicate requests. Spinner animation disabled under prefers-reduced-motion and replaced with a static two-tone border indicator.",
+    "Three IMAP error types with distinct messaging - Network error, authentication failure, and TLS error are the three real failure modes for IMAP connections. Each gets a specific message and actionable hint so the user knows what to fix, rather than a generic 'connection failed'. No jargon: 'secure connection failed' instead of 'TLS handshake error'.",
+    "Max accounts reached disables add button, explains why - Instead of hiding the add button or showing an error on click, the button is visibly disabled with a tooltip. Microcopy explains the limit and the escape hatch ('remove an account to add a new one'). Gmail explains it as a 'browser limitation' (honest, avoids Chrome Identity API jargon).",
+    "Inline removal confirmation instead of modal - A confirmation step replaces the account row content with a red-tinted inline panel. This keeps the user in context (no modal overlay, no page navigation). The destructive copy 'All sync data for this account will be deleted. This cannot be undone.' is direct and honest per storytelling guidelines.",
+    "First-run welcome replaces entire accounts panel - When zero accounts are connected, showing three empty provider cards is overwhelming and confusing. A single welcoming panel with three CTAs (Gmail, Outlook, IMAP) is cleaner and guides the user toward one clear first action. Trust microcopy appears at the point of decision.",
+    "Offline banner is page-level, not per-section - Offline affects all providers simultaneously, so a single persistent banner at the top of the page communicates the state once rather than repeating it in every provider card. Uses warning-yellow for 'degraded but functional'. The message 'Cached codes are still available' tells users what still works.",
+    "Long email truncation with text-overflow ellipsis - Emails like 'very.long.username+tag@subdomain.example.com' need truncation to prevent layout breakage. Max-width of 280px (180px on mobile) with ellipsis preserves the row layout. The full address is available via the browser's native title tooltip.",
+    "InboxBridge update detection is fully local (Option A) - The extension ships with a MIN_BRIDGE_VERSION constant. On bridge.ping, the installed version from the response is compared against this constant. If installed < expected, this subtle info bar appears. Zero network requests are made -- the check is a local string comparison. The extension learns about new InboxBridge versions only when the extension itself is updated via Chrome Web Store. This is consistent with the 'local-only, no servers' promise. The hint links to GitHub releases for manual download and does not block existing accounts or adding new ones.",
+    "Toast notifications use 300ms slide-in per motion-and-feedback.md - Toasts appear from the bottom-right with a 300ms cubic-bezier entrance and auto-dismiss after 3 seconds. Fully disabled under prefers-reduced-motion (instant appear/disappear). Used for actions like 'Account removed' confirmation."
   ]
   </script>
 
@@ -1389,81 +2109,189 @@
     // State Controllers
     // ==============================
 
-    const ctrlGmail = document.getElementById('ctrl-gmail');
-    const ctrlOutlook = document.getElementById('ctrl-outlook');
-    const ctrlImap = document.getElementById('ctrl-imap');
-    const ctrlRecent = document.getElementById('ctrl-recent');
-    const ctrlLabels = document.getElementById('ctrl-labels');
+    var ctrlGmail = document.getElementById('ctrl-gmail');
+    var ctrlOutlook = document.getElementById('ctrl-outlook');
+    var ctrlImap = document.getElementById('ctrl-imap');
+    var ctrlRecent = document.getElementById('ctrl-recent');
+    var ctrlPage = document.getElementById('ctrl-page');
+    var ctrlLabels = document.getElementById('ctrl-labels');
+    var ctrlConfirm = document.getElementById('ctrl-confirm-demo');
 
-    function showOnly(parentId, stateId) {
-      const parent = document.getElementById(parentId);
-      if (!parent) return;
-      const states = parent.querySelectorAll('[id^="' + parentId.split('-')[0] + '-"]');
-      states.forEach(function (el) {
-        if (el.id !== parentId) el.style.display = 'none';
-      });
-      const target = document.getElementById(stateId);
-      if (target) target.style.display = '';
+    // ==============================
+    // Toast helper
+    // ==============================
+
+    function showToast(message) {
+      var container = document.getElementById('toast-container');
+      var existing = container.querySelector('.toast');
+      if (existing) existing.remove();
+
+      var toast = document.createElement('div');
+      toast.className = 'toast';
+      toast.setAttribute('role', 'status');
+      toast.setAttribute('aria-live', 'polite');
+      toast.textContent = message;
+      container.appendChild(toast);
+
+      setTimeout(function () {
+        toast.classList.add('toast--hiding');
+        setTimeout(function () { toast.remove(); }, 300);
+      }, 3000);
     }
+
+    // ==============================
+    // Gmail state management
+    // ==============================
+
+    var gmailStates = [
+      'gmail-connected', 'gmail-disconnected', 'gmail-connecting',
+      'gmail-error', 'gmail-oauth-cancelled', 'gmail-token-expired',
+      'gmail-syncing', 'gmail-max-reached'
+    ];
 
     function updateGmail() {
       var v = ctrlGmail.value;
       var statusEl = document.getElementById('gmail-status');
 
-      document.getElementById('gmail-connected').style.display = v === 'connected' ? '' : 'none';
-      document.getElementById('gmail-disconnected').style.display = v === 'disconnected' ? '' : 'none';
-      document.getElementById('gmail-connecting').style.display = v === 'connecting' ? '' : 'none';
-      document.getElementById('gmail-error').style.display = v === 'error' ? '' : 'none';
+      gmailStates.forEach(function (id) {
+        var el = document.getElementById(id);
+        if (el) el.style.display = 'none';
+      });
 
-      if (v === 'connected') {
+      var targetId = 'gmail-' + v;
+      var target = document.getElementById(targetId);
+      if (target) target.style.display = '';
+
+      statusEl.style.opacity = '';
+      if (v === 'connected' || v === 'syncing' || v === 'max-reached') {
         statusEl.textContent = 'Connected';
         statusEl.className = 'status-chip status-chip--connected';
       } else if (v === 'connecting') {
         statusEl.textContent = 'Connecting...';
         statusEl.className = 'status-chip status-chip--connected';
         statusEl.style.opacity = '0.6';
+      } else if (v === 'token-expired') {
+        statusEl.textContent = 'Expired';
+        statusEl.className = 'status-chip status-chip--disconnected';
       } else {
         statusEl.textContent = 'Not connected';
         statusEl.className = 'status-chip status-chip--disconnected';
-        statusEl.style.opacity = '';
       }
+
+      // Re-init icons for newly visible elements
+      lucide.createIcons();
     }
+
+    // ==============================
+    // Outlook state management
+    // ==============================
+
+    var outlookStates = [
+      'outlook-connected', 'outlook-disconnected', 'outlook-connecting',
+      'outlook-oauth-cancelled', 'outlook-token-expired', 'outlook-syncing'
+    ];
 
     function updateOutlook() {
       var v = ctrlOutlook.value;
       var statusEl = document.getElementById('outlook-status');
 
-      document.getElementById('outlook-connected').style.display = v === 'connected' ? '' : 'none';
-      document.getElementById('outlook-disconnected').style.display = v === 'disconnected' ? '' : 'none';
-      document.getElementById('outlook-connecting').style.display = v === 'connecting' ? '' : 'none';
+      outlookStates.forEach(function (id) {
+        var el = document.getElementById(id);
+        if (el) el.style.display = 'none';
+      });
 
-      if (v === 'connected') {
+      var targetId = 'outlook-' + v;
+      var target = document.getElementById(targetId);
+      if (target) target.style.display = '';
+
+      statusEl.style.opacity = '';
+      if (v === 'connected' || v === 'syncing') {
         statusEl.textContent = 'Connected';
         statusEl.className = 'status-chip status-chip--connected';
       } else if (v === 'connecting') {
         statusEl.textContent = 'Connecting...';
         statusEl.className = 'status-chip status-chip--connected';
         statusEl.style.opacity = '0.6';
+      } else if (v === 'token-expired') {
+        statusEl.textContent = 'Expired';
+        statusEl.className = 'status-chip status-chip--disconnected';
       } else {
         statusEl.textContent = 'Not connected';
         statusEl.className = 'status-chip status-chip--disconnected';
-        statusEl.style.opacity = '';
       }
+
+      lucide.createIcons();
     }
+
+    // ==============================
+    // IMAP state management
+    // ==============================
+
+    var imapStates = [
+      'imap-2accounts', 'imap-1account', 'imap-0accounts',
+      'imap-max-reached', 'imap-net-error', 'imap-auth-error',
+      'imap-tls-error', 'imap-bridge-update'
+    ];
 
     function updateImap() {
       var v = ctrlImap.value;
       var counter = document.getElementById('imap-counter');
       var addBtn = document.getElementById('imap-add-btn');
 
-      document.getElementById('imap-2accounts').style.display = v === '2accounts' ? '' : 'none';
-      document.getElementById('imap-1account').style.display = v === '1account' ? '' : 'none';
-      document.getElementById('imap-0accounts').style.display = v === '0accounts' ? '' : 'none';
+      imapStates.forEach(function (id) {
+        var el = document.getElementById(id);
+        if (el) el.style.display = 'none';
+      });
 
-      if (v === '2accounts') { counter.textContent = '2 / 10'; addBtn.style.display = ''; }
-      else if (v === '1account') { counter.textContent = '1 / 10'; addBtn.style.display = ''; }
-      else { counter.textContent = '0 / 10'; addBtn.style.display = 'none'; }
+      // Map control values to element IDs
+      var stateMap = {
+        '2accounts': 'imap-2accounts',
+        '1account': 'imap-1account',
+        '0accounts': 'imap-0accounts',
+        'max-reached': 'imap-max-reached',
+        'net-error': 'imap-net-error',
+        'auth-error': 'imap-auth-error',
+        'tls-error': 'imap-tls-error',
+        'bridge-update': 'imap-bridge-update'
+      };
+
+      var targetId = stateMap[v];
+      if (targetId) {
+        var target = document.getElementById(targetId);
+        if (target) target.style.display = '';
+      }
+
+      // Update counter and add button
+      var counterMap = {
+        '2accounts': '2 / 10', '1account': '1 / 10', '0accounts': '0 / 10',
+        'max-reached': '10 / 10', 'net-error': '1 / 10', 'auth-error': '1 / 10',
+        'tls-error': '1 / 10', 'bridge-update': '1 / 10'
+      };
+      counter.textContent = counterMap[v] || '0 / 10';
+
+      // Show/hide/disable add button
+      if (v === '0accounts') {
+        addBtn.style.display = 'none';
+      } else if (v === 'max-reached') {
+        addBtn.style.display = '';
+        addBtn.disabled = true;
+        addBtn.classList.add('btn-with-hint');
+        addBtn.innerHTML = '<i data-lucide="plus" style="width:14px;height:14px"></i> Add Account <span class="btn-hint" role="tooltip">Account limit reached</span>';
+        lucide.createIcons();
+      } else {
+        addBtn.style.display = '';
+        addBtn.disabled = false;
+        addBtn.classList.remove('btn-with-hint');
+        addBtn.innerHTML = '<i data-lucide="plus" style="width:14px;height:14px"></i> Add Account';
+        lucide.createIcons();
+      }
+
+      lucide.createIcons();
     }
+
+    // ==============================
+    // Recent state management
+    // ==============================
 
     function updateRecent() {
       var v = ctrlRecent.value;
@@ -1471,15 +2299,68 @@
       document.getElementById('recent-empty').style.display = v === 'empty' ? '' : 'none';
     }
 
+    // ==============================
+    // Page-level state (first-run, offline, normal)
+    // ==============================
+
+    function updatePage() {
+      var v = ctrlPage.value;
+      var accountsPanel = document.querySelector('.section:not(#first-run-section)');
+      var firstRun = document.getElementById('first-run-section');
+      var offlineBanner = document.getElementById('offline-banner');
+
+      if (v === 'first-run') {
+        accountsPanel.style.display = 'none';
+        firstRun.style.display = '';
+        offlineBanner.style.display = 'none';
+      } else if (v === 'offline') {
+        accountsPanel.style.display = '';
+        firstRun.style.display = 'none';
+        offlineBanner.style.display = '';
+      } else {
+        accountsPanel.style.display = '';
+        firstRun.style.display = 'none';
+        offlineBanner.style.display = 'none';
+      }
+
+      lucide.createIcons();
+    }
+
+    // ==============================
+    // Labels toggle
+    // ==============================
+
     function updateLabels() {
       document.querySelector('.proto-canvas').classList.toggle('show-labels', ctrlLabels.checked);
     }
+
+    // ==============================
+    // Confirm demo toggle
+    // ==============================
+
+    function updateConfirm() {
+      var section = document.getElementById('confirm-section');
+      section.style.display = ctrlConfirm.checked ? '' : 'none';
+    }
+
+    // ==============================
+    // Event listeners
+    // ==============================
 
     ctrlGmail.addEventListener('change', updateGmail);
     ctrlOutlook.addEventListener('change', updateOutlook);
     ctrlImap.addEventListener('change', updateImap);
     ctrlRecent.addEventListener('change', updateRecent);
+    ctrlPage.addEventListener('change', updatePage);
     ctrlLabels.addEventListener('change', updateLabels);
+    ctrlConfirm.addEventListener('change', updateConfirm);
+
+    // Cancel button in confirm demo
+    document.getElementById('confirm-cancel-btn').addEventListener('click', function () {
+      ctrlConfirm.checked = false;
+      updateConfirm();
+      showToast('Removal cancelled.');
+    });
 
     // Recent toggle buttons (interactive)
     document.querySelectorAll('.recent-toggle__btn').forEach(function (btn) {

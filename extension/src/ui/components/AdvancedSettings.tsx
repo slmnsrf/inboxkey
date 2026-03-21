@@ -4,22 +4,39 @@
  * Displays advanced settings including domain preferences.
  */
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { StorageFactory } from '@/lib/storage/storage-factory'
 import { useToast } from '@/ui/contexts/ToastContext'
 import { t } from '@/lib/i18n'
-import { ChevronDown, ChevronRight } from 'lucide-react'
+import { ChevronDown, RotateCcw } from 'lucide-react'
 import { WarningIcon } from '@/ui/components/icons/StatusIcons'
 import type { AutomationLevel } from '@/lib/storage/schema'
 
 export function AdvancedSettings() {
   const { showToast } = useToast()
-  const [domainsEnabledByDefault, setDomainsEnabledByDefault] = useState<boolean>(true)
   const [extendedButtonDetection, setExtendedButtonDetection] = useState<boolean>(false)
   const [automationLevel, setAutomationLevel] = useState<AutomationLevel>('autofill')
-  const [disableOnBankingSites, setDisableOnBankingSites] = useState<boolean>(false)
+  const [disableOnBankingSites, setDisableOnBankingSites] = useState<boolean>(true)
   const [loading, setLoading] = useState<boolean>(true)
   const [isExpanded, setIsExpanded] = useState<boolean>(false)
+  const [confirmingReset, setConfirmingReset] = useState(false)
+
+  const handleResetDefaults = useCallback(async () => {
+    try {
+      const response = await chrome.runtime.sendMessage({ type: 'RESET_SETTINGS' })
+      if (!response?.success) {
+        showToast(t('toast_settings_reset_failed'), 'error')
+        setConfirmingReset(false)
+        return
+      }
+      setConfirmingReset(false)
+      showToast(t('toast_settings_reset'), 'success')
+      setTimeout(() => window.location.reload(), 1000)
+    } catch {
+      showToast(t('toast_settings_reset_failed'), 'error')
+      setConfirmingReset(false)
+    }
+  }, [showToast])
 
   useEffect(() => {
     loadSettings()
@@ -30,7 +47,6 @@ export function AdvancedSettings() {
       setLoading(true)
       const storage = await StorageFactory.create()
       const settings = await storage.getSettings()
-      setDomainsEnabledByDefault(settings.domainsEnabledByDefault ?? true)
       setExtendedButtonDetection(settings.extendedButtonDetection ?? false)
       setAutomationLevel(settings.automationLevel || 'autofill')
       setDisableOnBankingSites(settings.disableOnBankingSites ?? false)
@@ -39,23 +55,6 @@ export function AdvancedSettings() {
       showToast(t('toast_settings_failed'), 'error')
     } finally {
       setLoading(false)
-    }
-  }
-
-  const handleToggle = async () => {
-    try {
-      const newValue = !domainsEnabledByDefault
-      setDomainsEnabledByDefault(newValue) // Optimistic update
-
-      const storage = await StorageFactory.create()
-      await storage.updateSettings({ domainsEnabledByDefault: newValue })
-
-      showToast(t('toast_settings_saved'), 'success')
-    } catch (error) {
-      console.error('[AdvancedSettings] Failed to save setting:', error)
-      // Revert on error
-      setDomainsEnabledByDefault(!domainsEnabledByDefault)
-      showToast(t('toast_settings_failed'), 'error')
     }
   }
 
@@ -70,7 +69,9 @@ export function AdvancedSettings() {
       // Update ARIA live region for screen readers
       const statusEl = document.getElementById('extended-button-status')
       if (statusEl) {
-        statusEl.textContent = `Extended button detection ${newValue ? 'enabled' : 'disabled'}`
+        statusEl.textContent = newValue
+          ? t('aria_extended_detection_enabled')
+          : t('aria_extended_detection_disabled')
       }
 
       showToast(t('toast_settings_saved'), 'success')
@@ -82,7 +83,7 @@ export function AdvancedSettings() {
       // Announce error to screen readers
       const statusEl = document.getElementById('extended-button-status')
       if (statusEl) {
-        statusEl.textContent = 'Failed to save extended button detection setting'
+        statusEl.textContent = t('aria_save_extended_detection_failed')
       }
 
       showToast(t('toast_settings_failed'), 'error')
@@ -100,7 +101,9 @@ export function AdvancedSettings() {
       // Update ARIA live region for screen readers
       const statusEl = document.getElementById('banking-blocklist-status')
       if (statusEl) {
-        statusEl.textContent = `Banking site blocklist ${newValue ? 'enabled' : 'disabled'}`
+        statusEl.textContent = newValue
+          ? t('aria_banking_blocklist_enabled')
+          : t('aria_banking_blocklist_disabled')
       }
 
       showToast(t('toast_settings_saved'), 'success')
@@ -111,7 +114,7 @@ export function AdvancedSettings() {
       // Announce error to screen readers
       const statusEl = document.getElementById('banking-blocklist-status')
       if (statusEl) {
-        statusEl.textContent = 'Failed to save banking blocklist setting'
+        statusEl.textContent = t('aria_save_banking_blocklist_failed')
       }
 
       showToast(t('toast_settings_failed'), 'error')
@@ -120,52 +123,21 @@ export function AdvancedSettings() {
 
   return (
     <div className="advanced-settings-card">
-      <div className="advanced-settings-card__header">
-        <button
-          className="advanced-settings-card__toggle"
-          onClick={() => setIsExpanded(!isExpanded)}
-          aria-expanded={isExpanded}
-          aria-controls="advanced-settings-content"
-        >
-          <span className="advanced-settings-card__toggle-icon" aria-hidden="true">
-            {isExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
-          </span>
-          <h3 id="advanced-heading">{t('settings_advanced_section')}</h3>
-        </button>
-      </div>
+      <button
+        className="advanced-settings-card__toggle"
+        onClick={() => setIsExpanded(!isExpanded)}
+        aria-expanded={isExpanded}
+        aria-controls="advanced-settings-content"
+      >
+        <span className="advanced-settings-card__toggle-icon" aria-hidden="true">
+          <ChevronDown size={14} />
+        </span>
+        <span className="advanced-settings-card__toggle-label">{t('settings_advanced_section_title')}</span>
+        <span className="advanced-settings-card__hint-label">{t('settings_advanced_hint')}</span>
+      </button>
 
       {isExpanded && (
         <div id="advanced-settings-content" className="advanced-settings-card__content">
-          <div className="setting-row">
-            <div className="setting-row__info">
-              <label htmlFor="domains-enabled-by-default" className="setting-row__label">
-                {t('settings_advanced_default_enabled')}
-              </label>
-              <p className="setting-row__description">
-                {t('settings_advanced_default_enabled_desc')}
-              </p>
-            </div>
-            <div className="setting-row__control">
-              <label className="toggle">
-                <input
-                  id="domains-enabled-by-default"
-                  type="checkbox"
-                  checked={domainsEnabledByDefault}
-                  onChange={handleToggle}
-                  disabled={loading}
-                  aria-describedby="domains-enabled-help"
-                />
-                <span className="slider" />
-              </label>
-            </div>
-          </div>
-
-          <p id="domains-enabled-help" className="advanced-settings-card__hint">
-            When enabled, InboxKey will work on all domains by default. You can still disable it for specific domains using the toggle in the popup.
-          </p>
-
-          <div className="setting-divider" />
-
           <div className="setting-row">
             <div className="setting-row__info">
               <label htmlFor="disable-on-banking-sites" className="setting-row__label">
@@ -191,7 +163,7 @@ export function AdvancedSettings() {
           </div>
 
           <p id="banking-blocklist-help" className="advanced-settings-card__hint">
-            Covers 150+ major banks worldwide. You can still enable InboxKey for specific banks using the toggle in the popup.
+            {t('settings_advanced_banking_blocklist_hint')}
           </p>
           <span id="banking-blocklist-status" className="sr-only" role="status" aria-live="polite" aria-atomic="true"></span>
 
@@ -203,18 +175,17 @@ export function AdvancedSettings() {
                 <div className="setting-row__info">
                   <label htmlFor="extended-button-detection" className="setting-row__label">
                     <span className="beta-badge">BETA</span>
-                    Extended Button Detection
+                    {t('settings_advanced_extended_detection')}
                   </label>
                   <p className="setting-row__description">
-                    Detects custom button components (Vue.js, React) used by modern websites.
+                    {t('settings_advanced_extended_detection_desc')}
                   </p>
                   <div className="setting-row__warning">
                     <span className="warning-icon">
                       <WarningIcon size={16} />
                     </span>
                     <span className="warning-text">
-                      <strong>Note:</strong> May occasionally interact with navigation elements.
-                      Only enable if your sites use custom button components.
+                      {t('settings_advanced_extended_detection_warning')}
                     </span>
                   </div>
                 </div>
@@ -235,31 +206,73 @@ export function AdvancedSettings() {
               <span id="extended-button-status" className="sr-only" role="status" aria-live="polite" aria-atomic="true"></span>
 
               <details className="setting-details">
-                <summary className="setting-details__summary">What does this detect?</summary>
+                <summary className="setting-details__summary">{t('settings_advanced_extended_detection_details_summary')}</summary>
                 <div className="setting-details__content">
                   <div className="detection-types">
                     <div className="detection-type">
-                      <strong className="detection-type__label">Standard (always enabled):</strong>
+                      <strong className="detection-type__label">{t('settings_advanced_detection_standard_label')}</strong>
                       <code className="detection-type__code">&lt;button&gt;</code>,
                       <code className="detection-type__code">&lt;input type="submit"&gt;</code>
                     </div>
                     <div className="detection-type">
-                      <strong className="detection-type__label">Extended (when enabled):</strong>
+                      <strong className="detection-type__label">{t('settings_advanced_detection_extended_label')}</strong>
                       <code className="detection-type__code">&lt;a&gt;</code> tags,
                       <code className="detection-type__code">role="button"</code> elements
                     </div>
                   </div>
                   <p className="setting-details__note">
-                    <strong>Safety:</strong> Extended detection includes 11 protection layers to prevent clicking dangerous buttons.
+                    {t('settings_advanced_detection_safety_note')}
                   </p>
                 </div>
               </details>
 
               <p id="extended-button-detection-help" className="advanced-settings-card__hint">
-                This feature is in beta and may occasionally click unintended buttons. Monitor its behavior and disable if issues occur.
+                {t('settings_advanced_extended_detection_hint')}
               </p>
             </>
           )}
+
+          {/* Reset Settings */}
+          <div className="advanced-reset-section">
+            <div className="setting-row">
+              <div className="setting-row__info">
+                <span className="setting-row__label">{t('data_reset_defaults_title')}</span>
+                <p className="setting-row__description">{t('data_reset_defaults_description')}</p>
+              </div>
+              <div className="setting-row__control">
+                {confirmingReset ? (
+                  <div className="confirm-inline" role="alertdialog">
+                    <p className="confirm-inline__text">{t('data_reset_defaults_confirm_message')}</p>
+                    <div className="confirm-inline__actions">
+                      <button
+                        type="button"
+                        className="btn btn--danger btn--sm"
+                        onClick={handleResetDefaults}
+                      >
+                        {t('data_reset_defaults_yes')}
+                      </button>
+                      <button
+                        type="button"
+                        className="btn btn--secondary btn--sm"
+                        onClick={() => setConfirmingReset(false)}
+                      >
+                        {t('data_cancel')}
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    className="btn btn--secondary btn--sm"
+                    onClick={() => setConfirmingReset(true)}
+                  >
+                    <RotateCcw size={14} />
+                    {t('data_reset_defaults_button')}
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </div>

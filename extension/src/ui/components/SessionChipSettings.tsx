@@ -4,16 +4,27 @@
  * Controls visibility of in-page session status chips (floating notifications).
  */
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { StorageFactory } from '@/lib/storage/storage-factory'
 import { useToast } from '@/ui/contexts/ToastContext'
 import { t } from '@/lib/i18n'
+import type { AutomationLevel } from '@/lib/storage/schema'
 
 export function SessionChipSettings() {
   const { showToast } = useToast()
   const [showSessionChips, setShowSessionChips] = useState<boolean>(true)
   const [sessionTimeoutSeconds, setSessionTimeoutSeconds] = useState<number>(20)
+  const [displayTimeout, setDisplayTimeout] = useState<number>(20)
+  const [automationLevel, setAutomationLevel] = useState<AutomationLevel>('autofill')
   const [loading, setLoading] = useState<boolean>(true)
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  // Clean up debounce timer on unmount
+  useEffect(() => {
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current)
+    }
+  }, [])
 
   useEffect(() => {
     loadSettings()
@@ -25,7 +36,10 @@ export function SessionChipSettings() {
       const storage = await StorageFactory.create()
       const settings = await storage.getSettings()
       setShowSessionChips(settings.showSessionChips ?? true)
-      setSessionTimeoutSeconds(settings.sessionTimeoutSeconds ?? 20)
+      setAutomationLevel(settings.automationLevel || 'autofill')
+      const timeout = settings.sessionTimeoutSeconds ?? 20
+      setSessionTimeoutSeconds(timeout)
+      setDisplayTimeout(timeout)
     } catch (error) {
       console.error('[SessionChipSettings] Failed to load settings:', error)
       showToast(t('error_generic'), 'error')
@@ -45,7 +59,9 @@ export function SessionChipSettings() {
       // Update ARIA live region for screen readers
       const statusEl = document.getElementById('session-chip-status')
       if (statusEl) {
-        statusEl.textContent = `Session status chips ${newValue ? 'enabled' : 'disabled'}`
+        statusEl.textContent = newValue
+          ? t('aria_session_chip_enabled')
+          : t('aria_session_chip_disabled')
       }
 
       showToast(t('toast_settings_saved'), 'success')
@@ -57,24 +73,23 @@ export function SessionChipSettings() {
       // Announce error to screen readers
       const statusEl = document.getElementById('session-chip-status')
       if (statusEl) {
-        statusEl.textContent = 'Failed to save session chip setting'
+        statusEl.textContent = t('aria_save_indicator_failed')
       }
 
       showToast(t('error_generic'), 'error')
     }
   }
 
-  const handleTimeoutChange = async (value: number) => {
+  const saveTimeout = useCallback(async (value: number) => {
     try {
-      setSessionTimeoutSeconds(value) // Optimistic update
-
       const storage = await StorageFactory.create()
       await storage.updateSettings({ sessionTimeoutSeconds: value })
+      setSessionTimeoutSeconds(value)
 
       // Update ARIA live region for screen readers
       const statusEl = document.getElementById('session-chip-status')
       if (statusEl) {
-        statusEl.textContent = `Email check timeout set to ${value} seconds`
+        statusEl.textContent = t('aria_check_duration_set', [String(value)])
       }
 
       showToast(t('toast_settings_saved'), 'success')
@@ -86,24 +101,30 @@ export function SessionChipSettings() {
       // Announce error to screen readers
       const statusEl = document.getElementById('session-chip-status')
       if (statusEl) {
-        statusEl.textContent = 'Failed to save timeout setting'
+        statusEl.textContent = t('aria_save_timeout_failed')
       }
 
       showToast(t('error_generic'), 'error')
     }
+  }, [showToast])
+
+  const handleTimeoutChange = (value: number) => {
+    // Update display immediately for responsive UI
+    setDisplayTimeout(value)
+
+    // Debounce the actual storage write
+    if (debounceRef.current) clearTimeout(debounceRef.current)
+    debounceRef.current = setTimeout(() => {
+      saveTimeout(value)
+    }, 500)
   }
+
+  const isManual = automationLevel === 'manual'
 
   return (
     <div className="session-chip-settings-card">
-      <div className="session-chip-settings-card__header">
-        <h3 id="session-chips-heading">{t('settings_session_chips_heading')}</h3>
-        <p className="session-chip-settings-card__description">
-          {t('settings_session_chips_description')}
-        </p>
-      </div>
-
       <div className="settings-card__content">
-        <div className="setting-row" aria-labelledby="session-chips-heading">
+        <div className={`setting-row${isManual ? ' setting-row--disabled' : ''}`} aria-label={t('settings_session_chips_heading')}>
           <div className="setting-row__info">
             <label htmlFor="show-session-chips" className="setting-row__label">
               {t('settings_session_chips_toggle_label')}
@@ -111,6 +132,11 @@ export function SessionChipSettings() {
             <p className="setting-row__description">
               {t('settings_session_chips_toggle_description')}
             </p>
+            {isManual && (
+              <p className="setting-row__disabled-hint">
+                {t('settings_indicator_disabled_manual')}
+              </p>
+            )}
           </div>
           <div className="setting-row__control">
             <label className="toggle">
@@ -119,7 +145,7 @@ export function SessionChipSettings() {
                 type="checkbox"
                 checked={showSessionChips}
                 onChange={handleToggle}
-                disabled={loading}
+                disabled={loading || isManual}
                 aria-describedby="session-chip-help"
               />
               <span className="slider" />
@@ -134,33 +160,33 @@ export function SessionChipSettings() {
         <div className="setting-row" aria-labelledby="session-timeout-label">
           <div className="setting-row__info">
             <label htmlFor="session-timeout" id="session-timeout-label" className="setting-row__label">
-              Email check timeout
+              {t('settings_session_timeout_label')}
             </label>
             <p className="setting-row__description">
-              How long to wait for verification codes (10-120 seconds)
+              {t('settings_session_timeout_description')}
             </p>
           </div>
-          <div className="setting-row__control" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '8px' }}>
+          <div className="setting-row__control range-slider-control">
             <input
               id="session-timeout"
               type="range"
+              className="range-slider"
               min="10"
               max="120"
               step="10"
-              value={sessionTimeoutSeconds}
+              value={displayTimeout}
               onChange={(e) => handleTimeoutChange(Number(e.target.value))}
               disabled={loading}
               aria-describedby="session-timeout-help"
-              style={{ width: '200px' }}
             />
-            <output htmlFor="session-timeout" style={{ fontSize: '14px', fontWeight: 500 }}>
-              {sessionTimeoutSeconds}s
+            <output htmlFor="session-timeout" className="range-slider-output">
+              {displayTimeout}s
             </output>
           </div>
         </div>
 
         <p id="session-timeout-help" className="session-chip-settings-card__hint">
-          Higher timeouts allow more checks. Fast providers: 20-30s (5-6 checks). Slow providers: 60-120s (9-12 checks).
+          {t('settings_session_timeout_hint')}
         </p>
 
         <span id="session-chip-status" className="sr-only" role="status" aria-live="polite" aria-atomic="true"></span>

@@ -12,6 +12,7 @@
  */
 
 import React, { useState } from 'react'
+import { Mail } from 'lucide-react'
 import { t } from '@/lib/i18n'
 import { authenticateOutlook } from '@/lib/providers/outlook/chrome-auth'
 import { fetchOutlookProfile } from '@/lib/providers/outlook/profile'
@@ -20,6 +21,7 @@ import { getAccountStatus } from './account-status'
 import { AccountSection } from './shared/AccountSection'
 import { AccountRow } from './shared/AccountRow'
 import { StatefulButton } from './shared/StatefulButton'
+import { getConnectionErrorMessage } from './shared/connection-errors'
 
 interface OutlookAccountCardProps {
   accounts: Array<{
@@ -49,6 +51,7 @@ export function OutlookAccountCard({
   const [connectionStage, setConnectionStage] = useState<ConnectionStage>(null)
   const [connectionError, setConnectionError] = useState<string | null>(null)
   const [reconnectingId, setReconnectingId] = useState<string | null>(null)
+  const [confirmingRemoveId, setConfirmingRemoveId] = useState<string | null>(null)
 
   const handleAdd = async () => {
     setConnectionState('loading')
@@ -115,7 +118,7 @@ export function OutlookAccountCard({
       if (actualEmail.toLowerCase() !== expectedEmail.toLowerCase()) {
         setConnectionState('idle')
         setConnectionError(
-          `Account mismatch. Expected ${expectedEmail} but got ${actualEmail}. Please sign in with the correct account.`
+          t('accounts_mismatch_error', [expectedEmail, actualEmail])
         )
         return
       }
@@ -160,10 +163,7 @@ export function OutlookAccountCard({
   }
 
   const handleRemove = async (mailboxId: string) => {
-    if (!confirm(t('accounts_remove_confirm'))) {
-      return
-    }
-
+    setConfirmingRemoveId(null)
     setConnectionState('loading')
     setConnectionError(null)
 
@@ -202,18 +202,27 @@ export function OutlookAccountCard({
       description={t('accounts_microcopy_outlook')}
       accountCount={accounts.length}
       maxAccounts={maxAccounts}
+      isConnected={accounts.length > 0}
       feedbackMessage={connectionError || undefined}
       feedbackType="error"
+      feedbackAutoDismiss={connectionError !== t('toast_oauth_cancelled')}
       actionButton={
-        <StatefulButton
-          state={connectionState}
-          onClick={handleAdd}
-          idleText={t('accounts_connect_outlook')}
-          loadingText={getStageLabel(connectionStage)}
-          variant="primary"
-          disabled={disabled}
-          aria-label="Add Outlook account"
-        />
+        connectionState === 'loading' && !reconnectingId ? (
+          <div className="connecting-status" role="status" aria-live="polite">
+            <span className="connecting-spinner" aria-hidden="true" />
+            <span>{getStageLabel(connectionStage)}</span>
+          </div>
+        ) : (
+          <StatefulButton
+            state={reconnectingId ? 'idle' : connectionState}
+            onClick={handleAdd}
+            idleText={t('accounts_connect_outlook')}
+            loadingText={getStageLabel(connectionStage)}
+            variant="primary"
+            disabled={disabled}
+            aria-label={t('aria_add_outlook_account')}
+          />
+        )
       }
     >
       {accounts.length > 0 ? (
@@ -245,48 +254,69 @@ export function OutlookAccountCard({
                   : undefined
               }
               actions={
-                <>
-                  <StatefulButton
-                    state={isThisReconnecting ? connectionState : 'idle'}
-                    onClick={() => handleReconnect(account.id)}
-                    idleText={t('accounts_reconnect')}
-                    loadingText={t('accounts_reconnecting')}
-                    variant="secondary"
-                    disabled={disabled || connectionState === 'loading'}
-                    aria-label={`Reconnect ${account.email}`}
-                  />
-                  <StatefulButton
-                    state="idle"
-                    onClick={() => handleRemove(account.id)}
-                    idleText={t('accounts_remove_button')}
-                    loadingText={t('accounts_removing')}
-                    variant="danger"
-                    disabled={disabled || connectionState === 'loading'}
-                    aria-label={`Remove ${account.email}`}
-                  />
-                </>
+                confirmingRemoveId === account.id ? (
+                  <div className="confirm-inline" role="alertdialog" aria-label={t('accounts_remove_confirm')}>
+                    <p className="confirm-inline__text">{t('accounts_remove_confirm')}</p>
+                    <div className="confirm-inline__actions">
+                      <button
+                        type="button"
+                        className="btn btn--danger-ghost btn--sm"
+                        onClick={() => handleRemove(account.id)}
+                        disabled={disabled || connectionState === 'loading'}
+                        aria-busy={connectionState === 'loading'}
+                      >
+                        {connectionState === 'loading' ? t('accounts_removing') : t('accounts_remove_confirm_button')}
+                      </button>
+                      <button
+                        type="button"
+                        className="btn btn--secondary btn--sm"
+                        onClick={() => setConfirmingRemoveId(null)}
+                        disabled={disabled || connectionState === 'loading'}
+                      >
+                        {t('accounts_remove_cancel')}
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <button
+                      type="button"
+                      className="btn btn--secondary btn--sm"
+                      onClick={() => handleReconnect(account.id)}
+                      disabled={disabled || connectionState === 'loading'}
+                      aria-label={t('aria_reconnect_account', [account.email])}
+                    >
+                      {isThisReconnecting && connectionState === 'loading' ? t('accounts_reconnecting') : t('accounts_reconnect')}
+                    </button>
+                    <button
+                      type="button"
+                      className="btn btn--danger-ghost btn--sm"
+                      onClick={() => setConfirmingRemoveId(account.id)}
+                      disabled={disabled || connectionState === 'loading'}
+                      aria-label={t('aria_remove_account', [account.email])}
+                    >
+                      {t('accounts_remove_button')}
+                    </button>
+                  </>
+                )
               }
             />
           )
         })
       ) : (
-        <div className="empty-state" role="note">
-          {t('accounts_empty_outlook')}
+        <div className="empty-slot" role="note">
+          <div className="empty-slot__icon">
+            <Mail size={24} aria-hidden="true" />
+          </div>
+          <p className="empty-slot__text">{t('accounts_empty_outlook')}</p>
+          {connectionState === 'loading' && !reconnectingId && (
+            <div className="connecting-status" role="status" aria-live="polite">
+              <span className="connecting-spinner" aria-hidden="true" />
+              <span>{getStageLabel(connectionStage)}</span>
+            </div>
+          )}
         </div>
       )}
     </AccountSection>
   )
-}
-
-function getConnectionErrorMessage(error: unknown): string {
-  if (error instanceof Error) {
-    if (error.message.includes('cancelled')) return t('toast_oauth_cancelled')
-    if (error.message.includes('PROFILE_')) return t('toast_connect_profile_failed')
-    if (error.message.includes('network')) return t('toast_connect_network_error')
-    if (error.message.includes('credentials') || error.message.includes('invalid_client')) {
-      return t('toast_connect_invalid_credentials')
-    }
-    return `${t('toast_connect_failed')}: ${error.message}`
-  }
-  return t('toast_connect_failed')
 }
