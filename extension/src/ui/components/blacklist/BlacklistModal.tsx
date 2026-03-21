@@ -10,6 +10,7 @@ import React, { useState, useEffect } from 'react'
 import { Modal } from '@/ui/components/Modal'
 import { BlacklistDomainTab } from './BlacklistDomainTab'
 import { BlacklistUrlTab } from './BlacklistUrlTab'
+import { t } from '@/lib/i18n'
 import './BlacklistModal.css'
 
 export type BlacklistTab = 'domains' | 'urls'
@@ -40,13 +41,16 @@ export function BlacklistModal({ isOpen, onClose, initialTab = 'domains' }: Blac
     <Modal
       isOpen={isOpen}
       onClose={handleClose}
-      title="Manage Ignored Sites"
+      title={t('settings_blacklist_modal_title')}
       size="large"
       className="blacklist-modal"
     >
       <div className="blacklist-modal-container">
+        {/* Subtitle */}
+        <p className="blacklist-modal-subtitle">{t('blacklist_modal_subtitle')}</p>
+
         {/* Tab Navigation */}
-        <div className="blacklist-tabs" role="tablist" aria-label="Blacklist management tabs">
+        <div className="blacklist-tabs" role="tablist" aria-label={t('blacklist_tabs_aria')}>
           <button
             type="button"
             role="tab"
@@ -57,7 +61,7 @@ export function BlacklistModal({ isOpen, onClose, initialTab = 'domains' }: Blac
             onClick={() => setActiveTab('domains')}
             data-testid="blacklist-tab-domains"
           >
-            Domains
+            {t('blacklist_tab_domains')}
           </button>
           <button
             type="button"
@@ -69,7 +73,7 @@ export function BlacklistModal({ isOpen, onClose, initialTab = 'domains' }: Blac
             onClick={() => setActiveTab('urls')}
             data-testid="blacklist-tab-urls"
           >
-            URLs
+            {t('blacklist_tab_urls')}
           </button>
         </div>
 

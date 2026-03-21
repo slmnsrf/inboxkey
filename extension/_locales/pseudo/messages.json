@@ -26,6 +26,9 @@
   "button_open": {
     "message": "[Õþëñ one two]"
   },
+  "button_open_link": {
+    "message": "[Õþëñ Lîñƙ one two three]"
+  },
   "button_cancel": {
     "message": "[Çåñçël one two]"
   },
@@ -234,7 +237,13 @@
     "message": "[Åðð ûþ tø 10 ÎMÅP måîlbõxës vîå thë Îñbõxƙëý ßrîðğë. Såþþõrt çõmîñğ søõñ. one two three]"
   },
   "accounts_imap_add": {
-    "message": "[Åðð ÎMÅP one two three]"
+    "message": "[Åðð Åççõûñt one two three]"
+  },
+  "accounts_imap_retry": {
+    "message": "[Rëtrý one two]"
+  },
+  "accounts_imap_add_cta": {
+    "message": "[Åðð ÎMÅP Åççõûñt one two three]"
   },
   "accounts_imap_counter": {
     "message": "[$USED$ / $TOTAL$ ûsëð one two three]",

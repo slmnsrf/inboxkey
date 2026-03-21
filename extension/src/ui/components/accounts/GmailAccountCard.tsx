@@ -12,6 +12,7 @@
  */
 
 import React, { useState, useMemo } from 'react'
+import { Mail } from 'lucide-react'
 import { t } from '@/lib/i18n'
 import { authenticateGmail } from '@/lib/providers/gmail/chrome-auth'
 import { fetchGmailProfile } from '@/lib/providers/gmail/profile'
@@ -20,6 +21,7 @@ import { getAccountStatus } from './account-status'
 import { AccountSection } from './shared/AccountSection'
 import { AccountRow } from './shared/AccountRow'
 import { StatefulButton } from './shared/StatefulButton'
+import { getConnectionErrorMessage } from './shared/connection-errors'
 import { Modal } from '../Modal'
 
 interface GmailAccountCardProps {
@@ -48,6 +50,7 @@ export function GmailAccountCard({
   const [connectionStage, setConnectionStage] = useState<ConnectionStage>(null)
   const [connectionError, setConnectionError] = useState<string | null>(null)
   const [showLimitModal, setShowLimitModal] = useState(false)
+  const [confirmingDisconnect, setConfirmingDisconnect] = useState(false)
 
   // Calculate account status
   const { status, label: statusLabel } = useMemo(
@@ -85,6 +88,25 @@ export function GmailAccountCard({
 
       // 4. Save
       setConnectionStage('saving')
+
+      // Gmail single-account reconnect: verify email matches before replacing
+      if (account) {
+        if (email !== account.email) {
+          setConnectionState('idle')
+          setConnectionError(t('accounts_gmail_reconnect_mismatch'))
+          return
+        }
+        const removeResponse = await chrome.runtime.sendMessage({
+          type: 'REMOVE_MAILBOX',
+          mailboxId: account.id,
+        })
+        if (!removeResponse.success) {
+          setConnectionState('idle')
+          setConnectionError(t('toast_disconnect_failed'))
+          return
+        }
+      }
+
       const storeResponse = await chrome.runtime.sendMessage({
         type: 'STORE_MAILBOX',
         provider: 'gmail',
@@ -111,12 +133,9 @@ export function GmailAccountCard({
   const handleDisconnect = async () => {
     if (!account) return
 
-    if (!confirm(t('accounts_remove_confirm'))) {
-      return
-    }
-
     setConnectionState('loading')
     setConnectionError(null)
+    setConfirmingDisconnect(false)
 
     try {
       const response = await chrome.runtime.sendMessage({
@@ -157,7 +176,7 @@ export function GmailAccountCard({
             type="button"
             onClick={() => setShowLimitModal(true)}
             className="inline-link-button"
-            aria-label="Learn why only one Gmail account is allowed"
+            aria-label={t('accounts_gmail_limit_learn_why_aria')}
           >
             {t('accounts_gmail_limit_learn_why')}
           </button>
@@ -165,8 +184,10 @@ export function GmailAccountCard({
       }
       accountCount={account ? 1 : 0}
       maxAccounts={1}
+      isConnected={!!account}
       feedbackMessage={connectionError || undefined}
       feedbackType="error"
+      feedbackAutoDismiss={connectionError !== t('toast_oauth_cancelled')}
     >
       {account ? (
         <>
@@ -186,14 +207,50 @@ export function GmailAccountCard({
                 : undefined
             }
             actions={
-              <StatefulButton
-                state={connectionState}
-                onClick={handleDisconnect}
-                idleText={t('accounts_disconnect')}
-                loadingText={t('accounts_disconnecting')}
-                variant="danger"
-                disabled={disabled}
-              />
+              confirmingDisconnect ? (
+                <div className="confirm-inline" role="alertdialog" aria-label={t('accounts_remove_confirm')}>
+                  <p className="confirm-inline__text">{t('accounts_remove_confirm')}</p>
+                  <div className="confirm-inline__actions">
+                    <button
+                      type="button"
+                      className="btn btn--danger-ghost btn--sm"
+                      onClick={handleDisconnect}
+                      disabled={disabled || connectionState === 'loading'}
+                      aria-busy={connectionState === 'loading'}
+                    >
+                      {connectionState === 'loading' ? t('accounts_disconnecting') : t('accounts_remove_confirm_button')}
+                    </button>
+                    <button
+                      type="button"
+                      className="btn btn--secondary btn--sm"
+                      onClick={() => setConfirmingDisconnect(false)}
+                      disabled={disabled || connectionState === 'loading'}
+                    >
+                      {t('accounts_remove_cancel')}
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <button
+                    type="button"
+                    className="btn btn--secondary btn--sm"
+                    onClick={handleConnect}
+                    disabled={disabled || connectionState === 'loading'}
+                    aria-label={t('aria_reconnect_gmail')}
+                  >
+                    {t('accounts_reconnect')}
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn--danger-ghost btn--sm"
+                    onClick={() => setConfirmingDisconnect(true)}
+                    disabled={disabled}
+                  >
+                    {t('accounts_disconnect')}
+                  </button>
+                </>
+              )
             }
           />
 
@@ -211,10 +268,17 @@ export function GmailAccountCard({
         </>
       ) : (
         // Empty state
-        <div className="empty-state" role="note">
-          {t('accounts_empty_gmail')}
-          <br />
-          <div style={{ marginTop: 'var(--space-3)' }}>
+        <div className="empty-slot" role="note">
+          <div className="empty-slot__icon">
+            <Mail size={24} aria-hidden="true" />
+          </div>
+          <p className="empty-slot__text">{t('accounts_empty_gmail')}</p>
+          {connectionState === 'loading' ? (
+            <div className="connecting-status" role="status" aria-live="polite">
+              <span className="connecting-spinner" aria-hidden="true" />
+              <span>{getStageLabel(connectionStage)}</span>
+            </div>
+          ) : (
             <StatefulButton
               state={connectionState}
               onClick={handleConnect}
@@ -222,24 +286,11 @@ export function GmailAccountCard({
               loadingText={getStageLabel(connectionStage)}
               variant="primary"
               disabled={disabled}
-              aria-label="Connect Gmail account"
+              aria-label={t('aria_connect_gmail_account')}
             />
-          </div>
+          )}
         </div>
       )}
     </AccountSection>
   )
-}
-
-function getConnectionErrorMessage(error: unknown): string {
-  if (error instanceof Error) {
-    if (error.message.includes('cancelled')) return t('toast_oauth_cancelled')
-    if (error.message.includes('PROFILE_')) return t('toast_connect_profile_failed')
-    if (error.message.includes('network')) return t('toast_connect_network_error')
-    if (error.message.includes('credentials') || error.message.includes('invalid_client')) {
-      return t('toast_connect_invalid_credentials')
-    }
-    return `${t('toast_connect_failed')}: ${error.message}`
-  }
-  return t('toast_connect_failed')
 }

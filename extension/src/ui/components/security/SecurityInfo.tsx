@@ -1,96 +1,339 @@
 import React from 'react'
-import { LockIcon, InfoIcon } from '@/ui/components/icons/StatusIcons'
+import {
+  FileText,
+  Eye,
+  MailSearch,
+  BookOpen,
+  Cpu,
+  Database,
+  Plug,
+  SlidersHorizontal,
+  Clock,
+  ShieldOff,
+  BarChart2,
+  WifiOff,
+  Send,
+  Key,
+  User,
+  AppWindow,
+  HardDrive,
+  Cable,
+  Github,
+  BookOpenCheck,
+  PackageCheck,
+  ArrowRight,
+  Mail,
+  Bell,
+  Globe,
+} from 'lucide-react'
+import { t } from '@/lib/i18n'
+import { GITHUB_REPO_URL } from '@/lib/constants'
 import './SecurityInfo.css'
+const SECURITY_EMAIL = 'security@inboxkey.com'
 
-export function SecurityInfo() {
-  const openSourceUrl = 'https://github.com/slmnsrf/inboxkey'
+interface FactItemData {
+  icon: React.ReactNode
+  titleKey: string
+  detailKey: string
+}
+
+interface PermissionData {
+  icon: React.ReactNode
+  code: string
+  reasonKey: string
+}
+
+interface SectionData {
+  id: string
+  icon: React.ReactNode
+  titleKey: string
+  descriptionKey: string
+  items: FactItemData[]
+}
+
+const SECTIONS: SectionData[] = [
+  {
+    id: 'accessed',
+    icon: <Eye size={18} />,
+    titleKey: 'security_accessed_title',
+    descriptionKey: 'security_accessed_description',
+    items: [
+      {
+        icon: <MailSearch size={14} />,
+        titleKey: 'security_accessed_verification_title',
+        detailKey: 'security_accessed_verification_detail',
+      },
+      {
+        icon: <BookOpen size={14} />,
+        titleKey: 'security_accessed_readonly_title',
+        detailKey: 'security_accessed_readonly_detail',
+      },
+      {
+        icon: <Cpu size={14} />,
+        titleKey: 'security_accessed_local_title',
+        detailKey: 'security_accessed_local_detail',
+      },
+    ],
+  },
+  {
+    id: 'stored',
+    icon: <Database size={18} />,
+    titleKey: 'security_stored_title',
+    descriptionKey: 'security_stored_description',
+    items: [
+      {
+        icon: <Plug size={14} />,
+        titleKey: 'security_stored_connection_title',
+        detailKey: 'security_stored_connection_detail',
+      },
+      {
+        icon: <SlidersHorizontal size={14} />,
+        titleKey: 'security_stored_preferences_title',
+        detailKey: 'security_stored_preferences_detail',
+      },
+      {
+        icon: <Clock size={14} />,
+        titleKey: 'security_stored_cache_title',
+        detailKey: 'security_stored_cache_detail',
+      },
+    ],
+  },
+  {
+    id: 'not-done',
+    icon: <ShieldOff size={18} />,
+    titleKey: 'security_notdone_title',
+    descriptionKey: 'security_notdone_description',
+    items: [
+      {
+        icon: <BarChart2 size={14} />,
+        titleKey: 'security_notdone_analytics_title',
+        detailKey: 'security_notdone_analytics_detail',
+      },
+      {
+        icon: <WifiOff size={14} />,
+        titleKey: 'security_notdone_connections_title',
+        detailKey: 'security_notdone_connections_detail',
+      },
+      {
+        icon: <Send size={14} />,
+        titleKey: 'security_notdone_data_title',
+        detailKey: 'security_notdone_data_detail',
+      },
+    ],
+  },
+  {
+    id: 'opensource',
+    icon: <Github size={18} />,
+    titleKey: 'security_opensource_title',
+    descriptionKey: 'security_opensource_description',
+    items: [
+      {
+        icon: <BookOpenCheck size={14} />,
+        titleKey: 'security_opensource_available_title',
+        detailKey: 'security_opensource_available_detail',
+      },
+      {
+        icon: <PackageCheck size={14} />,
+        titleKey: 'security_opensource_builds_title',
+        detailKey: 'security_opensource_builds_detail',
+      },
+    ],
+  },
+]
+
+const PERMISSIONS: PermissionData[] = [
+  {
+    icon: <HardDrive size={16} />,
+    code: 'storage',
+    reasonKey: 'security_perm_storage_reason',
+  },
+  {
+    icon: <Clock size={16} />,
+    code: 'alarms',
+    reasonKey: 'security_perm_alarms_reason',
+  },
+  {
+    icon: <AppWindow size={16} />,
+    code: 'tabs',
+    reasonKey: 'security_perm_tabs_reason',
+  },
+  {
+    icon: <User size={16} />,
+    code: 'identity',
+    reasonKey: 'security_perm_identity_reason',
+  },
+  {
+    icon: <Bell size={16} />,
+    code: 'notifications',
+    reasonKey: 'security_perm_notifications_reason',
+  },
+  {
+    icon: <Cable size={16} />,
+    code: 'nativeMessaging',
+    reasonKey: 'security_perm_nativemessaging_reason',
+  },
+  {
+    icon: <Globe size={16} />,
+    code: 'host_permissions (https://*/*)',
+    reasonKey: 'security_perm_hostpermissions_reason',
+  },
+]
+
+function FactItem({ icon, titleKey, detailKey }: FactItemData) {
+  return (
+    <div className="fact-item">
+      <div className="fact-item__icon" aria-hidden="true">
+        {icon}
+      </div>
+      <div className="fact-item__content">
+        <p className="fact-item__title">{t(titleKey)}</p>
+        <p className="fact-item__detail">{t(detailKey)}</p>
+      </div>
+    </div>
+  )
+}
+
+function TransparencySection({ id, icon, titleKey, descriptionKey, items }: SectionData) {
+  const headingId = `${id}-heading`
 
   return (
-    <div className="security-info">
-      <div className="security-section">
-        <div className="section-icon">
-          <LockIcon size={24} />
+    <div className="transparency-section" aria-labelledby={headingId}>
+      <div className="transparency-section__header">
+        <div className="transparency-section__icon" aria-hidden="true">
+          {icon}
         </div>
-        <h3>Privacy First</h3>
-        <ul className="feature-list">
-          <li>100% local processing - no servers, no cloud</li>
-          <li>Your emails never leave your device</li>
-          <li>No tracking, no analytics, no data collection</li>
-        </ul>
-      </div>
-
-      <div className="security-section">
-        <div className="section-icon">
-          <LockIcon size={24} />
-        </div>
-        <h3>Data Security</h3>
-        <ul className="feature-list">
-          <li>Secured by Chrome's encrypted storage (OS-level)</li>
-          <li>OAuth tokens protected using industry standards</li>
-          <li>Automatic security updates via Chrome Web Store</li>
-        </ul>
-      </div>
-
-      <div className="security-section">
-        <div className="section-icon">
-          <InfoIcon size={24} />
-        </div>
-        <h3>Transparency</h3>
-        <ul className="feature-list">
-          <li>Fully open source - verify security yourself</li>
-          <li>Published by verified developer</li>
-          <li>Regular security audits</li>
-        </ul>
-      </div>
-
-      <div className="action-links">
-        <a
-          href={openSourceUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="link-button"
-        >
-          View Source Code →
-        </a>
-      </div>
-
-      <hr className="divider" />
-
-      <div className="permissions-section">
-        <div className="section-icon">
-          <InfoIcon size={24} />
-        </div>
-        <h3>Permissions Explained</h3>
-        <div className="permissions-list">
-          <div className="permission-item">
-            <span className="permission-name">Read emails</span>
-            <span className="permission-reason">Extract verification codes from Gmail</span>
-          </div>
-          <div className="permission-item">
-            <span className="permission-name">Storage</span>
-            <span className="permission-reason">Save your settings and preferences</span>
-          </div>
-          <div className="permission-item">
-            <span className="permission-name">Active tab</span>
-            <span className="permission-reason">Detect OTP input fields on pages</span>
-          </div>
+        <div>
+          <h3 id={headingId} className="transparency-section__title">
+            {t(titleKey)}
+          </h3>
+          <p className="transparency-section__description">{t(descriptionKey)}</p>
         </div>
       </div>
+      <div className="fact-list">
+        {items.map((item) => (
+          <FactItem key={item.titleKey} {...item} />
+        ))}
+      </div>
+    </div>
+  )
+}
 
-      <hr className="divider" />
+function PermissionRow({ icon, code, reasonKey }: PermissionData) {
+  return (
+    <div className="permission-row">
+      <div className="permission-row__icon" aria-hidden="true">
+        {icon}
+      </div>
+      <div className="permission-row__name">
+        <code>{code}</code>
+      </div>
+      <div className="permission-row__reason">{t(reasonKey)}</div>
+    </div>
+  )
+}
 
-      <div className="contact-section">
-        <h4>Questions or Concerns?</h4>
-        <p>
-          Report security issues:{' '}
+function PermissionsSection() {
+  return (
+    <div className="transparency-section" aria-labelledby="permissions-heading">
+      <div className="transparency-section__header">
+        <div className="transparency-section__icon" aria-hidden="true">
+          <Key size={18} />
+        </div>
+        <div>
+          <h3 id="permissions-heading" className="transparency-section__title">
+            {t('security_permissions_title')}
+          </h3>
+          <p className="transparency-section__description">
+            {t('security_permissions_description')}
+          </p>
+        </div>
+      </div>
+      <div className="permissions-grid">
+        {PERMISSIONS.map((perm) => (
+          <PermissionRow key={perm.code} {...perm} />
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function SourceCTA() {
+  return (
+    <div className="source-cta">
+      <div className="source-cta__icon" aria-hidden="true">
+        <Github size={20} />
+      </div>
+      <div className="source-cta__content">
+        <p className="source-cta__title">{t('security_source_cta_title')}</p>
+        <p className="source-cta__detail">{t('security_source_cta_detail')}</p>
+      </div>
+      <a
+        href={GITHUB_REPO_URL}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="source-cta__link"
+        aria-label={t('security_source_cta_link')}
+      >
+        {t('security_source_cta_link')} <ArrowRight size={14} />
+      </a>
+    </div>
+  )
+}
+
+function SecurityContact() {
+  return (
+    <div className="security-contact">
+      <div className="security-contact__icon" aria-hidden="true">
+        <Mail size={18} />
+      </div>
+      <div className="security-contact__content">
+        <p className="security-contact__title">{t('security_contact_title')}</p>
+        <p className="security-contact__detail">
+          {t('security_contact_detail', SECURITY_EMAIL).split(SECURITY_EMAIL)[0]}
           <a
-            href="mailto:security@inboxkey.com"
-            aria-label="Email security team at security@inboxkey.com"
+            href={`mailto:${SECURITY_EMAIL}`}
+            aria-label={`Email security team at ${SECURITY_EMAIL}`}
           >
-            security@inboxkey.com
+            {SECURITY_EMAIL}
           </a>
+          {t('security_contact_detail', SECURITY_EMAIL).split(SECURITY_EMAIL)[1]}
         </p>
       </div>
+    </div>
+  )
+}
+
+export function SecurityInfo() {
+  return (
+    <div className="security-info">
+      {/* Hero */}
+      <div className="transparency-hero">
+        <div className="transparency-hero__icon" aria-hidden="true">
+          <FileText size={24} />
+        </div>
+        <h2 className="transparency-hero__title">{t('security_hero_title')}</h2>
+        <p className="transparency-hero__subtitle">{t('security_hero_subtitle')}</p>
+      </div>
+
+      <hr className="section-divider" />
+
+      {/* Data handling sections */}
+      {SECTIONS.map((section, index) => (
+        <React.Fragment key={section.id}>
+          <TransparencySection {...section} />
+          {index < SECTIONS.length - 1 && <hr className="section-divider" />}
+        </React.Fragment>
+      ))}
+
+      {/* Permissions */}
+      <hr className="section-divider" />
+      <PermissionsSection />
+
+      {/* Source CTA */}
+      <SourceCTA />
+
+      {/* Security contact */}
+      <SecurityContact />
     </div>
   )
 }

@@ -2,10 +2,12 @@ import React, { useState, useEffect } from 'react'
 import { useToast } from '@/ui/contexts/ToastContext'
 import { t } from '@/lib/i18n'
 import type { AutomationLevel } from '@/lib/storage/schema'
-import { LockIcon, InfoIcon, CheckIcon } from '@/ui/components/icons/StatusIcons'
+import { Lock, ClipboardCopy, TextCursorInput, Bot, X } from 'lucide-react'
+import { InfoIcon } from '@/ui/components/icons/StatusIcons'
 
 interface AutomationOption {
   value: AutomationLevel
+  dots: number
   icon: React.ReactNode
   titleKey: string
   descriptionKey: string
@@ -14,25 +16,29 @@ interface AutomationOption {
 const AUTOMATION_LEVELS: AutomationOption[] = [
   {
     value: 'manual',
-    icon: <LockIcon size={20} />,
+    dots: 1,
+    icon: <Lock size={16} />,
     titleKey: 'automation_manual_title',
     descriptionKey: 'automation_manual_description',
   },
   {
     value: 'clipboard',
-    icon: <InfoIcon size={20} />,
+    dots: 2,
+    icon: <ClipboardCopy size={16} />,
     titleKey: 'automation_clipboard_title',
     descriptionKey: 'automation_clipboard_description',
   },
   {
     value: 'autofill',
-    icon: <CheckIcon size={20} />,
+    dots: 3,
+    icon: <TextCursorInput size={16} />,
     titleKey: 'automation_autofill_title',
     descriptionKey: 'automation_autofill_description',
   },
   {
     value: 'full-automation',
-    icon: <CheckIcon size={20} />,
+    dots: 4,
+    icon: <Bot size={16} />,
     titleKey: 'automation_full_title',
     descriptionKey: 'automation_full_description',
   },
@@ -41,6 +47,7 @@ const AUTOMATION_LEVELS: AutomationOption[] = [
 export function AutomationSettings() {
   const [level, setLevel] = useState<AutomationLevel>('autofill')
   const [isLoading, setIsLoading] = useState(true)
+  const [warningDismissed, setWarningDismissed] = useState(false)
   const { showToast } = useToast()
 
   // Load from storage on mount
@@ -64,6 +71,9 @@ export function AutomationSettings() {
   // Save to storage on change
   const handleChange = async (newLevel: AutomationLevel) => {
     setLevel(newLevel)
+    if (newLevel === 'full-automation') {
+      setWarningDismissed(false)
+    }
 
     try {
       // Send message to background to update settings
@@ -86,24 +96,17 @@ export function AutomationSettings() {
   if (isLoading) {
     return (
       <div className="automation-settings-card">
-        <p>{t('accounts_loading_profile')}</p>
+        <p>{t('status_loading')}</p>
       </div>
     )
   }
 
   return (
     <div className="automation-settings-card">
-      <div className="automation-settings-card__header">
-        <h3 id="automation-heading">{t('automation_heading')}</h3>
-        <p className="automation-settings-card__description">
-          {t('automation_description')}
-        </p>
-      </div>
-
       <div
         className="automation-level-selector"
         role="radiogroup"
-        aria-labelledby="automation-heading"
+        aria-label={t('automation_heading')}
         aria-describedby="automation-help"
       >
         {AUTOMATION_LEVELS.map((option) => {
@@ -130,6 +133,14 @@ export function AutomationSettings() {
                   <span className="automation-level-card__title">
                     {t(option.titleKey)}
                   </span>
+                  <span className="automation-level-card__dots" aria-label={`Level ${option.dots} of 4`}>
+                    {Array.from({ length: 4 }, (_, i) => (
+                      <span
+                        key={i}
+                        className={`automation-dot${i < option.dots ? ' automation-dot--filled' : ''}`}
+                      />
+                    ))}
+                  </span>
                 </div>
                 <p className="automation-level-card__description">
                   {t(option.descriptionKey)}
@@ -140,10 +151,18 @@ export function AutomationSettings() {
         })}
       </div>
 
-      {level === 'full-automation' && (
-        <div className="automation-warning">
+      {level === 'full-automation' && !warningDismissed && (
+        <div className="automation-warning" role="alert">
           <InfoIcon size={16} />
           <span>{t('automation_full_warning')}</span>
+          <button
+            type="button"
+            className="automation-warning__dismiss"
+            onClick={() => setWarningDismissed(true)}
+            aria-label={t('aria_dismiss_alert')}
+          >
+            <X size={14} />
+          </button>
         </div>
       )}
 
