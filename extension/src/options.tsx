@@ -19,7 +19,7 @@ import { AdvancedSettings } from './ui/components/AdvancedSettings'
 import { BuyMeACoffeeButton } from './ui/components/BuyMeACoffeeButton'
 import { BlacklistManageButton } from './ui/components/blacklist/BlacklistManageButton'
 import { BlacklistModal } from './ui/components/blacklist/BlacklistModal'
-import { KeyRound, Puzzle, Lock, ShieldCheck } from 'lucide-react'
+import { KeyRound, ShieldCheck, EyeOff, Code2 } from 'lucide-react'
 import { t } from './lib/i18n'
 import './options.css'
 import './ui/components/security/SecurityInfo.css'
@@ -180,16 +180,16 @@ function OptionsApp() {
                 </p>
                 <div className="trust-banner__pillars">
                   <div className="trust-pillar">
-                    <span className="trust-pillar__icon" aria-hidden="true"><Puzzle size={18} /></span>
-                    <span className="trust-pillar__label">{t('settings_trust_open_source')}</span>
-                  </div>
-                  <div className="trust-pillar">
-                    <span className="trust-pillar__icon" aria-hidden="true"><Lock size={18} /></span>
+                    <span className="trust-pillar__icon" aria-hidden="true"><ShieldCheck size={18} /></span>
                     <span className="trust-pillar__label">{t('settings_trust_local_only')}</span>
                   </div>
                   <div className="trust-pillar">
-                    <span className="trust-pillar__icon" aria-hidden="true"><ShieldCheck size={18} /></span>
+                    <span className="trust-pillar__icon" aria-hidden="true"><EyeOff size={18} /></span>
                     <span className="trust-pillar__label">{t('settings_trust_safe')}</span>
+                  </div>
+                  <div className="trust-pillar">
+                    <span className="trust-pillar__icon" aria-hidden="true"><Code2 size={18} /></span>
+                    <span className="trust-pillar__label">{t('settings_trust_open_source')}</span>
                   </div>
                 </div>
               </section>
