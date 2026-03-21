@@ -1103,6 +1103,14 @@
     "message": "Open source",
     "description": "Trust indicator: open source"
   },
+  "settings_trust_see_source": {
+    "message": "See",
+    "description": "Trust banner GitHub link label"
+  },
+  "settings_trust_see_source_aria": {
+    "message": "View source code on GitHub",
+    "description": "Accessible label for trust banner GitHub link"
+  },
   "settings_trust_local_only": {
     "message": "Runs locally",
     "description": "Trust indicator: local only"

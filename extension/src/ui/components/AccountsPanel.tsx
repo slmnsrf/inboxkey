@@ -7,17 +7,9 @@
 
 import React, { useEffect, useMemo, useState } from 'react'
 import { useToast } from '../contexts/ToastContext'
-import { authenticateGmail } from '@/lib/providers/gmail/chrome-auth'
-import { authenticateOutlook } from '@/lib/providers/outlook/chrome-auth'
-import { fetchGmailProfile } from '@/lib/providers/gmail/profile'
-import { fetchOutlookProfile } from '@/lib/providers/outlook/profile'
-import { isGmailConfigured } from '@/lib/providers/gmail/config'
-import { isOutlookConfigured } from '@/lib/providers/outlook/config'
-import { TrustIndicator } from './TrustIndicator'
 import { t, timeAgo } from '@/lib/i18n'
 import type { UnifiedPopupCache } from '@/shared/popup-messages'
-import type { ProviderKey, ProviderSlotState, ImapAccountRow, OutlookAccountRow, RecentItem } from './accounts/types'
-import { ProviderSlotCard } from './accounts/ProviderSlotCard'
+import type { ProviderKey, ImapAccountRow, OutlookAccountRow, RecentItem } from './accounts/types'
 import { GmailAccountCard } from './accounts/GmailAccountCard'
 import { OutlookAccountCard } from './accounts/OutlookAccountCard'
 import { ImapAccountCard } from './accounts/ImapAccountCard'
@@ -42,35 +34,12 @@ interface MailboxInfo {
   imapPort?: number
 }
 
-type ConnectionStage = 'authenticating' | 'loading_profile' | 'saving' | null
-
-interface ConnectionError {
-  provider: ProviderKey
-  message: string
-}
-
 type PopupResponseData = UnifiedPopupCache | null
-
-const PROVIDER_DISPLAY: Record<ProviderKey, { name: string; microcopy: string; empty: string }> = {
-  gmail: {
-    name: t('accounts_provider_gmail'),
-    microcopy: t('accounts_microcopy_gmail'),
-    empty: t('accounts_empty_gmail'),
-  },
-  outlook: {
-    name: t('accounts_provider_outlook'),
-    microcopy: t('accounts_microcopy_outlook'),
-    empty: t('accounts_empty_outlook'),
-  },
-}
 
 export function AccountsPanel() {
   const { showToast } = useToast()
 
   const [mailboxes, setMailboxes] = useState<MailboxInfo[]>([])
-  const [connectingProvider, setConnectingProvider] = useState<ProviderKey | null>(null)
-  const [connectionStage, setConnectionStage] = useState<ConnectionStage>(null)
-  const [connectionError, setConnectionError] = useState<ConnectionError | null>(null)
   const [isConnecting, setIsConnecting] = useState(false)
 
   const [recentItems, setRecentItems] = useState<RecentItem[]>([])
@@ -127,127 +96,6 @@ export function AccountsPanel() {
     }
   }
 
-  const getProviderStageLabel = () => {
-    if (!connectionStage) return ''
-    if (connectionStage === 'authenticating') return t('accounts_authenticating')
-    if (connectionStage === 'loading_profile') return t('accounts_loading_profile')
-    if (connectionStage === 'saving') return t('accounts_saving')
-    return ''
-  }
-
-  const handleConnect = async (provider: ProviderKey, mode: 'connect' | 'reconnect' = 'connect') => {
-    if (isConnecting) {
-      console.log('[AccountsPanel] Connection already in progress, ignoring')
-      return
-    }
-
-    try {
-      setConnectionError(null)
-
-      if (provider === 'gmail' && !isGmailConfigured()) {
-        const errorMsg = t('toast_connect_invalid_credentials')
-        setConnectionError({ provider, message: errorMsg })
-        return
-      }
-
-      if (provider === 'outlook' && !isOutlookConfigured()) {
-        const errorMsg = t('toast_connect_invalid_credentials')
-        setConnectionError({ provider, message: errorMsg })
-        return
-      }
-
-      setIsConnecting(true)
-      setConnectingProvider(provider)
-      setConnectionStage('authenticating')
-
-      const authenticate =
-        provider === 'gmail' ? authenticateGmail : authenticateOutlook
-      const fetchProfile =
-        provider === 'gmail' ? fetchGmailProfile : fetchOutlookProfile
-
-      const tokens = await authenticate()
-      setConnectionStage('loading_profile')
-
-      const email = await fetchProfile(tokens.accessToken)
-      const existing = mailboxes.find((mb) => mb.providerId === provider)
-
-      // Gmail limited to 1 account (Chrome Identity API constraint)
-      // Outlook supports multiple accounts (PKCE-based)
-      if (mode === 'connect' && provider === 'gmail' && existing) {
-        setConnectionError({
-          provider,
-          message: t('toast_connect_duplicate'),
-        })
-        return
-      }
-
-      setConnectionStage('saving')
-
-      // If reconnecting (same email) or Gmail (single account only), remove old account FIRST
-      if (existing && (existing.email === email || provider === 'gmail')) {
-        const removeResponse = await chrome.runtime.sendMessage({
-          type: 'REMOVE_MAILBOX',
-          mailboxId: existing.id,
-        })
-
-        if (!removeResponse.success) {
-          setConnectionError({
-            provider,
-            message: removeResponse.error || t('toast_disconnect_failed'),
-          })
-          return
-        }
-      }
-
-      const storeResponse = await chrome.runtime.sendMessage({
-        type: 'STORE_MAILBOX',
-        provider,
-        email,
-        tokens,
-      })
-
-      if (storeResponse.success) {
-        await loadMailboxes()
-        await loadRecentItems()
-      } else {
-        setConnectionError({
-          provider,
-          message: storeResponse.error || t('toast_connect_failed'),
-        })
-      }
-    } catch (error) {
-      console.error('[AccountsPanel] Connection error:', error)
-      const message = getConnectionErrorMessage(error)
-      setConnectionError({ provider, message })
-    } finally {
-      setIsConnecting(false)
-      setConnectingProvider(null)
-      setConnectionStage(null)
-    }
-  }
-
-  const handleDisconnect = async (provider: ProviderKey) => {
-    const mailbox = mailboxes.find((mb) => mb.providerId === provider)
-    if (!mailbox) return
-
-    try {
-      const response = await chrome.runtime.sendMessage({
-        type: 'REMOVE_MAILBOX',
-        mailboxId: mailbox.id,
-      })
-
-      if (response.success) {
-        await loadMailboxes()
-        await loadRecentItems()
-      } else {
-        console.error('[AccountsPanel] Disconnect failed:', response.error)
-      }
-    } catch (error) {
-      console.error('[AccountsPanel] Disconnect failed:', error)
-    }
-  }
-
-
   const handleAddImap = () => {
     setImapPrefillData(undefined)
     setShowAddImapModal(true)
@@ -295,53 +143,6 @@ export function AccountsPanel() {
     })
     setShowAddImapModal(true)
   }
-
-  const providerSlots = useMemo<ProviderSlotState[]>(() => {
-    return (['gmail', 'outlook'] as ProviderKey[]).map((provider) => {
-      const display = PROVIDER_DISPLAY[provider]
-      const mailbox = mailboxes.find((mb) => mb.providerId === provider)
-      const error =
-        connectionError && connectionError.provider === provider
-          ? connectionError.message
-          : null
-
-      const isBusy = connectingProvider === provider && connectionStage !== null
-      const status: ProviderSlotState['status'] = isBusy
-        ? 'connecting'
-        : mailbox
-        ? 'connected'
-        : 'disconnected'
-
-      const infoLine =
-        mailbox && mailbox.email
-          ? mailbox.email
-          : display.empty
-
-      const lastSyncedLabel =
-        mailbox && mailbox.lastSyncedAt
-          ? timeAgo(mailbox.lastSyncedAt)
-          : undefined
-
-      return {
-        provider,
-        displayName: display.name,
-        status,
-        email: mailbox?.email,
-        infoLine,
-        microcopy: display.microcopy,
-        lastSyncedLabel,
-        isBusy,
-        stageLabel: isBusy ? getProviderStageLabel() : undefined,
-        errorMessage: error,
-        connectDisabled: false,
-      }
-    })
-  }, [
-    mailboxes,
-    connectionError,
-    connectingProvider,
-    connectionStage,
-  ])
 
   const imapAccounts: ImapAccountRow[] = useMemo(() => {
     return mailboxes
@@ -456,17 +257,6 @@ export function AccountsPanel() {
         loading={recentLoading}
       />
 
-      <div className="sr-only" role="status" aria-live="polite" aria-atomic="true">
-        {connectingProvider && connectionStage && (
-          <>
-            {connectingProvider === 'gmail' && 'Connecting Gmail: '}
-            {connectingProvider === 'outlook' && 'Connecting Outlook: '}
-            {connectionStage === 'authenticating' && 'Step 1 of 3: ' + t('accounts_authenticating')}
-            {connectionStage === 'loading_profile' && 'Step 2 of 3: ' + t('accounts_loading_profile')}
-            {connectionStage === 'saving' && 'Step 3 of 3: ' + t('accounts_saving')}
-          </>
-        )}
-      </div>
     </div>
   )
 }

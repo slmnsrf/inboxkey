@@ -4,11 +4,11 @@
  * Displays advanced settings including domain preferences.
  */
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { StorageFactory } from '@/lib/storage/storage-factory'
 import { useToast } from '@/ui/contexts/ToastContext'
 import { t } from '@/lib/i18n'
-import { ChevronDown } from 'lucide-react'
+import { ChevronDown, RotateCcw } from 'lucide-react'
 import { WarningIcon } from '@/ui/components/icons/StatusIcons'
 import type { AutomationLevel } from '@/lib/storage/schema'
 
@@ -20,6 +20,20 @@ export function AdvancedSettings() {
   const [disableOnBankingSites, setDisableOnBankingSites] = useState<boolean>(false)
   const [loading, setLoading] = useState<boolean>(true)
   const [isExpanded, setIsExpanded] = useState<boolean>(false)
+  const [confirmingReset, setConfirmingReset] = useState(false)
+
+  const handleResetDefaults = useCallback(async () => {
+    try {
+      await chrome.runtime.sendMessage({ type: 'RESET_SETTINGS' })
+      setConfirmingReset(false)
+      showToast(t('toast_settings_reset'), 'success')
+      // Reload settings to reflect defaults
+      loadSettings()
+    } catch {
+      showToast(t('toast_settings_reset_failed'), 'error')
+      setConfirmingReset(false)
+    }
+  }, [showToast])
 
   useEffect(() => {
     loadSettings()
@@ -258,6 +272,48 @@ export function AdvancedSettings() {
               </p>
             </>
           )}
+
+          {/* Reset Settings */}
+          <div className="advanced-reset-section">
+            <div className="setting-row">
+              <div className="setting-row__info">
+                <span className="setting-row__label">{t('data_reset_defaults_title')}</span>
+                <p className="setting-row__description">{t('data_reset_defaults_description')}</p>
+              </div>
+              <div className="setting-row__control">
+                {confirmingReset ? (
+                  <div className="confirm-inline" role="alertdialog">
+                    <p className="confirm-inline__text">{t('data_reset_defaults_confirm_message')}</p>
+                    <div className="confirm-inline__actions">
+                      <button
+                        type="button"
+                        className="btn btn--danger btn--sm"
+                        onClick={handleResetDefaults}
+                      >
+                        {t('data_reset_defaults_yes')}
+                      </button>
+                      <button
+                        type="button"
+                        className="btn btn--secondary btn--sm"
+                        onClick={() => setConfirmingReset(false)}
+                      >
+                        {t('data_cancel')}
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    className="btn btn--secondary btn--sm"
+                    onClick={() => setConfirmingReset(true)}
+                  >
+                    <RotateCcw size={14} />
+                    {t('data_reset_defaults_button')}
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </div>
