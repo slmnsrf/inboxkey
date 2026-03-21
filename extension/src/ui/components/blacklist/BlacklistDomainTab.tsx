@@ -5,8 +5,8 @@
  * Features:
  * - Add new domains with validation
  * - Remove individual domains
- * - Clear all domains
- * - Empty state with helpful hints
+ * - Remove all domains (inline confirmation)
+ * - Empty state messaging
  * - Error messages for invalid/duplicate entries
  */
 
@@ -21,6 +21,7 @@ import {
 import { BlacklistSearchFilter } from './BlacklistSearchFilter'
 import { X } from 'lucide-react'
 import { GlobeIcon } from '@/ui/components/icons/StatusIcons'
+import { t, plural } from '@/lib/i18n'
 import './BlacklistTab.css'
 
 export function BlacklistDomainTab() {
@@ -29,6 +30,7 @@ export function BlacklistDomainTab() {
   const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
+  const [confirmingRemoveAll, setConfirmingRemoveAll] = useState(false)
 
   // Load domains on mount
   useEffect(() => {
@@ -46,7 +48,7 @@ export function BlacklistDomainTab() {
     setError(null)
 
     if (!inputValue.trim()) {
-      setError('Please enter a domain')
+      setError(t('blacklist_domain_error_empty'))
       return
     }
 
@@ -56,7 +58,7 @@ export function BlacklistDomainTab() {
       setInputValue('')
       await loadDomains()
     } else {
-      setError(result.errorMessage || 'Failed to add domain')
+      setError(result.errorMessage || t('blacklist_domain_error_add_failed'))
     }
   }
 
@@ -67,13 +69,10 @@ export function BlacklistDomainTab() {
     }
   }
 
-  const handleClearAll = async () => {
-    if (!window.confirm('Are you sure you want to remove all ignored domains?')) {
-      return
-    }
-
+  const handleRemoveAll = async () => {
     const result = await clearBlacklistedDomains()
     if (result.success) {
+      setConfirmingRemoveAll(false)
       await loadDomains()
     }
   }
@@ -91,16 +90,18 @@ export function BlacklistDomainTab() {
       )
     : domains
 
+  // Build count text
+  const countText = searchTerm
+    ? `${t('blacklist_domain_count_filtered', [String(filteredDomains.length), String(domains.length)])} `
+    : ''
+  const unitText = plural('blacklist_domain_count_singular', 'blacklist_domain_count_plural', domains.length)
+
   return (
     <div className="blacklist-tab-container">
       {/* Description */}
       <div className="blacklist-description">
-        <p>
-          Block InboxKey from starting sessions on entire domains and their subdomains.
-        </p>
-        <p className="blacklist-hint">
-          Example: <code>example.com</code> will block <code>example.com</code>, <code>www.example.com</code>, and <code>sub.example.com</code>
-        </p>
+        <p>{t('blacklist_domain_description')}</p>
+        <p className="blacklist-hint">{t('blacklist_domain_hint')}</p>
       </div>
 
       {/* Add Form */}
@@ -109,11 +110,11 @@ export function BlacklistDomainTab() {
           <input
             type="text"
             className="blacklist-input"
-            placeholder="example.com"
+            placeholder={t('blacklist_domain_placeholder')}
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
             onKeyPress={handleKeyPress}
-            aria-label="Domain to ignore"
+            aria-label={t('blacklist_domain_input_aria')}
             aria-invalid={error ? 'true' : 'false'}
             aria-describedby={error ? 'domain-hint domain-error' : 'domain-hint'}
             data-testid="domain-input"
@@ -126,12 +127,12 @@ export function BlacklistDomainTab() {
             aria-describedby={domains.length >= MAX_BLACKLIST_ENTRIES ? 'domain-limit-warning' : undefined}
             data-testid="domain-add-button"
           >
-            Add Domain
+            {t('blacklist_domain_add_button')}
           </button>
         </div>
 
         <div id="domain-hint" className="blacklist-hint sr-only">
-          Enter a domain like example.com without http or www
+          {t('blacklist_domain_hint_sr')}
         </div>
 
         {error && (
@@ -147,35 +148,57 @@ export function BlacklistDomainTab() {
 
         {domains.length >= MAX_BLACKLIST_ENTRIES && (
           <div id="domain-limit-warning" className="blacklist-warning" role="alert">
-            Maximum of {MAX_BLACKLIST_ENTRIES} domains reached
+            {t('blacklist_domain_limit_warning', String(MAX_BLACKLIST_ENTRIES))}
           </div>
         )}
       </div>
 
       {/* Domain List */}
       {isLoading ? (
-        <div className="blacklist-loading">Loading...</div>
+        <div className="blacklist-loading">{t('blacklist_loading')}</div>
       ) : (
         <div className="blacklist-list-section">
-          {/* Header Row: Search, Count, Clear All */}
+          {/* Header Row: Search, Count, Remove All */}
           <div className="blacklist-list-header">
             <BlacklistSearchFilter
               value={searchTerm}
               onChange={setSearchTerm}
-              placeholder="Search domains..."
+              placeholder={t('blacklist_domain_search_placeholder')}
             />
             <span className="blacklist-count">
-              {searchTerm ? `${filteredDomains.length} of ` : ''}{domains.length} {domains.length === 1 ? 'domain' : 'domains'}
+              {searchTerm ? countText : unitText}
             </span>
-            <button
-              type="button"
-              className="btn btn--text btn--danger"
-              onClick={handleClearAll}
-              data-testid="domain-clear-all"
-              disabled={domains.length === 0}
-            >
-              Clear All
-            </button>
+            {confirmingRemoveAll ? (
+              <div className="confirm-inline" role="alertdialog">
+                <p className="confirm-inline__text">{t('blacklist_remove_all_confirm_domains')}</p>
+                <div className="confirm-inline__actions">
+                  <button
+                    type="button"
+                    className="btn btn--danger btn--sm"
+                    onClick={handleRemoveAll}
+                  >
+                    {t('blacklist_remove_all_yes')}
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn--secondary btn--sm"
+                    onClick={() => setConfirmingRemoveAll(false)}
+                  >
+                    {t('blacklist_cancel')}
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <button
+                type="button"
+                className="btn btn--text btn--danger"
+                onClick={() => setConfirmingRemoveAll(true)}
+                data-testid="domain-clear-all"
+                disabled={domains.length === 0}
+              >
+                {t('blacklist_remove_all_button')}
+              </button>
+            )}
           </div>
 
           {/* List or Empty State */}
@@ -184,31 +207,28 @@ export function BlacklistDomainTab() {
               <div className="blacklist-empty-icon">
                 <GlobeIcon size={48} />
               </div>
-              <p className="blacklist-empty-text">No ignored domains</p>
-              <p className="blacklist-empty-hint">
-                Add domains above to prevent InboxKey from working on them
-              </p>
+              <p className="blacklist-empty-text">{t('blacklist_domain_empty_title')}</p>
             </div>
           ) : filteredDomains.length === 0 ? (
             <div className="blacklist-empty">
               <div className="blacklist-empty-icon">
                 <GlobeIcon size={48} />
               </div>
-              <p className="blacklist-empty-text">No matching domains</p>
+              <p className="blacklist-empty-text">{t('blacklist_domain_no_match_title')}</p>
               <p className="blacklist-empty-hint">
-                Try adjusting your search or{' '}
+                {t('blacklist_domain_no_match_hint')}{' '}
                 <button
                   type="button"
                   className="btn btn--text"
                   onClick={() => setSearchTerm('')}
                   style={{ display: 'inline', minHeight: 'auto', padding: '0', textDecoration: 'underline' }}
                 >
-                  clear the filter
+                  {t('blacklist_clear_filter')}
                 </button>
               </p>
             </div>
           ) : (
-            <ul className="blacklist-list" data-testid="domain-list" aria-label="Ignored domains">
+            <ul className="blacklist-list" data-testid="domain-list" aria-label={t('blacklist_tab_domains')}>
               {filteredDomains.map((domain) => (
                 <li key={domain} className="blacklist-item">
                   <span className="blacklist-item-text" title={domain}>
@@ -218,7 +238,7 @@ export function BlacklistDomainTab() {
                     type="button"
                     className="blacklist-remove-btn"
                     onClick={() => handleRemove(domain)}
-                    aria-label={`Remove ${domain} from ignored domains`}
+                    aria-label={t('blacklist_domain_remove_aria', domain)}
                     data-testid={`domain-remove-${domain}`}
                   >
                     <X size={14} />

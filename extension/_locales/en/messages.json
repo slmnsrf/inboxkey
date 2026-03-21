@@ -2056,5 +2056,254 @@
   "settings_blacklist_empty": {
     "message": "No ignored sites. InboxKey is active on all sites.",
     "description": "Empty state text shown when no sites are blacklisted"
+  },
+
+  "blacklist_tab_domains": {
+    "message": "Domains",
+    "description": "Tab label for domain-level blacklist"
+  },
+  "blacklist_tab_urls": {
+    "message": "URLs",
+    "description": "Tab label for URL-level blacklist"
+  },
+  "blacklist_modal_subtitle": {
+    "message": "Domains block an entire site. URLs block a specific page.",
+    "description": "Subtitle below Ignored Sites modal title explaining tab distinction"
+  },
+  "blacklist_domain_description": {
+    "message": "InboxKey will not look for verification codes on these domains. Subdomains are included automatically.",
+    "description": "Description text on the Domains tab"
+  },
+  "blacklist_domain_hint": {
+    "message": "Format: example.com (without http or www)",
+    "description": "Hint text for domain input format"
+  },
+  "blacklist_domain_placeholder": {
+    "message": "example.com",
+    "description": "Placeholder for domain input field"
+  },
+  "blacklist_domain_add_button": {
+    "message": "Add Domain",
+    "description": "Button label to add a domain to the ignore list"
+  },
+  "blacklist_domain_input_aria": {
+    "message": "Domain to ignore",
+    "description": "ARIA label for domain input"
+  },
+  "blacklist_domain_hint_sr": {
+    "message": "Format: example.com (without http or www)",
+    "description": "Screen reader hint for domain input"
+  },
+  "blacklist_domain_error_empty": {
+    "message": "Please enter a domain.",
+    "description": "Error when domain input is empty"
+  },
+  "blacklist_domain_error_add_failed": {
+    "message": "Failed to add domain.",
+    "description": "Fallback error when adding domain fails"
+  },
+  "blacklist_domain_limit_warning": {
+    "message": "Maximum of $COUNT$ domains reached.",
+    "description": "Warning when domain limit is reached",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "100"
+      }
+    }
+  },
+  "blacklist_domain_search_placeholder": {
+    "message": "Search domains...",
+    "description": "Placeholder for domain search input"
+  },
+  "blacklist_domain_count_singular": {
+    "message": "$COUNT$ domain",
+    "description": "Domain count (singular)",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "1"
+      }
+    }
+  },
+  "blacklist_domain_count_plural": {
+    "message": "$COUNT$ domains",
+    "description": "Domain count (plural)",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "5"
+      }
+    }
+  },
+  "blacklist_domain_count_filtered": {
+    "message": "$FILTERED$ of $TOTAL$",
+    "description": "Filtered domain count",
+    "placeholders": {
+      "filtered": {
+        "content": "$1",
+        "example": "3"
+      },
+      "total": {
+        "content": "$2",
+        "example": "10"
+      }
+    }
+  },
+  "blacklist_domain_empty_title": {
+    "message": "No ignored domains yet.",
+    "description": "Empty state title when no domains are ignored"
+  },
+  "blacklist_domain_no_match_title": {
+    "message": "No matching domains.",
+    "description": "Empty state title when search has no matches"
+  },
+  "blacklist_domain_no_match_hint": {
+    "message": "Try adjusting your search or",
+    "description": "Hint text before clear filter button"
+  },
+  "blacklist_domain_remove_aria": {
+    "message": "Remove $DOMAIN$ from ignored domains",
+    "description": "ARIA label for domain remove button",
+    "placeholders": {
+      "domain": {
+        "content": "$1",
+        "example": "example.com"
+      }
+    }
+  },
+  "blacklist_url_description": {
+    "message": "InboxKey will not look for verification codes on these specific pages.",
+    "description": "Description text on the URLs tab"
+  },
+  "blacklist_url_hint": {
+    "message": "Format: https://example.com/login",
+    "description": "Hint text for URL input format"
+  },
+  "blacklist_url_placeholder": {
+    "message": "https://example.com/login",
+    "description": "Placeholder for URL input field"
+  },
+  "blacklist_url_add_button": {
+    "message": "Add URL",
+    "description": "Button label to add a URL to the ignore list"
+  },
+  "blacklist_url_input_aria": {
+    "message": "URL to ignore",
+    "description": "ARIA label for URL input"
+  },
+  "blacklist_url_hint_sr": {
+    "message": "Enter a complete URL like https://example.com/login",
+    "description": "Screen reader hint for URL input"
+  },
+  "blacklist_url_error_empty": {
+    "message": "Please enter a URL.",
+    "description": "Error when URL input is empty"
+  },
+  "blacklist_url_error_add_failed": {
+    "message": "Failed to add URL.",
+    "description": "Fallback error when adding URL fails"
+  },
+  "blacklist_url_limit_warning": {
+    "message": "Maximum of $COUNT$ URLs reached.",
+    "description": "Warning when URL limit is reached",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "100"
+      }
+    }
+  },
+  "blacklist_url_search_placeholder": {
+    "message": "Search URLs...",
+    "description": "Placeholder for URL search input"
+  },
+  "blacklist_url_count_singular": {
+    "message": "$COUNT$ URL",
+    "description": "URL count (singular)",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "1"
+      }
+    }
+  },
+  "blacklist_url_count_plural": {
+    "message": "$COUNT$ URLs",
+    "description": "URL count (plural)",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "5"
+      }
+    }
+  },
+  "blacklist_url_count_filtered": {
+    "message": "$FILTERED$ of $TOTAL$",
+    "description": "Filtered URL count",
+    "placeholders": {
+      "filtered": {
+        "content": "$1",
+        "example": "3"
+      },
+      "total": {
+        "content": "$2",
+        "example": "10"
+      }
+    }
+  },
+  "blacklist_url_empty_title": {
+    "message": "No ignored URLs yet.",
+    "description": "Empty state title when no URLs are ignored"
+  },
+  "blacklist_url_no_match_title": {
+    "message": "No matching URLs.",
+    "description": "Empty state title when URL search has no matches"
+  },
+  "blacklist_url_no_match_hint": {
+    "message": "Try adjusting your search or",
+    "description": "Hint text before clear filter button"
+  },
+  "blacklist_url_remove_aria": {
+    "message": "Remove $URL$ from ignored URLs",
+    "description": "ARIA label for URL remove button",
+    "placeholders": {
+      "url": {
+        "content": "$1",
+        "example": "https://example.com/login"
+      }
+    }
+  },
+  "blacklist_remove_all_button": {
+    "message": "Remove All",
+    "description": "Button label to remove all entries from ignore list"
+  },
+  "blacklist_remove_all_confirm_domains": {
+    "message": "All ignored domains will be removed. Are you sure?",
+    "description": "Inline confirmation message before removing all domains"
+  },
+  "blacklist_remove_all_confirm_urls": {
+    "message": "All ignored URLs will be removed. Are you sure?",
+    "description": "Inline confirmation message before removing all URLs"
+  },
+  "blacklist_remove_all_yes": {
+    "message": "Yes, remove all",
+    "description": "Confirm button label for remove all"
+  },
+  "blacklist_cancel": {
+    "message": "Cancel",
+    "description": "Cancel button label for inline confirmation"
+  },
+  "blacklist_clear_filter": {
+    "message": "clear the filter",
+    "description": "Link text to clear search filter"
+  },
+  "blacklist_loading": {
+    "message": "Loading...",
+    "description": "Loading state text in blacklist tabs"
+  },
+  "blacklist_tabs_aria": {
+    "message": "Ignored sites management tabs",
+    "description": "ARIA label for tab navigation"
   }
 }

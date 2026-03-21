@@ -297,6 +297,36 @@
   color: var(--color-error, #EF4444);
 }
 
+/* Small Button Variant */
+.btn--sm {
+  padding: var(--space-1, 4px) var(--space-3, 12px);
+  font-size: var(--font-size-sm, 14px);
+  min-height: 28px;
+}
+
+/* Inline Confirmation */
+.confirm-inline {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3, 12px);
+  padding: var(--space-4, 16px);
+  border: 1px solid rgba(239, 68, 68, 0.25);
+  border-radius: var(--radius-md, 6px);
+  background: var(--color-error-bg, #991B1B);
+}
+
+.confirm-inline__text {
+  margin: 0;
+  font-size: var(--font-size-sm, 14px);
+  color: var(--color-error-text, #FEE2E2);
+  line-height: var(--line-height-relaxed, 1.6);
+}
+
+.confirm-inline__actions {
+  display: flex;
+  gap: var(--space-2, 8px);
+}
+
 /* Reduced motion support */
 @media (prefers-reduced-motion: reduce) {
   .blacklist-input,
