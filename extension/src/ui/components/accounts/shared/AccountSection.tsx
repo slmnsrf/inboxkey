@@ -24,6 +24,8 @@ interface AccountSectionProps {
   children: React.ReactNode;
   feedbackMessage?: string;
   feedbackType?: FeedbackType;
+  feedbackAutoDismiss?: boolean;
+  feedbackDismissDelay?: number;
   className?: string;
 }
 
@@ -50,6 +52,8 @@ export function AccountSection({
   children,
   feedbackMessage,
   feedbackType = 'error',
+  feedbackAutoDismiss = true,
+  feedbackDismissDelay = 6500,
   className = '',
 }: AccountSectionProps) {
   const showCounter = accountCount !== undefined && maxAccounts !== undefined;
@@ -105,8 +109,8 @@ export function AccountSection({
         <InlineAlert
           variant={feedbackType}
           message={feedbackMessage}
-          autoDismiss={true}
-          dismissDelay={6500}
+          autoDismiss={feedbackAutoDismiss}
+          dismissDelay={feedbackDismissDelay}
         />
       )}
     </section>

@@ -126,8 +126,10 @@ export function AddImapAccountModal({
         setServer('')
         setPort('993')
         setPassword('')
+        setShowPassword(false)
         setLabel('')
         setTlsEnabled(true)
+        setProviderPreset('custom')
         setTestState('idle')
         setTestError(null)
       }
@@ -379,6 +381,9 @@ export function AddImapAccountModal({
                     {t('accounts_imap_tls_enabled')}
                   </label>
                 </div>
+                {port === '993' && (
+                  <p className="form-hint">{t('accounts_imap_tls_required_hint')}</p>
+                )}
               </div>
             </div>
 

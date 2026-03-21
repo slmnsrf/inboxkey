@@ -21,6 +21,7 @@ import { getAccountStatus } from './account-status'
 import { AccountSection } from './shared/AccountSection'
 import { AccountRow } from './shared/AccountRow'
 import { StatefulButton } from './shared/StatefulButton'
+import { getConnectionErrorMessage } from './shared/connection-errors'
 
 interface OutlookAccountCardProps {
   accounts: Array<{
@@ -117,7 +118,7 @@ export function OutlookAccountCard({
       if (actualEmail.toLowerCase() !== expectedEmail.toLowerCase()) {
         setConnectionState('idle')
         setConnectionError(
-          `Account mismatch. Expected ${expectedEmail} but got ${actualEmail}. Please sign in with the correct account.`
+          t('accounts_mismatch_error', [expectedEmail, actualEmail])
         )
         return
       }
@@ -204,6 +205,7 @@ export function OutlookAccountCard({
       isConnected={accounts.length > 0}
       feedbackMessage={connectionError || undefined}
       feedbackType="error"
+      feedbackAutoDismiss={connectionError !== t('toast_oauth_cancelled')}
       actionButton={
         <StatefulButton
           state={connectionState}
@@ -212,7 +214,7 @@ export function OutlookAccountCard({
           loadingText={getStageLabel(connectionStage)}
           variant="primary"
           disabled={disabled}
-          aria-label="Add Outlook account"
+          aria-label={t('aria_add_outlook_account')}
         />
       }
     >
@@ -276,7 +278,7 @@ export function OutlookAccountCard({
                       loadingText={t('accounts_reconnecting')}
                       variant="secondary"
                       disabled={disabled || connectionState === 'loading'}
-                      aria-label={`Reconnect ${account.email}`}
+                      aria-label={t('aria_reconnect_account', [account.email])}
                     />
                     <StatefulButton
                       state="idle"
@@ -285,7 +287,7 @@ export function OutlookAccountCard({
                       loadingText={t('accounts_removing')}
                       variant="danger"
                       disabled={disabled || connectionState === 'loading'}
-                      aria-label={`Remove ${account.email}`}
+                      aria-label={t('aria_remove_account', [account.email])}
                     />
                   </>
                 )
@@ -303,17 +305,4 @@ export function OutlookAccountCard({
       )}
     </AccountSection>
   )
-}
-
-function getConnectionErrorMessage(error: unknown): string {
-  if (error instanceof Error) {
-    if (error.message.includes('cancelled')) return t('toast_oauth_cancelled')
-    if (error.message.includes('PROFILE_')) return t('toast_connect_profile_failed')
-    if (error.message.includes('network')) return t('toast_connect_network_error')
-    if (error.message.includes('credentials') || error.message.includes('invalid_client')) {
-      return t('toast_connect_invalid_credentials')
-    }
-    return `${t('toast_connect_failed')}: ${error.message}`
-  }
-  return t('toast_connect_failed')
 }

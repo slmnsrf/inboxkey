@@ -1580,8 +1580,8 @@
     "description": "Error message when provider sign-in is not configured or fails"
   },
   "toast_oauth_cancelled": {
-    "message": "OAuth authentication was cancelled",
-    "description": "Toast message when user cancels OAuth flow"
+    "message": "Authentication was cancelled. Review the required permissions in Security tab. Connect when ready.",
+    "description": "Toast message when user cancels OAuth flow, with guidance"
   },
   "toast_connect_profile_failed": {
     "message": "Failed to load profile information",
@@ -1927,5 +1927,106 @@
   "about_verify_closing": {
     "message": "No trust required. The code is public, the build is traceable, and the installed files are inspectable.",
     "description": "About: build verification closing statement"
+  },
+
+  "aria_dismiss_alert": {
+    "message": "Dismiss alert",
+    "description": "ARIA label for inline alert dismiss button"
+  },
+  "aria_connect_gmail_account": {
+    "message": "Connect Gmail account",
+    "description": "ARIA label for connect Gmail button in empty state"
+  },
+  "aria_add_outlook_account": {
+    "message": "Add Outlook account",
+    "description": "ARIA label for add Outlook account button"
+  },
+  "aria_reconnect_account": {
+    "message": "Reconnect $ACCOUNT$",
+    "description": "ARIA label for reconnect button with account email",
+    "placeholders": {
+      "account": {
+        "content": "$1",
+        "example": "user@outlook.com"
+      }
+    }
+  },
+  "aria_remove_account": {
+    "message": "Remove $ACCOUNT$",
+    "description": "ARIA label for remove button with account email",
+    "placeholders": {
+      "account": {
+        "content": "$1",
+        "example": "user@outlook.com"
+      }
+    }
+  },
+  "accounts_mismatch_error": {
+    "message": "Account mismatch. Expected $EXPECTED$ but got $ACTUAL$. Sign in with the correct account.",
+    "description": "Error when reconnecting with a different account than expected",
+    "placeholders": {
+      "expected": {
+        "content": "$1",
+        "example": "user@outlook.com"
+      },
+      "actual": {
+        "content": "$2",
+        "example": "other@outlook.com"
+      }
+    }
+  },
+  "aria_session_chip_enabled": {
+    "message": "On-page indicator enabled",
+    "description": "Screen reader announcement when session chip is enabled"
+  },
+  "aria_session_chip_disabled": {
+    "message": "On-page indicator disabled",
+    "description": "Screen reader announcement when session chip is disabled"
+  },
+  "aria_check_duration_set": {
+    "message": "Check duration set to $SECONDS$ seconds",
+    "description": "Screen reader announcement when check duration changes",
+    "placeholders": {
+      "seconds": {
+        "content": "$1",
+        "example": "30"
+      }
+    }
+  },
+  "aria_save_indicator_failed": {
+    "message": "Failed to save indicator setting",
+    "description": "Screen reader announcement when saving indicator setting fails"
+  },
+  "aria_save_timeout_failed": {
+    "message": "Failed to save timeout setting",
+    "description": "Screen reader announcement when saving timeout setting fails"
+  },
+  "aria_extended_detection_enabled": {
+    "message": "Extended button detection enabled",
+    "description": "Screen reader announcement when extended detection is enabled"
+  },
+  "aria_extended_detection_disabled": {
+    "message": "Extended button detection disabled",
+    "description": "Screen reader announcement when extended detection is disabled"
+  },
+  "aria_save_extended_detection_failed": {
+    "message": "Failed to save extended button detection setting",
+    "description": "Screen reader announcement when saving extended detection fails"
+  },
+  "aria_banking_blocklist_enabled": {
+    "message": "Banking site blocklist enabled",
+    "description": "Screen reader announcement when banking blocklist is enabled"
+  },
+  "aria_banking_blocklist_disabled": {
+    "message": "Banking site blocklist disabled",
+    "description": "Screen reader announcement when banking blocklist is disabled"
+  },
+  "aria_save_banking_blocklist_failed": {
+    "message": "Failed to save banking blocklist setting",
+    "description": "Screen reader announcement when saving banking blocklist fails"
+  },
+  "accounts_imap_tls_required_hint": {
+    "message": "TLS is required for port 993.",
+    "description": "Hint shown when TLS checkbox is disabled because port is 993"
   }
 }
