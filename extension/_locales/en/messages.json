@@ -644,11 +644,11 @@
     "description": "Advanced setting: default domain state description"
   },
   "settings_advanced_banking_blocklist": {
-    "message": "Skip banking sites",
+    "message": "Protect banking sites",
     "description": "Advanced setting: banking blocklist toggle"
   },
   "settings_advanced_banking_blocklist_desc": {
-    "message": "InboxKey is automatically disabled on known banking and financial sites.",
+    "message": "When enabled, InboxKey will not run on known banking and financial sites. This is a safety measure to avoid interacting with sensitive pages.",
     "description": "Advanced setting: banking blocklist description"
   },
   "settings_advanced_default_enabled_hint": {
@@ -656,7 +656,7 @@
     "description": "Advanced setting: default domain state hint"
   },
   "settings_advanced_banking_blocklist_hint": {
-    "message": "Covers 150+ major banks worldwide. Individual banks can still be enabled from the popup.",
+    "message": "Covers 150+ major banks worldwide. Individual exceptions can be made from the popup.",
     "description": "Advanced setting: banking blocklist hint"
   },
   "settings_advanced_hint": {

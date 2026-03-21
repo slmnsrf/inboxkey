@@ -17,7 +17,7 @@ export function AdvancedSettings() {
   const [domainsEnabledByDefault, setDomainsEnabledByDefault] = useState<boolean>(true)
   const [extendedButtonDetection, setExtendedButtonDetection] = useState<boolean>(false)
   const [automationLevel, setAutomationLevel] = useState<AutomationLevel>('autofill')
-  const [disableOnBankingSites, setDisableOnBankingSites] = useState<boolean>(false)
+  const [disableOnBankingSites, setDisableOnBankingSites] = useState<boolean>(true)
   const [loading, setLoading] = useState<boolean>(true)
   const [isExpanded, setIsExpanded] = useState<boolean>(false)
   const [confirmingReset, setConfirmingReset] = useState(false)
@@ -170,16 +170,11 @@ export function AdvancedSettings() {
                   checked={domainsEnabledByDefault}
                   onChange={handleToggle}
                   disabled={loading}
-                  aria-describedby="domains-enabled-help"
                 />
                 <span className="slider" />
               </label>
             </div>
           </div>
-
-          <p id="domains-enabled-help" className="advanced-settings-card__hint">
-            {t('settings_advanced_default_enabled_hint')}
-          </p>
 
           <div className="setting-divider" />
 
