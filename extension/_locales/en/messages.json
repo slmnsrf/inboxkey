@@ -1374,5 +1374,199 @@
   "toast_imap_added": {
     "message": "IMAP account added successfully: $1",
     "description": "Toast message when IMAP account is added"
+  },
+
+  "security_hero_title": {
+    "message": "How InboxKey handles your data",
+    "description": "Security transparency hero title"
+  },
+  "security_hero_subtitle": {
+    "message": "This page describes what the extension does and does not do with your information. No claims to verify, just facts to read.",
+    "description": "Security transparency hero subtitle"
+  },
+
+  "security_accessed_title": {
+    "message": "What is accessed",
+    "description": "Security section: what is accessed"
+  },
+  "security_accessed_description": {
+    "message": "The only data the extension reads",
+    "description": "Security section: what is accessed subtitle"
+  },
+  "security_accessed_verification_title": {
+    "message": "Verification emails only",
+    "description": "Security fact: verification emails title"
+  },
+  "security_accessed_verification_detail": {
+    "message": "Only emails containing verification codes or magic links are read. All other emails are ignored entirely.",
+    "description": "Security fact: verification emails detail"
+  },
+  "security_accessed_readonly_title": {
+    "message": "Read-only access",
+    "description": "Security fact: read-only title"
+  },
+  "security_accessed_readonly_detail": {
+    "message": "Email content is read but never modified, deleted, or moved. The extension cannot compose, send, or alter any email.",
+    "description": "Security fact: read-only detail"
+  },
+  "security_accessed_local_title": {
+    "message": "Parsed locally",
+    "description": "Security fact: parsed locally title"
+  },
+  "security_accessed_local_detail": {
+    "message": "All email parsing happens on your device. Email content is processed in memory and never leaves the browser.",
+    "description": "Security fact: parsed locally detail"
+  },
+
+  "security_stored_title": {
+    "message": "What is stored",
+    "description": "Security section: what is stored"
+  },
+  "security_stored_description": {
+    "message": "Everything saved locally, and nothing else",
+    "description": "Security section: what is stored subtitle"
+  },
+  "security_stored_connection_title": {
+    "message": "Connection status",
+    "description": "Security fact: connection status title"
+  },
+  "security_stored_connection_detail": {
+    "message": "Which email accounts are connected and whether the connection is active. No email content is stored.",
+    "description": "Security fact: connection status detail"
+  },
+  "security_stored_preferences_title": {
+    "message": "Preferences",
+    "description": "Security fact: preferences title"
+  },
+  "security_stored_preferences_detail": {
+    "message": "Display settings, blocked domains, and automation preferences. Stored in Chrome's local encrypted storage.",
+    "description": "Security fact: preferences detail"
+  },
+  "security_stored_cache_title": {
+    "message": "Short-lived code cache",
+    "description": "Security fact: code cache title"
+  },
+  "security_stored_cache_detail": {
+    "message": "Recently detected verification codes are held briefly so they can be offered for autofill. They expire automatically and can be cleared from Settings at any time.",
+    "description": "Security fact: code cache detail"
+  },
+
+  "security_notdone_title": {
+    "message": "What is not done",
+    "description": "Security section: what is not done"
+  },
+  "security_notdone_description": {
+    "message": "Things the extension will never do",
+    "description": "Security section: what is not done subtitle"
+  },
+  "security_notdone_analytics_title": {
+    "message": "No analytics or tracking",
+    "description": "Security fact: no analytics title"
+  },
+  "security_notdone_analytics_detail": {
+    "message": "No usage analytics, no event tracking, no telemetry of any kind. There is nothing to opt out of because nothing is collected.",
+    "description": "Security fact: no analytics detail"
+  },
+  "security_notdone_connections_title": {
+    "message": "No external connections",
+    "description": "Security fact: no external connections title"
+  },
+  "security_notdone_connections_detail": {
+    "message": "The extension does not contact any server, API, or service other than your email provider. It does not phone home.",
+    "description": "Security fact: no external connections detail"
+  },
+  "security_notdone_data_title": {
+    "message": "No data leaves your device",
+    "description": "Security fact: no data leaves title"
+  },
+  "security_notdone_data_detail": {
+    "message": "Nothing is uploaded, synced, or transmitted anywhere. All data stays in your browser's local storage on your machine.",
+    "description": "Security fact: no data leaves detail"
+  },
+
+  "security_permissions_title": {
+    "message": "Permissions explained",
+    "description": "Security section: permissions"
+  },
+  "security_permissions_description": {
+    "message": "Every permission requested, and why",
+    "description": "Security section: permissions subtitle"
+  },
+  "security_perm_identity_reason": {
+    "message": "Signs in with your Google account so verification emails can be read.",
+    "description": "Permission reason: identity"
+  },
+  "security_perm_tabs_reason": {
+    "message": "Detects login and verification pages so codes can be offered for autofill.",
+    "description": "Permission reason: tabs"
+  },
+  "security_perm_activetab_reason": {
+    "message": "Checks the current tab for code input fields so verification codes can be inserted.",
+    "description": "Permission reason: activeTab"
+  },
+  "security_perm_storage_reason": {
+    "message": "Saves preferences and settings locally in Chrome's encrypted storage.",
+    "description": "Permission reason: storage"
+  },
+  "security_perm_scripting_reason": {
+    "message": "Places the autofill chip on login pages so codes can be inserted into form fields.",
+    "description": "Permission reason: scripting"
+  },
+  "security_perm_nativemessaging_reason": {
+    "message": "Communicates with the local InboxBridge helper for IMAP accounts. Only active if installed.",
+    "description": "Permission reason: nativeMessaging"
+  },
+
+  "security_opensource_title": {
+    "message": "Open source",
+    "description": "Security section: open source"
+  },
+  "security_opensource_description": {
+    "message": "The full source code is public",
+    "description": "Security section: open source subtitle"
+  },
+  "security_opensource_available_title": {
+    "message": "Publicly available",
+    "description": "Security fact: publicly available title"
+  },
+  "security_opensource_available_detail": {
+    "message": "The entire codebase is on GitHub. It can be read, audited, forked, or built from source by anyone.",
+    "description": "Security fact: publicly available detail"
+  },
+  "security_opensource_builds_title": {
+    "message": "Reproducible builds",
+    "description": "Security fact: reproducible builds title"
+  },
+  "security_opensource_builds_detail": {
+    "message": "Build instructions are included in the repository. The published extension can be verified against the source code.",
+    "description": "Security fact: reproducible builds detail"
+  },
+
+  "security_source_cta_title": {
+    "message": "Words are cheap. Code is proof.",
+    "description": "Security source CTA title"
+  },
+  "security_source_cta_detail": {
+    "message": "The full source code is on GitHub. Read it, build it, verify every claim.",
+    "description": "Security source CTA detail"
+  },
+  "security_source_cta_link": {
+    "message": "View Source",
+    "description": "Security source CTA link text"
+  },
+
+  "security_contact_title": {
+    "message": "Found something wrong?",
+    "description": "Security contact title"
+  },
+  "security_contact_detail": {
+    "message": "Security issues can be reported at $EMAIL$. Every report is appreciated.",
+    "description": "Security contact detail",
+    "placeholders": {
+      "email": {
+        "content": "$1",
+        "example": "security@inboxkey.com"
+      }
+    }
   }
 }
