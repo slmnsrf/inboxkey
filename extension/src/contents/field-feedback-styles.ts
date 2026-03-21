@@ -193,16 +193,17 @@ export function generateFieldFeedbackCSS(theme: 'light' | 'dark'): string {
 /* --- Inline text --- */
 .inboxkey-inline-text {
   position: absolute;
-  right: 8px;
-  top: 50%;
-  transform: translateY(-50%);
+  right: 0;
+  top: -18px;
   font-family: ${FONT_FAMILY_UI};
-  font-size: 11px;
+  font-size: 10px;
   line-height: 1;
   pointer-events: none;
   opacity: 0;
   transition: opacity ${DURATION_NORMAL}ms ease;
   color: rgba(${blue}, 0.8);
+  white-space: nowrap;
+  text-align: right;
 }
 
 .inboxkey-shimmer-wrap--listening .inboxkey-inline-text  { color: rgba(${blue}, 0.8); opacity: 0.8; }
