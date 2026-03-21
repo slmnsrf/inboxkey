@@ -2,13 +2,15 @@ import React, { useState } from 'react'
 import { useToast } from '@/ui/contexts/ToastContext'
 import { LoadingSpinner } from './icons/LoadingSpinner'
 import { t } from '@/lib/i18n'
+import { RotateCcw } from 'lucide-react'
 
-type ConfirmingAction = 'codes' | 'cache' | null
+type ConfirmingAction = 'codes' | 'cache' | 'reset' | null
 
 export function DataManagement() {
   const { showToast } = useToast()
   const [isClearing, setIsClearing] = useState(false)
   const [isClearingCache, setIsClearingCache] = useState(false)
+  const [isResetting, setIsResetting] = useState(false)
   const [confirmingAction, setConfirmingAction] = useState<ConfirmingAction>(null)
 
   const handleClearAllCodes = async () => {
@@ -53,15 +55,29 @@ export function DataManagement() {
     }
   }
 
+  const handleResetDefaults = async () => {
+    setConfirmingAction(null)
+    setIsResetting(true)
+    try {
+      const response = await chrome.runtime.sendMessage({
+        type: 'RESET_SETTINGS'
+      })
+
+      if (response?.success) {
+        showToast(t('toast_settings_reset'), 'success')
+      } else {
+        showToast(t('toast_settings_reset_failed'), 'error')
+      }
+    } catch (error) {
+      console.error('[DataManagement] Failed to reset settings:', error)
+      showToast(t('toast_settings_reset_failed'), 'error')
+    } finally {
+      setIsResetting(false)
+    }
+  }
+
   return (
     <div className="data-management-card">
-      <div className="data-management-card__header">
-        <h3>{t('data_management_heading')}</h3>
-        <p className="data-management-card__description">
-          {t('data_management_description')}
-        </p>
-      </div>
-
       <div className="data-management-card__actions">
         {/* Clear Codes */}
         <div className="data-action-card">
@@ -183,6 +199,62 @@ export function DataManagement() {
               ) : (
                 t('button_clear_cache')
               )}
+            </button>
+          )}
+        </div>
+
+        {/* Reset to Defaults */}
+        <div className="data-action-card">
+          <div className="data-action-card__title">
+            {t('data_reset_defaults_title')}
+          </div>
+          <p className="data-action-card__desc">
+            {t('data_reset_defaults_description')}
+          </p>
+
+          {confirmingAction === 'reset' ? (
+            <div
+              className="data-action-confirm"
+              role="alertdialog"
+              aria-label={t('data_reset_defaults_confirm_label')}
+            >
+              <span className="data-action-confirm__message">
+                {t('data_reset_defaults_confirm_message')}
+              </span>
+              <div className="data-action-confirm__actions">
+                <button
+                  onClick={handleResetDefaults}
+                  disabled={isResetting}
+                  className="btn btn-danger btn-sm"
+                  aria-busy={isResetting}
+                >
+                  {isResetting ? (
+                    <>
+                      <LoadingSpinner size="small" />
+                      {t('data_clearing')}
+                    </>
+                  ) : (
+                    t('data_reset_defaults_yes')
+                  )}
+                </button>
+                <button
+                  onClick={() => setConfirmingAction(null)}
+                  className="btn btn-ghost btn-sm"
+                  disabled={isResetting}
+                >
+                  {t('data_cancel')}
+                </button>
+              </div>
+            </div>
+          ) : (
+            <button
+              onClick={() => setConfirmingAction('reset')}
+              disabled={isResetting}
+              className="btn btn-secondary btn-sm"
+              aria-busy={isResetting}
+            >
+              <RotateCcw size={14} aria-hidden="true" />
+              {t('data_reset_defaults_button')}
             </button>
           )}
         </div>
