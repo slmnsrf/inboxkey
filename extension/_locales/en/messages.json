@@ -764,8 +764,8 @@
     "description": "Button to add IMAP account"
   },
   "accounts_imap_description": {
-    "message": "Connect via InboxBridge native app for Yahoo, ProtonMail, and other IMAP providers",
-    "description": "IMAP accounts description"
+    "message": "For other email providers. Requires InboxBridge, a small open-source companion app that runs on this computer.",
+    "description": "IMAP section description with InboxBridge context"
   },
   "accounts_imap_empty": {
     "message": "No IMAP accounts connected",
@@ -840,8 +840,8 @@
     "description": "Recent activity description"
   },
   "accounts_recent_empty": {
-    "message": "No recent activity",
-    "description": "Empty state for recent activity"
+    "message": "No verification emails detected yet. When one arrives, it will show up here automatically.",
+    "description": "Empty state for recent emails section"
   },
   "accounts_recent_loading": {
     "message": "Loading recent activity...",
@@ -1116,8 +1116,8 @@
     "description": "Gmail provider name in accounts panel"
   },
   "accounts_microcopy_gmail": {
-    "message": "Only one Gmail account can be connected.",
-    "description": "Gmail single-account limitation notice"
+    "message": "Read-only access. Only verification emails are scanned, nothing else.",
+    "description": "Gmail section description with trust signal"
   },
   "accounts_microcopy_gmail_limit": {
     "message": "Only one Gmail account allowed",
@@ -1136,20 +1136,20 @@
     "description": "Detailed explanation of Gmail single-account technical limitation"
   },
   "accounts_empty_gmail": {
-    "message": "Connect your Google account to detect codes and magic links in Gmail.",
-    "description": "Empty state prompt for Gmail connection"
+    "message": "Verification codes from Gmail can be detected and filled automatically. Nothing leaves this device.",
+    "description": "Gmail empty/disconnected state with trust signal"
   },
   "accounts_provider_outlook": {
     "message": "Outlook",
     "description": "Outlook provider name in accounts panel"
   },
   "accounts_microcopy_outlook": {
-    "message": "Only one Outlook account can be connected.",
-    "description": "Outlook single-account limitation notice"
+    "message": "Read-only access. Multiple Outlook accounts can be connected.",
+    "description": "Outlook section description with trust signal"
   },
   "accounts_empty_outlook": {
-    "message": "Connect your Microsoft account to detect codes and magic links in Outlook.",
-    "description": "Empty state prompt for Outlook connection"
+    "message": "Outlook and Microsoft 365 accounts are supported. All scanning happens locally on this device.",
+    "description": "Outlook empty/disconnected state with trust signal"
   },
   "automation_heading": {
     "message": "Automation",
@@ -1436,8 +1436,8 @@
     "description": "IMAP accounts section heading"
   },
   "accounts_empty_imap": {
-    "message": "No IMAP accounts connected. Add one to get started.",
-    "description": "Empty state for IMAP accounts"
+    "message": "ProtonMail, Fastmail, Yahoo, and most other providers are supported. Everything stays local.",
+    "description": "IMAP empty state with trust signal"
   },
   "toast_outlook_connected": {
     "message": "Outlook account connected successfully",
@@ -1464,12 +1464,20 @@
     "description": "Toast message when account disconnection fails"
   },
   "accounts_remove_confirm": {
-    "message": "Are you sure you want to remove this account?",
-    "description": "Confirmation message when removing account"
+    "message": "All sync data for this account will be deleted. This cannot be undone.",
+    "description": "Inline confirmation message when removing account"
+  },
+  "accounts_remove_confirm_button": {
+    "message": "Remove Account",
+    "description": "Confirm button text for inline account removal"
+  },
+  "accounts_remove_cancel": {
+    "message": "Cancel",
+    "description": "Cancel button text for inline account removal"
   },
   "toast_connect_invalid_credentials": {
-    "message": "OAuth not configured. Check extension configuration.",
-    "description": "Toast message when OAuth credentials are not configured"
+    "message": "Connection failed. Google did not complete the sign-in.",
+    "description": "Error message when provider sign-in is not configured or fails"
   },
   "toast_oauth_cancelled": {
     "message": "OAuth authentication was cancelled",

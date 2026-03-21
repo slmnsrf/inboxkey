@@ -49,6 +49,7 @@ export function OutlookAccountCard({
   const [connectionStage, setConnectionStage] = useState<ConnectionStage>(null)
   const [connectionError, setConnectionError] = useState<string | null>(null)
   const [reconnectingId, setReconnectingId] = useState<string | null>(null)
+  const [confirmingRemoveId, setConfirmingRemoveId] = useState<string | null>(null)
 
   const handleAdd = async () => {
     setConnectionState('loading')
@@ -160,10 +161,7 @@ export function OutlookAccountCard({
   }
 
   const handleRemove = async (mailboxId: string) => {
-    if (!confirm(t('accounts_remove_confirm'))) {
-      return
-    }
-
+    setConfirmingRemoveId(null)
     setConnectionState('loading')
     setConnectionError(null)
 
@@ -245,26 +243,50 @@ export function OutlookAccountCard({
                   : undefined
               }
               actions={
-                <>
-                  <StatefulButton
-                    state={isThisReconnecting ? connectionState : 'idle'}
-                    onClick={() => handleReconnect(account.id)}
-                    idleText={t('accounts_reconnect')}
-                    loadingText={t('accounts_reconnecting')}
-                    variant="secondary"
-                    disabled={disabled || connectionState === 'loading'}
-                    aria-label={`Reconnect ${account.email}`}
-                  />
-                  <StatefulButton
-                    state="idle"
-                    onClick={() => handleRemove(account.id)}
-                    idleText={t('accounts_remove_button')}
-                    loadingText={t('accounts_removing')}
-                    variant="danger"
-                    disabled={disabled || connectionState === 'loading'}
-                    aria-label={`Remove ${account.email}`}
-                  />
-                </>
+                confirmingRemoveId === account.id ? (
+                  <div className="confirm-inline" role="alertdialog" aria-label={t('accounts_remove_confirm')}>
+                    <p className="confirm-inline__text">{t('accounts_remove_confirm')}</p>
+                    <div className="confirm-inline__actions">
+                      <StatefulButton
+                        state={connectionState}
+                        onClick={() => handleRemove(account.id)}
+                        idleText={t('accounts_remove_confirm_button')}
+                        loadingText={t('accounts_removing')}
+                        variant="danger"
+                        disabled={disabled}
+                      />
+                      <button
+                        type="button"
+                        className="btn btn--secondary btn--sm"
+                        onClick={() => setConfirmingRemoveId(null)}
+                        disabled={disabled || connectionState === 'loading'}
+                      >
+                        {t('accounts_remove_cancel')}
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <StatefulButton
+                      state={isThisReconnecting ? connectionState : 'idle'}
+                      onClick={() => handleReconnect(account.id)}
+                      idleText={t('accounts_reconnect')}
+                      loadingText={t('accounts_reconnecting')}
+                      variant="secondary"
+                      disabled={disabled || connectionState === 'loading'}
+                      aria-label={`Reconnect ${account.email}`}
+                    />
+                    <StatefulButton
+                      state="idle"
+                      onClick={() => setConfirmingRemoveId(account.id)}
+                      idleText={t('accounts_remove_button')}
+                      loadingText={t('accounts_removing')}
+                      variant="danger"
+                      disabled={disabled || connectionState === 'loading'}
+                      aria-label={`Remove ${account.email}`}
+                    />
+                  </>
+                )
               }
             />
           )

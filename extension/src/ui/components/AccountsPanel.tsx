@@ -230,10 +230,6 @@ export function AccountsPanel() {
     const mailbox = mailboxes.find((mb) => mb.providerId === provider)
     if (!mailbox) return
 
-    if (!confirm(t('accounts_remove_confirm'))) {
-      return
-    }
-
     try {
       const response = await chrome.runtime.sendMessage({
         type: 'REMOVE_MAILBOX',
