@@ -8,12 +8,14 @@ import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { StorageFactory } from '@/lib/storage/storage-factory'
 import { useToast } from '@/ui/contexts/ToastContext'
 import { t } from '@/lib/i18n'
+import type { AutomationLevel } from '@/lib/storage/schema'
 
 export function SessionChipSettings() {
   const { showToast } = useToast()
   const [showSessionChips, setShowSessionChips] = useState<boolean>(true)
   const [sessionTimeoutSeconds, setSessionTimeoutSeconds] = useState<number>(20)
   const [displayTimeout, setDisplayTimeout] = useState<number>(20)
+  const [automationLevel, setAutomationLevel] = useState<AutomationLevel>('autofill')
   const [loading, setLoading] = useState<boolean>(true)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -34,6 +36,7 @@ export function SessionChipSettings() {
       const storage = await StorageFactory.create()
       const settings = await storage.getSettings()
       setShowSessionChips(settings.showSessionChips ?? true)
+      setAutomationLevel(settings.automationLevel || 'autofill')
       const timeout = settings.sessionTimeoutSeconds ?? 20
       setSessionTimeoutSeconds(timeout)
       setDisplayTimeout(timeout)
@@ -116,10 +119,12 @@ export function SessionChipSettings() {
     }, 500)
   }
 
+  const isManual = automationLevel === 'manual'
+
   return (
     <div className="session-chip-settings-card">
       <div className="settings-card__content">
-        <div className="setting-row" aria-label={t('settings_session_chips_heading')}>
+        <div className={`setting-row${isManual ? ' setting-row--disabled' : ''}`} aria-label={t('settings_session_chips_heading')}>
           <div className="setting-row__info">
             <label htmlFor="show-session-chips" className="setting-row__label">
               {t('settings_session_chips_toggle_label')}
@@ -127,6 +132,11 @@ export function SessionChipSettings() {
             <p className="setting-row__description">
               {t('settings_session_chips_toggle_description')}
             </p>
+            {isManual && (
+              <p className="setting-row__disabled-hint">
+                {t('settings_indicator_disabled_manual')}
+              </p>
+            )}
           </div>
           <div className="setting-row__control">
             <label className="toggle">
@@ -135,7 +145,7 @@ export function SessionChipSettings() {
                 type="checkbox"
                 checked={showSessionChips}
                 onChange={handleToggle}
-                disabled={loading}
+                disabled={loading || isManual}
                 aria-describedby="session-chip-help"
               />
               <span className="slider" />
@@ -156,10 +166,11 @@ export function SessionChipSettings() {
               {t('settings_session_timeout_description')}
             </p>
           </div>
-          <div className="setting-row__control" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '8px' }}>
+          <div className="setting-row__control range-slider-control">
             <input
               id="session-timeout"
               type="range"
+              className="range-slider"
               min="10"
               max="120"
               step="10"
@@ -167,9 +178,8 @@ export function SessionChipSettings() {
               onChange={(e) => handleTimeoutChange(Number(e.target.value))}
               disabled={loading}
               aria-describedby="session-timeout-help"
-              style={{ width: '200px' }}
             />
-            <output htmlFor="session-timeout" style={{ fontSize: '14px', fontWeight: 500 }}>
+            <output htmlFor="session-timeout" className="range-slider-output">
               {displayTimeout}s
             </output>
           </div>

@@ -1276,7 +1276,7 @@
     "description": "Warning for full automation"
   },
   "automation_hint": {
-    "message": "Changes apply to new codes only",
+    "message": "This can be changed at any time. Autofill works well for most people.",
     "description": "Automation settings hint"
   },
   "accounts_imap_add_title": {
@@ -2028,5 +2028,13 @@
   "accounts_imap_tls_required_hint": {
     "message": "TLS is required for port 993.",
     "description": "Hint shown when TLS checkbox is disabled because port is 993"
+  },
+  "settings_indicator_disabled_manual": {
+    "message": "Not available in Manual mode. No session is created.",
+    "description": "Hint shown when indicator toggle is disabled due to manual automation level"
+  },
+  "settings_blacklist_empty": {
+    "message": "No ignored sites. InboxKey is active on all sites.",
+    "description": "Empty state text shown when no sites are blacklisted"
   }
 }
