@@ -450,7 +450,7 @@
   },
 
   "footer_local_only": {
-    "message": "Local-only - No servers",
+    "message": "Local-only. No servers.",
     "description": "Footer: local-only message"
   },
   "footer_buy_coffee": {
@@ -920,19 +920,19 @@
     "description": "Trust region label in settings"
   },
   "settings_trust_open_source": {
-    "message": "Open source and auditable",
+    "message": "Open source",
     "description": "Trust indicator: open source"
   },
   "settings_trust_local_only": {
-    "message": "Local-only, no servers",
+    "message": "Runs locally",
     "description": "Trust indicator: local only"
   },
   "settings_trust_safe": {
-    "message": "Safe and private by design",
+    "message": "No tracking",
     "description": "Trust indicator: safe"
   },
   "settings_trust_summary": {
-    "message": "InboxKey runs entirely on your device. No data is sent to external servers.",
+    "message": "Everything stays on your device. Nothing is sent anywhere.",
     "description": "Trust summary text"
   },
   "settings_tab_accounts": {
