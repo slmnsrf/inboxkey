@@ -178,7 +178,7 @@ InboxKey is a Manifest V3 Chrome/Chromium extension that keeps verification-code
 Between field detection and session start, 4 additive guardrails prevent unnecessary email polling:
 
 1. **No-mailbox check:** Skip if zero mailboxes connected (inside `WatchSession.start()`)
-2. **Focus gate:** Wait for field focus before triggering; supports split-input groups (in `contents/index.ts`)
+2. **Focus gate:** Wait for field focus before triggering; bypassed when detection confidence is high (>= 90) AND email context is present nearby, or when field has OTP autocomplete attribute; supports split-input groups (in `contents/index.ts`)
 3. **Email context check:** Scan nearby DOM for email-related signals in 21 languages; bypass for OTP autocomplete and split-input groups (inside `WatchSession.start()`, uses `email-context-guard.ts` which reuses `EMAIL_PATTERNS` from `signal-classifier.ts`)
 4. **Abort on disconnect:** Cancel background session when content script port disconnects (in `background/index.ts`)
 
