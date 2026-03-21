@@ -22,9 +22,9 @@ import {
 import { t } from '@/lib/i18n'
 import { useToast } from '@/ui/contexts/ToastContext'
 import { BuyMeACoffeeButton } from './BuyMeACoffeeButton'
+import { GITHUB_REPO_URL } from '@/lib/constants'
 import './about/AboutSection.css'
 
-const GITHUB_URL = 'https://github.com/slmnsrf/inboxkey'
 const LINKEDIN_URL = 'https://www.linkedin.com/in/selmanseref/'
 
 interface ResourceLink {
@@ -61,13 +61,13 @@ export function AboutSection() {
       icon: <Code2 size={18} />,
       label: t('about_resource_source'),
       hint: t('about_resource_source_hint'),
-      href: GITHUB_URL,
+      href: GITHUB_REPO_URL,
     },
     {
       icon: <Bug size={18} />,
       label: t('about_resource_issues'),
       hint: t('about_resource_issues_hint'),
-      href: `${GITHUB_URL}/issues`,
+      href: `${GITHUB_REPO_URL}/issues`,
     },
     {
       icon: <FileText size={18} />,

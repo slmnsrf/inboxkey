@@ -14,13 +14,13 @@ import { AccountsPanel } from './ui/components/AccountsPanel'
 import { AppearanceSettings } from './ui/components/AppearanceSettings'
 import { AutomationSettings } from './ui/components/AutomationSettings'
 import { SessionChipSettings } from './ui/components/SessionChipSettings'
-import { DataManagement } from './ui/components/DataManagement'
 import { AdvancedSettings } from './ui/components/AdvancedSettings'
 import { BuyMeACoffeeButton } from './ui/components/BuyMeACoffeeButton'
 import { BlacklistManageButton } from './ui/components/blacklist/BlacklistManageButton'
 import { BlacklistModal } from './ui/components/blacklist/BlacklistModal'
-import { KeyRound, ShieldCheck, EyeOff, Code2, Zap, MessageSquare, Palette, Globe, Database, Settings as SettingsIcon } from 'lucide-react'
+import { KeyRound, ShieldCheck, EyeOff, Code2, Zap, MessageSquare, Palette, Globe, Settings as SettingsIcon, Github } from 'lucide-react'
 import { t } from './lib/i18n'
+import { GITHUB_REPO_URL } from './lib/constants'
 import './options.css'
 import './ui/components/security/SecurityInfo.css'
 
@@ -90,7 +90,7 @@ function OptionsApp() {
                 <div className="options-header__actions">
                   <a
                     className="support-link"
-                    href="https://github.com/inboxkey/extension"
+                    href={GITHUB_REPO_URL}
                     target="_blank"
                     rel="noreferrer"
                     aria-label={t('settings_view_source_aria')}
@@ -200,21 +200,6 @@ function OptionsApp() {
                       </div>
                     </div>
 
-                    {/* DATA */}
-                    <div className="section-label">{t('settings_category_data')}</div>
-                    <div className="settings-card">
-                      <div className="settings-card__header">
-                        <h2 className="settings-card__title">
-                          <span className="settings-card__title-icon" aria-hidden="true"><Database size={16} /></span>
-                          {t('data_management_heading')}
-                        </h2>
-                        <p className="settings-card__description">{t('data_management_description')}</p>
-                      </div>
-                      <div className="settings-card__body">
-                        <DataManagement />
-                      </div>
-                    </div>
-
                     {/* ADVANCED */}
                     <div className="section-label">{t('settings_category_advanced')}</div>
                     <div className="settings-card">
@@ -264,6 +249,16 @@ function OptionsApp() {
                     <span className="trust-pillar__icon" aria-hidden="true"><Code2 size={18} /></span>
                     <span className="trust-pillar__label">{t('settings_trust_open_source')}</span>
                   </div>
+                  <a
+                    className="trust-pillar trust-pillar--link"
+                    href={GITHUB_REPO_URL}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label={t('settings_trust_see_source_aria')}
+                  >
+                    <span className="trust-pillar__icon" aria-hidden="true"><Github size={18} /></span>
+                    <span className="trust-pillar__label">{t('settings_trust_see_source')}</span>
+                  </a>
                 </div>
               </section>
             </div>

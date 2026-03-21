@@ -207,6 +207,20 @@ body,
   line-height: 1;
 }
 
+.trust-pillar--link {
+  text-decoration: none;
+  cursor: pointer;
+  transition: opacity var(--duration-fast) ease-out;
+}
+
+.trust-pillar--link:hover {
+  opacity: 0.8;
+}
+
+.trust-pillar--link .trust-pillar__label {
+  color: var(--color-text-link);
+}
+
 @media (max-width: 768px) {
   .options-shell {
     padding: var(--space-5) var(--space-4);
@@ -2298,6 +2312,27 @@ textarea.input {
   display: flex;
   align-items: center;
   gap: var(--space-2);
+}
+
+.automation-level-card__level {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: var(--radius-full);
+  background: var(--surface-card);
+  border: 1px solid var(--color-border);
+  font-size: 11px;
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-tertiary);
+}
+
+.automation-level-card--active .automation-level-card__level {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: var(--color-text-inverse);
 }
 
 .automation-level-card__icon {

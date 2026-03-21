@@ -7,6 +7,7 @@ import { InfoIcon } from '@/ui/components/icons/StatusIcons'
 
 interface AutomationOption {
   value: AutomationLevel
+  level: number
   icon: React.ReactNode
   titleKey: string
   descriptionKey: string
@@ -15,24 +16,28 @@ interface AutomationOption {
 const AUTOMATION_LEVELS: AutomationOption[] = [
   {
     value: 'manual',
+    level: 1,
     icon: <Lock size={16} />,
     titleKey: 'automation_manual_title',
     descriptionKey: 'automation_manual_description',
   },
   {
     value: 'clipboard',
+    level: 2,
     icon: <ClipboardCopy size={16} />,
     titleKey: 'automation_clipboard_title',
     descriptionKey: 'automation_clipboard_description',
   },
   {
     value: 'autofill',
+    level: 3,
     icon: <TextCursorInput size={16} />,
     titleKey: 'automation_autofill_title',
     descriptionKey: 'automation_autofill_description',
   },
   {
     value: 'full-automation',
+    level: 4,
     icon: <Bot size={16} />,
     titleKey: 'automation_full_title',
     descriptionKey: 'automation_full_description',
@@ -123,6 +128,9 @@ export function AutomationSettings() {
                   </span>
                   <span className="automation-level-card__title">
                     {t(option.titleKey)}
+                  </span>
+                  <span className="automation-level-card__level" aria-label={`Level ${option.level}`}>
+                    {option.level}
                   </span>
                 </div>
                 <p className="automation-level-card__description">

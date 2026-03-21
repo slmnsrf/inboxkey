@@ -6,7 +6,7 @@
  * GitHub repository URL
  * Used for InboxBridge downloads and source code links
  */
-export const GITHUB_REPO_URL = 'https://github.com/inboxkey/inboxkey'
+export const GITHUB_REPO_URL = 'https://github.com/slmnsrf/inboxkey'
 
 /**
  * InboxBridge releases URL

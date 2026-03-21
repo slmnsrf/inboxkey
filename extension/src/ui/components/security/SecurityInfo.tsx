@@ -27,9 +27,8 @@ import {
   Mail,
 } from 'lucide-react'
 import { t } from '@/lib/i18n'
+import { GITHUB_REPO_URL } from '@/lib/constants'
 import './SecurityInfo.css'
-
-const GITHUB_URL = 'https://github.com/slmnsrf/inboxkey'
 const SECURITY_EMAIL = 'security@inboxkey.com'
 
 interface FactItemData {
@@ -264,7 +263,7 @@ function SourceCTA() {
         <p className="source-cta__detail">{t('security_source_cta_detail')}</p>
       </div>
       <a
-        href={GITHUB_URL}
+        href={GITHUB_REPO_URL}
         target="_blank"
         rel="noopener noreferrer"
         className="source-cta__link"
