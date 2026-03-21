@@ -12,6 +12,7 @@
  */
 
 import React, { useState, useEffect } from 'react'
+import { Server } from 'lucide-react'
 import { t } from '@/lib/i18n'
 import { getAccountStatus } from './account-status'
 import { AccountSection } from './shared/AccountSection'
@@ -111,12 +112,13 @@ export function ImapAccountCard({
       description={t('accounts_imap_description')}
       accountCount={accounts.length}
       maxAccounts={maxAccounts}
+      isConnected={accounts.length > 0}
       feedbackMessage={removeError || undefined}
       feedbackType="error"
       actionButton={
         <button
           type="button"
-          className="btn btn--primary"
+          className="btn btn--secondary btn--sm"
           onClick={onAddImap}
           disabled={disabled}
           aria-label="Add IMAP account"
@@ -236,8 +238,11 @@ export function ImapAccountCard({
           )
         })
       ) : (
-        <div className="empty-state" role="note">
-          {t('accounts_empty_imap')}
+        <div className="empty-slot" role="note">
+          <div className="empty-slot__icon">
+            <Server size={24} aria-hidden="true" />
+          </div>
+          <p className="empty-slot__text">{t('accounts_empty_imap')}</p>
         </div>
       )}
     </AccountSection>

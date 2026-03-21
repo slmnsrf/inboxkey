@@ -12,6 +12,7 @@
  */
 
 import React, { useState } from 'react'
+import { Mail } from 'lucide-react'
 import { t } from '@/lib/i18n'
 import { authenticateOutlook } from '@/lib/providers/outlook/chrome-auth'
 import { fetchOutlookProfile } from '@/lib/providers/outlook/profile'
@@ -200,6 +201,7 @@ export function OutlookAccountCard({
       description={t('accounts_microcopy_outlook')}
       accountCount={accounts.length}
       maxAccounts={maxAccounts}
+      isConnected={accounts.length > 0}
       feedbackMessage={connectionError || undefined}
       feedbackType="error"
       actionButton={
@@ -292,8 +294,11 @@ export function OutlookAccountCard({
           )
         })
       ) : (
-        <div className="empty-state" role="note">
-          {t('accounts_empty_outlook')}
+        <div className="empty-slot" role="note">
+          <div className="empty-slot__icon">
+            <Mail size={24} aria-hidden="true" />
+          </div>
+          <p className="empty-slot__text">{t('accounts_empty_outlook')}</p>
         </div>
       )}
     </AccountSection>

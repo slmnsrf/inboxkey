@@ -12,6 +12,7 @@
  */
 
 import React, { useState, useMemo } from 'react'
+import { Mail } from 'lucide-react'
 import { t } from '@/lib/i18n'
 import { authenticateGmail } from '@/lib/providers/gmail/chrome-auth'
 import { fetchGmailProfile } from '@/lib/providers/gmail/profile'
@@ -163,6 +164,7 @@ export function GmailAccountCard({
       }
       accountCount={account ? 1 : 0}
       maxAccounts={1}
+      isConnected={!!account}
       feedbackMessage={connectionError || undefined}
       feedbackType="error"
     >
@@ -233,20 +235,20 @@ export function GmailAccountCard({
         </>
       ) : (
         // Empty state
-        <div className="empty-state" role="note">
-          {t('accounts_empty_gmail')}
-          <br />
-          <div style={{ marginTop: 'var(--space-3)' }}>
-            <StatefulButton
-              state={connectionState}
-              onClick={handleConnect}
-              idleText={t('accounts_connect_gmail')}
-              loadingText={getStageLabel(connectionStage)}
-              variant="primary"
-              disabled={disabled}
-              aria-label="Connect Gmail account"
-            />
+        <div className="empty-slot" role="note">
+          <div className="empty-slot__icon">
+            <Mail size={24} aria-hidden="true" />
           </div>
+          <p className="empty-slot__text">{t('accounts_empty_gmail')}</p>
+          <StatefulButton
+            state={connectionState}
+            onClick={handleConnect}
+            idleText={t('accounts_connect_gmail')}
+            loadingText={getStageLabel(connectionStage)}
+            variant="primary"
+            disabled={disabled}
+            aria-label="Connect Gmail account"
+          />
         </div>
       )}
     </AccountSection>
