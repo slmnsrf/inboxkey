@@ -251,14 +251,15 @@ export function OutlookAccountCard({
                   <div className="confirm-inline" role="alertdialog" aria-label={t('accounts_remove_confirm')}>
                     <p className="confirm-inline__text">{t('accounts_remove_confirm')}</p>
                     <div className="confirm-inline__actions">
-                      <StatefulButton
-                        state={connectionState}
+                      <button
+                        type="button"
+                        className="btn btn--danger-ghost btn--sm"
                         onClick={() => handleRemove(account.id)}
-                        idleText={t('accounts_remove_confirm_button')}
-                        loadingText={t('accounts_removing')}
-                        variant="danger"
-                        disabled={disabled}
-                      />
+                        disabled={disabled || connectionState === 'loading'}
+                        aria-busy={connectionState === 'loading'}
+                      >
+                        {connectionState === 'loading' ? t('accounts_removing') : t('accounts_remove_confirm_button')}
+                      </button>
                       <button
                         type="button"
                         className="btn btn--secondary btn--sm"
@@ -271,24 +272,24 @@ export function OutlookAccountCard({
                   </div>
                 ) : (
                   <>
-                    <StatefulButton
-                      state={isThisReconnecting ? connectionState : 'idle'}
+                    <button
+                      type="button"
+                      className="btn btn--secondary btn--sm"
                       onClick={() => handleReconnect(account.id)}
-                      idleText={t('accounts_reconnect')}
-                      loadingText={t('accounts_reconnecting')}
-                      variant="secondary"
                       disabled={disabled || connectionState === 'loading'}
                       aria-label={t('aria_reconnect_account', [account.email])}
-                    />
-                    <StatefulButton
-                      state="idle"
+                    >
+                      {isThisReconnecting && connectionState === 'loading' ? t('accounts_reconnecting') : t('accounts_reconnect')}
+                    </button>
+                    <button
+                      type="button"
+                      className="btn btn--danger-ghost btn--sm"
                       onClick={() => setConfirmingRemoveId(account.id)}
-                      idleText={t('accounts_remove_button')}
-                      loadingText={t('accounts_removing')}
-                      variant="danger"
                       disabled={disabled || connectionState === 'loading'}
                       aria-label={t('aria_remove_account', [account.email])}
-                    />
+                    >
+                      {t('accounts_remove_button')}
+                    </button>
                   </>
                 )
               }

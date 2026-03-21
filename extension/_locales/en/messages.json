@@ -98,6 +98,10 @@
     "message": "Open",
     "description": "Open link button"
   },
+  "button_open_link": {
+    "message": "Open Link",
+    "description": "Open magic link button with descriptive text"
+  },
   "button_opened": {
     "message": "Opened",
     "description": "Opened confirmation"
@@ -764,8 +768,8 @@
     "description": "IMAP accounts section title"
   },
   "accounts_imap_add": {
-    "message": "Add IMAP account",
-    "description": "Button to add IMAP account"
+    "message": "Add Account",
+    "description": "Button to add IMAP account in section header"
   },
   "accounts_imap_description": {
     "message": "For other email providers. Requires InboxBridge, a small open-source companion app that runs on this computer.",
@@ -774,6 +778,14 @@
   "accounts_imap_empty": {
     "message": "No IMAP accounts connected",
     "description": "Empty state for IMAP accounts"
+  },
+  "accounts_imap_retry": {
+    "message": "Retry",
+    "description": "Button to retry connection for errored IMAP account"
+  },
+  "accounts_imap_add_cta": {
+    "message": "Add IMAP Account",
+    "description": "Primary CTA button in IMAP empty state"
   },
   "accounts_outlook_counter": {
     "message": "$1 accounts",
@@ -836,8 +848,8 @@
     "description": "Account status: actively syncing"
   },
   "accounts_recent_title": {
-    "message": "Recent Activity",
-    "description": "Recent activity section title"
+    "message": "Recent Emails",
+    "description": "Recent emails section title"
   },
   "accounts_recent_description": {
     "message": "Recently synced mailboxes",
@@ -1162,6 +1174,10 @@
   "accounts_imap_generic_host": {
     "message": "IMAP account",
     "description": "Generic IMAP account label when server unknown"
+  },
+  "aria_reconnect_gmail": {
+    "message": "Reconnect Gmail account",
+    "description": "ARIA label for reconnect Gmail button"
   },
   "aria_connect_gmail": {
     "message": "Connect Gmail account",
@@ -1536,7 +1552,7 @@
     "description": "Success message after account removal"
   },
   "accounts_imap_heading": {
-    "message": "IMAP Accounts",
+    "message": "IMAP",
     "description": "IMAP accounts section heading"
   },
   "accounts_empty_imap": {
