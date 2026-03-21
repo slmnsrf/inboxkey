@@ -49,6 +49,7 @@ export function ImapAccountCard({
   const [removeState, setRemoveState] = useState<RemoveState>('idle')
   const [removeError, setRemoveError] = useState<string | null>(null)
   const [removingId, setRemovingId] = useState<string | null>(null)
+  const [confirmingRemoveId, setConfirmingRemoveId] = useState<string | null>(null)
   const [bridgeStatus, setBridgeStatus] = useState<'checking' | 'connected' | 'disconnected'>('checking')
 
   // Check InboxBridge status when IMAP accounts exist
@@ -76,10 +77,7 @@ export function ImapAccountCard({
   }, [accounts.length])
 
   const handleRemove = async (mailboxId: string) => {
-    if (!confirm(t('accounts_remove_confirm'))) {
-      return
-    }
-
+    setConfirmingRemoveId(null)
     setRemovingId(mailboxId)
     setRemoveState('loading')
     setRemoveError(null)
@@ -176,26 +174,50 @@ export function ImapAccountCard({
                   : undefined
               }
               actions={
-                <>
-                  <button
-                    type="button"
-                    className="btn btn--secondary"
-                    onClick={() => onReconnectImap(account.id)}
-                    disabled={disabled}
-                    aria-label={`Reconnect ${account.email}`}
-                  >
-                    {t('accounts_reconnect')}
-                  </button>
-                  <StatefulButton
-                    state={isThisRemoving ? removeState : 'idle'}
-                    onClick={() => handleRemove(account.id)}
-                    idleText={t('accounts_remove_button')}
-                    loadingText={t('accounts_removing')}
-                    variant="danger"
-                    disabled={disabled}
-                    aria-label={`Remove ${account.email}`}
-                  />
-                </>
+                confirmingRemoveId === account.id ? (
+                  <div className="confirm-inline" role="alertdialog" aria-label={t('accounts_remove_confirm')}>
+                    <p className="confirm-inline__text">{t('accounts_remove_confirm')}</p>
+                    <div className="confirm-inline__actions">
+                      <StatefulButton
+                        state={isThisRemoving ? removeState : 'idle'}
+                        onClick={() => handleRemove(account.id)}
+                        idleText={t('accounts_remove_confirm_button')}
+                        loadingText={t('accounts_removing')}
+                        variant="danger"
+                        disabled={disabled}
+                      />
+                      <button
+                        type="button"
+                        className="btn btn--secondary btn--sm"
+                        onClick={() => setConfirmingRemoveId(null)}
+                        disabled={disabled || removeState === 'loading'}
+                      >
+                        {t('accounts_remove_cancel')}
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <button
+                      type="button"
+                      className="btn btn--secondary"
+                      onClick={() => onReconnectImap(account.id)}
+                      disabled={disabled}
+                      aria-label={`Reconnect ${account.email}`}
+                    >
+                      {t('accounts_reconnect')}
+                    </button>
+                    <StatefulButton
+                      state="idle"
+                      onClick={() => setConfirmingRemoveId(account.id)}
+                      idleText={t('accounts_remove_button')}
+                      loadingText={t('accounts_removing')}
+                      variant="danger"
+                      disabled={disabled}
+                      aria-label={`Remove ${account.email}`}
+                    />
+                  </>
+                )
               }
             >
               {/* Host info as additional metadata */}

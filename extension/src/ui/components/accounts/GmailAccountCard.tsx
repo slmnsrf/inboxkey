@@ -48,6 +48,7 @@ export function GmailAccountCard({
   const [connectionStage, setConnectionStage] = useState<ConnectionStage>(null)
   const [connectionError, setConnectionError] = useState<string | null>(null)
   const [showLimitModal, setShowLimitModal] = useState(false)
+  const [confirmingDisconnect, setConfirmingDisconnect] = useState(false)
 
   // Calculate account status
   const { status, label: statusLabel } = useMemo(
@@ -111,12 +112,9 @@ export function GmailAccountCard({
   const handleDisconnect = async () => {
     if (!account) return
 
-    if (!confirm(t('accounts_remove_confirm'))) {
-      return
-    }
-
     setConnectionState('loading')
     setConnectionError(null)
+    setConfirmingDisconnect(false)
 
     try {
       const response = await chrome.runtime.sendMessage({
@@ -186,14 +184,38 @@ export function GmailAccountCard({
                 : undefined
             }
             actions={
-              <StatefulButton
-                state={connectionState}
-                onClick={handleDisconnect}
-                idleText={t('accounts_disconnect')}
-                loadingText={t('accounts_disconnecting')}
-                variant="danger"
-                disabled={disabled}
-              />
+              confirmingDisconnect ? (
+                <div className="confirm-inline" role="alertdialog" aria-label={t('accounts_remove_confirm')}>
+                  <p className="confirm-inline__text">{t('accounts_remove_confirm')}</p>
+                  <div className="confirm-inline__actions">
+                    <StatefulButton
+                      state={connectionState}
+                      onClick={handleDisconnect}
+                      idleText={t('accounts_remove_confirm_button')}
+                      loadingText={t('accounts_disconnecting')}
+                      variant="danger"
+                      disabled={disabled}
+                    />
+                    <button
+                      type="button"
+                      className="btn btn--secondary btn--sm"
+                      onClick={() => setConfirmingDisconnect(false)}
+                      disabled={disabled || connectionState === 'loading'}
+                    >
+                      {t('accounts_remove_cancel')}
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <StatefulButton
+                  state="idle"
+                  onClick={() => setConfirmingDisconnect(true)}
+                  idleText={t('accounts_disconnect')}
+                  loadingText={t('accounts_disconnecting')}
+                  variant="danger"
+                  disabled={disabled}
+                />
+              )
             }
           />
 
