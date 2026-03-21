@@ -47,6 +47,7 @@ export function AccountsPanel() {
 
   // IMAP modal state
   const [showAddImapModal, setShowAddImapModal] = useState(false)
+  const [reconnectingMailboxId, setReconnectingMailboxId] = useState<string | null>(null)
   const [imapPrefillData, setImapPrefillData] = useState<{
     email: string
     server: string
@@ -97,6 +98,7 @@ export function AccountsPanel() {
   }
 
   const handleAddImap = () => {
+    setReconnectingMailboxId(null)
     setImapPrefillData(undefined)
     setShowAddImapModal(true)
   }
@@ -109,6 +111,18 @@ export function AccountsPanel() {
     label: string
   }) => {
     try {
+      // If reconnecting, remove old mailbox first to avoid duplicate rejection
+      if (reconnectingMailboxId) {
+        const removeResponse = await chrome.runtime.sendMessage({
+          type: 'REMOVE_MAILBOX',
+          mailboxId: reconnectingMailboxId,
+        })
+        if (!removeResponse.success) {
+          throw new Error(removeResponse.error || t('toast_disconnect_failed'))
+        }
+        setReconnectingMailboxId(null)
+      }
+
       const response = await chrome.runtime.sendMessage({
         type: 'STORE_IMAP_MAILBOX',
         accountId: accountData.accountId,
@@ -135,7 +149,8 @@ export function AccountsPanel() {
     const mailbox = mailboxes.find((mb) => mb.id === mailboxId)
     if (!mailbox) return
 
-    // Use IMAP metadata from mailbox for reconnection
+    // Track which mailbox is being reconnected so handleImapAdded removes it first
+    setReconnectingMailboxId(mailboxId)
     setImapPrefillData({
       email: mailbox.email,
       server: mailbox.imapServer || '',
