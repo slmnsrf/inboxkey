@@ -2268,8 +2268,8 @@ textarea.input {
   display: block;
   padding: var(--space-4);
   border: 2px solid var(--color-border);
-  border-radius: var(--radius-md);
-  background: var(--surface-card);
+  border-radius: var(--radius-lg);
+  background: var(--surface-card-muted);
   cursor: pointer;
   transition: border-color var(--duration-normal) var(--easing-default),
               background var(--duration-normal) var(--easing-default),
@@ -2314,27 +2314,6 @@ textarea.input {
   gap: var(--space-2);
 }
 
-.automation-level-card__level {
-  margin-left: auto;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 22px;
-  height: 22px;
-  border-radius: var(--radius-full);
-  background: var(--surface-card);
-  border: 1px solid var(--color-border);
-  font-size: 11px;
-  font-weight: var(--font-weight-semibold);
-  color: var(--color-text-tertiary);
-}
-
-.automation-level-card--active .automation-level-card__level {
-  background: var(--color-primary);
-  border-color: var(--color-primary);
-  color: var(--color-text-inverse);
-}
-
 .automation-level-card__icon {
   display: flex;
   align-items: center;
@@ -2358,6 +2337,28 @@ textarea.input {
   color: var(--color-text-primary);
 }
 
+.automation-level-card__dots {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.automation-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: var(--radius-full);
+  background: var(--color-border);
+}
+
+.automation-dot--filled {
+  background: var(--color-text-tertiary);
+}
+
+.automation-level-card--active .automation-dot--filled {
+  background: var(--color-primary);
+}
+
 .automation-level-card__description {
   margin: 0;
   font-size: var(--font-size-sm);
@@ -2367,15 +2368,42 @@ textarea.input {
 
 /* Warning Banner */
 .automation-warning {
+  position: relative;
   display: flex;
   align-items: flex-start;
   gap: var(--space-3);
   padding: var(--space-3);
+  padding-right: var(--space-8);
   border-radius: var(--radius-md);
   background: color-mix(in srgb, var(--color-warning) 10%, var(--surface-card));
   border: 1px solid var(--color-warning);
   color: var(--color-text-primary);
   font-size: var(--font-size-sm);
+}
+
+.automation-warning__dismiss {
+  position: absolute;
+  top: var(--space-2);
+  right: var(--space-2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-1);
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-sm);
+  color: var(--color-text-tertiary);
+  cursor: pointer;
+  transition: color var(--duration-fast) var(--easing-default);
+}
+
+.automation-warning__dismiss:hover {
+  color: var(--color-text-primary);
+}
+
+.automation-warning__dismiss:focus-visible {
+  outline: var(--focus-ring-width) solid var(--color-primary);
+  outline-offset: var(--focus-ring-offset);
 }
 
 /* Data Management Card (inner content) */
@@ -2695,6 +2723,188 @@ textarea.input {
   margin: 0;
   font-size: var(--font-size-xs);
   color: var(--color-text-tertiary);
+}
+
+/* Custom Range Slider */
+.range-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 200px;
+  height: 6px;
+  border-radius: var(--radius-full);
+  background: var(--color-gray-200);
+  outline: none;
+  transition: background var(--duration-fast) var(--easing-default);
+}
+
+.range-slider::-webkit-slider-runnable-track {
+  height: 6px;
+  border-radius: var(--radius-full);
+  background: var(--color-gray-200);
+}
+
+.range-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  border-radius: var(--radius-full);
+  background: #fff;
+  border: 2px solid var(--color-primary);
+  box-shadow: var(--shadow-sm);
+  cursor: pointer;
+  margin-top: -7px;
+  transition: transform var(--duration-fast) var(--easing-default),
+              box-shadow var(--duration-fast) var(--easing-default);
+}
+
+.range-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.15);
+  box-shadow: var(--shadow-md);
+}
+
+.range-slider::-moz-range-track {
+  height: 6px;
+  border-radius: var(--radius-full);
+  background: var(--color-gray-200);
+  border: none;
+}
+
+.range-slider::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  border-radius: var(--radius-full);
+  background: #fff;
+  border: 2px solid var(--color-primary);
+  box-shadow: var(--shadow-sm);
+  cursor: pointer;
+  transition: transform var(--duration-fast) var(--easing-default),
+              box-shadow var(--duration-fast) var(--easing-default);
+}
+
+.range-slider::-moz-range-thumb:hover {
+  transform: scale(1.15);
+  box-shadow: var(--shadow-md);
+}
+
+.range-slider:focus-visible {
+  outline: var(--focus-ring-width) solid var(--color-primary);
+  outline-offset: var(--focus-ring-offset);
+}
+
+.range-slider:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.range-slider:disabled::-webkit-slider-thumb {
+  cursor: not-allowed;
+}
+
+.range-slider:disabled::-moz-range-thumb {
+  cursor: not-allowed;
+}
+
+.range-slider-output {
+  color: var(--color-primary);
+  font-weight: var(--font-weight-semibold);
+  font-size: var(--font-size-sm);
+}
+
+/* Session Chip Indicator Disabled State */
+.setting-row--disabled {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.setting-row__disabled-hint {
+  margin: 0;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+  font-style: italic;
+}
+
+/* Range Slider Control Layout */
+.range-slider-control {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--space-2);
+}
+
+/* ===========================
+   BLACKLIST CARD
+   =========================== */
+
+.blacklist-card {
+  background: var(--surface-card-muted);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-4);
+}
+
+.blacklist-card__row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.blacklist-card__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: var(--color-text-secondary);
+}
+
+.blacklist-card__info {
+  flex: 1;
+  min-width: 0;
+}
+
+.blacklist-card__label-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.blacklist-card__label {
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+}
+
+.blacklist-card__count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--badge-bg);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  padding: 1px 8px;
+  border-radius: var(--radius-full);
+  color: var(--color-primary);
+}
+
+.blacklist-card__description {
+  margin: var(--space-1) 0 0;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+.blacklist-card__action {
+  flex-shrink: 0;
+}
+
+/* Blacklist Empty State */
+.blacklist-card--empty {
+  border-style: dashed;
+}
+
+.blacklist-card__empty-text {
+  margin: var(--space-1) 0 0;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-tertiary);
+  font-style: italic;
 }
 
 /* ===========================
