@@ -848,9 +848,9 @@ function handleSetDomainPreference(msg: any, sendResponse: (response: any) => vo
 function handleResetSettings(sendResponse: (response: any) => void) {
   ;(async () => {
     try {
-      const storage = await StorageFactory.create()
       const { DEFAULT_SETTINGS } = await import("@/lib/storage/schema")
-      await storage.updateSettings({ ...DEFAULT_SETTINGS })
+      // Full replace (not merge) to clear optional fields like extendedButtonDetection
+      await chrome.storage.local.set({ settings: { ...DEFAULT_SETTINGS } })
 
       console.log("[Background] Settings reset to defaults")
       sendResponse({ success: true })

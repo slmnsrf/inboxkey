@@ -23,10 +23,14 @@ export function AdvancedSettings() {
 
   const handleResetDefaults = useCallback(async () => {
     try {
-      await chrome.runtime.sendMessage({ type: 'RESET_SETTINGS' })
+      const response = await chrome.runtime.sendMessage({ type: 'RESET_SETTINGS' })
+      if (!response?.success) {
+        showToast(t('toast_settings_reset_failed'), 'error')
+        setConfirmingReset(false)
+        return
+      }
       setConfirmingReset(false)
       showToast(t('toast_settings_reset'), 'success')
-      // Reload the page after a brief delay so the user sees the success toast
       setTimeout(() => window.location.reload(), 1000)
     } catch {
       showToast(t('toast_settings_reset_failed'), 'error')

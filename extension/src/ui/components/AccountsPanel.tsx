@@ -123,10 +123,11 @@ export function AccountsPanel() {
         await loadRecentItems()
         setShowAddImapModal(false)
       } else {
-        console.error('[AccountsPanel] Failed to add IMAP account:', response.error)
+        throw new Error(response.error || t('toast_connect_failed'))
       }
     } catch (error) {
       console.error('[AccountsPanel] Failed to add IMAP account:', error)
+      throw error
     }
   }
 

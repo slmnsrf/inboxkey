@@ -1235,6 +1235,10 @@
     "message": "Chrome provides a built-in sign-in API that extensions use to access Gmail. This API only allows one Google account per browser profile. It is a browser-level restriction, not a choice.\n\nTo support multiple accounts, a backend server would be needed to handle Google's authentication. That would mean your email data passes through someone else's server. That is not something this extension will ever do.\n\nIf Google changes their API to support multiple accounts without a server (like Microsoft already does for Outlook), this limitation will be removed.\n\nIn the meantime, multiple Gmail accounts can be used by creating separate Chrome profiles, or by connecting additional accounts via IMAP through InboxBridge.",
     "description": "Detailed explanation of Gmail single-account technical limitation"
   },
+  "accounts_gmail_reconnect_mismatch": {
+    "message": "The signed-in Google account does not match the connected account. Please sign in with the correct account to reconnect.",
+    "description": "Error when Gmail reconnect authenticates with a different email"
+  },
   "accounts_empty_gmail": {
     "message": "Verification codes from Gmail can be detected and filled automatically. Nothing leaves this device.",
     "description": "Gmail empty/disconnected state with trust signal"

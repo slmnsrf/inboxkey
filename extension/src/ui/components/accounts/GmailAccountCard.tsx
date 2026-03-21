@@ -89,8 +89,13 @@ export function GmailAccountCard({
       // 4. Save
       setConnectionStage('saving')
 
-      // Gmail single-account: remove existing mailbox before re-storing
+      // Gmail single-account reconnect: verify email matches before replacing
       if (account) {
+        if (email !== account.email) {
+          setConnectionState('idle')
+          setConnectionError(t('accounts_gmail_reconnect_mismatch'))
+          return
+        }
         const removeResponse = await chrome.runtime.sendMessage({
           type: 'REMOVE_MAILBOX',
           mailboxId: account.id,
