@@ -653,6 +653,9 @@ body,
   }
 }
 
+.spin {
+  animation: spin 1s linear infinite;
+}
 
 .btn-gmail {
   background: var(--color-gmail);
