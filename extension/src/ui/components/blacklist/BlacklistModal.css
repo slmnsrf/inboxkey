@@ -11,6 +11,14 @@
   gap: var(--space-4, 16px);
 }
 
+/* Subtitle */
+.blacklist-modal-subtitle {
+  margin: 0;
+  font-size: var(--font-size-sm, 14px);
+  color: var(--color-text-secondary, #636366);
+  line-height: 1.5;
+}
+
 /* Tab Navigation */
 .blacklist-tabs {
   display: flex;
