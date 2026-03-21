@@ -19,7 +19,7 @@ import { AdvancedSettings } from './ui/components/AdvancedSettings'
 import { BuyMeACoffeeButton } from './ui/components/BuyMeACoffeeButton'
 import { BlacklistManageButton } from './ui/components/blacklist/BlacklistManageButton'
 import { BlacklistModal } from './ui/components/blacklist/BlacklistModal'
-import { KeyRound, ShieldCheck, EyeOff, Code2 } from 'lucide-react'
+import { KeyRound, ShieldCheck, EyeOff, Code2, Zap, MessageSquare, Palette, Globe, Database, Settings as SettingsIcon } from 'lucide-react'
 import { t } from './lib/i18n'
 import './options.css'
 import './ui/components/security/SecurityInfo.css'
@@ -95,6 +95,7 @@ function OptionsApp() {
                     rel="noreferrer"
                     aria-label={t('settings_view_source_aria')}
                   >
+                    <Code2 size={14} aria-hidden="true" />
                     {t('settings_view_source')}
                   </a>
                   <BuyMeACoffeeButton
@@ -141,12 +142,84 @@ function OptionsApp() {
                   className="tab-panel"
                 >
                   <section className="section settings-section">
-                    <SessionChipSettings />
-                    <AutomationSettings />
-                    <AppearanceSettings />
-                    <DataManagement />
-                    <BlacklistManageButton onClick={() => setIsBlacklistModalOpen(true)} />
-                    <AdvancedSettings />
+                    {/* BEHAVIOR */}
+                    <div className="section-label">{t('settings_category_behavior')}</div>
+                    <div className="settings-card">
+                      <div className="settings-card__header">
+                        <h2 className="settings-card__title">
+                          <span className="settings-card__title-icon" aria-hidden="true"><Zap size={16} /></span>
+                          {t('automation_heading')}
+                        </h2>
+                        <p className="settings-card__description">{t('automation_description')}</p>
+                      </div>
+                      <div className="settings-card__body">
+                        <AutomationSettings />
+                      </div>
+                    </div>
+
+                    <div className="settings-card">
+                      <div className="settings-card__header">
+                        <h2 className="settings-card__title">
+                          <span className="settings-card__title-icon" aria-hidden="true"><MessageSquare size={16} /></span>
+                          {t('settings_session_chips_heading')}
+                        </h2>
+                        <p className="settings-card__description">{t('settings_session_chips_description')}</p>
+                      </div>
+                      <div className="settings-card__body">
+                        <SessionChipSettings />
+                      </div>
+                    </div>
+
+                    {/* APPEARANCE */}
+                    <div className="section-label">{t('settings_category_appearance')}</div>
+                    <div className="settings-card">
+                      <div className="settings-card__header">
+                        <h2 className="settings-card__title">
+                          <span className="settings-card__title-icon" aria-hidden="true"><Palette size={16} /></span>
+                          {t('settings_appearance_heading')}
+                        </h2>
+                        <p className="settings-card__description">{t('settings_appearance_description')}</p>
+                      </div>
+                      <div className="settings-card__body">
+                        <AppearanceSettings />
+                      </div>
+                    </div>
+
+                    {/* SITES */}
+                    <div className="section-label">{t('settings_category_sites')}</div>
+                    <div className="settings-card">
+                      <div className="settings-card__header">
+                        <h2 className="settings-card__title">
+                          <span className="settings-card__title-icon" aria-hidden="true"><Globe size={16} /></span>
+                          {t('settings_blacklist_card_title')}
+                        </h2>
+                        <p className="settings-card__description">{t('settings_blacklist_card_description')}</p>
+                      </div>
+                      <div className="settings-card__body">
+                        <BlacklistManageButton onClick={() => setIsBlacklistModalOpen(true)} />
+                      </div>
+                    </div>
+
+                    {/* DATA */}
+                    <div className="section-label">{t('settings_category_data')}</div>
+                    <div className="settings-card">
+                      <div className="settings-card__header">
+                        <h2 className="settings-card__title">
+                          <span className="settings-card__title-icon" aria-hidden="true"><Database size={16} /></span>
+                          {t('data_management_heading')}
+                        </h2>
+                        <p className="settings-card__description">{t('data_management_description')}</p>
+                      </div>
+                      <div className="settings-card__body">
+                        <DataManagement />
+                      </div>
+                    </div>
+
+                    {/* ADVANCED */}
+                    <div className="section-label">{t('settings_category_advanced')}</div>
+                    <div className="settings-card">
+                      <AdvancedSettings />
+                    </div>
                   </section>
                 </div>
 

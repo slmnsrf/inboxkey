@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react'
 import { useToast } from '@/ui/contexts/ToastContext'
 import { t } from '@/lib/i18n'
 import type { AutomationLevel } from '@/lib/storage/schema'
-import { LockIcon, InfoIcon, CheckIcon } from '@/ui/components/icons/StatusIcons'
+import { Lock, ClipboardCopy, TextCursorInput, Bot } from 'lucide-react'
+import { InfoIcon } from '@/ui/components/icons/StatusIcons'
 
 interface AutomationOption {
   value: AutomationLevel
@@ -14,25 +15,25 @@ interface AutomationOption {
 const AUTOMATION_LEVELS: AutomationOption[] = [
   {
     value: 'manual',
-    icon: <LockIcon size={20} />,
+    icon: <Lock size={16} />,
     titleKey: 'automation_manual_title',
     descriptionKey: 'automation_manual_description',
   },
   {
     value: 'clipboard',
-    icon: <InfoIcon size={20} />,
+    icon: <ClipboardCopy size={16} />,
     titleKey: 'automation_clipboard_title',
     descriptionKey: 'automation_clipboard_description',
   },
   {
     value: 'autofill',
-    icon: <CheckIcon size={20} />,
+    icon: <TextCursorInput size={16} />,
     titleKey: 'automation_autofill_title',
     descriptionKey: 'automation_autofill_description',
   },
   {
     value: 'full-automation',
-    icon: <CheckIcon size={20} />,
+    icon: <Bot size={16} />,
     titleKey: 'automation_full_title',
     descriptionKey: 'automation_full_description',
   },
@@ -93,17 +94,10 @@ export function AutomationSettings() {
 
   return (
     <div className="automation-settings-card">
-      <div className="automation-settings-card__header">
-        <h3 id="automation-heading">{t('automation_heading')}</h3>
-        <p className="automation-settings-card__description">
-          {t('automation_description')}
-        </p>
-      </div>
-
       <div
         className="automation-level-selector"
         role="radiogroup"
-        aria-labelledby="automation-heading"
+        aria-label={t('automation_heading')}
         aria-describedby="automation-help"
       >
         {AUTOMATION_LEVELS.map((option) => {

@@ -95,15 +95,8 @@ export function SessionChipSettings() {
 
   return (
     <div className="session-chip-settings-card">
-      <div className="session-chip-settings-card__header">
-        <h3 id="session-chips-heading">{t('settings_session_chips_heading')}</h3>
-        <p className="session-chip-settings-card__description">
-          {t('settings_session_chips_description')}
-        </p>
-      </div>
-
       <div className="settings-card__content">
-        <div className="setting-row" aria-labelledby="session-chips-heading">
+        <div className="setting-row" aria-label={t('settings_session_chips_heading')}>
           <div className="setting-row__info">
             <label htmlFor="show-session-chips" className="setting-row__label">
               {t('settings_session_chips_toggle_label')}

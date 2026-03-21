@@ -450,7 +450,7 @@
   },
 
   "footer_local_only": {
-    "message": "Local-only. No servers.",
+    "message": "Local-only. No servers. Open source.",
     "description": "Footer: local-only message"
   },
   "footer_buy_coffee": {
@@ -630,6 +630,10 @@
   "settings_advanced_section": {
     "message": "Advanced",
     "description": "Advanced settings section heading"
+  },
+  "settings_advanced_section_title": {
+    "message": "Advanced Settings",
+    "description": "Advanced settings toggle button label"
   },
   "settings_advanced_default_enabled": {
     "message": "Active on all sites by default",
@@ -867,12 +871,40 @@
     "message": "Loading profile...",
     "description": "Loading profile status"
   },
-  "settings_appearance_heading": {
+  "settings_category_behavior": {
+    "message": "Behavior",
+    "description": "Settings category label for behavior section"
+  },
+  "settings_category_appearance": {
     "message": "Appearance",
+    "description": "Settings category label for appearance section"
+  },
+  "settings_category_sites": {
+    "message": "Sites",
+    "description": "Settings category label for sites section"
+  },
+  "settings_category_data": {
+    "message": "Data",
+    "description": "Settings category label for data section"
+  },
+  "settings_category_advanced": {
+    "message": "Advanced",
+    "description": "Settings category label for advanced section"
+  },
+  "settings_blacklist_card_title": {
+    "message": "Ignored Sites",
+    "description": "Ignored sites card title in settings"
+  },
+  "settings_blacklist_card_description": {
+    "message": "InboxKey can be turned off for specific websites.",
+    "description": "Ignored sites card description in settings"
+  },
+  "settings_appearance_heading": {
+    "message": "Theme",
     "description": "Appearance settings heading"
   },
   "settings_appearance_description": {
-    "message": "Customize the look and feel",
+    "message": "System matches your operating system preference automatically.",
     "description": "Appearance settings description"
   },
   "settings_theme_dark": {
@@ -888,8 +920,12 @@
     "description": "System theme option"
   },
   "settings_theme_system_status": {
-    "message": "Follows your system settings",
+    "message": "Currently using: System ($1 detected)",
     "description": "System theme status description"
+  },
+  "settings_theme_selected": {
+    "message": "Currently using: $1",
+    "description": "Theme selected status"
   },
   "settings_appearance_hint": {
     "message": "System matches your operating system preference automatically.",
@@ -982,6 +1018,38 @@
   "data_cancel": {
     "message": "Cancel",
     "description": "Cancel button for inline confirmation"
+  },
+  "data_reset_defaults_title": {
+    "message": "Reset to Defaults",
+    "description": "Reset defaults card title"
+  },
+  "data_reset_defaults_description": {
+    "message": "All settings are reverted to their original values. Accounts and saved codes are not affected.",
+    "description": "Reset defaults card description"
+  },
+  "data_reset_defaults_button": {
+    "message": "Reset Settings",
+    "description": "Reset defaults button label"
+  },
+  "data_reset_defaults_confirm_label": {
+    "message": "Confirm resetting settings",
+    "description": "Reset defaults confirm dialog label"
+  },
+  "data_reset_defaults_confirm_message": {
+    "message": "All settings will be reverted to defaults. Accounts and saved codes are not affected.",
+    "description": "Reset defaults confirm message"
+  },
+  "data_reset_defaults_yes": {
+    "message": "Yes, reset",
+    "description": "Reset defaults confirm button"
+  },
+  "toast_settings_reset": {
+    "message": "Settings reset to defaults",
+    "description": "Toast: settings reset successfully"
+  },
+  "toast_settings_reset_failed": {
+    "message": "Failed to reset settings",
+    "description": "Toast: settings reset error"
   },
   "about_version_line": {
     "message": "Version $1",
@@ -1152,7 +1220,7 @@
     "description": "Outlook empty/disconnected state with trust signal"
   },
   "automation_heading": {
-    "message": "Automation",
+    "message": "Automation Level",
     "description": "Automation settings heading"
   },
   "automation_description": {
@@ -1168,7 +1236,7 @@
     "description": "Manual automation description"
   },
   "automation_clipboard_title": {
-    "message": "Clipboard",
+    "message": "Copy to Clipboard",
     "description": "Clipboard automation level title"
   },
   "automation_clipboard_description": {
