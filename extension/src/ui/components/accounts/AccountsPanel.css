@@ -681,6 +681,18 @@
   min-height: 28px;
 }
 
+.btn--ghost {
+  background: transparent;
+  color: var(--color-text-secondary);
+  border: 1px solid transparent;
+  padding: var(--space-1);
+}
+
+.btn--ghost:hover {
+  background: var(--surface-card-muted);
+  color: var(--color-text-primary);
+}
+
 /* Stateful Button States */
 .btn--loading {
   position: relative;

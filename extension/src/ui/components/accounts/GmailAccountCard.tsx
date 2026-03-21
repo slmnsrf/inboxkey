@@ -192,14 +192,15 @@ export function GmailAccountCard({
                 <div className="confirm-inline" role="alertdialog" aria-label={t('accounts_remove_confirm')}>
                   <p className="confirm-inline__text">{t('accounts_remove_confirm')}</p>
                   <div className="confirm-inline__actions">
-                    <StatefulButton
-                      state={connectionState}
+                    <button
+                      type="button"
+                      className="btn btn--danger-ghost btn--sm"
                       onClick={handleDisconnect}
-                      idleText={t('accounts_remove_confirm_button')}
-                      loadingText={t('accounts_disconnecting')}
-                      variant="danger"
-                      disabled={disabled}
-                    />
+                      disabled={disabled || connectionState === 'loading'}
+                      aria-busy={connectionState === 'loading'}
+                    >
+                      {connectionState === 'loading' ? t('accounts_disconnecting') : t('accounts_remove_confirm_button')}
+                    </button>
                     <button
                       type="button"
                       className="btn btn--secondary btn--sm"
@@ -211,14 +212,25 @@ export function GmailAccountCard({
                   </div>
                 </div>
               ) : (
-                <StatefulButton
-                  state="idle"
-                  onClick={() => setConfirmingDisconnect(true)}
-                  idleText={t('accounts_disconnect')}
-                  loadingText={t('accounts_disconnecting')}
-                  variant="danger"
-                  disabled={disabled}
-                />
+                <>
+                  <button
+                    type="button"
+                    className="btn btn--secondary btn--sm"
+                    onClick={handleConnect}
+                    disabled={disabled || connectionState === 'loading'}
+                    aria-label={t('aria_reconnect_gmail')}
+                  >
+                    {t('accounts_reconnect')}
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn--danger-ghost btn--sm"
+                    onClick={() => setConfirmingDisconnect(true)}
+                    disabled={disabled}
+                  >
+                    {t('accounts_disconnect')}
+                  </button>
+                </>
               )
             }
           />
