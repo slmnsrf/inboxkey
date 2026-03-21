@@ -207,15 +207,22 @@ export function OutlookAccountCard({
       feedbackType="error"
       feedbackAutoDismiss={connectionError !== t('toast_oauth_cancelled')}
       actionButton={
-        <StatefulButton
-          state={connectionState}
-          onClick={handleAdd}
-          idleText={t('accounts_connect_outlook')}
-          loadingText={getStageLabel(connectionStage)}
-          variant="primary"
-          disabled={disabled}
-          aria-label={t('aria_add_outlook_account')}
-        />
+        connectionState === 'loading' && !reconnectingId ? (
+          <div className="connecting-status" role="status" aria-live="polite">
+            <span className="connecting-spinner" aria-hidden="true" />
+            <span>{getStageLabel(connectionStage)}</span>
+          </div>
+        ) : (
+          <StatefulButton
+            state={reconnectingId ? 'idle' : connectionState}
+            onClick={handleAdd}
+            idleText={t('accounts_connect_outlook')}
+            loadingText={getStageLabel(connectionStage)}
+            variant="primary"
+            disabled={disabled}
+            aria-label={t('aria_add_outlook_account')}
+          />
+        )
       }
     >
       {accounts.length > 0 ? (
@@ -302,6 +309,12 @@ export function OutlookAccountCard({
             <Mail size={24} aria-hidden="true" />
           </div>
           <p className="empty-slot__text">{t('accounts_empty_outlook')}</p>
+          {connectionState === 'loading' && !reconnectingId && (
+            <div className="connecting-status" role="status" aria-live="polite">
+              <span className="connecting-spinner" aria-hidden="true" />
+              <span>{getStageLabel(connectionStage)}</span>
+            </div>
+          )}
         </div>
       )}
     </AccountSection>

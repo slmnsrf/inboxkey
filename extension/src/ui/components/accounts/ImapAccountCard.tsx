@@ -248,6 +248,13 @@ export function ImapAccountCard({
                   {displayLabel}
                 </span>
               )}
+              {account.lastSyncError && (
+                <div className="imap-error-detail">
+                  <span className="imap-error-detail__message">
+                    {account.lastSyncError}
+                  </span>
+                </div>
+              )}
             </AccountRow>
           )
         })
