@@ -1,268 +1,363 @@
 /**
- * Field Feedback CSS Generator
+ * Field Feedback Shadow DOM CSS
  *
- * Generates the full CSS string for shimmer borders, tooltips, and inline text
- * injected by the content script into host pages. All selectors are prefixed
- * with `inboxkey-` to avoid collisions.
+ * Returns the full CSS string injected into each overlay's closed Shadow DOM.
+ * All styles use :host() attribute selectors driven by the FieldOverlay class.
+ *
+ * Host attributes consumed:
+ *   data-state="idle|listening|filled|copied|timeout"
+ *   data-theme="dark"
+ *   data-visible="false"
+ *   data-compact="true"
+ *   data-text-pos="above|below"
+ *   data-focused="true"
  */
 
-import {
-  SHIMMER_BLUE,
-  SHIMMER_GREEN,
-  SHIMMER_RED,
-  FONT_FAMILY_UI,
-  DURATION_NORMAL
-} from '@/lib/design-tokens'
+import { FONT_FAMILY_UI } from '@/lib/design-tokens'
 
-export function generateFieldFeedbackCSS(theme: 'light' | 'dark'): string {
-  const blue = SHIMMER_BLUE[theme]
-  const green = SHIMMER_GREEN[theme]
-  const red = SHIMMER_RED[theme]
+// InboxKey brand colors (per spec: primary, success, warning)
+const PRIMARY = '0, 122, 255'    // rgb(0,122,255)  -- InboxKey primary
+const SUCCESS = '16, 185, 129'   // rgb(16,185,129)  -- filled/copied
+const WARNING = '245, 158, 11'   // rgb(245,158,11)  -- timeout (amber, not red)
 
+/**
+ * Generate the Shadow DOM CSS string.
+ * Called once per overlay instance when the shadow root is created.
+ */
+export function generateShadowCSS(): string {
   return `
-/* --- @property for animatable conic-gradient angle --- */
-@property --inboxkey-shimmer-angle {
-  syntax: "<angle>";
-  initial-value: 0deg;
-  inherits: false;
+/* ================================================================
+   HOST ELEMENT
+   ================================================================ */
+
+:host {
+  all: initial;
+  position: fixed;
+  pointer-events: none;
+  z-index: 2147483646;
+  display: block;
 }
 
-/* --- Keyframes --- */
-@keyframes inboxkey-shimmer-rotate {
-  0%   { --inboxkey-shimmer-angle: 0deg; }
-  100% { --inboxkey-shimmer-angle: 360deg; }
+/* ── Scroll visibility gating ── */
+:host([data-visible="false"]) {
+  opacity: 0 !important;
 }
 
-@keyframes inboxkey-shimmer-sweep {
-  0%   { --inboxkey-shimmer-angle: 0deg; }
-  100% { --inboxkey-shimmer-angle: 360deg; }
+/* ── Entrance animation ── */
+:host([data-state="idle"]) {
+  opacity: 0;
+  transform: scale(0.98);
 }
 
-/* --- Shimmer Wrap (field wrapper) --- */
-.inboxkey-shimmer-wrap {
-  position: relative;
-  display: inline-block;
-  border-radius: inherit;
+:host(:not([data-state="idle"])) {
+  opacity: 1;
+  transform: scale(1);
+  transition: opacity 0.3s ease, transform 0.3s ease;
 }
 
-/* Shared pseudo-element base for all states */
-.inboxkey-shimmer-wrap--listening::before,
-.inboxkey-shimmer-wrap--filled::before,
-.inboxkey-shimmer-wrap--copied::before,
-.inboxkey-shimmer-wrap--timeout::before {
-  content: "";
+/* ================================================================
+   BORDER RING
+   ================================================================ */
+
+.border-ring {
   position: absolute;
-  inset: -2px;
+  inset: calc(-1 * var(--border-width, 2.5px) - 0.5px);
   border-radius: inherit;
   pointer-events: none;
-  z-index: 1;
+  opacity: 0;
+  transition: opacity 0.3s ease, inset 0.2s ease;
+}
+
+.border-ring::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: var(--border-width, 2.5px);
   mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
   mask-composite: exclude;
   -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
   -webkit-mask-composite: xor;
-  padding: 2px;
-}
-
-/* Listening: rotating blue conic-gradient, 3s loop */
-.inboxkey-shimmer-wrap--listening::before {
+  /* Default conic gradient (overridden per state) */
   background: conic-gradient(
-    from var(--inboxkey-shimmer-angle),
+    from var(--inboxkey-angle, 0deg),
     transparent 0%,
-    rgba(${blue}, 0.6) 25%,
-    rgba(${blue}, 0.9) 50%,
-    rgba(${blue}, 0.6) 75%,
+    rgba(${PRIMARY}, 0.3) 25%,
+    rgba(${PRIMARY}, 0.5) 50%,
+    rgba(${PRIMARY}, 0.3) 75%,
     transparent 100%
   );
-  animation: inboxkey-shimmer-rotate 3s linear infinite;
 }
 
-/* Filled: one-shot green sweep */
-.inboxkey-shimmer-wrap--filled::before {
-  background: conic-gradient(
-    from var(--inboxkey-shimmer-angle),
-    transparent 0%,
-    rgba(${green}, 0.7) 50%,
-    transparent 100%
-  );
-  animation: inboxkey-shimmer-sweep 2s ease-out 1 forwards;
+/* ── Focus: expand inset for breathing room ── */
+:host([data-focused="true"]) .border-ring {
+  inset: -5px;
 }
 
-/* Copied: slightly dimmer green sweep */
-.inboxkey-shimmer-wrap--copied::before {
-  background: conic-gradient(
-    from var(--inboxkey-shimmer-angle),
-    transparent 0%,
-    rgba(${green}, 0.5) 50%,
-    transparent 100%
-  );
-  animation: inboxkey-shimmer-sweep 2s ease-out 1 forwards;
-}
-
-/* Timeout: one-shot red sweep */
-.inboxkey-shimmer-wrap--timeout::before {
-  background: conic-gradient(
-    from var(--inboxkey-shimmer-angle),
-    transparent 0%,
-    rgba(${red}, 0.7) 50%,
-    transparent 100%
-  );
-  animation: inboxkey-shimmer-sweep 1.5s ease-out 1 forwards;
-}
-
-/* --- State border colors on wrapped input --- */
-.inboxkey-shimmer-wrap--listening > input { border-color: rgba(${blue}, 0.4); }
-.inboxkey-shimmer-wrap--filled > input    { border-color: rgba(${green}, 0.4); }
-.inboxkey-shimmer-wrap--copied > input    { border-color: rgba(${green}, 0.3); }
-.inboxkey-shimmer-wrap--timeout > input   { border-color: rgba(${red}, 0.4); }
-
-/* --- Tooltip --- */
-.inboxkey-field-tooltip {
-  position: absolute;
-  top: -8px;
-  right: 0;
-  transform: translateY(-100%) scale(0.95);
-  opacity: 0;
-  pointer-events: none;
-  z-index: 2147483647;
-  padding: 6px 10px;
-  border-radius: 6px;
-  font-family: ${FONT_FAMILY_UI};
-  font-size: 12px;
-  line-height: 1.4;
-  white-space: nowrap;
-  color: #fff;
-  background: rgba(${blue}, 0.9);
-  transition: opacity ${DURATION_NORMAL}ms ease, transform ${DURATION_NORMAL}ms ease;
-}
-
-/* Arrow pseudo-element */
-.inboxkey-field-tooltip::after {
-  content: "";
-  position: absolute;
-  bottom: -4px;
-  right: 12px;
-  width: 8px;
-  height: 8px;
-  background: inherit;
-  transform: rotate(45deg);
-  border-radius: 1px;
-}
-
-/* Show on hover */
-.inboxkey-shimmer-wrap:hover .inboxkey-field-tooltip {
-  opacity: 1;
-  transform: translateY(-100%) scale(1);
-  pointer-events: auto;
-}
-
-/* State-specific tooltip backgrounds */
-.inboxkey-shimmer-wrap--filled .inboxkey-field-tooltip    { background: rgba(${green}, 0.9); }
-.inboxkey-shimmer-wrap--copied .inboxkey-field-tooltip    { background: rgba(${green}, 0.85); }
-.inboxkey-shimmer-wrap--timeout .inboxkey-field-tooltip   { background: rgba(${red}, 0.9); }
-
-/* --- Dismiss button --- */
-.inboxkey-field-tooltip-dismiss {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  margin-left: 6px;
-  padding: 0;
-  width: 16px;
-  height: 16px;
-  border: none;
-  background: transparent;
-  color: inherit;
-  opacity: 0.7;
-  cursor: pointer;
-  font-size: 14px;
-  line-height: 1;
-  vertical-align: middle;
-}
-
-.inboxkey-field-tooltip-dismiss:hover {
-  opacity: 1;
-}
-
-/* Hide dismiss in non-listening states */
-.inboxkey-shimmer-wrap--filled .inboxkey-field-tooltip-dismiss,
-.inboxkey-shimmer-wrap--copied .inboxkey-field-tooltip-dismiss,
-.inboxkey-shimmer-wrap--timeout .inboxkey-field-tooltip-dismiss {
+/* ── Compact: hide status pill on narrow inputs ── */
+:host([data-compact="true"]) .status-text {
   display: none;
 }
 
-/* --- Inline text --- */
-.inboxkey-inline-text {
+/* ================================================================
+   IDLE STATE
+   ================================================================ */
+
+:host([data-state="idle"]) .border-ring {
+  opacity: 0;
+}
+
+/* ================================================================
+   LISTENING STATE
+   30% arc, 4.5s rotation
+   ================================================================ */
+
+:host([data-state="listening"]) .border-ring {
+  opacity: 1;
+}
+
+:host([data-state="listening"]) .border-ring::before {
+  background: conic-gradient(
+    from var(--inboxkey-angle, 0deg),
+    transparent 0%,
+    rgba(${PRIMARY}, 0.3) 15%,
+    rgba(${PRIMARY}, 0.5) 30%,
+    rgba(${PRIMARY}, 0.3) 45%,
+    transparent 60%,
+    transparent 100%
+  );
+  animation: shimmer-rotate 4.5s linear infinite;
+  animation-delay: var(--stagger-delay, 0ms);
+}
+
+/* ================================================================
+   FILLED STATE
+   Complete sweep (colorblind motion cue: full ring)
+   ================================================================ */
+
+:host([data-state="filled"]) .border-ring {
+  opacity: 1;
+}
+
+:host([data-state="filled"]) .border-ring::before {
+  background: conic-gradient(
+    from var(--inboxkey-angle, 0deg),
+    transparent 0%,
+    rgba(${SUCCESS}, 0.35) 30%,
+    rgba(${SUCCESS}, 0.55) 50%,
+    rgba(${SUCCESS}, 0.35) 70%,
+    transparent 100%
+  );
+  animation: shimmer-sweep 1.8s ease-out 1 forwards;
+  animation-delay: var(--stagger-delay, 0ms);
+}
+
+/* ================================================================
+   COPIED STATE
+   Dimmer green, fade ring
+   ================================================================ */
+
+:host([data-state="copied"]) .border-ring {
+  opacity: 1;
+}
+
+:host([data-state="copied"]) .border-ring::before {
+  background: rgba(${SUCCESS}, 0.25);
+  animation: shimmer-fade-ring 0.6s ease forwards;
+  animation-delay: var(--stagger-delay, 0ms);
+}
+
+/* ================================================================
+   TIMEOUT STATE
+   Amber (warning, not error) - pulse twice (colorblind cue)
+   ================================================================ */
+
+:host([data-state="timeout"]) .border-ring {
+  opacity: 1;
+}
+
+:host([data-state="timeout"]) .border-ring::before {
+  background: rgba(${WARNING}, 0.3);
+  animation: shimmer-timeout-pulse 0.6s ease 2;
+  animation-delay: var(--stagger-delay, 0ms);
+}
+
+/* ================================================================
+   STATUS TEXT (frosted pill)
+   ================================================================ */
+
+.status-text {
   position: absolute;
+  top: -22px;
   right: 0;
-  top: -18px;
+  display: inline-flex;
+  align-items: center;
   font-family: ${FONT_FAMILY_UI};
   font-size: 10px;
+  font-weight: 500;
   line-height: 1;
-  pointer-events: none;
-  opacity: 0;
-  transition: opacity ${DURATION_NORMAL}ms ease;
-  color: rgba(${blue}, 0.8);
   white-space: nowrap;
-  text-align: right;
+  opacity: 0;
+  transition: opacity 0.3s ease, transform 0.3s ease;
+  transform: translateY(4px);
+  pointer-events: none;
+  background: rgba(255, 255, 255, 0.92);
+  padding: 2px 8px;
+  border-radius: 4px;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
 }
 
-.inboxkey-shimmer-wrap--listening .inboxkey-inline-text  { color: rgba(${blue}, 0.8); opacity: 0.8; }
-.inboxkey-shimmer-wrap--filled .inboxkey-inline-text     { color: rgba(${green}, 0.8); opacity: 1; }
-.inboxkey-shimmer-wrap--copied .inboxkey-inline-text     { color: rgba(${green}, 0.7); opacity: 1; }
-.inboxkey-shimmer-wrap--timeout .inboxkey-inline-text    { color: rgba(${red}, 0.8); opacity: 1; }
-
-/* --- Fallback for browsers without @property support --- */
-/* @property is needed for animatable conic-gradient angle.
-   Without it, var(--inboxkey-shimmer-angle) resolves to the
-   initial-value (0deg) and stays static. Detect this by checking
-   if the custom property resolves (inherits: false only works
-   with @property). Fallback uses a sliding linear-gradient. */
-@supports not (background: conic-gradient(from 0deg, red, blue)) {
-  .inboxkey-shimmer-wrap--listening::before {
-    background: linear-gradient(
-      90deg,
-      transparent 0%,
-      rgba(${blue}, 0.6) 50%,
-      transparent 100%
-    );
-    background-size: 200% 100%;
-    animation: inboxkey-shimmer-slide 3s linear infinite;
-  }
-
-  .inboxkey-shimmer-wrap--filled::before {
-    background: rgba(${green}, 0.4);
-    animation: none;
-  }
-
-  .inboxkey-shimmer-wrap--copied::before {
-    background: rgba(${green}, 0.3);
-    animation: none;
-  }
-
-  .inboxkey-shimmer-wrap--timeout::before {
-    background: rgba(${red}, 0.4);
-    animation: none;
-  }
-
-  @keyframes inboxkey-shimmer-slide {
-    0%   { background-position: -200% 0; }
-    100% { background-position: 200% 0; }
-  }
+/* Dark theme pill */
+:host([data-theme="dark"]) .status-text {
+  background: rgba(0, 0, 0, 0.85);
 }
 
-/* --- Reduced motion --- */
+/* Flip status text below when near viewport top */
+:host([data-text-pos="below"]) .status-text {
+  top: auto;
+  bottom: -22px;
+}
+
+.status-icon {
+  margin-right: 4px;
+  vertical-align: middle;
+  flex-shrink: 0;
+}
+
+/* ── Per-state pill colors ── */
+
+:host([data-state="listening"]) .status-text {
+  opacity: 0.85;
+  transform: translateY(0);
+  color: rgba(${PRIMARY}, 0.95);
+}
+
+:host([data-state="filled"]) .status-text {
+  opacity: 1;
+  transform: translateY(0);
+  color: rgba(${SUCCESS}, 0.95);
+}
+
+:host([data-state="copied"]) .status-text {
+  opacity: 0.85;
+  transform: translateY(0);
+  color: rgba(${SUCCESS}, 0.75);
+}
+
+:host([data-state="timeout"]) .status-text {
+  opacity: 1;
+  transform: translateY(0);
+  color: rgba(${WARNING}, 0.9);
+}
+
+/* ================================================================
+   LISTENING DOTS ANIMATION
+   ================================================================ */
+
+.listening-dots::after {
+  content: '';
+  animation: dots-cycle 1.8s steps(4, end) infinite;
+}
+
+@keyframes dots-cycle {
+  0%  { content: ''; }
+  25% { content: '.'; }
+  50% { content: '..'; }
+  75% { content: '...'; }
+}
+
+/* ================================================================
+   KEYFRAMES
+   Fallback: rotate entire pseudo-element (browsers without @property)
+   When @property is supported, enhanced keyframes override these
+   to animate --inboxkey-angle directly for smooth gradient sweep.
+   ================================================================ */
+
+@keyframes shimmer-rotate {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+@keyframes shimmer-sweep {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+@keyframes shimmer-fade-ring {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes shimmer-timeout-pulse {
+  0%   { opacity: 0.2; }
+  50%  { opacity: 1; }
+  100% { opacity: 0.2; }
+}
+
+/* ================================================================
+   REDUCED MOTION
+   Static border, no rotation. Subtle opacity pulse for listening.
+   ================================================================ */
+
 @media (prefers-reduced-motion: reduce) {
-  .inboxkey-shimmer-wrap--listening::before,
-  .inboxkey-shimmer-wrap--filled::before,
-  .inboxkey-shimmer-wrap--copied::before,
-  .inboxkey-shimmer-wrap--timeout::before {
-    animation: none;
+  .border-ring::before {
+    animation: none !important;
   }
 
-  .inboxkey-shimmer-wrap--listening::before { background: rgba(${blue}, 0.4); }
-  .inboxkey-shimmer-wrap--filled::before    { background: rgba(${green}, 0.4); }
-  .inboxkey-shimmer-wrap--copied::before    { background: rgba(${green}, 0.3); }
-  .inboxkey-shimmer-wrap--timeout::before   { background: rgba(${red}, 0.4); }
+  .border-ring {
+    transition: none !important;
+  }
+
+  .status-text {
+    transition: opacity 0.1s ease !important;
+    transform: none !important;
+  }
+
+  .listening-dots::after {
+    animation: none !important;
+    content: '...' !important;
+  }
+}
+
+/* ================================================================
+   FORCED COLORS (Windows High Contrast)
+   System colors, no animation
+   ================================================================ */
+
+@media (forced-colors: active) {
+  .border-ring::before {
+    background: Highlight !important;
+    animation: none !important;
+  }
+
+  .status-text {
+    color: CanvasText !important;
+    background: Canvas !important;
+    border: 1px solid CanvasText;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+}
+`
+}
+
+/**
+ * Enhanced keyframes that animate --inboxkey-angle directly.
+ * Only appended when CSS.registerProperty is available, giving smooth
+ * conic-gradient rotation instead of the transform fallback.
+ */
+export function generateEnhancedKeyframes(): string {
+  return `
+@keyframes shimmer-rotate {
+  from { --inboxkey-angle: 0deg; }
+  to   { --inboxkey-angle: 360deg; }
+}
+
+@keyframes shimmer-sweep {
+  from { --inboxkey-angle: 0deg; }
+  to   { --inboxkey-angle: 360deg; }
 }
 `
 }

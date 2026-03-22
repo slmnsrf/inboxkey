@@ -2,6 +2,11 @@
  * Error State Manager
  *
  * Manages persistent sync error state across service worker restarts.
+ * Supports multiple concurrent errors (one per mailbox, deduped by mailboxId).
+ *
+ * Backward compatibility:
+ * Old storage with singular `currentError` is migrated to `currentErrors[]`
+ * on load via migrateState().
  */
 
 import type { SyncErrorInfo, SyncErrorState } from '@/lib/storage/schema'
@@ -13,28 +18,38 @@ const FAILURE_THRESHOLD = 3
 
 export class ErrorStateManager {
   /**
-   * Load error state from storage
+   * Load error state from storage, migrating from legacy format if needed.
    */
   async load(): Promise<SyncErrorState> {
     const result = await chrome.storage.local.get(STORAGE_KEY)
-    return result[STORAGE_KEY] || this.getDefaultState()
+    const raw = result[STORAGE_KEY]
+    if (!raw) return this.getDefaultState()
+    return this.migrateState(raw)
   }
 
   /**
-   * Record sync failure
+   * Record sync failure for a specific mailbox.
+   * Deduplicates by mailboxId: replaces existing error for the same mailbox.
    */
-  async recordFailure(error: Error, mailboxId?: string): Promise<void> {
+  async recordFailure(error: Error, mailboxId?: string, email?: string): Promise<void> {
     const state = await this.load()
 
     state.consecutiveFailures++
     state.lastErrorTime = Date.now()
-    state.currentError = this.classifyError(error, mailboxId)
+
+    const classified = this.classifyError(error, mailboxId, email)
+
+    // Deduplicate by mailboxId: replace existing entry for same mailbox
+    if (mailboxId) {
+      state.currentErrors = state.currentErrors.filter(e => e.mailboxId !== mailboxId)
+    }
+    state.currentErrors.push(classified)
 
     state.errorHistory.push({
       timestamp: Date.now(),
       error: error.message,
       mailboxId,
-      errorType: state.currentError.type
+      errorType: classified.type
     })
 
     // Keep last 20 errors
@@ -46,14 +61,30 @@ export class ErrorStateManager {
   }
 
   /**
-   * Record sync success (reset counters)
+   * Record sync success for a specific mailbox.
+   * Removes that mailbox's error from the array.
+   * If the array becomes empty, resets consecutive failure count.
+   *
+   * When called without mailboxId (legacy), clears all errors.
    */
-  async recordSuccess(): Promise<void> {
+  async recordSuccess(mailboxId?: string): Promise<void> {
     const state = await this.load()
 
-    state.consecutiveFailures = 0
-    state.lastErrorTime = null
-    state.currentError = null
+    if (mailboxId) {
+      // Remove only this mailbox's error
+      state.currentErrors = state.currentErrors.filter(e => e.mailboxId !== mailboxId)
+
+      // If no errors remain, reset failure tracking
+      if (state.currentErrors.length === 0) {
+        state.consecutiveFailures = 0
+        state.lastErrorTime = null
+      }
+    } else {
+      // Legacy path: clear everything
+      state.consecutiveFailures = 0
+      state.lastErrorTime = null
+      state.currentErrors = []
+    }
     // Keep error history for debugging
 
     await this.save(state)
@@ -65,7 +96,7 @@ export class ErrorStateManager {
   async shouldShowBadge(): Promise<boolean> {
     const state = await this.load()
 
-    if (!state.currentError) return false
+    if (state.currentErrors.length === 0) return false
 
     // Show if 3+ consecutive failures
     if (state.consecutiveFailures >= FAILURE_THRESHOLD) return true
@@ -80,20 +111,32 @@ export class ErrorStateManager {
   }
 
   /**
-   * Get current error for popup banner
+   * Get current errors for popup banner.
+   * Filters out expired errors (older than ERROR_EXPIRY_MS).
+   * Returns the full array so the popup can decide single vs grouped display.
    */
-  async getCurrentError(): Promise<SyncErrorInfo | null> {
+  async getCurrentErrors(): Promise<SyncErrorInfo[]> {
     const state = await this.load()
 
-    // Check if error is still recent
-    if (state.currentError && state.lastErrorTime) {
-      const errorAge = Date.now() - state.lastErrorTime
-      if (errorAge < ERROR_EXPIRY_MS) {
-        return state.currentError
-      }
+    if (state.currentErrors.length === 0 || !state.lastErrorTime) {
+      return []
     }
 
-    return null
+    const errorAge = Date.now() - state.lastErrorTime
+    if (errorAge >= ERROR_EXPIRY_MS) {
+      return []
+    }
+
+    return state.currentErrors
+  }
+
+  /**
+   * Get current error for popup banner (legacy single-error API).
+   * Returns first error or null. Used for backward compatibility.
+   */
+  async getCurrentError(): Promise<SyncErrorInfo | null> {
+    const errors = await this.getCurrentErrors()
+    return errors.length > 0 ? errors[0] : null
   }
 
   /**
@@ -115,13 +158,33 @@ export class ErrorStateManager {
     return {
       consecutiveFailures: 0,
       lastErrorTime: null,
-      currentError: null,
+      currentErrors: [],
       errorHistory: []
     }
   }
 
-  private classifyError(error: Error, mailboxId?: string): SyncErrorInfo {
+  /**
+   * Migrate legacy storage format (singular `currentError`) to new array format.
+   */
+  private migrateState(raw: Record<string, unknown>): SyncErrorState {
+    // Already migrated: has currentErrors array
+    if (Array.isArray(raw.currentErrors)) {
+      return raw as unknown as SyncErrorState
+    }
+
+    // Legacy format: has singular currentError
+    const legacyError = (raw as Record<string, unknown>).currentError as SyncErrorInfo | null | undefined
+    return {
+      consecutiveFailures: (raw.consecutiveFailures as number) || 0,
+      lastErrorTime: (raw.lastErrorTime as number | null) ?? null,
+      currentErrors: legacyError ? [legacyError] : [],
+      errorHistory: (raw.errorHistory as SyncErrorState['errorHistory']) || []
+    }
+  }
+
+  private classifyError(error: Error, mailboxId?: string, email?: string): SyncErrorInfo {
     const errorMsg = error.message.toLowerCase()
+    const accountLabel = email ? ` (${email})` : ''
 
     // Detect auth errors
     if (errorMsg.includes('401') || errorMsg.includes('auth') ||
@@ -129,7 +192,7 @@ export class ErrorStateManager {
       return {
         type: 'auth-expired',
         variant: 'warning',
-        message: 'Account access expired. Reconnect to resume sync.',
+        message: `Account access expired${accountLabel}. Reconnect to resume sync.`,
         timestamp: Date.now(),
         mailboxId
       }

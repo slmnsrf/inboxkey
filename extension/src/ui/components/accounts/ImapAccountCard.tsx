@@ -158,6 +158,33 @@ export function ImapAccountCard({
             ? t('accounts_imap_host', account.host)
             : t('accounts_imap_generic_host')
 
+          if (confirmingRemoveId === account.id) {
+            return (
+              <div key={account.id} className="confirm-replace" role="alertdialog" aria-label={t('accounts_remove_confirm')}>
+                <p className="confirm-replace__text">{t('accounts_remove_confirm')}</p>
+                <div className="confirm-replace__actions">
+                  <button
+                    type="button"
+                    className="btn btn--danger-ghost btn--sm"
+                    onClick={() => handleRemove(account.id)}
+                    disabled={disabled || (isThisRemoving && removeState === 'loading')}
+                    aria-busy={isThisRemoving && removeState === 'loading'}
+                  >
+                    {isThisRemoving && removeState === 'loading' ? t('accounts_removing') : t('accounts_remove_confirm_button')}
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn--secondary btn--sm"
+                    onClick={() => setConfirmingRemoveId(null)}
+                    disabled={disabled || removeState === 'loading'}
+                  >
+                    {t('accounts_remove_cancel')}
+                  </button>
+                </div>
+              </div>
+            )
+          }
+
           return (
             <AccountRow
               key={account.id}
@@ -177,30 +204,6 @@ export function ImapAccountCard({
                   : undefined
               }
               actions={
-                confirmingRemoveId === account.id ? (
-                  <div className="confirm-inline" role="alertdialog" aria-label={t('accounts_remove_confirm')}>
-                    <p className="confirm-inline__text">{t('accounts_remove_confirm')}</p>
-                    <div className="confirm-inline__actions">
-                      <button
-                        type="button"
-                        className="btn btn--danger-ghost btn--sm"
-                        onClick={() => handleRemove(account.id)}
-                        disabled={disabled || (isThisRemoving && removeState === 'loading')}
-                        aria-busy={isThisRemoving && removeState === 'loading'}
-                      >
-                        {isThisRemoving && removeState === 'loading' ? t('accounts_removing') : t('accounts_remove_confirm_button')}
-                      </button>
-                      <button
-                        type="button"
-                        className="btn btn--secondary btn--sm"
-                        onClick={() => setConfirmingRemoveId(null)}
-                        disabled={disabled || removeState === 'loading'}
-                      >
-                        {t('accounts_remove_cancel')}
-                      </button>
-                    </div>
-                  </div>
-                ) : (
                   <>
                     {account.lastSyncError ? (
                       <button
@@ -233,7 +236,6 @@ export function ImapAccountCard({
                       {t('accounts_remove_button')}
                     </button>
                   </>
-                )
               }
             >
               {/* Host info as additional metadata */}

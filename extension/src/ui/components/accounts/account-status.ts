@@ -4,7 +4,7 @@
 
 import { t } from '@/lib/i18n'
 
-export type AccountStatus = 'online' | 'offline'
+export type AccountStatus = 'online' | 'offline' | 'warning'
 
 export interface AccountStatusResult {
   status: AccountStatus
@@ -28,14 +28,15 @@ interface AccountData {
 export function getAccountStatus(account: AccountData): AccountStatusResult {
   const now = Date.now()
 
-  // Offline conditions (RED - critical issues)
+  // Warning condition (AMBER - predictable, not a failure)
   if (account.tokenExpiresAt && account.tokenExpiresAt < now) {
     return {
-      status: 'offline',
-      label: t('status_offline_token_expired'),
+      status: 'warning',
+      label: t('status_warning_token_expired'),
     }
   }
 
+  // Offline condition (RED - sync failures)
   if (account.lastSyncError) {
     return {
       status: 'offline',

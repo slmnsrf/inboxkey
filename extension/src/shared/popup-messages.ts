@@ -181,6 +181,7 @@ export interface SyncErrorInfo {
   variant: 'error' | 'warning' | 'info'
   message: string
   timestamp: number
+  mailboxId?: string
 }
 
 /**
@@ -189,6 +190,6 @@ export interface SyncErrorInfo {
 export type PopupResponse =
   | { success: true; data: UnifiedPopupCache }
   | { success: true; mailboxes: MailboxInfo[] }
-  | { success: true; error: SyncErrorInfo | null }
+  | { success: true; errors: SyncErrorInfo[] }
   | { success: true }
   | { success: false; error: string }
