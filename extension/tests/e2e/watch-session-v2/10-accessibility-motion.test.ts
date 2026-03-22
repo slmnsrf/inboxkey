@@ -48,9 +48,9 @@ test.describe('Watch Session V2 - Accessibility (Reduced Motion)', () => {
     await page.focus('#otp')
     await waitForSessionStart(page)
 
-    // Chip should appear instantly without slide animation
-    const chip = await page.$('.inboxkey-chip')
-    expect(chip).not.toBeNull()
+    // Overlay should appear instantly without slide animation
+    const overlay = await page.$('inboxkey-overlay')
+    expect(overlay).not.toBeNull()
   })
 
   test('chip dismissal with reduced motion', async ({ page, backgroundPage }) => {
@@ -68,8 +68,8 @@ test.describe('Watch Session V2 - Accessibility (Reduced Motion)', () => {
     // Wait for auto-dismiss
     await page.waitForTimeout(6000)
 
-    // Chip should be gone
-    const visible = await page.isVisible('.inboxkey-chip')
+    // Overlay should be gone
+    const visible = await page.isVisible('inboxkey-overlay')
     expect(visible).toBe(false)
   })
 
@@ -79,8 +79,8 @@ test.describe('Watch Session V2 - Accessibility (Reduced Motion)', () => {
     await page.focus('#otp')
     await waitForSessionStart(page)
 
-    // Chip should have normal animations
-    const chip = await page.$('.inboxkey-chip')
-    expect(chip).not.toBeNull()
+    // Overlay should have normal animations
+    const overlay = await page.$('inboxkey-overlay')
+    expect(overlay).not.toBeNull()
   })
 })
