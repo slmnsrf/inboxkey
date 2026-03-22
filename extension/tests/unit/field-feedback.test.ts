@@ -208,6 +208,9 @@ describe('ChipHandle.update', () => {
     const handle = await showFieldFeedback(field)
     handle.update('filled')
 
+    // announceState uses queueMicrotask -- flush before asserting
+    await new Promise(resolve => queueMicrotask(resolve))
+
     const statusRegion = document.getElementById('inboxkey-sr-status')
     expect(statusRegion!.textContent).toBe('Verification code filled automatically')
   })
@@ -218,6 +221,9 @@ describe('ChipHandle.update', () => {
 
     const handle = await showFieldFeedback(field)
     handle.update('timeout')
+
+    // announceState uses queueMicrotask -- flush before asserting
+    await new Promise(resolve => queueMicrotask(resolve))
 
     const alertRegion = document.getElementById('inboxkey-sr-alert')
     expect(alertRegion!.textContent).toBe('No verification code received')

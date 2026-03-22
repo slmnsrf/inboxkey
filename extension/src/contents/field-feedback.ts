@@ -609,9 +609,11 @@ export async function showFieldFeedback(
   const existing = activeHandles.get(field)
   if (existing) return existing
 
-  // 3. Double-load guard: check for existing overlay DOM node
-  if (findExistingOverlay(field)) {
-    return NO_OP_HANDLE
+  // 3. Double-load guard: if a stale overlay exists from a previous content
+  // script instance, remove it so the new session gets a fresh overlay
+  const staleOverlay = findExistingOverlay(field)
+  if (staleOverlay) {
+    staleOverlay.remove()
   }
 
   // 4. Detect split-input group

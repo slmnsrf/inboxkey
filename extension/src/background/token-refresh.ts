@@ -75,6 +75,12 @@ export async function refreshExpiringTokens(): Promise<void> {
         // Clear stale popup error state for this mailbox
         await errorManager.recordSuccess(mailbox.id)
 
+        // Clear badge if no errors remain
+        const remaining = await errorManager.getCurrentErrors()
+        if (remaining.length === 0) {
+          chrome.action.setBadgeText({ text: '' })
+        }
+
         console.log(`[TokenRefresh] Refreshed token for ${mailbox.email}`)
       } catch (error) {
         console.error(`[TokenRefresh] Failed to refresh ${mailbox.email}:`, error)
