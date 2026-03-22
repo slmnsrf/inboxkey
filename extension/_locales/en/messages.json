@@ -829,7 +829,11 @@
   },
   "status_offline_token_expired": {
     "message": "Offline - Token expired",
-    "description": "Account status: OAuth token expired"
+    "description": "Account status: OAuth token expired (legacy, use warning instead)"
+  },
+  "status_warning_token_expired": {
+    "message": "Access expired - Reconnect needed",
+    "description": "Account status: OAuth token expired, warning level (amber dot)"
   },
   "status_offline_connection_failed": {
     "message": "Offline - Connection failed",

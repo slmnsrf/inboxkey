@@ -211,17 +211,21 @@ export class PopupMessageHandler {
               await this.errorManager.recordSuccess()
             } else if (allFailed) {
               const descriptions = describeFailedAdapters(adapterResults.filter(r => !r.success))
+              const failedMailbox = mailboxes.find(m => m.id === adapterResults[0]?.mailboxId)
               await this.errorManager.recordFailure(
                 new Error(descriptions.join('; ')),
-                adapterResults[0]?.mailboxId
+                adapterResults[0]?.mailboxId,
+                failedMailbox?.email
               )
             } else {
               // Partial failure: some adapters succeeded, some failed
               const failedAdapters = adapterResults.filter(r => !r.success)
               const descriptions = describeFailedAdapters(failedAdapters)
+              const failedMailbox = mailboxes.find(m => m.id === failedAdapters[0]?.mailboxId)
               await this.errorManager.recordFailure(
                 new Error(descriptions.join('; ')),
-                failedAdapters[0]?.mailboxId
+                failedAdapters[0]?.mailboxId,
+                failedMailbox?.email
               )
             }
 
