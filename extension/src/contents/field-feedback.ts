@@ -64,6 +64,10 @@ const NO_OP_HANDLE: ChipHandle = {
 // Track active handles for re-entrancy
 const activeHandles = new WeakMap<HTMLInputElement, ChipHandle>()
 
+// Unique session ID for this content script instance (used to distinguish
+// overlays created by this instance from stale ones left by previous instances)
+const SESSION_ID = `s${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`
+
 // ─── @property registration (idempotent, once per page) ──────────────────────
 
 let propertyRegistered = false
@@ -254,9 +258,10 @@ class FieldOverlay {
       this.host.setAttribute('data-reduced-motion', 'true')
     }
 
-    // Double-load guard
+    // Double-load guard + session tracking
     const targetId = this.generateTargetId()
     this.host.setAttribute('data-target-id', targetId)
+    this.host.setAttribute('data-session', SESSION_ID)
 
     // Detect dark theme from target's background
     const darkTarget = this.isGroup ? this.groupTargets[0] : this.target
@@ -577,8 +582,10 @@ function findExistingOverlay(target: HTMLInputElement): HTMLElement | null {
     targetId = `pos:${Math.round(rect.left)}:${Math.round(rect.top)}`
   }
 
+  // Only find overlays from a DIFFERENT session (stale ones).
+  // Overlays from the current session are managed by activeHandles.
   const existing = document.querySelector(
-    `inboxkey-overlay[data-target-id="${CSS.escape(targetId)}"]`
+    `inboxkey-overlay[data-target-id="${CSS.escape(targetId)}"]:not([data-session="${SESSION_ID}"])`
   )
   return existing as HTMLElement | null
 }
