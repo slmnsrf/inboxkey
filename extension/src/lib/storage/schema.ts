@@ -121,11 +121,15 @@ export interface SyncErrorInfo {
 
 /**
  * Persistent sync error state
+ *
+ * currentErrors holds one entry per failing mailbox (deduped by mailboxId).
+ * Backward compatibility: old storage with singular `currentError` is migrated
+ * on load by ErrorStateManager.
  */
 export interface SyncErrorState {
   consecutiveFailures: number
   lastErrorTime: number | null
-  currentError: SyncErrorInfo | null
+  currentErrors: SyncErrorInfo[]
   errorHistory: Array<{
     timestamp: number
     error: string

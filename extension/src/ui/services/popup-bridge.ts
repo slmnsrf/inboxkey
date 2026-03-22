@@ -124,11 +124,11 @@ export class PopupBridge {
   }
 
   /**
-   * Get current sync error state from background.
-   * @returns Sync error info or null if no error
+   * Get current sync errors from background.
+   * @returns Array of sync errors (empty if no errors)
    */
-  async getSyncError(): Promise<SyncErrorInfo | null> {
-    return this.sendMessage<SyncErrorInfo | null>({ type: 'GET_SYNC_ERROR' })
+  async getSyncErrors(): Promise<SyncErrorInfo[]> {
+    return this.sendMessage<SyncErrorInfo[]>({ type: 'GET_SYNC_ERROR' })
   }
 
   private async sendMessage<T>(
@@ -147,8 +147,8 @@ export class PopupBridge {
         if ('mailboxes' in response) {
           return response.mailboxes as T
         }
-        if ('error' in response) {
-          return response.error as T
+        if ('errors' in response) {
+          return response.errors as T
         }
         // For { success: true } responses with no data (e.g., MARK_CODES_SEEN)
         return undefined as T

@@ -26,7 +26,7 @@ import { InfoIcon, WarningIcon, CloseIcon } from './icons/StatusIcons'
 import './ErrorBanner.css'
 
 export type BannerVariant = 'error' | 'warning' | 'info'
-export type BannerType = 'sync-failed' | 'auth-expired' | 'network-offline'
+export type BannerType = 'sync-failed' | 'auth-expired' | 'network-offline' | 'multiple-accounts'
 
 export interface ErrorBannerProps {
   variant: BannerVariant

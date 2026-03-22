@@ -207,26 +207,19 @@ export class PopupMessageHandler {
               })
             }
 
-            if (allSucceeded) {
-              await this.errorManager.recordSuccess()
-            } else if (allFailed) {
-              const descriptions = describeFailedAdapters(adapterResults.filter(r => !r.success))
-              const failedMailbox = mailboxes.find(m => m.id === adapterResults[0]?.mailboxId)
-              await this.errorManager.recordFailure(
-                new Error(descriptions.join('; ')),
-                adapterResults[0]?.mailboxId,
-                failedMailbox?.email
-              )
-            } else {
-              // Partial failure: some adapters succeeded, some failed
-              const failedAdapters = adapterResults.filter(r => !r.success)
-              const descriptions = describeFailedAdapters(failedAdapters)
-              const failedMailbox = mailboxes.find(m => m.id === failedAdapters[0]?.mailboxId)
-              await this.errorManager.recordFailure(
-                new Error(descriptions.join('; ')),
-                failedAdapters[0]?.mailboxId,
-                failedMailbox?.email
-              )
+            // Record per-mailbox success/failure for grouped error banners
+            for (const result of adapterResults) {
+              const mailbox = mailboxes.find(m => m.id === result.mailboxId)
+              if (result.success) {
+                await this.errorManager.recordSuccess(result.mailboxId)
+              } else {
+                const reason = sanitizeReason(result.error || 'Unknown error')
+                await this.errorManager.recordFailure(
+                  new Error(reason),
+                  result.mailboxId,
+                  mailbox?.email
+                )
+              }
             }
 
             // Update badge with unseen code count (only fresh codes < 10 min old)
@@ -295,11 +288,11 @@ export class PopupMessageHandler {
         }
 
         case 'GET_SYNC_ERROR': {
-          // Return current sync error state for error banner
-          const error = await this.errorManager.getCurrentError()
+          // Return current sync errors array for grouped error banner
+          const errors = await this.errorManager.getCurrentErrors()
           return {
             success: true,
-            error
+            errors
           }
         }
 
