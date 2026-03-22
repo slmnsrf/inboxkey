@@ -677,6 +677,10 @@ function buildSplitHandle(
     const existingHandle = activeHandles.get(inputs[i])
     if (existingHandle) return existingHandle
 
+    // Clean up stale overlays from previous content script instances
+    const stale = findExistingOverlay(inputs[i])
+    if (stale) stale.remove()
+
     const overlay = new FieldOverlay(inputs[i], {
       // Status text only on the last input
       hideStatusText: i < inputs.length - 1,
