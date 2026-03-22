@@ -46,7 +46,7 @@ test.describe('Watch Session V2 - Accessibility (ARIA)', () => {
 
     // Read ARIA live region text
     const liveText = await getAriaLiveText(page)
-    expect(liveText).toContain('Listening for code')
+    expect(liveText).toContain('InboxKey is checking')
   })
 
   test('ARIA live region announces filled state', async ({ page, backgroundPage }) => {
@@ -75,6 +75,6 @@ test.describe('Watch Session V2 - Accessibility (ARIA)', () => {
 
     // Read ARIA live region for timeout state
     const liveText = await getAriaLiveText(page)
-    expect(liveText).toContain('No new code')
+    expect(liveText).toContain('No verification code received')
   })
 })

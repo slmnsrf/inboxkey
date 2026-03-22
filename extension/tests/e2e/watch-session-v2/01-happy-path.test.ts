@@ -2,7 +2,7 @@
  * E2E Test: Watch Session V2 - Happy Path
  *
  * Tests the complete happy path flow for Watch Sessions V2:
- * 1. Focus OTP field → chip appears "Listening for code"
+ * 1. Focus OTP field → chip appears "InboxKey"
  * 2. Badge animates (listening state)
  * 3. Mock email arrives with code
  * 4. Code is autofilled
@@ -53,7 +53,7 @@ test.describe('Watch Session V2 - Happy Path', () => {
 
     // STEP 5: Verify chip text
     const chipText = await getChipText(page)
-    expect(chipText).toContain('Listening for code')
+    expect(chipText).toContain('InboxKey')
 
     // STEP 6: Wait a moment to simulate user waiting for email
     await page.waitForTimeout(1000)

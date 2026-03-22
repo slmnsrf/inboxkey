@@ -4,7 +4,7 @@
  * Tests the timeout behavior when no code arrives within 15 seconds:
  * 1. Start watch session
  * 2. Wait 15+ seconds with no email
- * 3. Chip shows "No new code. Try resend or check popup."
+ * 3. Chip shows "No code received. Try resend or check popup."
  * 4. Badge shows no-code (orange exclamation)
  * 5. User can dismiss chip with ESC key
  */
@@ -44,7 +44,7 @@ test.describe('Watch Session V2 - Timeout', () => {
 
     // STEP 4: Verify chip text shows helpful message
     const chipText = await getChipText(page)
-    expect(chipText).toContain('No new code')
+    expect(chipText).toContain('No code received')
 
     // STEP 5: Verify chip is visible and can be dismissed
     const visible = await isChipVisible(page)
