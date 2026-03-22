@@ -12,6 +12,7 @@
 import { StorageFactory } from '@/lib/storage/storage-factory'
 import { OutlookProvider } from '@/lib/providers/outlook/outlook-provider'
 import { ErrorStateManager } from './error-state-manager'
+import { clearBadge } from '@/contents/badge-manager'
 
 const ALARM_NAME = 'token-refresh'
 const ALARM_INTERVAL_MINUTES = 20
@@ -75,10 +76,10 @@ export async function refreshExpiringTokens(): Promise<void> {
         // Clear stale popup error state for this mailbox
         await errorManager.recordSuccess(mailbox.id)
 
-        // Clear badge if no errors remain
+        // Clear badge through badge manager (resets priority to IDLE)
         const remaining = await errorManager.getCurrentErrors()
         if (remaining.length === 0) {
-          chrome.action.setBadgeText({ text: '' })
+          clearBadge()
         }
 
         console.log(`[TokenRefresh] Refreshed token for ${mailbox.email}`)
