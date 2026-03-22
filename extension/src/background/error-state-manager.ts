@@ -23,12 +23,12 @@ export class ErrorStateManager {
   /**
    * Record sync failure
    */
-  async recordFailure(error: Error, mailboxId?: string): Promise<void> {
+  async recordFailure(error: Error, mailboxId?: string, email?: string): Promise<void> {
     const state = await this.load()
 
     state.consecutiveFailures++
     state.lastErrorTime = Date.now()
-    state.currentError = this.classifyError(error, mailboxId)
+    state.currentError = this.classifyError(error, mailboxId, email)
 
     state.errorHistory.push({
       timestamp: Date.now(),
@@ -120,8 +120,9 @@ export class ErrorStateManager {
     }
   }
 
-  private classifyError(error: Error, mailboxId?: string): SyncErrorInfo {
+  private classifyError(error: Error, mailboxId?: string, email?: string): SyncErrorInfo {
     const errorMsg = error.message.toLowerCase()
+    const accountLabel = email ? ` (${email})` : ''
 
     // Detect auth errors
     if (errorMsg.includes('401') || errorMsg.includes('auth') ||
@@ -129,7 +130,7 @@ export class ErrorStateManager {
       return {
         type: 'auth-expired',
         variant: 'warning',
-        message: 'Account access expired. Reconnect to resume sync.',
+        message: `Account access expired${accountLabel}. Reconnect to resume sync.`,
         timestamp: Date.now(),
         mailboxId
       }
