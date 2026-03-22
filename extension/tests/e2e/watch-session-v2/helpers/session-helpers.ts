@@ -143,8 +143,8 @@ export async function waitForBadgeState(
  */
 export async function verifyChipAutoDismiss(
   page: Page,
-  expectedDismissTimeMs = 5000,
-  tolerance = 1000
+  expectedDismissTimeMs = 3000,
+  tolerance = 1500
 ): Promise<void> {
   const startTime = Date.now()
 

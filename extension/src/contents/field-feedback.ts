@@ -460,7 +460,16 @@ class FieldOverlay {
           return false
         }
       }
-      parent = parent.parentElement
+      // Cross shadow root boundaries: if parentElement is null but we're
+      // inside a shadow root, jump to the shadow host and continue
+      let next = parent.parentElement
+      if (!next) {
+        const root = parent.getRootNode()
+        if (root instanceof ShadowRoot) {
+          next = root.host as HTMLElement
+        }
+      }
+      parent = next
     }
     return true
   }
@@ -557,13 +566,16 @@ class FieldOverlay {
 // ─── Double-load guard ───────────────────────────────────────────────────────
 
 function findExistingOverlay(target: HTMLInputElement): HTMLElement | null {
-  const targetId = target.id
-    ? `id:${target.id}`
-    : target.name
-      ? `name:${target.name}`
-      : null
-
-  if (!targetId) return null
+  let targetId: string
+  if (target.id) {
+    targetId = `id:${target.id}`
+  } else if (target.name) {
+    targetId = `name:${target.name}`
+  } else {
+    // Positional fallback -- matches generateTargetId() logic
+    const rect = target.getBoundingClientRect()
+    targetId = `pos:${Math.round(rect.left)}:${Math.round(rect.top)}`
+  }
 
   const existing = document.querySelector(
     `inboxkey-overlay[data-target-id="${CSS.escape(targetId)}"]`
