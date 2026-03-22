@@ -484,7 +484,7 @@ class FieldOverlay {
     if (state !== 'idle') {
       const delay = AUTO_DISMISS_MS[state as ChipState]
       if (delay !== undefined) {
-        this.dismissTimer = setTimeout(() => this.setState('idle'), delay)
+        this.dismissTimer = setTimeout(() => this.destroy(), delay)
       }
     }
   }
