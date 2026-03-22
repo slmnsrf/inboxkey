@@ -319,7 +319,18 @@ class FieldOverlay {
       this.intersectionObserver = new IntersectionObserver(
         (entries) => {
           for (const entry of entries) {
-            this.isIntersecting = entry.isIntersecting
+            // Hysteresis: show at >25% visible, hide at <5%
+            if (this.isIntersecting) {
+              // Currently visible: only hide if ratio drops below hide threshold
+              if (entry.intersectionRatio < VISIBLE_HIDE_THRESHOLD) {
+                this.isIntersecting = false
+              }
+            } else {
+              // Currently hidden: only show if ratio exceeds show threshold
+              if (entry.intersectionRatio >= VISIBLE_SHOW_THRESHOLD) {
+                this.isIntersecting = true
+              }
+            }
           }
         },
         { threshold: [VISIBLE_HIDE_THRESHOLD, VISIBLE_SHOW_THRESHOLD] }

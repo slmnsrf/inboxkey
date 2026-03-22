@@ -306,8 +306,8 @@ export function generateShadowCSS(): string {
     animation: none !important;
   }
 
-  :host([data-state="listening"]) .border-ring {
-    animation: subtle-pulse 3s ease-in-out infinite;
+  .border-ring {
+    transition: none !important;
   }
 
   .status-text {
@@ -319,11 +319,6 @@ export function generateShadowCSS(): string {
     animation: none !important;
     content: '...' !important;
   }
-}
-
-@keyframes subtle-pulse {
-  0%, 100% { opacity: 0.6; }
-  50%      { opacity: 1; }
 }
 
 /* ================================================================
