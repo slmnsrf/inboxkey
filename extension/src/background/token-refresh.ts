@@ -11,6 +11,7 @@
 
 import { StorageFactory } from '@/lib/storage/storage-factory'
 import { OutlookProvider } from '@/lib/providers/outlook/outlook-provider'
+import { ErrorStateManager } from './error-state-manager'
 
 const ALARM_NAME = 'token-refresh'
 const ALARM_INTERVAL_MINUTES = 20
@@ -48,6 +49,7 @@ export async function refreshExpiringTokens(): Promise<void> {
     const mailboxes = await storage.getMailboxes()
     const now = Date.now()
     const provider = new OutlookProvider()
+    const errorManager = new ErrorStateManager()
 
     for (const mailbox of mailboxes) {
       // Only Outlook needs background refresh (Gmail uses Chrome Identity)
@@ -69,6 +71,9 @@ export async function refreshExpiringTokens(): Promise<void> {
           tokenExpiresAt: expiresAt,
           lastSyncError: undefined, // Clear stale error on successful refresh
         })
+
+        // Clear stale popup error state for this mailbox
+        await errorManager.recordSuccess(mailbox.id)
 
         console.log(`[TokenRefresh] Refreshed token for ${mailbox.email}`)
       } catch (error) {
