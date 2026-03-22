@@ -320,7 +320,7 @@ describe('compact mode', () => {
 // ─── Test 5: Auto-dismiss ───────────────────────────────────────────────────
 
 describe('auto-dismiss', () => {
-  it('transitions to idle state after filled auto-dismiss delay (3s)', async () => {
+  it('destroys overlay after filled auto-dismiss delay (3s)', async () => {
     vi.useFakeTimers()
 
     const field = document.createElement('input')
@@ -329,18 +329,18 @@ describe('auto-dismiss', () => {
     const handle = await showFieldFeedback(field)
     handle.update('filled')
 
-    const overlay = document.querySelector('inboxkey-overlay')
-    expect(overlay!.getAttribute('data-state')).toBe('filled')
+    expect(document.querySelector('inboxkey-overlay')).not.toBeNull()
 
     // Advance past the 3s auto-dismiss
     vi.advanceTimersByTime(3000)
 
-    expect(overlay!.getAttribute('data-state')).toBe('idle')
+    // Overlay should be destroyed (removed from DOM), not just set to idle
+    expect(document.querySelector('inboxkey-overlay')).toBeNull()
 
     vi.useRealTimers()
   })
 
-  it('transitions to idle state after timeout auto-dismiss delay (4s)', async () => {
+  it('destroys overlay after timeout auto-dismiss delay (4s)', async () => {
     vi.useFakeTimers()
 
     const field = document.createElement('input')
@@ -349,17 +349,16 @@ describe('auto-dismiss', () => {
     const handle = await showFieldFeedback(field)
     handle.update('timeout')
 
-    const overlay = document.querySelector('inboxkey-overlay')
-    expect(overlay!.getAttribute('data-state')).toBe('timeout')
+    expect(document.querySelector('inboxkey-overlay')).not.toBeNull()
 
     vi.advanceTimersByTime(4000)
 
-    expect(overlay!.getAttribute('data-state')).toBe('idle')
+    expect(document.querySelector('inboxkey-overlay')).toBeNull()
 
     vi.useRealTimers()
   })
 
-  it('transitions to idle after copied auto-dismiss delay (2s)', async () => {
+  it('destroys overlay after copied auto-dismiss delay (2s)', async () => {
     vi.useFakeTimers()
 
     const field = document.createElement('input')
@@ -368,12 +367,11 @@ describe('auto-dismiss', () => {
     const handle = await showFieldFeedback(field)
     handle.update('copied')
 
-    const overlay = document.querySelector('inboxkey-overlay')
-    expect(overlay!.getAttribute('data-state')).toBe('copied')
+    expect(document.querySelector('inboxkey-overlay')).not.toBeNull()
 
     vi.advanceTimersByTime(2000)
 
-    expect(overlay!.getAttribute('data-state')).toBe('idle')
+    expect(document.querySelector('inboxkey-overlay')).toBeNull()
 
     vi.useRealTimers()
   })
