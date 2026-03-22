@@ -112,6 +112,14 @@ export class StorageProviderAdapter implements ProviderAdapter {
       tokenExpiresAt: expiresAt,
     })
 
+    // Update in-memory mailbox to prevent stale data within same adapter lifecycle
+    this.mailbox = {
+      ...this.mailbox,
+      accessToken: tokens.accessToken,
+      refreshToken: tokens.refreshToken || this.mailbox.refreshToken,
+      tokenExpiresAt: expiresAt,
+    }
+
     console.log(`[StorageProviderAdapter] Token refreshed for ${this.mailbox.email}`)
     return tokens.accessToken
   }

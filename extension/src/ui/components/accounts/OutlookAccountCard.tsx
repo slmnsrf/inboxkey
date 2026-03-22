@@ -236,10 +236,38 @@ export function OutlookAccountCard({
 
           const isThisReconnecting = reconnectingId === account.id
 
+          if (confirmingRemoveId === account.id) {
+            return (
+              <div key={account.id} className="confirm-replace" role="alertdialog" aria-label={t('accounts_remove_confirm')}>
+                <p className="confirm-replace__text">{t('accounts_remove_confirm')}</p>
+                <div className="confirm-replace__actions">
+                  <button
+                    type="button"
+                    className="btn btn--danger-ghost btn--sm"
+                    onClick={() => handleRemove(account.id)}
+                    disabled={disabled || connectionState === 'loading'}
+                    aria-busy={connectionState === 'loading'}
+                  >
+                    {connectionState === 'loading' ? t('accounts_removing') : t('accounts_remove_confirm_button')}
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn--secondary btn--sm"
+                    onClick={() => setConfirmingRemoveId(null)}
+                    disabled={disabled || connectionState === 'loading'}
+                  >
+                    {t('accounts_remove_cancel')}
+                  </button>
+                </div>
+              </div>
+            )
+          }
+
           return (
             <AccountRow
               key={account.id}
               email={account.email}
+              className={status === 'warning' ? 'account-row--warning' : ''}
               statusDot={
                 <span
                   className={`status-dot status-dot--${status}`}
@@ -254,31 +282,7 @@ export function OutlookAccountCard({
                   : undefined
               }
               actions={
-                confirmingRemoveId === account.id ? (
-                  <div className="confirm-inline" role="alertdialog" aria-label={t('accounts_remove_confirm')}>
-                    <p className="confirm-inline__text">{t('accounts_remove_confirm')}</p>
-                    <div className="confirm-inline__actions">
-                      <button
-                        type="button"
-                        className="btn btn--danger-ghost btn--sm"
-                        onClick={() => handleRemove(account.id)}
-                        disabled={disabled || connectionState === 'loading'}
-                        aria-busy={connectionState === 'loading'}
-                      >
-                        {connectionState === 'loading' ? t('accounts_removing') : t('accounts_remove_confirm_button')}
-                      </button>
-                      <button
-                        type="button"
-                        className="btn btn--secondary btn--sm"
-                        onClick={() => setConfirmingRemoveId(null)}
-                        disabled={disabled || connectionState === 'loading'}
-                      >
-                        {t('accounts_remove_cancel')}
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  <>
+                <>
                     <button
                       type="button"
                       className="btn btn--secondary btn--sm"
@@ -298,9 +302,12 @@ export function OutlookAccountCard({
                       {t('accounts_remove_button')}
                     </button>
                   </>
-                )
               }
-            />
+            >
+              {status === 'warning' && (
+                <span className="account-row__warning-label">{statusLabel}</span>
+              )}
+            </AccountRow>
           )
         })
       ) : (

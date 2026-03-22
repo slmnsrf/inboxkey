@@ -121,6 +121,8 @@ function setupChromeMock(): void {
       lastError: undefined,
     },
     alarms: {
+      create: vi.fn(),
+      get: vi.fn((_name: string, cb: (alarm: any) => void) => cb(undefined)),
       onAlarm: {
         addListener: vi.fn((fn) => mockOnAlarmListeners.push(fn)),
       },
