@@ -5,6 +5,8 @@
  * Fetches error state from background worker and handles dismissal.
  *
  * Features:
+ * - Grouped error banner when 2+ accounts have errors
+ * - Single account banner with email when only 1 account has an error
  * - Per-session dismissal (dismissed errors stay hidden until popup reopens)
  * - Network banner auto-dismisses when connection restored
  * - Polls background for error state changes
@@ -12,6 +14,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { PopupBridge } from '../services/popup-bridge'
+import { t } from '@/lib/i18n'
 import type { BannerVariant, BannerType } from '../components/ErrorBanner'
 
 export interface SyncErrorState {
@@ -61,18 +64,38 @@ export function useSyncErrors(options?: { onRetrySuccess?: () => void }) {
 
     const fetchSyncError = async () => {
       try {
-        const errorInfo = await bridge.getSyncError()
+        const errors = await bridge.getSyncErrors()
 
         if (!mounted) return
 
-        if (errorInfo) {
+        if (errors.length >= 2) {
+          // Multiple accounts have errors: show grouped banner
+          if (dismissed.has('multiple-accounts')) {
+            setSyncError(null)
+            return
+          }
+
+          setSyncError({
+            variant: 'warning',
+            type: 'multiple-accounts',
+            message: t('sync_error_multiple_accounts', [String(errors.length)]),
+            actionLabel: t('sync_error_open_accounts'),
+            onAction: () => {
+              chrome.tabs.create({
+                url: chrome.runtime.getURL('options.html?tab=accounts')
+              })
+            },
+          })
+        } else if (errors.length === 1) {
+          const errorInfo = errors[0]
+
           // Don't show if dismissed this session
           if (dismissed.has(errorInfo.type)) {
             setSyncError(null)
             return
           }
 
-          // Map error info to banner state
+          // Map single error info to banner state (existing behavior)
           let actionLabel: string | undefined
           let onAction: (() => void) | undefined
 
@@ -114,7 +137,7 @@ export function useSyncErrors(options?: { onRetrySuccess?: () => void }) {
             onAction,
           })
         } else {
-          // Network offline detection (client-side only)
+          // No backend errors: check client-side network status
           if (!isOnline && !dismissed.has('network-offline')) {
             setSyncError({
               variant: 'info',
