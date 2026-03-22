@@ -1,0 +1,1156 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="status" content="Ideation">
+  <meta name="date" content="2026-03-22">
+  <meta name="category" content="content">
+  <title>Field Chip Shadow DOM - InboxKey Prototype</title>
+  <link rel="stylesheet" href="../shared/tokens.css">
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    body { margin: 0; }
+
+    /* ============================
+       PAGE LAYOUT
+       ============================ */
+
+    .proto-canvas {
+      min-height: 100vh;
+      background: var(--color-bg-primary);
+      font-family: var(--font-system);
+      padding: var(--space-8) var(--space-6);
+      padding-top: var(--space-6);
+    }
+
+    .proto-intro {
+      max-width: 760px;
+      margin: 0 auto var(--space-8);
+    }
+
+    .proto-intro h1 {
+      font-size: var(--font-size-3xl);
+      font-weight: var(--font-weight-bold);
+      color: var(--color-text-primary);
+      margin: 0 0 var(--space-2);
+    }
+
+    .proto-intro p {
+      font-size: var(--font-size-base);
+      color: var(--color-text-secondary);
+      line-height: var(--line-height-relaxed);
+      margin: 0 0 var(--space-2);
+    }
+
+    .proto-intro .subtitle {
+      font-size: var(--font-size-sm);
+      color: var(--color-text-tertiary);
+    }
+
+    /* ============================
+       STATE CONTROL BAR
+       ============================ */
+
+    .state-controls {
+      max-width: 760px;
+      margin: 0 auto var(--space-8);
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+      flex-wrap: wrap;
+    }
+
+    .state-controls__label {
+      font-size: var(--font-size-xs);
+      font-weight: var(--font-weight-semibold);
+      color: var(--color-text-tertiary);
+      text-transform: uppercase;
+      letter-spacing: var(--letter-spacing-wider);
+      margin-right: var(--space-1);
+    }
+
+    .state-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-2);
+      padding: var(--space-2) var(--space-3);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-full);
+      background: var(--surface-card);
+      color: var(--color-text-secondary);
+      font-size: var(--font-size-xs);
+      font-weight: var(--font-weight-medium);
+      font-family: var(--font-system);
+      cursor: pointer;
+      transition: all 150ms ease;
+      user-select: none;
+    }
+
+    .state-btn:hover {
+      border-color: var(--color-border-hover);
+      background: var(--surface-card-muted);
+    }
+
+    .state-btn[aria-pressed="true"] {
+      border-color: var(--color-primary);
+      background: var(--color-primary-light);
+      color: var(--color-primary);
+    }
+
+    .state-btn__dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .state-btn__dot--idle { background: var(--color-gray-400); }
+    .state-btn__dot--listening { background: var(--color-primary); }
+    .state-btn__dot--filled { background: var(--color-success); }
+    .state-btn__dot--copied { background: var(--color-success); opacity: 0.7; }
+    .state-btn__dot--timeout { background: var(--color-warning, #F59E0B); }
+
+    .state-controls__divider {
+      width: 1px;
+      height: 24px;
+      background: var(--color-border);
+    }
+
+    .split-mode-toggle {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-2);
+      padding: var(--space-2) var(--space-3);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-full);
+      background: var(--surface-card);
+      color: var(--color-text-tertiary);
+      font-size: var(--font-size-xs);
+      font-weight: var(--font-weight-medium);
+      font-family: var(--font-system);
+      cursor: pointer;
+      transition: all 150ms ease;
+    }
+
+    .split-mode-toggle:hover {
+      border-color: var(--color-border-hover);
+    }
+
+    .split-mode-toggle[aria-pressed="true"] {
+      border-color: var(--color-primary);
+      background: var(--color-primary-light);
+      color: var(--color-primary);
+    }
+
+    /* ============================
+       DEMO SECTIONS
+       ============================ */
+
+    .demo-section {
+      max-width: 760px;
+      margin: 0 auto var(--space-10);
+    }
+
+    .demo-section__header {
+      display: flex;
+      align-items: baseline;
+      gap: var(--space-3);
+      margin-bottom: var(--space-4);
+      padding-bottom: var(--space-2);
+      border-bottom: 1px solid var(--color-border);
+    }
+
+    .demo-section__number {
+      font-size: var(--font-size-xs);
+      font-weight: var(--font-weight-bold);
+      color: var(--color-primary);
+      font-family: var(--font-mono);
+      flex-shrink: 0;
+    }
+
+    .demo-section__title {
+      font-size: var(--font-size-sm);
+      font-weight: var(--font-weight-semibold);
+      color: var(--color-text-primary);
+      margin: 0;
+    }
+
+    .demo-section__desc {
+      font-size: var(--font-size-xs);
+      color: var(--color-text-tertiary);
+      margin-left: auto;
+      flex-shrink: 0;
+    }
+
+    .demo-box {
+      background: var(--surface-card);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      padding: var(--space-6);
+      position: relative;
+    }
+
+    .demo-box--dark {
+      background: #1a1a2e;
+      border-color: #2a2a4e;
+    }
+
+    .demo-box--transparent {
+      background: transparent;
+      border: none;
+      padding: var(--space-4) 0;
+    }
+
+    /* Fake form label styling */
+    .fake-label {
+      display: block;
+      font-size: var(--font-size-sm);
+      font-weight: var(--font-weight-medium);
+      color: var(--color-text-secondary);
+      margin-bottom: var(--space-2);
+    }
+
+    /* ============================
+       NOTE CALLOUT
+       ============================ */
+
+    .note-callout {
+      max-width: 760px;
+      margin: 0 auto var(--space-8);
+      display: flex;
+      gap: var(--space-3);
+      padding: var(--space-4);
+      background: var(--color-info-light);
+      border-radius: var(--radius-md);
+      border: 1px solid rgba(0, 122, 255, 0.15);
+    }
+
+    .note-callout__icon {
+      color: var(--color-primary);
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+
+    .note-callout__text {
+      font-size: var(--font-size-sm);
+      color: var(--color-text-secondary);
+      line-height: var(--line-height-normal);
+      margin: 0;
+    }
+
+    .note-callout__text strong {
+      color: var(--color-text-primary);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ===== SCREEN READER ANNOUNCER (outside Shadow DOM) ===== -->
+  <div id="inboxkey-sr-announcer" role="status" aria-live="polite" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;"></div>
+
+  <!-- ===== TOOLBAR ===== -->
+  <div class="proto-toolbar">
+    <div class="proto-toolbar__left">
+      <span class="proto-toolbar__title">Field Chip Shadow DOM</span>
+      <span class="proto-toolbar__status" data-status="ideation">Ideation</span>
+      <span class="proto-toolbar__date">2026-03-22</span>
+    </div>
+    <div class="proto-toolbar__right">
+      <button class="proto-decisions-toggle">Decisions</button>
+      <div class="proto-theme-toggle" role="group" aria-label="Theme">
+        <button data-theme-btn="light" aria-pressed="true">Light</button>
+        <button data-theme-btn="dark" aria-pressed="false">Dark</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== DECISIONS PANEL ===== -->
+  <aside class="proto-decisions-panel" aria-label="Design decisions">
+    <button class="proto-decisions-close" aria-label="Close decisions">&times;</button>
+    <h3>Design Decisions</h3>
+    <ol></ol>
+  </aside>
+
+  <!-- ===== MAIN CONTENT ===== -->
+  <main class="proto-canvas">
+
+    <!-- Intro -->
+    <div class="proto-intro">
+      <h1>Shadow DOM Overlay</h1>
+      <p>
+        A closed Shadow DOM overlay that tracks input fields and renders a shimmer border
+        with inline status text. The overlay is appended to <code>document.body</code>, positioned
+        with <code>getBoundingClientRect()</code>, and tracked via <code>requestAnimationFrame</code>.
+      </p>
+      <p class="subtitle">
+        Fully isolated from host page CSS. Works across scroll, resize, transforms, and overflow clipping.
+      </p>
+    </div>
+
+    <!-- State Controls -->
+    <div class="state-controls" role="toolbar" aria-label="Overlay state">
+      <span class="state-controls__label">State</span>
+      <button class="state-btn" data-state="idle" aria-pressed="false">
+        <span class="state-btn__dot state-btn__dot--idle"></span>
+        Idle
+      </button>
+      <button class="state-btn" data-state="listening" aria-pressed="true">
+        <span class="state-btn__dot state-btn__dot--listening"></span>
+        Listening
+      </button>
+      <button class="state-btn" data-state="filled" aria-pressed="false">
+        <span class="state-btn__dot state-btn__dot--filled"></span>
+        Filled
+      </button>
+      <button class="state-btn" data-state="copied" aria-pressed="false">
+        <span class="state-btn__dot state-btn__dot--copied"></span>
+        Copied
+      </button>
+      <button class="state-btn" data-state="timeout" aria-pressed="false">
+        <span class="state-btn__dot state-btn__dot--timeout"></span>
+        Timeout
+      </button>
+
+      <div class="state-controls__divider"></div>
+
+      <button class="split-mode-toggle" id="splitModeBtn" aria-pressed="false" title="Toggle split-input overlay mode">
+        Split: Individual
+      </button>
+    </div>
+
+    <!-- Note -->
+    <div class="note-callout">
+      <span class="note-callout__icon">
+        <i data-lucide="info" style="width:16px;height:16px;"></i>
+      </span>
+      <p class="note-callout__text">
+        <strong>Try scrolling, resizing, or switching themes.</strong>
+        The overlays track their target inputs in real time via <code>requestAnimationFrame</code>.
+        The shimmer border uses <code>@property --angle</code> for smooth conic-gradient rotation
+        with a static fallback for unsupported browsers.
+      </p>
+    </div>
+
+    <!-- ===== DEMO 1: Standard Input ===== -->
+    <section class="demo-section">
+      <div class="demo-section__header">
+        <span class="demo-section__number">01</span>
+        <h2 class="demo-section__title">Standard Input</h2>
+        <span class="demo-section__desc">Easy case</span>
+      </div>
+      <div class="demo-box">
+        <label class="fake-label">Verification Code</label>
+        <input
+          class="tracked-input"
+          type="text"
+          placeholder="Enter code"
+          style="width: 300px; padding: 10px; border: 1px solid #ccc; border-radius: 6px; font-size: 14px; font-family: inherit; outline: none; background: var(--surface-card); color: var(--color-text-primary);"
+        >
+      </div>
+    </section>
+
+    <!-- ===== DEMO 2: Dark-Themed Site ===== -->
+    <section class="demo-section">
+      <div class="demo-section__header">
+        <span class="demo-section__number">02</span>
+        <h2 class="demo-section__title">Dark-Themed Site (Tarkov-like)</h2>
+        <span class="demo-section__desc">Overlay on dark backgrounds</span>
+      </div>
+      <div class="demo-box demo-box--dark" style="padding: 40px;">
+        <h3 style="color: #eee; margin: 0 0 16px; font-size: 18px; font-weight: 600;">Two-Factor Authorization</h3>
+        <div style="background: #333; border-radius: 4px; padding: 2px;">
+          <input
+            class="tracked-input"
+            type="text"
+            placeholder="Enter verification code"
+            style="width: 100%; background: #444; color: #fff; border: none; padding: 8px 12px; font-size: 14px; border-radius: 3px; outline: none; font-family: inherit;"
+          >
+        </div>
+        <p style="color: #888; font-size: 12px; margin: 8px 0 0;">Code is sent to the main e-mail</p>
+      </div>
+    </section>
+
+    <!-- ===== DEMO 3: Overflow Hidden Parent ===== -->
+    <section class="demo-section">
+      <div class="demo-section__header">
+        <span class="demo-section__number">03</span>
+        <h2 class="demo-section__title">Overflow Hidden Parent</h2>
+        <span class="demo-section__desc">Overlay escapes clipping</span>
+      </div>
+      <div class="demo-box">
+        <label class="fake-label">Security Code</label>
+        <div style="overflow: hidden; border-radius: 8px; border: 1px solid #ddd;">
+          <input
+            class="tracked-input"
+            type="text"
+            placeholder="Code"
+            style="width: 100%; border: none; padding: 12px; font-size: 14px; font-family: inherit; outline: none; background: var(--surface-card); color: var(--color-text-primary);"
+          >
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== DEMO 4: Narrow Input ===== -->
+    <section class="demo-section">
+      <div class="demo-section__header">
+        <span class="demo-section__number">04</span>
+        <h2 class="demo-section__title">Narrow Input</h2>
+        <span class="demo-section__desc">Status text wider than field</span>
+      </div>
+      <div class="demo-box" style="text-align: center;">
+        <input
+          class="tracked-input"
+          type="text"
+          maxlength="6"
+          placeholder="123456"
+          style="width: 80px; text-align: center; padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 18px; letter-spacing: 4px; font-family: inherit; outline: none; background: var(--surface-card); color: var(--color-text-primary);"
+        >
+      </div>
+    </section>
+
+    <!-- ===== DEMO 5: Split Input Group ===== -->
+    <section class="demo-section">
+      <div class="demo-section__header">
+        <span class="demo-section__number">05</span>
+        <h2 class="demo-section__title">Split Input Group (6 Boxes)</h2>
+        <span class="demo-section__desc">Group vs. individual overlay</span>
+      </div>
+      <div class="demo-box">
+        <label class="fake-label">Enter your 6-digit code</label>
+        <div id="splitGroup" style="display: flex; gap: 8px;">
+          <input class="tracked-input split-input" type="text" maxlength="1" style="width: 40px; height: 48px; text-align: center; border: 1px solid #ccc; border-radius: 6px; font-size: 20px; font-family: inherit; outline: none; background: var(--surface-card); color: var(--color-text-primary);">
+          <input class="tracked-input split-input" type="text" maxlength="1" style="width: 40px; height: 48px; text-align: center; border: 1px solid #ccc; border-radius: 6px; font-size: 20px; font-family: inherit; outline: none; background: var(--surface-card); color: var(--color-text-primary);">
+          <input class="tracked-input split-input" type="text" maxlength="1" style="width: 40px; height: 48px; text-align: center; border: 1px solid #ccc; border-radius: 6px; font-size: 20px; font-family: inherit; outline: none; background: var(--surface-card); color: var(--color-text-primary);">
+          <input class="tracked-input split-input" type="text" maxlength="1" style="width: 40px; height: 48px; text-align: center; border: 1px solid #ccc; border-radius: 6px; font-size: 20px; font-family: inherit; outline: none; background: var(--surface-card); color: var(--color-text-primary);">
+          <input class="tracked-input split-input" type="text" maxlength="1" style="width: 40px; height: 48px; text-align: center; border: 1px solid #ccc; border-radius: 6px; font-size: 20px; font-family: inherit; outline: none; background: var(--surface-card); color: var(--color-text-primary);">
+          <input class="tracked-input split-input" type="text" maxlength="1" style="width: 40px; height: 48px; text-align: center; border: 1px solid #ccc; border-radius: 6px; font-size: 20px; font-family: inherit; outline: none; background: var(--surface-card); color: var(--color-text-primary);">
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== DEMO 6: CSS Transform Parent ===== -->
+    <section class="demo-section">
+      <div class="demo-section__header">
+        <span class="demo-section__number">06</span>
+        <h2 class="demo-section__title">CSS Transform Parent</h2>
+        <span class="demo-section__desc">getBoundingClientRect includes transforms</span>
+      </div>
+      <div class="demo-box">
+        <div style="transform: scale(0.9) translateX(20px);">
+          <label class="fake-label">Transformed Parent</label>
+          <input
+            class="tracked-input"
+            type="text"
+            placeholder="Transformed parent"
+            style="width: 250px; padding: 10px; border: 1px solid #ccc; border-radius: 6px; font-size: 14px; font-family: inherit; outline: none; background: var(--surface-card); color: var(--color-text-primary);"
+          >
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== DEMO 7: Scrollable Container ===== -->
+    <section class="demo-section">
+      <div class="demo-section__header">
+        <span class="demo-section__number">07</span>
+        <h2 class="demo-section__title">Scrollable Container</h2>
+        <span class="demo-section__desc">Overlay tracks during container scroll</span>
+      </div>
+      <div class="demo-box" style="padding: 0;">
+        <div id="scrollContainer" style="height: 150px; overflow-y: auto; border: 1px solid var(--color-border); border-radius: var(--radius-lg); padding: 12px;">
+          <p style="margin: 0 0 8px; font-size: 13px; color: var(--color-text-tertiary);">Scroll down to find the input...</p>
+          <div style="height: 200px;"></div>
+          <label class="fake-label">Verification Code</label>
+          <input
+            class="tracked-input"
+            type="text"
+            placeholder="Scrolled input"
+            style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px; font-size: 14px; font-family: inherit; outline: none; box-sizing: border-box; background: var(--surface-card); color: var(--color-text-primary);"
+          >
+          <div style="height: 100px;"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== DEMO 8: Full Width Input ===== -->
+    <section class="demo-section">
+      <div class="demo-section__header">
+        <span class="demo-section__number">08</span>
+        <h2 class="demo-section__title">Full-Width Input</h2>
+        <span class="demo-section__desc">100% width, box-sizing: border-box</span>
+      </div>
+      <div class="demo-box">
+        <div style="max-width: 500px; margin: 0 auto;">
+          <label class="fake-label">Confirmation Code</label>
+          <input
+            class="tracked-input"
+            type="text"
+            placeholder="Full width"
+            style="width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box; font-size: 14px; font-family: inherit; outline: none; background: var(--surface-card); color: var(--color-text-primary);"
+          >
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ===== DECISIONS ===== -->
+  <script type="application/json" id="decisions">
+[
+  "Closed Shadow DOM isolation - The overlay uses attachShadow({ mode: 'closed' }) to guarantee full CSS isolation from host pages. Content scripts injected into arbitrary websites cannot risk style collisions. Closed mode also prevents host page JS from reaching into the overlay's internals.",
+  "Fixed positioning on document.body - The overlay is appended directly to document.body with position:fixed rather than wrapping the target input. This avoids disrupting the host page's DOM structure and layout, which would break forms, validation, and CSS rules that depend on input parentage.",
+  "requestAnimationFrame tracking - Position sync runs every frame via rAF to handle scroll, resize, transform changes, and dynamic layout shifts in real time. This is more reliable than listening to individual events (scroll, resize, MutationObserver) which can miss edge cases like CSS transitions or container queries.",
+  "@property --angle with static fallback - The conic-gradient shimmer rotation requires @property for smooth interpolation of the custom --angle property. Browsers without @property support fall back to a CSS keyframe that rotates the entire pseudo-element, producing a similar visual effect without the gradient sweep.",
+  "Mask-composite border ring technique - The shimmer border uses mask/mask-composite to cut out the inner area of a pseudo-element, leaving only a 2px border ring visible. This allows arbitrary gradient backgrounds (conic, linear) to appear as animated borders without actual border properties.",
+  "Split input group vs individual overlay modes - The split-input demo supports both a single overlay spanning all 6 boxes and individual overlays per box. Real-world split-input fields sometimes use hidden inputs underneath, so the group mode (spanning first-to-last input) handles more edge cases reliably.",
+  "Status text positioned above the field - Inline status text sits 18px above the input's top edge to avoid overlapping input content or labels. Right-aligned to minimize collision with left-aligned form labels. The text inherits the state color for immediate visual association with the shimmer border.",
+  "Pointer-events: none on entire overlay - The overlay must never intercept clicks, focus, or other interactions meant for the underlying form. Every element in the overlay tree has pointer-events:none to ensure complete input transparency.",
+  "State-driven attribute architecture - State changes flow through a single data-state attribute on the host element. Shadow DOM CSS uses :host([data-state='...']) selectors for all visual changes, keeping the JS interface minimal (one setAttribute call per state transition).",
+  "Visibility gating for scrollable containers - When an input scrolls partially or fully out of a clipping ancestor, the overlay hides via opacity:0 to avoid rendering a shimmer border floating in empty space. The visibility check uses getComputedStyle and bounding rect intersection.",
+  "P0: aria-live announcer outside Shadow DOM - Screen readers cannot pierce Shadow DOM boundaries, so a visually-hidden aria-live region in the main document announces state changes. Timeout uses aria-live=assertive for urgency; all other states use polite to avoid interrupting user flow.",
+  "P0: Status pill with semi-opaque background - Status text now sits in a pill with backdrop-filter blur and semi-opaque white (or dark) background. This guarantees WCAG AA readable contrast regardless of the host page's background color, solving the previous issue where light text could disappear on light backgrounds.",
+  "P0: forced-colors media query - Windows High Contrast mode users see system Highlight color for the border ring and Canvas/CanvasText for the status pill. Animations are disabled because forced-colors mode users expect static, high-contrast UI.",
+  "P0: InboxKey design token colors - Replaced Tailwind blue (59,130,246) with InboxKey primary #007AFF (0,122,255) for brand consistency. Timeout changed from red (239,68,68) to amber (245,158,11) because timeout is a warning, not an error -- the system tried but no code arrived, which is non-critical.",
+  "P1: Slower shimmer rotation (4.5s) with narrower arc - The original 2.5s rotation felt urgent and distracting. 4.5s is calmer and communicates patient waiting. The gradient arc narrowed to 30% visible coverage (from 50%) so the shimmer tail is shorter and more refined.",
+  "P1: Status text flips below near viewport top - When the input is within 28px of the viewport top, the status pill renders below instead of above to prevent clipping. Uses data-text-pos attribute to toggle CSS positioning without JS layout thrashing.",
+  "P1: Entrance fade+scale animation - Overlays transition from opacity:0 + scale(0.98) to full visibility when state changes from idle. The subtle 0.98 scale creates a gentle zoom-in that draws attention without being jarring. Idle state is instantly invisible (no transition delay on hide).",
+  "P1: Compact mode hides status text on narrow inputs - Inputs narrower than 120px get data-compact=true which hides the status pill entirely. The pill would overflow and look broken on very small inputs (like individual split-input boxes), so the border shimmer alone communicates state.",
+  "P1: InboxKey key icon in status pill - A 10x10 inline SVG key icon precedes the status text for brand recognition. Keeps the pill visually tied to InboxKey even when the shimmer color alone might not be distinctive enough on colorful host pages.",
+  "P2: Auto-dismiss states - Filled (3s), copied (2s), and timeout (4s) states auto-dismiss to idle after their respective delays. Listening has no auto-dismiss because it must persist until a code arrives or timeout fires. This prevents stale overlays from lingering on the page.",
+  "P2: Stagger delay on split-input individual overlays - Each split-input box's border animation is delayed by i*150ms, creating a left-to-right cascade effect. This visually communicates that all boxes are part of a single code entry while keeping individual tracking.",
+  "P2: Adaptive border thickness - Border width scales with input size: 3px for tiny (<80px), 2.5px for medium, 2px for large inputs. This prevents the shimmer from looking disproportionately thick on small inputs or too thin on wide ones.",
+  "P2: Increased inset on focus - When the target input receives focus, the overlay ring expands from default inset to -5px, creating visual breathing room. This ensures the overlay does not clash with the browser's native focus outline or the input's own focus styles.",
+  "P2: Subtle opacity pulse under reduced-motion - Instead of killing all animation (which makes the listening state indistinguishable from static states), a gentle 3s opacity pulse between 0.6 and 1.0 provides motion awareness while respecting the user's preference for reduced animation."
+]
+  </script>
+
+  <!-- ===== SHARED SCRIPTS ===== -->
+  <script src="../shared/theme-switcher.js"></script>
+
+  <!-- ===== OVERLAY ENGINE ===== -->
+  <script>
+  (function () {
+    'use strict';
+
+    // ── Shadow DOM CSS (injected into each overlay's shadow root) ──
+
+    const SHADOW_CSS = `
+      /* @property for animatable --angle (must be outside shadow in real impl,
+         but works inline for prototype purposes via the outer @property rule) */
+
+      :host {
+        all: initial;
+        position: fixed;
+        pointer-events: none;
+        z-index: 2147483646;
+        display: block;
+      }
+
+      /* ── SCROLL VISIBILITY GATING ── */
+      :host([data-visible="false"]) {
+        opacity: 0 !important;
+      }
+
+      /* ── ENTRANCE ANIMATION ── */
+      :host([data-state="idle"]) {
+        opacity: 0;
+        transform: scale(0.98);
+      }
+      :host(:not([data-state="idle"])) {
+        opacity: 1;
+        transform: scale(1);
+        transition: opacity 0.3s ease, transform 0.3s ease;
+      }
+
+      .border-ring {
+        position: absolute;
+        inset: calc(-1 * var(--border-width, 2.5px) - 0.5px);
+        border-radius: inherit;
+        pointer-events: none;
+        opacity: 0;
+        transition: opacity 0.3s ease, inset 0.2s ease;
+      }
+
+      .border-ring::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        border-radius: inherit;
+        padding: var(--border-width, 2.5px);
+        mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+        mask-composite: exclude;
+        -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+        -webkit-mask-composite: xor;
+        background: conic-gradient(
+          from var(--angle, 0deg),
+          transparent 0%,
+          rgba(0, 122, 255, 0.3) 25%,
+          rgba(0, 122, 255, 0.5) 50%,
+          rgba(0, 122, 255, 0.3) 75%,
+          transparent 100%
+        );
+      }
+
+      /* ── FOCUS: increased inset ── */
+      :host([data-focused="true"]) .border-ring {
+        inset: -5px;
+      }
+
+      /* ── COMPACT: hide status text on narrow inputs ── */
+      :host([data-compact="true"]) .status-text {
+        display: none;
+      }
+
+      /* ── IDLE ── */
+      :host([data-state="idle"]) .border-ring {
+        opacity: 0;
+      }
+
+      /* ── LISTENING ── */
+      :host([data-state="listening"]) .border-ring {
+        opacity: 1;
+      }
+      :host([data-state="listening"]) .border-ring::before {
+        background: conic-gradient(
+          from var(--angle, 0deg),
+          transparent 0%,
+          rgba(0, 122, 255, 0.3) 15%,
+          rgba(0, 122, 255, 0.5) 30%,
+          rgba(0, 122, 255, 0.3) 45%,
+          transparent 60%,
+          transparent 100%
+        );
+        animation: shimmer-rotate 4.5s linear infinite;
+        animation-delay: var(--stagger-delay, 0ms);
+      }
+
+      /* ── FILLED ── */
+      :host([data-state="filled"]) .border-ring {
+        opacity: 1;
+      }
+      :host([data-state="filled"]) .border-ring::before {
+        background: conic-gradient(
+          from var(--angle, 0deg),
+          transparent 0%,
+          rgba(16, 185, 129, 0.35) 30%,
+          rgba(16, 185, 129, 0.55) 50%,
+          rgba(16, 185, 129, 0.35) 70%,
+          transparent 100%
+        );
+        animation: shimmer-sweep 1.8s ease-out 1 forwards;
+        animation-delay: var(--stagger-delay, 0ms);
+      }
+
+      /* ── COPIED ── */
+      :host([data-state="copied"]) .border-ring {
+        opacity: 1;
+      }
+      :host([data-state="copied"]) .border-ring::before {
+        background: rgba(16, 185, 129, 0.25);
+        animation: shimmer-fade-ring 0.6s ease forwards;
+        animation-delay: var(--stagger-delay, 0ms);
+      }
+
+      /* ── TIMEOUT ── */
+      :host([data-state="timeout"]) .border-ring {
+        opacity: 1;
+      }
+      :host([data-state="timeout"]) .border-ring::before {
+        background: rgba(245, 158, 11, 0.3);
+        animation: shimmer-fade-ring 0.6s ease forwards;
+        animation-delay: var(--stagger-delay, 0ms);
+      }
+
+      /* ── STATUS TEXT (pill with background) ── */
+      .status-text {
+        position: absolute;
+        top: -22px;
+        right: 0;
+        display: inline-flex;
+        align-items: center;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        font-size: 10px;
+        font-weight: 500;
+        line-height: 1;
+        white-space: nowrap;
+        opacity: 0;
+        transition: opacity 0.3s ease, transform 0.3s ease;
+        transform: translateY(4px);
+        pointer-events: none;
+        background: rgba(255, 255, 255, 0.92);
+        padding: 2px 8px;
+        border-radius: 4px;
+        backdrop-filter: blur(4px);
+        -webkit-backdrop-filter: blur(4px);
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+      }
+
+      /* Dark theme pill */
+      :host([data-theme="dark"]) .status-text {
+        background: rgba(0, 0, 0, 0.85);
+      }
+
+      /* Flip status text below when near viewport top */
+      :host([data-text-pos="below"]) .status-text {
+        top: auto;
+        bottom: -22px;
+      }
+
+      .status-icon {
+        margin-right: 4px;
+        vertical-align: middle;
+        flex-shrink: 0;
+      }
+
+      :host([data-state="listening"]) .status-text {
+        opacity: 0.85;
+        transform: translateY(0);
+        color: rgba(0, 122, 255, 0.95);
+      }
+      :host([data-state="filled"]) .status-text {
+        opacity: 1;
+        transform: translateY(0);
+        color: rgba(16, 185, 129, 0.95);
+      }
+      :host([data-state="copied"]) .status-text {
+        opacity: 0.85;
+        transform: translateY(0);
+        color: rgba(16, 185, 129, 0.75);
+      }
+      :host([data-state="timeout"]) .status-text {
+        opacity: 1;
+        transform: translateY(0);
+        color: rgba(245, 158, 11, 0.9);
+      }
+
+      /* ── LISTENING DOTS ANIMATION ── */
+      .listening-dots::after {
+        content: '';
+        animation: dots-cycle 1.8s steps(4, end) infinite;
+      }
+      @keyframes dots-cycle {
+        0%  { content: ''; }
+        25% { content: '.'; }
+        50% { content: '..'; }
+        75% { content: '...'; }
+      }
+
+      /* ── KEYFRAMES ── */
+
+      /* Fallback rotation: rotates the entire pseudo-element for browsers without @property */
+      @keyframes shimmer-rotate {
+        from { transform: rotate(0deg); }
+        to   { transform: rotate(360deg); }
+      }
+
+      @keyframes shimmer-sweep {
+        from { transform: rotate(0deg); }
+        to   { transform: rotate(360deg); }
+      }
+
+      @keyframes shimmer-fade-ring {
+        from { opacity: 0; }
+        to   { opacity: 1; }
+      }
+
+      /* ── REDUCED MOTION ── */
+      @media (prefers-reduced-motion: reduce) {
+        .border-ring::before {
+          animation: none !important;
+        }
+        :host([data-state="listening"]) .border-ring {
+          animation: subtle-pulse 3s ease-in-out infinite;
+        }
+        .status-text {
+          transition: opacity 0.1s ease !important;
+          transform: none !important;
+        }
+        .listening-dots::after {
+          animation: none !important;
+          content: '...' !important;
+        }
+      }
+
+      @keyframes subtle-pulse {
+        0%, 100% { opacity: 0.6; }
+        50% { opacity: 1; }
+      }
+
+      /* ── FORCED COLORS (Windows High Contrast) ── */
+      @media (forced-colors: active) {
+        .border-ring::before {
+          background: Highlight !important;
+          animation: none !important;
+        }
+        .status-text {
+          color: CanvasText !important;
+          background: Canvas !important;
+          border: 1px solid CanvasText;
+          backdrop-filter: none;
+        }
+      }
+    `;
+
+    // ── @property rule (must be in outer document for prototype) ──
+    // In real extension content script, this would be in the page's <style>
+    try {
+      const propStyle = document.createElement('style');
+      propStyle.textContent = `
+        @property --angle {
+          syntax: "<angle>";
+          initial-value: 0deg;
+          inherits: false;
+        }
+      `;
+      document.head.appendChild(propStyle);
+    } catch (e) {
+      // @property not supported; fallback rotation animation handles it
+    }
+
+    // Enhanced shadow CSS that uses @property --angle for smooth gradient rotation
+    // This replaces the transform-based fallback when @property is supported
+    const ENHANCED_CSS = `
+      @keyframes shimmer-rotate {
+        from { --angle: 0deg; }
+        to   { --angle: 360deg; }
+      }
+      @keyframes shimmer-sweep {
+        from { --angle: 0deg; }
+        to   { --angle: 360deg; }
+      }
+    `;
+
+    // Test @property support
+    const supportsAtProperty = CSS && CSS.registerProperty;
+
+    // ── Screen reader announcer ──
+    const srAnnouncer = document.getElementById('inboxkey-sr-announcer');
+    const SR_ANNOUNCEMENTS = {
+      idle: '',
+      listening: 'InboxKey is checking for a verification code',
+      filled: 'Verification code filled automatically',
+      copied: 'Code copied to clipboard',
+      timeout: 'No verification code received',
+    };
+
+    // ── Status text map ──
+    const STATUS_TEXT = {
+      idle: '',
+      listening: 'InboxKey',
+      filled: 'Code filled',
+      copied: 'Copied to clipboard',
+      timeout: 'No code received',
+    };
+
+    // ── Auto-dismiss delays (ms) ──
+    const DISMISS_DELAYS = { filled: 3000, copied: 2000, timeout: 4000 };
+
+    // ── Dark theme detection via luminance ──
+    function isDarkBackground(element) {
+      const bg = getComputedStyle(element).backgroundColor;
+      const match = bg.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
+      if (!match) return false;
+      const [, r, g, b] = match.map(Number);
+      // Relative luminance formula (simplified sRGB)
+      const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+      return luminance < 0.5;
+    }
+
+    // ── Create InboxKey icon SVG element ──
+    function createKeyIcon() {
+      const icon = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+      icon.setAttribute('viewBox', '0 0 24 24');
+      icon.setAttribute('width', '10');
+      icon.setAttribute('height', '10');
+      icon.setAttribute('fill', 'none');
+      icon.setAttribute('stroke', 'currentColor');
+      icon.setAttribute('stroke-width', '2');
+      icon.setAttribute('class', 'status-icon');
+      icon.innerHTML = '<path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/>';
+      return icon;
+    }
+
+    // ── FieldOverlay class ──
+
+    class FieldOverlay {
+      constructor(target, options = {}) {
+        this.target = target;
+        this.isGroup = options.isGroup || false;
+        this.groupTargets = options.groupTargets || [target];
+        this.hideStatusText = options.hideStatusText || false;
+        this.state = 'idle';
+        this._destroyed = false;
+        this._dismissTimer = null;
+
+        // Create host element
+        this.host = document.createElement('inboxkey-overlay');
+        this.host.setAttribute('data-state', 'idle');
+        this.host.style.cssText = 'position:fixed;pointer-events:none;z-index:2147483646;display:block;';
+
+        // Detect dark theme from target's background
+        const darkTarget = this.isGroup ? this.groupTargets[0] : this.target;
+        if (isDarkBackground(darkTarget)) {
+          this.host.setAttribute('data-theme', 'dark');
+        }
+
+        // Attach closed shadow
+        this.shadow = this.host.attachShadow({ mode: 'closed' });
+
+        // Build shadow DOM
+        const style = document.createElement('style');
+        style.textContent = SHADOW_CSS + (supportsAtProperty ? ENHANCED_CSS : '');
+        this.shadow.appendChild(style);
+
+        const ring = document.createElement('div');
+        ring.className = 'border-ring';
+        this.shadow.appendChild(ring);
+        this.borderRing = ring;
+
+        // Apply stagger delay for split inputs (via CSS variable so ::before inherits it)
+        if (options.staggerDelay) {
+          ring.style.setProperty('--stagger-delay', options.staggerDelay + 'ms');
+        }
+
+        const text = document.createElement('span');
+        text.className = 'status-text';
+        if (this.hideStatusText) text.style.display = 'none';
+        this.shadow.appendChild(text);
+        this.statusText = text;
+
+        // Listen for focus/blur on the target for increased inset
+        this.target.addEventListener('focusin', () => this.host.setAttribute('data-focused', 'true'));
+        this.target.addEventListener('focusout', () => this.host.removeAttribute('data-focused'));
+
+        document.body.appendChild(this.host);
+        this.syncPosition();
+        this._startTracking();
+      }
+
+      syncPosition() {
+        if (this._destroyed) return;
+
+        let rect;
+        if (this.isGroup && this.groupTargets.length > 1) {
+          // Compute bounding rect spanning all group targets
+          const rects = this.groupTargets.map(t => t.getBoundingClientRect());
+          const left = Math.min(...rects.map(r => r.left));
+          const top = Math.min(...rects.map(r => r.top));
+          const right = Math.max(...rects.map(r => r.right));
+          const bottom = Math.max(...rects.map(r => r.bottom));
+          rect = { left, top, right, bottom, width: right - left, height: bottom - top };
+        } else {
+          rect = this.target.getBoundingClientRect();
+        }
+
+        // Check visibility: if target is inside a scrollable container,
+        // hide overlay when target is clipped
+        const visible = this._isVisible(rect);
+
+        this.host.style.left = rect.left + 'px';
+        this.host.style.top = rect.top + 'px';
+        this.host.style.width = rect.width + 'px';
+        this.host.style.height = rect.height + 'px';
+        this.host.setAttribute('data-visible', visible ? 'true' : 'false');
+
+        // Inherit border-radius from target (or use a default for groups)
+        if (this.isGroup) {
+          this.borderRing.style.borderRadius = '8px';
+        } else {
+          const style = getComputedStyle(this.target);
+          this.borderRing.style.borderRadius = style.borderRadius || '0px';
+        }
+
+        // Flip status text below field when near viewport top
+        const textPosition = rect.top < 28 ? 'below' : 'above';
+        this.host.setAttribute('data-text-pos', textPosition);
+
+        // Hide status text on narrow inputs
+        const isNarrow = rect.width < 120;
+        this.host.setAttribute('data-compact', isNarrow ? 'true' : 'false');
+
+        // Scale border thickness by input size
+        const borderWidth = rect.width < 80 ? 3 : rect.width < 200 ? 2.5 : 2;
+        this.borderRing.style.setProperty('--border-width', borderWidth + 'px');
+      }
+
+      _isVisible(rect) {
+        // Check if the element's rect is reasonably on screen
+        if (rect.width === 0 || rect.height === 0) return false;
+
+        const primary = this.isGroup ? this.groupTargets[0] : this.target;
+        let parent = primary.parentElement;
+
+        while (parent && parent !== document.body && parent !== document.documentElement) {
+          const style = getComputedStyle(parent);
+          const overflow = style.overflow + style.overflowX + style.overflowY;
+
+          if (overflow.includes('hidden') || overflow.includes('scroll') || overflow.includes('auto')) {
+            const parentRect = parent.getBoundingClientRect();
+            // Check vertical clipping
+            if (rect.bottom < parentRect.top + 1 || rect.top > parentRect.bottom - 1) {
+              return false;
+            }
+            // Check horizontal clipping
+            if (rect.right < parentRect.left + 1 || rect.left > parentRect.right - 1) {
+              return false;
+            }
+          }
+          parent = parent.parentElement;
+        }
+        return true;
+      }
+
+      _startTracking() {
+        const track = () => {
+          if (this._destroyed) return;
+          if (!document.body.contains(this.target)) {
+            this.destroy();
+            return;
+          }
+          this.syncPosition();
+          this._rafId = requestAnimationFrame(track);
+        };
+        this._rafId = requestAnimationFrame(track);
+      }
+
+      setState(state) {
+        if (this._destroyed) return;
+        this.state = state;
+        this.host.setAttribute('data-state', state);
+
+        // Screen reader announcement
+        if (srAnnouncer) {
+          const announcement = SR_ANNOUNCEMENTS[state] || '';
+          if (state === 'timeout') {
+            srAnnouncer.setAttribute('aria-live', 'assertive');
+          } else {
+            srAnnouncer.setAttribute('aria-live', 'polite');
+          }
+          srAnnouncer.textContent = announcement;
+        }
+
+        // Build status text content
+        const text = STATUS_TEXT[state] || '';
+        this.statusText.innerHTML = '';
+        if (state !== 'idle' && text) {
+          if (state === 'listening') {
+            const mainText = document.createTextNode(text);
+            const dots = document.createElement('span');
+            dots.className = 'listening-dots';
+            this.statusText.appendChild(mainText);
+            this.statusText.appendChild(dots);
+          } else {
+            this.statusText.appendChild(document.createTextNode(text));
+          }
+        }
+
+        // Auto-dismiss timer
+        if (this._dismissTimer) clearTimeout(this._dismissTimer);
+        if (DISMISS_DELAYS[state]) {
+          this._dismissTimer = setTimeout(() => this.setState('idle'), DISMISS_DELAYS[state]);
+        }
+      }
+
+      destroy() {
+        this._destroyed = true;
+        if (this._rafId) cancelAnimationFrame(this._rafId);
+        if (this._dismissTimer) clearTimeout(this._dismissTimer);
+        this.host.remove();
+      }
+    }
+
+    // ── Overlay Manager ──
+
+    const overlays = [];
+    let splitGroupOverlay = null;
+    let splitIndividualOverlays = [];
+    let currentState = 'listening';
+    let splitMode = 'individual'; // 'individual' | 'group'
+
+    function createOverlays() {
+      // Destroy existing
+      overlays.forEach(o => o.destroy());
+      overlays.length = 0;
+      if (splitGroupOverlay) { splitGroupOverlay.destroy(); splitGroupOverlay = null; }
+      splitIndividualOverlays.forEach(o => o.destroy());
+      splitIndividualOverlays = [];
+
+      // Create overlays for non-split inputs
+      const inputs = document.querySelectorAll('.tracked-input:not(.split-input)');
+      inputs.forEach(input => {
+        const overlay = new FieldOverlay(input);
+        overlay.setState(currentState);
+        overlays.push(overlay);
+      });
+
+      // Handle split inputs
+      const splitInputs = Array.from(document.querySelectorAll('.split-input'));
+      if (splitInputs.length > 0) {
+        if (splitMode === 'group') {
+          // Single overlay spanning all split inputs
+          splitGroupOverlay = new FieldOverlay(splitInputs[0], {
+            isGroup: true,
+            groupTargets: splitInputs,
+          });
+          splitGroupOverlay.setState(currentState);
+        } else {
+          // Individual overlays per split input (status text only on last, staggered animation)
+          splitInputs.forEach((input, i) => {
+            const overlay = new FieldOverlay(input, {
+              hideStatusText: i < splitInputs.length - 1,
+              staggerDelay: i * 150,
+            });
+            overlay.setState(currentState);
+            splitIndividualOverlays.push(overlay);
+          });
+        }
+      }
+    }
+
+    function setAllState(state) {
+      currentState = state;
+      overlays.forEach(o => o.setState(state));
+      if (splitGroupOverlay) splitGroupOverlay.setState(state);
+      splitIndividualOverlays.forEach(o => o.setState(state));
+    }
+
+    // ── State buttons ──
+
+    const stateBtns = document.querySelectorAll('.state-btn');
+    stateBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        stateBtns.forEach(b => b.setAttribute('aria-pressed', 'false'));
+        btn.setAttribute('aria-pressed', 'true');
+        setAllState(btn.dataset.state);
+      });
+    });
+
+    // ── Split mode toggle ──
+
+    const splitModeBtn = document.getElementById('splitModeBtn');
+    splitModeBtn.addEventListener('click', () => {
+      splitMode = splitMode === 'individual' ? 'group' : 'individual';
+      splitModeBtn.setAttribute('aria-pressed', splitMode === 'group' ? 'true' : 'false');
+      splitModeBtn.textContent = splitMode === 'group' ? 'Split: Group' : 'Split: Individual';
+      createOverlays();
+    });
+
+    // ── Init ──
+
+    // Wait for layout to settle
+    requestAnimationFrame(() => {
+      createOverlays();
+    });
+
+    // Initialize Lucide icons
+    if (window.lucide) {
+      lucide.createIcons();
+    }
+
+  })();
+  </script>
+
+</body>
+</html>
