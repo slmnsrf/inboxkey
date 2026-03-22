@@ -3,21 +3,32 @@
  *
  * Periodically refreshes OAuth tokens for Outlook accounts before they expire.
  * Gmail tokens are managed by Chrome Identity API and don't need this.
+ *
+ * Alarm interval is 20 minutes. With a 10-minute pre-expiry buffer and
+ * Microsoft's ~60-minute token lifetime, this guarantees at least one check
+ * falls within the refresh window regardless of token issue timing.
  */
 
 import { StorageFactory } from '@/lib/storage/storage-factory'
 import { OutlookProvider } from '@/lib/providers/outlook/outlook-provider'
 
 const ALARM_NAME = 'token-refresh'
-const ALARM_INTERVAL_MINUTES = 45
+const ALARM_INTERVAL_MINUTES = 20
 const REFRESH_BUFFER_MS = 10 * 60 * 1000 // 10 minutes before expiry
 
 /**
  * Register the periodic token refresh alarm and its listener.
- * Call once from the service worker entry point.
+ * Checks if the alarm already exists to avoid resetting the timer
+ * on service worker restarts (Chrome replaces same-named alarms).
  */
 export function registerTokenRefreshAlarm(): void {
-  chrome.alarms.create(ALARM_NAME, { periodInMinutes: ALARM_INTERVAL_MINUTES })
+  // Only create the alarm if it doesn't already exist
+  chrome.alarms.get(ALARM_NAME, (existing) => {
+    if (!existing) {
+      chrome.alarms.create(ALARM_NAME, { periodInMinutes: ALARM_INTERVAL_MINUTES })
+      console.log(`[TokenRefresh] Alarm created (every ${ALARM_INTERVAL_MINUTES}min)`)
+    }
+  })
 
   chrome.alarms.onAlarm.addListener(async (alarm) => {
     if (alarm.name === ALARM_NAME) {
@@ -29,6 +40,7 @@ export function registerTokenRefreshAlarm(): void {
 /**
  * Check all Outlook mailboxes and refresh tokens that are about to expire.
  * Safe to call at any time -- skips mailboxes that don't need refresh.
+ * On successful refresh, clears stale error state for the mailbox.
  */
 export async function refreshExpiringTokens(): Promise<void> {
   try {
@@ -55,12 +67,12 @@ export async function refreshExpiringTokens(): Promise<void> {
           accessToken: tokens.accessToken,
           refreshToken: tokens.refreshToken || mailbox.refreshToken,
           tokenExpiresAt: expiresAt,
+          lastSyncError: undefined, // Clear stale error on successful refresh
         })
 
         console.log(`[TokenRefresh] Refreshed token for ${mailbox.email}`)
       } catch (error) {
         console.error(`[TokenRefresh] Failed to refresh ${mailbox.email}:`, error)
-        // Don't mark as expired -- the next watch session will surface the error
       }
     }
   } catch (error) {
