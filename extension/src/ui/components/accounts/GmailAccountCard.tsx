@@ -191,6 +191,30 @@ export function GmailAccountCard({
     >
       {account ? (
         <>
+          {confirmingDisconnect ? (
+            <div className="confirm-replace" role="alertdialog" aria-label={t('accounts_remove_confirm')}>
+              <p className="confirm-replace__text">{t('accounts_remove_confirm')}</p>
+              <div className="confirm-replace__actions">
+                <button
+                  type="button"
+                  className="btn btn--danger-ghost btn--sm"
+                  onClick={handleDisconnect}
+                  disabled={disabled || connectionState === 'loading'}
+                  aria-busy={connectionState === 'loading'}
+                >
+                  {connectionState === 'loading' ? t('accounts_disconnecting') : t('accounts_remove_confirm_button')}
+                </button>
+                <button
+                  type="button"
+                  className="btn btn--secondary btn--sm"
+                  onClick={() => setConfirmingDisconnect(false)}
+                  disabled={disabled || connectionState === 'loading'}
+                >
+                  {t('accounts_remove_cancel')}
+                </button>
+              </div>
+            </div>
+          ) : (
           <AccountRow
             email={account.email}
             statusDot={
@@ -207,30 +231,6 @@ export function GmailAccountCard({
                 : undefined
             }
             actions={
-              confirmingDisconnect ? (
-                <div className="confirm-inline" role="alertdialog" aria-label={t('accounts_remove_confirm')}>
-                  <p className="confirm-inline__text">{t('accounts_remove_confirm')}</p>
-                  <div className="confirm-inline__actions">
-                    <button
-                      type="button"
-                      className="btn btn--danger-ghost btn--sm"
-                      onClick={handleDisconnect}
-                      disabled={disabled || connectionState === 'loading'}
-                      aria-busy={connectionState === 'loading'}
-                    >
-                      {connectionState === 'loading' ? t('accounts_disconnecting') : t('accounts_remove_confirm_button')}
-                    </button>
-                    <button
-                      type="button"
-                      className="btn btn--secondary btn--sm"
-                      onClick={() => setConfirmingDisconnect(false)}
-                      disabled={disabled || connectionState === 'loading'}
-                    >
-                      {t('accounts_remove_cancel')}
-                    </button>
-                  </div>
-                </div>
-              ) : (
                 <>
                   <button
                     type="button"
@@ -250,9 +250,9 @@ export function GmailAccountCard({
                     {t('accounts_disconnect')}
                   </button>
                 </>
-              )
             }
           />
+          )}
 
           {/* Modal - PRESERVED from GmailAccountRow.tsx */}
           <Modal
