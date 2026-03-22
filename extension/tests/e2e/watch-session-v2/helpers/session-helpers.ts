@@ -256,8 +256,12 @@ export async function verifyReducedMotionCompliance(
   }
 
   const state = await overlay.getAttribute('data-state')
-  // Overlay renders and has a valid state -- proves reduced-motion does not break it
-  return !!state
+  if (!state) return false
+
+  // Check host-level data-reduced-motion attribute (set by FieldOverlay
+  // when prefers-reduced-motion: reduce is active)
+  const reducedMotion = await overlay.getAttribute('data-reduced-motion')
+  return reducedMotion === 'true'
 }
 
 /**

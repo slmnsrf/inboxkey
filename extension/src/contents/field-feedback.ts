@@ -126,11 +126,20 @@ function ensureAriaRegions(): void {
 function announceState(state: ChipState): void {
   ensureAriaRegions()
   const text = ARIA_TEXT[state]
-  if (state === 'timeout') {
-    if (srAlertEl) srAlertEl.textContent = text
-  } else {
-    if (srStatusEl) srStatusEl.textContent = text
-  }
+
+  // Clear BOTH regions first to force re-announcement even if the
+  // same text is written again (screen readers ignore identical updates)
+  if (srStatusEl) srStatusEl.textContent = ''
+  if (srAlertEl) srAlertEl.textContent = ''
+
+  // Write to the appropriate region after a microtask so the clear takes effect
+  queueMicrotask(() => {
+    if (state === 'timeout') {
+      if (srAlertEl) srAlertEl.textContent = text
+    } else {
+      if (srStatusEl) srStatusEl.textContent = text
+    }
+  })
 }
 
 // ─── Dark background detection ──────────────────────────────────────────────
@@ -239,6 +248,11 @@ class FieldOverlay {
     // Create host element
     this.host = document.createElement('inboxkey-overlay')
     this.host.setAttribute('data-state', 'idle')
+
+    // Expose reduced-motion preference on host for E2E testability
+    if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) {
+      this.host.setAttribute('data-reduced-motion', 'true')
+    }
 
     // Double-load guard
     const targetId = this.generateTargetId()
