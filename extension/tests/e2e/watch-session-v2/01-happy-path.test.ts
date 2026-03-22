@@ -80,8 +80,8 @@ test.describe('Watch Session V2 - Happy Path', () => {
     })
     expect(isFilled).toBe(true)
 
-    // STEP 12: Verify chip auto-dismisses after 5 seconds
-    await verifyChipAutoDismiss(page, 5000, 1500)
+    // STEP 12: Verify chip auto-dismisses after 3 seconds (filled state)
+    await verifyChipAutoDismiss(page, 3000, 1500)
   })
 
   test('happy path with domain affinity boost (exact match)', async ({
