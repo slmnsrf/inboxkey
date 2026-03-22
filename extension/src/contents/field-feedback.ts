@@ -176,7 +176,12 @@ class OverlayManager {
       for (const overlay of this.overlays) {
         overlay.syncPosition()
       }
-      this.rafId = requestAnimationFrame(tick)
+      // Only continue loop if overlays remain (syncPosition may trigger destroy)
+      if (this.overlays.size > 0) {
+        this.rafId = requestAnimationFrame(tick)
+      } else {
+        this.rafId = null
+      }
     }
     this.rafId = requestAnimationFrame(tick)
   }
@@ -197,6 +202,7 @@ interface FieldOverlayOptions {
   hideStatusText?: boolean
   staggerDelay?: number
   onClose?: () => void | Promise<void>
+  onDestroy?: () => void
 }
 
 class FieldOverlay {
@@ -214,11 +220,13 @@ class FieldOverlay {
   private intersectionObserver: IntersectionObserver | null = null
   private isIntersecting = true
   private wasVisible = true  // hysteresis tracking
+  private onDestroyCallback?: () => void
 
   constructor(target: HTMLInputElement, options: FieldOverlayOptions = {}) {
     this.target = target
     this.isGroup = options.isGroup ?? false
     this.groupTargets = options.groupTargets ?? [target]
+    this.onDestroyCallback = options.onDestroy
     this.abortController = new AbortController()
     const signal = this.abortController.signal
 
@@ -351,8 +359,9 @@ class FieldOverlay {
   syncPosition(): void {
     if (this.destroyed) return
 
-    // Check target is still in DOM
-    if (!document.body.contains(this.target)) {
+    // Check target is still in DOM (shadow-DOM aware: getRootNode() returns
+    // the shadow root or document, and isConnected is true if attached anywhere)
+    if (!this.target.isConnected) {
       this.destroy()
       return
     }
@@ -525,6 +534,9 @@ class FieldOverlay {
     if (this.host.parentElement) {
       this.host.parentElement.removeChild(this.host)
     }
+
+    // Notify owner to clean up references (e.g., activeHandles)
+    this.onDestroyCallback?.()
   }
 }
 
@@ -600,6 +612,10 @@ function buildSingleHandle(
           handle.hide()
         }
       : undefined,
+    onDestroy: () => {
+      // Clean up activeHandles so the next session gets a fresh handle
+      activeHandles.delete(field)
+    },
   })
 
   // Start in listening state
@@ -645,6 +661,9 @@ function buildSplitHandle(
             handle.hide()
           }
         : undefined,
+      onDestroy: () => {
+        activeHandles.delete(inputs[i])
+      },
     })
 
     overlay.setState('listening')
