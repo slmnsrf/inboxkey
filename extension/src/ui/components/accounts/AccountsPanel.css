@@ -820,6 +820,18 @@
   border-color: rgba(239, 68, 68, 0.15);
 }
 
+.account-row--warning {
+  border-color: rgba(245, 158, 11, 0.2);
+}
+
+.account-row__warning-label {
+  display: block;
+  margin-top: var(--space-1);
+  font-size: var(--font-size-xs);
+  color: var(--color-warning);
+  font-weight: var(--font-weight-medium);
+}
+
 .account-row__info {
   flex: 1;
   display: flex;

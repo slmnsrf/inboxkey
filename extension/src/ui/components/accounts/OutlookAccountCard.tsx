@@ -267,6 +267,7 @@ export function OutlookAccountCard({
             <AccountRow
               key={account.id}
               email={account.email}
+              className={status === 'warning' ? 'account-row--warning' : ''}
               statusDot={
                 <span
                   className={`status-dot status-dot--${status}`}
@@ -302,7 +303,11 @@ export function OutlookAccountCard({
                     </button>
                   </>
               }
-            />
+            >
+              {status === 'warning' && (
+                <span className="account-row__warning-label">{statusLabel}</span>
+              )}
+            </AccountRow>
           )
         })
       ) : (
