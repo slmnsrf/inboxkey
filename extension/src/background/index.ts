@@ -27,6 +27,7 @@ import {
   clearBadge,
 } from "@/contents/badge-manager"
 import { addBlacklistedDomain, removeBlacklistedDomain } from "@/lib/utils/blacklist"
+import { registerTokenRefreshAlarm, refreshExpiringTokens } from "./token-refresh"
 
 interface StartSessionMessage {
   type: "START_SESSION"
@@ -114,6 +115,9 @@ sessionController
     console.error("[InboxKey] Failed to initialize:", error)
   })
 
+// Register background token refresh alarm (Outlook tokens expire after ~1 hour)
+registerTokenRefreshAlarm()
+
 // Track lifecycle across restarts
 let startupTimestamp = Date.now()
 let messageCount = 0
@@ -136,6 +140,9 @@ chrome.runtime.onInstalled.addListener(async (details) => {
     })
   }
 
+  // Refresh Outlook tokens on extension install/update
+  await refreshExpiringTokens()
+
   // Clean up legacy migration-related storage keys on any install/update
   // (Harmless if keys don't exist)
   await chrome.storage.local.remove([
@@ -153,6 +160,9 @@ chrome.runtime.onInstalled.addListener(async (details) => {
 chrome.runtime.onStartup.addListener(async () => {
   console.log("[InboxKey] SW onStartup fired at:", new Date().toISOString())
   startupTimestamp = Date.now()
+
+  // Refresh any Outlook tokens that may have expired while the browser was closed
+  await refreshExpiringTokens()
 })
 
 // V2: SessionPoller handles alarms internally via its own listener
