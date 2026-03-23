@@ -502,14 +502,18 @@ export class SessionController {
 
       // Filter cached codes by channel to prevent cross-channel contamination
       // SMS-only sessions should only see google-messages codes; email-only should exclude them
+      // When GM session expired, always exclude google-messages codes (stale, from disconnected account)
       const channelFilteredCodes = allCachedCodes.filter(c => {
+        if (gmSessionExpired && c.providerId === 'google-messages') {
+          return false // Expired GM adapter -- exclude stale SMS codes in ALL session types
+        }
         if (channels.includes('sms') && !channels.includes('email')) {
           return c.providerId === 'google-messages'
         }
         if (channels.includes('email') && !channels.includes('sms')) {
           return c.providerId !== 'google-messages'
         }
-        return true // hybrid: keep all
+        return true // hybrid: keep all (except expired GM codes, filtered above)
       })
 
       const codes = channelFilteredCodes.map(c => ({
