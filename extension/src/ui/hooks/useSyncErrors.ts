@@ -27,11 +27,42 @@ export interface SyncErrorState {
 
 const bridge = new PopupBridge()
 
+const DISMISSED_STORAGE_KEY = 'inboxkey_dismissed_banners'
+
+/** Load dismissed banners from session storage (persists across popup reopens, clears on browser close). */
+async function loadDismissed(): Promise<Set<BannerType>> {
+  try {
+    const result = await chrome.storage.session.get(DISMISSED_STORAGE_KEY)
+    const arr = result[DISMISSED_STORAGE_KEY]
+    return Array.isArray(arr) ? new Set(arr as BannerType[]) : new Set()
+  } catch {
+    return new Set()
+  }
+}
+
+/** Save dismissed banners to session storage. */
+async function saveDismissed(dismissed: Set<BannerType>): Promise<void> {
+  try {
+    await chrome.storage.session.set({ [DISMISSED_STORAGE_KEY]: Array.from(dismissed) })
+  } catch {
+    // Best effort
+  }
+}
+
 export function useSyncErrors(options?: { onRetrySuccess?: () => void }) {
   const [dismissed, setDismissed] = useState<Set<BannerType>>(new Set())
+  const [dismissedLoaded, setDismissedLoaded] = useState(false)
   const [syncError, setSyncError] = useState<SyncErrorState | null>(null)
   const [isOnline, setIsOnline] = useState(navigator.onLine)
   const isRetryingRef = useRef(false)
+
+  // Load persisted dismissed state on mount
+  useEffect(() => {
+    loadDismissed().then(loaded => {
+      setDismissed(loaded)
+      setDismissedLoaded(true)
+    })
+  }, [])
 
   // Monitor online/offline events
   useEffect(() => {
@@ -63,6 +94,8 @@ export function useSyncErrors(options?: { onRetrySuccess?: () => void }) {
     let mounted = true
 
     const fetchSyncError = async () => {
+      if (!dismissedLoaded) return // Wait for persisted dismiss state before showing banners
+
       try {
         const errors = await bridge.getSyncErrors()
 
@@ -163,10 +196,14 @@ export function useSyncErrors(options?: { onRetrySuccess?: () => void }) {
       mounted = false
       clearInterval(interval)
     }
-  }, [dismissed, isOnline])
+  }, [dismissed, isOnline, dismissedLoaded])
 
   const dismissSyncError = (type: BannerType) => {
-    setDismissed((prev) => new Set(prev).add(type))
+    setDismissed((prev) => {
+      const next = new Set(prev).add(type)
+      saveDismissed(next)
+      return next
+    })
     setSyncError(null)
   }
 
