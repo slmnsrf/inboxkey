@@ -438,6 +438,15 @@ export class SessionController {
         }
       }
 
+      // If Google Messages session expired, abort before cache matching.
+      // Prevents stale SMS codes from autofilling on a disconnected account.
+      const gmSessionExpired = adapterResults.some(
+        r => !r.success && r.error === 'session_expired'
+      )
+      if (gmSessionExpired && channels.length === 1 && channels[0] === 'sms') {
+        return null  // SMS-only: don't match stale codes, let session timeout
+      }
+
       // Update popup cache if available (using ephemeral candidates)
       if (this.popupCacheManager && candidates.length > 0) {
         // Convert candidates to StoredCode format for PopupCache
