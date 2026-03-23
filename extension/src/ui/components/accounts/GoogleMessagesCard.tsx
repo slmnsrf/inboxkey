@@ -256,11 +256,9 @@ export function GoogleMessagesCard({ mailbox, onUpdate }: GoogleMessagesCardProp
       provider="google-messages"
       displayName={t('accounts_provider_google_messages')}
       description={
-        <>
-          {description}
-          {description && ' '}
-          <span className="source-type-badge">{t('accounts_gm_badge_sms')}</span>
-        </>
+        cardState === 'not-connected'
+          ? 'Got an Android phone? As the developer, I recommend using Google Messages as your default SMS app. The built-in spam protection is solid, and once connected here, InboxKey handles your SMS verification codes automatically.'
+          : description
       }
       accountCount={mailbox ? 1 : 0}
       maxAccounts={1}
@@ -306,7 +304,10 @@ export function GoogleMessagesCard({ mailbox, onUpdate }: GoogleMessagesCardProp
             aria-hidden="true"
           />
         </div>
-        <p className="empty-slot__text">{t('accounts_gm_empty_text')}</p>
+        <p className="empty-slot__text">
+          SMS verifications? There is a way.<br />
+          Autofill SMS codes from Google Messages.
+        </p>
         <button
           type="button"
           className="btn btn--primary"
@@ -403,8 +404,8 @@ export function GoogleMessagesCard({ mailbox, onUpdate }: GoogleMessagesCardProp
   function renderCountdown() {
     return (
       <div className="connecting-stage" role="status" aria-live="polite">
-        <div className="countdown-number" aria-hidden="true">
-          {countdown}
+        <div className="connecting-dots" aria-hidden="true">
+          <span /><span /><span />
         </div>
         <div className="connecting-stage__text">
           <div>Opening Google Messages in {countdown}...</div>
@@ -449,7 +450,7 @@ export function GoogleMessagesCard({ mailbox, onUpdate }: GoogleMessagesCardProp
             >
               {t('accounts_gm_pairing_fallback_prefix')}{' '}
               <a
-                href="https://messages.google.com/web/conversations"
+                href="https://messages.google.com/web/welcome"
                 target="_blank"
                 rel="noopener noreferrer"
                 style={{ color: 'var(--color-primary)' }}
