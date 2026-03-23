@@ -113,7 +113,15 @@ export class PopupMessageHandler {
             }
 
             // Create adapters from mailboxes (v2 pattern)
+            // No sessionId: google-messages adapters are excluded (SMS is session-scoped)
             const adapters = await createAdaptersFromMailboxes(storage)
+
+            // SMS-only guard: if all mailboxes are google-messages, no adapters
+            // will be created for popup sync. Return existing cache gracefully.
+            if (adapters.length === 0 && mailboxes.every(m => m.providerId === 'google-messages')) {
+              const cache = await this.cacheManager.getCache()
+              return { success: true, data: cache }
+            }
 
             // Run email polling (v2 API) - share seenStore to persist across syncs
             const pollingService = new EmailPollingService(adapters, this.seenStore)
@@ -315,7 +323,7 @@ export class PopupMessageHandler {
             const storage = await StorageFactory.create()
             const mailboxes = await storage.getMailboxes()
 
-            // Return without sensitive tokens (include IMAP metadata for reconnect)
+            // Return without sensitive tokens (include IMAP/GM metadata)
             return {
               success: true,
               mailboxes: mailboxes.map((m) => ({
@@ -329,6 +337,9 @@ export class PopupMessageHandler {
                 ...(m.providerId === 'imap-bridge' ? {
                   imapServer: m.imapServer,
                   imapPort: m.imapPort,
+                } : {}),
+                ...(m.providerId === 'google-messages' ? {
+                  gmPhoneNumber: m.gmPhoneNumber,
                 } : {}),
               })),
             }

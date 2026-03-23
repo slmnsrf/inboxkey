@@ -362,7 +362,8 @@ export class SessionController {
       }
 
       // Create adapters from mailboxes (v2 pattern)
-      const allAdapters = await createAdaptersFromMailboxes(storage)
+      // Pass session.id so google-messages adapters get poll budgeting
+      const allAdapters = await createAdaptersFromMailboxes(storage, session.id)
 
       // Channel-aware filtering: only poll adapters matching detected channels
       // Fallback to ['email'] for sessions restored from storage before SMS support
