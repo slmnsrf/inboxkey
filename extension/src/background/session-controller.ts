@@ -242,6 +242,7 @@ export class SessionController {
     try {
       const { getMessagesTabManager } = await import('@/lib/providers/google-messages/tab-manager')
       getMessagesTabManager().resetPollCount(session.id)
+      await getMessagesTabManager().closeIfOwned()
     } catch { /* tab manager not loaded */ }
 
     // V2: Delegate to SessionPoller for cancellation
@@ -298,6 +299,7 @@ export class SessionController {
         try {
           const { getMessagesTabManager } = await import('@/lib/providers/google-messages/tab-manager')
           getMessagesTabManager().resetPollCount(session.id)
+          await getMessagesTabManager().closeIfOwned()
         } catch { /* tab manager not loaded */ }
         await this.persistSessions()
         this.poller.cancelPolls(sessionId) // V2: Cancel remaining polls
@@ -313,6 +315,7 @@ export class SessionController {
         try {
           const { getMessagesTabManager } = await import('@/lib/providers/google-messages/tab-manager')
           getMessagesTabManager().resetPollCount(session.id)
+          await getMessagesTabManager().closeIfOwned()
         } catch { /* tab manager not loaded */ }
         await this.persistSessions()
         this.poller.cancelPolls(sessionId) // V2: Clean up poller
@@ -338,6 +341,7 @@ export class SessionController {
         try {
           const { getMessagesTabManager } = await import('@/lib/providers/google-messages/tab-manager')
           getMessagesTabManager().resetPollCount(session.id)
+          await getMessagesTabManager().closeIfOwned()
         } catch { /* tab manager not loaded */ }
         await this.persistSessions()
         this.poller.cancelPolls(sessionId) // V2: Clean up poller

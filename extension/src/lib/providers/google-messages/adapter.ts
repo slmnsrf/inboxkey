@@ -68,7 +68,9 @@ export class MessagesProviderAdapter implements ProviderAdapter {
       }))
     } catch (error) {
       console.warn('[MessagesProviderAdapter] listRecent failed:', error)
-      return []
+      // Re-throw so EmailPollingService records this as a failed adapter
+      // (EmailPollingService catches per-adapter and records { success: false })
+      throw error
     }
   }
 

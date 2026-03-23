@@ -79,8 +79,19 @@ export class MessagesTabManager {
     // Re-validate a previously cached tabId
     if (this.tabState) {
       try {
-        await chrome.tabs.get(this.tabState.tabId)
-        return this.tabState
+        const tab = await chrome.tabs.get(this.tabState.tabId)
+        // Verify tab is still on messages.google.com
+        if (tab.url && !tab.url.includes('messages.google.com')) {
+          this.tabState = null  // Tab navigated away, fall through
+        } else {
+          if (forPairing) {
+            await chrome.tabs.update(this.tabState.tabId, {
+              active: true,
+              url: MESSAGES_URL_WELCOME,
+            })
+          }
+          return this.tabState
+        }
       } catch {
         this.tabState = null
       }
@@ -284,10 +295,15 @@ export class MessagesTabManager {
       const stored = result[SESSION_STORAGE_KEY] as TabState | undefined
       if (!stored) return
 
-      // Verify the tab still exists
+      // Verify the tab still exists and is on messages.google.com
       try {
-        await chrome.tabs.get(stored.tabId)
-        this.tabState = stored
+        const tab = await chrome.tabs.get(stored.tabId)
+        if (tab.url && !tab.url.includes('messages.google.com')) {
+          // Tab navigated away -- clean up
+          await this.clearTabState()
+        } else {
+          this.tabState = stored
+        }
       } catch {
         // Tab was closed while the SW was asleep -- clean up
         await this.clearTabState()

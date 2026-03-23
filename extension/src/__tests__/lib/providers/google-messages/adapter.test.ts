@@ -123,24 +123,22 @@ describe('MessagesProviderAdapter', () => {
   })
 
   describe('error handling', () => {
-    it('returns empty array on tab manager failure', async () => {
+    it('re-throws on tab manager failure so polling service records adapter error', async () => {
       const tm = createMockTabManager({
         ensureTab: vi.fn(async () => { throw new Error('Tab crashed') }),
       })
       const adapter = new MessagesProviderAdapter(tm, 'mbx-1', 'sess-1')
 
-      const result = await adapter.listRecent({ sinceEpochMs: 0, max: 10 })
-      expect(result).toEqual([])
+      await expect(adapter.listRecent({ sinceEpochMs: 0, max: 10 })).rejects.toThrow('Tab crashed')
     })
 
-    it('returns empty array when scraping fails', async () => {
+    it('re-throws when scraping fails so polling service records adapter error', async () => {
       const tm = createMockTabManager({
         scrapeRecentPreviews: vi.fn(async () => { throw new Error('Scrape error') }),
       })
       const adapter = new MessagesProviderAdapter(tm, 'mbx-1', 'sess-1')
 
-      const result = await adapter.listRecent({ sinceEpochMs: 0, max: 10 })
-      expect(result).toEqual([])
+      await expect(adapter.listRecent({ sinceEpochMs: 0, max: 10 })).rejects.toThrow('Scrape error')
     })
   })
 
