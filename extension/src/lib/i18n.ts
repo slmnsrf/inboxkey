@@ -179,6 +179,7 @@ export function formatProvider(providerId: string): string {
     gmail: 'Gmail',
     outlook: 'Outlook',
     imap: 'IMAP',
+    'google-messages': 'Google Messages',
   }
 
   return providers[providerId] || providerId
