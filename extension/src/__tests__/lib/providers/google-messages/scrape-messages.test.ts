@@ -19,27 +19,28 @@ function setBody(html: string): void {
 }
 
 /**
- * Build an mws-conversation-list-item element with the given sender name,
- * preview text, and optional unread indicator.
+ * Build an mws-conversation-list-item element matching the real Google Messages
+ * DOM structure (verified against a live capture from 2026-03).
  *
- * The inner structure intentionally avoids fixed class names to mirror the
- * unpredictable real-world Google Messages DOM.
+ * Real DOM uses data-e2e-* attributes for sender, snippet, unread, and
+ * mws-relative-timestamp for time display.
  */
 function makeConversationItem(
   sender: string,
   preview: string,
-  isUnread = false
+  opts: { isUnread?: boolean; timestamp?: string } = {}
 ): string {
-  const unreadAttr = isUnread
-    ? '<span data-e2e-is-unread="true"></span>'
-    : ''
+  const { isUnread = false, timestamp } = opts
+  const tsEl = timestamp
+    ? `<mws-relative-timestamp>${timestamp}</mws-relative-timestamp>`
+    : '<mws-relative-timestamp></mws-relative-timestamp>'
   return `
     <mws-conversation-list-item>
-      ${unreadAttr}
-      <mws-conversation-snippet>
-        <span>${sender}</span>
-        <span>${preview}</span>
-      </mws-conversation-snippet>
+      <div data-e2e-is-unread="${isUnread}">
+        <span data-e2e-conversation-name="">${sender}</span>
+        ${tsEl}
+        <span data-e2e-conversation-snippet="">${preview}</span>
+      </div>
     </mws-conversation-list-item>
   `
 }
@@ -146,10 +147,10 @@ describe('scrapeMessages()', () => {
       expect(result.previews[0].previewText).toBe('Your verification code: 654321')
     })
 
-    it('marks item as unread when data-e2e-is-unread attribute is present', () => {
+    it('marks item as unread when data-e2e-is-unread is "true"', () => {
       setBody(`
         <mws-conversations-list>
-          ${makeConversationItem('Charlie', 'OTP: 111222', true)}
+          ${makeConversationItem('Charlie', 'OTP: 111222', { isUnread: true })}
         </mws-conversations-list>
       `)
 
@@ -158,10 +159,10 @@ describe('scrapeMessages()', () => {
       expect(result.previews[0].isUnread).toBe(true)
     })
 
-    it('marks item as read when data-e2e-is-unread attribute is absent', () => {
+    it('marks item as read when data-e2e-is-unread is "false"', () => {
       setBody(`
         <mws-conversations-list>
-          ${makeConversationItem('Dave', 'Old message', false)}
+          ${makeConversationItem('Dave', 'Old message', { isUnread: false })}
         </mws-conversations-list>
       `)
 
@@ -186,7 +187,19 @@ describe('scrapeMessages()', () => {
       expect(result.previews[2].conversationId).toBe('conv-2')
     })
 
-    it('sets timestamp to undefined for all previews', () => {
+    it('extracts timestamp from mws-relative-timestamp element', () => {
+      setBody(`
+        <mws-conversations-list>
+          ${makeConversationItem('Eve', 'Code: 999888', { timestamp: '1:15 PM' })}
+        </mws-conversations-list>
+      `)
+
+      const result = scrapeMessages()
+
+      expect(result.previews[0].timestamp).toBe('1:15 PM')
+    })
+
+    it('returns undefined timestamp when mws-relative-timestamp is empty', () => {
       setBody(`
         <mws-conversations-list>
           ${makeConversationItem('Eve', 'Code: 999888')}
@@ -226,9 +239,9 @@ describe('scrapeMessages()', () => {
     it('returns correct data for multiple conversations with mixed unread states', () => {
       setBody(`
         <mws-conversations-list>
-          ${makeConversationItem('Frank', 'Code: 001122', true)}
-          ${makeConversationItem('Grace', 'Hello there', false)}
-          ${makeConversationItem('Hank', 'OTP: 334455', true)}
+          ${makeConversationItem('Frank', 'Code: 001122', { isUnread: true })}
+          ${makeConversationItem('Grace', 'Hello there', { isUnread: false })}
+          ${makeConversationItem('Hank', 'OTP: 334455', { isUnread: true })}
         </mws-conversations-list>
       `)
 
@@ -259,7 +272,37 @@ describe('scrapeMessages()', () => {
   })
 
   // -------------------------------------------------------------------------
-  // Tolerance for unusual inner structures
+  // Real-world DOM fidelity
+  // -------------------------------------------------------------------------
+
+  describe('real-world DOM fidelity', () => {
+    it('excludes mws-conversation-list-item-menu siblings from results', () => {
+      setBody(`
+        <mws-conversations-list>
+          <mws-conversation-list-item>
+            <div data-e2e-is-unread="true">
+              <span data-e2e-conversation-name="">Amazon</span>
+              <mws-relative-timestamp>Mar 12</mws-relative-timestamp>
+              <span data-e2e-conversation-snippet="">Your code is 482916</span>
+            </div>
+          </mws-conversation-list-item>
+          <mws-conversation-list-item-menu aria-hidden="false">
+            <span>Pin</span><span>Delete</span>
+          </mws-conversation-list-item-menu>
+        </mws-conversations-list>
+      `)
+
+      const result = scrapeMessages()
+
+      expect(result.previews).toHaveLength(1)
+      expect(result.previews[0].senderName).toBe('Amazon')
+      expect(result.previews[0].previewText).toBe('Your code is 482916')
+      expect(result.previews[0].timestamp).toBe('Mar 12')
+    })
+  })
+
+  // -------------------------------------------------------------------------
+  // Tolerance for unusual inner structures (fallback path)
   // -------------------------------------------------------------------------
 
   describe('tolerance for unusual inner structures', () => {
@@ -290,8 +333,8 @@ describe('scrapeMessages()', () => {
       expect(result.previews[0].previewText).toBe('')
     })
 
-    it('correctly reads text when item uses a .text-content class element', () => {
-      // Alternative inner markup some versions of Google Messages emit
+    it('falls back to leaf-node traversal when data-e2e attributes are missing', () => {
+      // Simulates a future Google Messages DOM change that removes data-e2e-*
       setBody(`
         <mws-conversations-list>
           <mws-conversation-list-item>
