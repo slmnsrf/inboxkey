@@ -31,8 +31,9 @@ export function scrapeMessages(): ScrapeResult {
 
   // 3. Collect conversation items, capped at 6 to keep the payload small.
   //    Only the most recent conversations matter for OTP matching.
+  //    IMPORTANT: Exclude mws-conversation-list-item-menu siblings (context menus).
   const items = Array.from(
-    list.querySelectorAll('mws-conversation-list-item')
+    list.querySelectorAll('mws-conversation-list-item:not(mws-conversation-list-item-menu)')
   ).slice(0, 6)
 
   const previews: MessagePreview[] = []
@@ -40,32 +41,39 @@ export function scrapeMessages(): ScrapeResult {
   for (let i = 0; i < items.length; i++) {
     const item = items[i]
 
-    // Google Messages renders sender name and preview text inside nested
-    // custom elements whose internal structure changes across app versions.
-    // We walk all leaf elements (no children) and take the first two
-    // non-empty text nodes: [0] = sender, [1] = preview text.
-    //
-    // Why leaf elements only: compound containers repeat the same text as
-    // their children, so we skip any element that has child elements to
-    // avoid duplicate or concatenated strings.
-    const leaves = Array.from(item.querySelectorAll('*')).filter((el) => {
-      const text = el.textContent?.trim()
-      return text && text.length > 0 && el.children.length === 0
-    })
+    // PRIMARY: Use data-e2e-* attributes (purpose-built for automation, most stable).
+    // Verified against real Google Messages DOM (2026-03):
+    //   data-e2e-conversation-name -- sender/contact name (e.g., "Amazon", "Trendyol")
+    //   data-e2e-conversation-snippet -- message preview text (contains OTP codes)
+    //   data-e2e-is-unread -- "true"/"false" string
+    //   mws-relative-timestamp -- time display ("1:15 PM", "Mar 16")
+    const nameEl = item.querySelector('[data-e2e-conversation-name]')
+    const snippetEl = item.querySelector('[data-e2e-conversation-snippet]')
+    const unreadEl = item.querySelector('[data-e2e-is-unread]')
+    const timestampEl = item.querySelector('mws-relative-timestamp')
 
-    const senderName = leaves[0]?.textContent?.trim() ?? 'Unknown'
-    const previewText = leaves[1]?.textContent?.trim() ?? ''
+    let senderName = nameEl?.textContent?.trim() ?? ''
+    let previewText = snippetEl?.textContent?.trim() ?? ''
 
-    // Unread indicator: Google Messages stamps a data-e2e-is-unread attribute
-    // on an element inside the item when the conversation has unseen messages.
-    const isUnread = item.querySelector('[data-e2e-is-unread]') !== null
+    // FALLBACK: If data-e2e attributes are missing (DOM change), walk leaf nodes.
+    if (!senderName || !previewText) {
+      const leaves = Array.from(item.querySelectorAll('*')).filter((el) => {
+        const text = el.textContent?.trim()
+        return text && text.length > 0 && el.children.length === 0
+      })
+      if (!senderName) senderName = leaves[0]?.textContent?.trim() ?? 'Unknown'
+      if (!previewText) previewText = leaves[1]?.textContent?.trim() ?? ''
+    }
+
+    const isUnread = unreadEl?.getAttribute('data-e2e-is-unread') === 'true'
+    const timestamp = timestampEl?.textContent?.trim() || undefined
 
     previews.push({
       conversationId: `conv-${i}`,
       senderName,
       previewText,
       isUnread,
-      timestamp: undefined, // Relative timestamps are resolved by the adapter
+      timestamp,
     })
   }
 
