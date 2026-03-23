@@ -1095,4 +1095,154 @@ describe("SessionController", () => {
       expect(onCompleted).toHaveBeenCalled()
     })
   })
+
+  // ===========================================================================
+  // SMS session_expired guard
+  // ===========================================================================
+
+  describe("SMS session_expired cache guard", () => {
+    it("returns null for SMS-only session when GM adapter fails with session_expired", async () => {
+      const onCompleted = vi.fn()
+      const controller = createController({
+        onSessionStarted: vi.fn(),
+        onSessionUpdated: vi.fn(),
+        onSessionCompleted: onCompleted,
+      })
+      await controller.initialize()
+
+      // Setup: GM mailbox + stale cached code
+      mockGetMailboxes.mockResolvedValue([{
+        id: "gm-1",
+        providerId: "google-messages",
+        email: "sms@google-messages.local",
+        gmPhoneNumber: "+905551234455",
+        addedAt: Date.now(),
+        lastSyncedAt: 0,
+      }])
+      mockGetSettings.mockResolvedValue({ watchSessionV2Enabled: false })
+      mockPopupCacheManager.getCache.mockResolvedValue({
+        codes: [{
+          code: "123456",
+          source: "Stale SMS code",
+          receivedAt: Date.now() - 5000,
+          providerId: "google-messages",
+        }],
+        links: [],
+      })
+
+      // Mock polling service to return session_expired from GM adapter
+      const { EmailPollingService } = await import("../../src/lib/services/email-polling-service")
+      ;(EmailPollingService as any).mockImplementationOnce(() => ({
+        pollOnce: vi.fn(() => Promise.resolve({
+          candidates: [],
+          adapterResults: [{ mailboxId: "gm-1", success: false, error: "session_expired" }],
+        })),
+      }))
+
+      const session = await controller.startSession({
+        tabId: 100,
+        url: "https://example.com/verify",
+        expected: {},
+        detectedChannels: ["sms"],
+      })
+
+      // Trigger the poll
+      await vi.advanceTimersByTimeAsync(1)
+
+      // Session should NOT have filled (stale code ignored)
+      // It should either still be active or timed out, never filled
+      if (onCompleted.mock.calls.length > 0) {
+        expect(onCompleted.mock.calls[0][1].status).not.toBe("filled")
+      }
+
+      // lastSyncError should be set
+      expect(mockUpdateMailbox).toHaveBeenCalledWith("gm-1", expect.objectContaining({
+        lastSyncError: "session_expired",
+      }))
+    })
+
+    it("excludes stale GM codes in hybrid session when GM session expired", async () => {
+      const onCompleted = vi.fn()
+      const controller = createController({
+        onSessionStarted: vi.fn(),
+        onSessionUpdated: vi.fn(),
+        onSessionCompleted: onCompleted,
+      })
+      await controller.initialize()
+
+      // Setup: both Gmail and GM mailboxes
+      mockGetMailboxes.mockResolvedValue([
+        {
+          id: "gmail-1",
+          providerId: "gmail",
+          email: "user@gmail.com",
+          accessToken: "token",
+          tokenExpiresAt: Date.now() + 3600000,
+          addedAt: Date.now(),
+          lastSyncedAt: 0,
+        },
+        {
+          id: "gm-1",
+          providerId: "google-messages",
+          email: "sms@google-messages.local",
+          gmPhoneNumber: "+905551234455",
+          addedAt: Date.now(),
+          lastSyncedAt: 0,
+        },
+      ])
+      mockGetSettings.mockResolvedValue({ watchSessionV2Enabled: false })
+
+      // Cache has both an email code and a stale SMS code
+      mockPopupCacheManager.getCache.mockResolvedValue({
+        codes: [
+          {
+            code: "999888",
+            source: "Stale SMS",
+            receivedAt: Date.now() - 5000,
+            providerId: "google-messages",
+          },
+          {
+            code: "777666",
+            source: "Fresh email code",
+            receivedAt: Date.now() - 2000,
+            providerId: "gmail",
+            mailboxId: "gmail-1",
+          },
+        ],
+        links: [],
+      })
+
+      // GM adapter fails with session_expired, Gmail adapter succeeds
+      const { EmailPollingService } = await import("../../src/lib/services/email-polling-service")
+      ;(EmailPollingService as any).mockImplementationOnce(() => ({
+        pollOnce: vi.fn(() => Promise.resolve({
+          candidates: [],
+          adapterResults: [
+            { mailboxId: "gmail-1", success: true },
+            { mailboxId: "gm-1", success: false, error: "session_expired" },
+          ],
+        })),
+      }))
+
+      const session = await controller.startSession({
+        tabId: 101,
+        url: "https://example.com/verify",
+        expected: {},
+        detectedChannels: ["email", "sms"],
+      })
+
+      // Trigger the poll
+      await vi.advanceTimersByTimeAsync(1)
+
+      // If filled, it should be with the email code, not the SMS code
+      if (onCompleted.mock.calls.length > 0 && onCompleted.mock.calls[0][1].status === "filled") {
+        expect(onCompleted.mock.calls[0][1].code.code).toBe("777666")
+      }
+
+      // GM mailbox should have session_expired error set
+      expect(mockUpdateMailbox).toHaveBeenCalledWith("gm-1", expect.objectContaining({
+        lastSyncError: "session_expired",
+      }))
+    })
+  })
 })
