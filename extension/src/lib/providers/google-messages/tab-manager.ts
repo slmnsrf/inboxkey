@@ -210,6 +210,10 @@ export class MessagesTabManager {
       }
       return result.previews
     } catch (error) {
+      // Re-throw session_expired so it propagates to adapter -> polling service -> session controller
+      if (error instanceof Error && error.message === 'session_expired') {
+        throw error
+      }
       console.warn('[MessagesTabManager] Scraping failed:', error)
       return []
     }
