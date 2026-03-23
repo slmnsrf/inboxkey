@@ -21,6 +21,7 @@ import type { DetectionResult } from '@/lib/types'
 import { isExtensionEnabled } from '@/lib/utils/domain'
 import { detectSplitInputGroup } from '@/lib/detection/split-input-detector'
 import { hasEmailContext } from '@/lib/detection/email-context-guard'
+import { hydrateSmsCache } from '@/lib/detection/sms-feature-cache'
 
 /**
  * Global Set to track processed representative fields across all batches
@@ -84,6 +85,11 @@ export function clearProcessedFields(): void {
       // Always bypass for OTP autocomplete values
       const autocomplete = field.getAttribute('autocomplete')?.toLowerCase() || ''
       if (['one-time-code', 'one-time-password', 'otp'].includes(autocomplete)) {
+        return true
+      }
+
+      // SMS fields are inherently high-intent (user is on a page expecting an SMS code)
+      if (detectionResult.detectedChannels?.includes('sms')) {
         return true
       }
 
@@ -214,6 +220,8 @@ export function clearProcessedFields(): void {
    * Detect existing fields on page load
    */
   async function detectExistingFields(): Promise<void> {
+    // SMS cache is hydrated in initialize() before this function is called.
+
     // Check automation level setting
     try {
       const result = await chrome.storage.local.get('settings')
@@ -319,14 +327,18 @@ export function clearProcessedFields(): void {
   /**
    * Initialize the content script
    */
-  function initialize(): void {
+  async function initialize(): Promise<void> {
     // Initialize processed set BEFORE detection (focus gate needs it)
     globalProcessedRepresentatives = new Set<HTMLInputElement>()
 
-    // Detect fields immediately
-    detectExistingFields()
+    // Hydrate SMS cache once before any detection (prevents race where
+    // MutationObserver evaluates SMS fields before the cache is ready)
+    await hydrateSmsCache()
 
-    // Start observing for dynamic fields
+    // Detect fields immediately (cache already hydrated above)
+    await detectExistingFields()
+
+    // Start observing for dynamic fields (cache guaranteed ready)
     startDynamicDetection()
 
     // Monitor for field removal

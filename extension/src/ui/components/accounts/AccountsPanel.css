@@ -997,12 +997,240 @@
   flex-shrink: 0;
 }
 
+/* ============================
+   Google Messages: Disclosure Boxes
+   ============================ */
+
+.disclosure-box {
+  padding: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--surface-card-muted);
+}
+
+.disclosure-box + .disclosure-box {
+  margin-top: var(--space-2);
+}
+
+.disclosure-box:last-of-type {
+  margin-bottom: var(--space-3);
+}
+
+.disclosure-box__title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-primary);
+  margin-bottom: var(--space-2);
+}
+
+.disclosure-box__title svg {
+  color: var(--color-text-tertiary);
+  flex-shrink: 0;
+}
+
+.disclosure-box__text {
+  margin: 0;
+  font-size: var(--font-size-xs);
+  line-height: 1.6;
+  color: var(--color-text-secondary);
+}
+
+/* ============================
+   Google Messages: Phone Input
+   ============================ */
+
+.phone-input-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--surface-card-muted);
+}
+
+.phone-input-group__label {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-primary);
+}
+
+.form-input--invalid {
+  border-color: var(--color-error);
+}
+
+.form-input--invalid:focus {
+  box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.15);
+}
+
+.form-error {
+  margin: 0;
+  font-size: var(--font-size-xs);
+  color: var(--color-error);
+}
+
+.phone-input-actions {
+  display: flex;
+  gap: var(--space-2);
+  align-items: center;
+}
+
+/* ============================
+   Google Messages: Connecting Stage
+   ============================ */
+
+.connecting-stage {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid rgba(0, 122, 255, 0.2);
+  border-radius: var(--radius-md);
+  background: var(--color-primary-light);
+  color: var(--color-primary);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+}
+
+.connecting-stage__text {
+  flex: 1;
+}
+
+.countdown-number {
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-primary);
+  font-variant-numeric: tabular-nums;
+  min-width: 24px;
+  text-align: center;
+}
+
+.connecting-dots {
+  display: flex;
+  gap: 4px;
+}
+
+.connecting-dots span {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--color-primary);
+  animation: gm-pulse 1.4s ease-in-out infinite;
+}
+
+.connecting-dots span:nth-child(2) { animation-delay: 0.2s; }
+.connecting-dots span:nth-child(3) { animation-delay: 0.4s; }
+
+.connecting-stage--success {
+  border-color: rgba(16, 185, 129, 0.3);
+  background: rgba(16, 185, 129, 0.05);
+}
+
+.success-checkmark {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--color-success);
+  color: white;
+  flex-shrink: 0;
+}
+
+.success-checkmark svg {
+  width: 18px;
+  height: 18px;
+}
+
+@keyframes gm-pulse {
+  0%, 80%, 100% { opacity: 0.3; transform: scale(0.8); }
+  40% { opacity: 1; transform: scale(1); }
+}
+
+/* ============================
+   Google Messages: Source Type Badge
+   ============================ */
+
+.source-type-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 1px var(--space-2);
+  border-radius: var(--radius-full);
+  font-size: 11px;
+  font-weight: var(--font-weight-medium);
+  background: var(--color-primary-light);
+  border: 1px solid rgba(0, 122, 255, 0.12);
+  color: var(--color-primary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+/* ============================
+   Google Messages: Account Row Phone
+   ============================ */
+
+.account-row__phone {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-primary);
+}
+
+.account-row__phone-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 280px;
+  font-family: var(--font-system);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ============================
+   Google Messages: Link Button
+   ============================ */
+
+.btn--link {
+  background: transparent;
+  border: none;
+  color: var(--color-text-link, var(--color-primary));
+  padding: 0;
+  min-height: auto;
+  font-size: var(--font-size-sm);
+  font-family: var(--font-system);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.btn--link:hover {
+  color: var(--color-primary);
+}
+
+.btn--link:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .connecting-spinner {
     animation: none;
     border-top-color: var(--color-primary);
     border-left-color: var(--color-primary);
     opacity: 0.7;
+  }
+
+  .connecting-dots span {
+    animation: none;
+    opacity: 0.6;
   }
 }
 
@@ -1043,5 +1271,9 @@
   .account-row__actions {
     width: 100%;
     justify-content: flex-end;
+  }
+
+  .account-row__phone-text {
+    max-width: 180px;
   }
 }

@@ -77,7 +77,8 @@
       "tabs",
       "identity",
       "notifications",
-      "nativeMessaging"
+      "nativeMessaging",
+      "scripting"
     ]
   }
 }

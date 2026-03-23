@@ -1639,6 +1639,131 @@
     "description": "Toast message when IMAP account is added"
   },
 
+  "accounts_provider_google_messages": {
+    "message": "Google Messages",
+    "description": "Google Messages provider display name"
+  },
+  "accounts_gm_badge_sms": {
+    "message": "SMS",
+    "description": "Badge label for SMS source type"
+  },
+  "accounts_gm_empty_text": {
+    "message": "SMS verifications? There is a way. Autofill SMS codes from Google Messages.",
+    "description": "Empty state description for Google Messages card"
+  },
+  "accounts_gm_connect": {
+    "message": "Connect Google Messages",
+    "description": "Button label to connect Google Messages"
+  },
+  "accounts_gm_disclosure_how_title": {
+    "message": "How this works",
+    "description": "Disclosure section title: how it works"
+  },
+  "accounts_gm_disclosure_how_text": {
+    "message": "When a website asks for an SMS code, InboxKey opens Google Messages for Web in a background tab. It reads only the preview text of the last few messages, looking for a verification code. If a code is found, it is extracted and the tab is closed. If nothing is found within about 20 seconds, the tab is closed anyway. The tab is visible in the browser. Nothing is hidden.",
+    "description": "Disclosure section text: how it works"
+  },
+  "accounts_gm_disclosure_phone_title": {
+    "message": "Why the phone number",
+    "description": "Disclosure section title: phone number rationale"
+  },
+  "accounts_gm_disclosure_phone_text": {
+    "message": "The phone number is stored only on this device, nowhere else. It helps InboxKey tell the difference between an SMS code and an email code. When a website shows hints like a country code, the last digits of a number, or words like \"text message\", InboxKey uses the phone number to recognize the field as SMS and check Google Messages. Without it, InboxKey would not know when to look.",
+    "description": "Disclosure section text: phone number rationale"
+  },
+  "accounts_gm_disclosure_know_title": {
+    "message": "Good to know",
+    "description": "Disclosure section title: good to know"
+  },
+  "accounts_gm_disclosure_know_text": {
+    "message": "There is no API for Google Messages. This feature works by opening the website and reading the page, the same way a person would. The Google Messages session in the browser can expire over time. If it does, re-pair the device from messages.google.com. InboxKey will let you know when that happens.",
+    "description": "Disclosure section text: good to know"
+  },
+  "accounts_gm_phone_label": {
+    "message": "Phone number",
+    "description": "Label for phone number input"
+  },
+  "accounts_gm_phone_placeholder": {
+    "message": "+XX XXX XXX XXXX",
+    "description": "Placeholder for phone number input"
+  },
+  "accounts_gm_phone_hint": {
+    "message": "Must start with + and contain at least 7 digits. Stored locally on this device only.",
+    "description": "Hint text below phone number input"
+  },
+  "accounts_gm_phone_error": {
+    "message": "Please enter a valid phone number starting with + and at least 7 digits.",
+    "description": "Validation error for invalid phone number"
+  },
+  "accounts_gm_continue": {
+    "message": "Continue",
+    "description": "Continue button during phone input step"
+  },
+  "accounts_gm_cancel": {
+    "message": "Cancel",
+    "description": "Cancel button during setup steps"
+  },
+  "accounts_gm_pairing_title": {
+    "message": "Waiting for Google Messages to be paired...",
+    "description": "Pairing status text"
+  },
+  "accounts_gm_pairing_instruction": {
+    "message": "A tab was opened for messages.google.com. Please pair your phone there.",
+    "description": "Instruction text during pairing"
+  },
+  "accounts_gm_pairing_fallback_prefix": {
+    "message": "Tab didn't open?",
+    "description": "Prefix text for manual open fallback link"
+  },
+  "accounts_gm_pairing_fallback_link": {
+    "message": "Open Google Messages manually",
+    "description": "Fallback link text to open Google Messages"
+  },
+  "accounts_gm_connected_meta": {
+    "message": "When an SMS code is needed, Google Messages is checked automatically.",
+    "description": "Metadata text shown when connected"
+  },
+  "accounts_gm_disconnect_confirm_text": {
+    "message": "Disconnect Google Messages? SMS verification codes will no longer be retrieved.",
+    "description": "Disconnect confirmation text"
+  },
+  "accounts_gm_disconnect_confirm_button": {
+    "message": "Confirm Disconnect",
+    "description": "Confirm disconnect button label"
+  },
+  "accounts_gm_session_expired_text": {
+    "message": "The Google Messages session has expired. Please visit messages.google.com and re-pair your device.",
+    "description": "Error banner text for expired session"
+  },
+  "accounts_gm_session_expired_meta": {
+    "message": "The browser session for Google Messages needs to be renewed.",
+    "description": "Account row metadata for expired session"
+  },
+  "accounts_gm_repair": {
+    "message": "Re-pair",
+    "description": "Re-pair button label"
+  },
+  "accounts_gm_status_pairing": {
+    "message": "Pairing...",
+    "description": "Status chip text during pairing"
+  },
+  "accounts_gm_status_setting_up": {
+    "message": "Setting up",
+    "description": "Status chip text during phone input"
+  },
+  "accounts_gm_status_expired": {
+    "message": "Expired",
+    "description": "Status chip text when session expired"
+  },
+  "aria_connect_google_messages": {
+    "message": "Connect Google Messages for SMS verification codes",
+    "description": "ARIA label for connect Google Messages button"
+  },
+  "aria_disconnect_google_messages": {
+    "message": "Disconnect Google Messages",
+    "description": "ARIA label for disconnect Google Messages button"
+  },
+
   "security_hero_title": {
     "message": "How InboxKey handles your data",
     "description": "Security transparency hero title"

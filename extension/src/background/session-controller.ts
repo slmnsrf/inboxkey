@@ -61,6 +61,18 @@ interface SessionState {
    * @since v2
    */
   sessionStart: number
+  /**
+   * Delivery channels detected on the input field.
+   * Used for channel-aware adapter filtering during polling.
+   * @since SMS support
+   */
+  detectedChannels: Array<'email' | 'sms'>
+  /**
+   * Effective session timeout in seconds, after channel-specific capping.
+   * SMS-only sessions are capped at 20s. Sent back to content script for chip timer.
+   * @since SMS support
+   */
+  effectiveTimeout: number
   startedAt: number
   status: SessionStatus
   pollSchedule: number[]
@@ -137,8 +149,9 @@ export class SessionController {
     url: string
     expected: SessionExpected
     timeoutSeconds?: number
+    detectedChannels?: Array<'email' | 'sms'>
   }): Promise<SessionState> {
-    const { tabId, url, expected, timeoutSeconds } = params
+    const { tabId, url, expected, timeoutSeconds, detectedChannels } = params
 
     // Cancel existing session for tab
     for (const existing of this.sessions.values()) {
@@ -150,9 +163,15 @@ export class SessionController {
     const id = crypto.randomUUID()
     const now = Date.now()
 
-    // Use fixed poll schedule, filtered by user's timeout setting
+    // Compute effective timeout: SMS-only sessions capped at 20s
+    const channels = detectedChannels ?? ['email']
+    const effectiveTimeout = channels.length === 1 && channels[0] === 'sms'
+      ? Math.min(timeoutSeconds ?? 30, 20)
+      : (timeoutSeconds ?? 20)
+
+    // Use fixed poll schedule, filtered by effective timeout
     // This allows users to control session duration while maintaining optimized poll density
-    const timeoutMs = (timeoutSeconds ?? 20) * 1000
+    const timeoutMs = effectiveTimeout * 1000
 
     // Filter poll times that fall within user's timeout
     const pollTimesMs = WATCH_SESSION_SCORING.pollTimesMs.filter(
@@ -187,6 +206,8 @@ export class SessionController {
       expected,
       expectedShape,         // V2: Store shape for v2 matching
       sessionStart: now,     // V2: Store session start for sessionBoost
+      detectedChannels: channels,  // SMS: Channel-aware adapter filtering
+      effectiveTimeout,            // SMS: Capped timeout sent back to content script
       startedAt: now,
       status: "active",
       pollSchedule,
@@ -217,6 +238,12 @@ export class SessionController {
       session.status = "canceled"
       session.lastUpdated = Date.now()
     }
+
+    try {
+      const { getMessagesTabManager } = await import('@/lib/providers/google-messages/tab-manager')
+      getMessagesTabManager().resetPollCount(session.id)
+      await getMessagesTabManager().closeIfOwned()
+    } catch { /* tab manager not loaded */ }
 
     // V2: Delegate to SessionPoller for cancellation
     this.poller.cancelPolls(sessionId)
@@ -269,6 +296,11 @@ export class SessionController {
       if (code) {
         session.status = "filled"
         session.lastCode = code
+        try {
+          const { getMessagesTabManager } = await import('@/lib/providers/google-messages/tab-manager')
+          getMessagesTabManager().resetPollCount(session.id)
+          await getMessagesTabManager().closeIfOwned()
+        } catch { /* tab manager not loaded */ }
         await this.persistSessions()
         this.poller.cancelPolls(sessionId) // V2: Cancel remaining polls
         this.callbacks.onSessionCompleted(session, { status: "filled", code })
@@ -280,6 +312,11 @@ export class SessionController {
 
       if (pollsRemaining <= 0) {
         session.status = "timedout"
+        try {
+          const { getMessagesTabManager } = await import('@/lib/providers/google-messages/tab-manager')
+          getMessagesTabManager().resetPollCount(session.id)
+          await getMessagesTabManager().closeIfOwned()
+        } catch { /* tab manager not loaded */ }
         await this.persistSessions()
         this.poller.cancelPolls(sessionId) // V2: Clean up poller
         this.callbacks.onSessionCompleted(session, { status: "timedout" })
@@ -301,6 +338,11 @@ export class SessionController {
 
       if (pollsRemaining <= 0) {
         session.status = "timedout"
+        try {
+          const { getMessagesTabManager } = await import('@/lib/providers/google-messages/tab-manager')
+          getMessagesTabManager().resetPollCount(session.id)
+          await getMessagesTabManager().closeIfOwned()
+        } catch { /* tab manager not loaded */ }
         await this.persistSessions()
         this.poller.cancelPolls(sessionId) // V2: Clean up poller
         this.callbacks.onSessionCompleted(session, { status: "timedout" })
@@ -336,7 +378,18 @@ export class SessionController {
       }
 
       // Create adapters from mailboxes (v2 pattern)
-      const adapters = await createAdaptersFromMailboxes(storage)
+      // Pass session.id so google-messages adapters get poll budgeting
+      const allAdapters = await createAdaptersFromMailboxes(storage, session.id)
+
+      // Channel-aware filtering: only poll adapters matching detected channels
+      // Fallback to ['email'] for sessions restored from storage before SMS support
+      const channels = session.detectedChannels ?? ['email']
+      const adapters = allAdapters.filter(adapter => {
+        if (adapter.id === 'google-messages') {
+          return channels.includes('sms')
+        }
+        return channels.includes('email')
+      })
 
       // Poll emails from all connected mailboxes (v2 API) - share seenStore to persist across polls
       const pollingService = new EmailPollingService(adapters, this.seenStore)
@@ -383,6 +436,15 @@ export class SessionController {
             lastSyncError: result.error,
           })
         }
+      }
+
+      // If Google Messages session expired, abort before cache matching.
+      // Prevents stale SMS codes from autofilling on a disconnected account.
+      const gmSessionExpired = adapterResults.some(
+        r => !r.success && r.error === 'session_expired'
+      )
+      if (gmSessionExpired && channels.length === 1 && channels[0] === 'sms') {
+        return null  // SMS-only: don't match stale codes, let session timeout
       }
 
       // Update popup cache if available (using ephemeral candidates)
@@ -436,7 +498,25 @@ export class SessionController {
 
       // Get codes from PopupCache (ephemeral only)
       const cache = this.popupCacheManager ? await this.popupCacheManager.getCache() : null
-      const codes = cache ? cache.codes.map(c => ({
+      const allCachedCodes = cache ? cache.codes : []
+
+      // Filter cached codes by channel to prevent cross-channel contamination
+      // SMS-only sessions should only see google-messages codes; email-only should exclude them
+      // When GM session expired, always exclude google-messages codes (stale, from disconnected account)
+      const channelFilteredCodes = allCachedCodes.filter(c => {
+        if (gmSessionExpired && c.providerId === 'google-messages') {
+          return false // Expired GM adapter -- exclude stale SMS codes in ALL session types
+        }
+        if (channels.includes('sms') && !channels.includes('email')) {
+          return c.providerId === 'google-messages'
+        }
+        if (channels.includes('email') && !channels.includes('sms')) {
+          return c.providerId !== 'google-messages'
+        }
+        return true // hybrid: keep all (except expired GM codes, filtered above)
+      })
+
+      const codes = channelFilteredCodes.map(c => ({
         code: c.code,
         timestamp: c.receivedAt,
         source: c.source,
@@ -446,7 +526,7 @@ export class SessionController {
         senderETLD: c.senderETLD,
         receivedAt: c.receivedAt,
         domainAffinity: c.domainAffinity,
-      })) : []
+      }))
 
       // V2: Pass sessionStart and expectedShape to v2 scoring algorithm (if enabled)
       // When v2 is disabled, fall back to basic matching without session/shape parameters
