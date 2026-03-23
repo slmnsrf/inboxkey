@@ -208,7 +208,18 @@ export class PlaintextStorage {
     }
 
     // Provider-specific validation
-    if (mailbox.providerId === 'imap-bridge') {
+    if (mailbox.providerId === 'google-messages') {
+      // Google Messages mailbox validation: no OAuth, no IMAP, require gmPhoneNumber
+      if (mailbox.accessToken || mailbox.refreshToken || mailbox.tokenExpiresAt) {
+        throw new ValidationError("Google Messages mailboxes cannot have OAuth tokens", "accessToken")
+      }
+      if (mailbox.imapServer || mailbox.imapPort || mailbox.imapAccountId) {
+        throw new ValidationError("Google Messages mailboxes cannot have IMAP fields", "imapServer")
+      }
+      if (!mailbox.gmPhoneNumber || mailbox.gmPhoneNumber.length === 0) {
+        throw new ValidationError("Google Messages mailboxes require gmPhoneNumber", "gmPhoneNumber")
+      }
+    } else if (mailbox.providerId === 'imap-bridge') {
       // IMAP mailbox validation
       if (!mailbox.imapServer || mailbox.imapServer.length === 0) {
         throw new ValidationError("IMAP server cannot be empty", "imapServer")
