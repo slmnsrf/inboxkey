@@ -103,18 +103,23 @@ export function GoogleMessagesCard({ mailbox, onUpdate }: GoogleMessagesCardProp
     }
   }, [])
 
-  /** Show success state, focus settings tab, then transition to connected after 3s. */
-  const showPairingSuccess = useCallback(() => {
+  /** Show success state, focus settings tab, then transition to connected after 5s. */
+  const showPairingSuccess = useCallback(async () => {
     setCardState('pairing-success')
     onUpdate?.()
 
-    // Focus this settings tab (don't close the Messages tab)
-    chrome.runtime.sendMessage({ type: 'FOCUS_EXTENSION_TAB' }).catch(() => {
-      // Best effort -- if the message type doesn't exist yet, we still show success
-    })
+    // Focus this settings tab first, then start the visible timer
+    try {
+      await chrome.runtime.sendMessage({ type: 'FOCUS_EXTENSION_TAB' })
+    } catch {
+      // Best effort
+    }
 
-    // Transition to connected after 3 seconds
-    setTimeout(() => setCardState('connected'), 3000)
+    // Give the browser a moment to actually render the focused tab
+    await new Promise(r => setTimeout(r, 500))
+
+    // Now start the 5-second success display (user is guaranteed to see it)
+    setTimeout(() => setCardState('connected'), 5000)
   }, [onUpdate])
 
   const startPairingPoll = useCallback(() => {
