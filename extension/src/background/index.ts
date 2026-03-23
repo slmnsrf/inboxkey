@@ -28,6 +28,7 @@ import {
 } from "@/contents/badge-manager"
 import { addBlacklistedDomain, removeBlacklistedDomain } from "@/lib/utils/blacklist"
 import { registerTokenRefreshAlarm, refreshExpiringTokens } from "./token-refresh"
+import { getMessagesTabManager } from "@/lib/providers/google-messages/tab-manager"
 
 interface StartSessionMessage {
   type: "START_SESSION"
@@ -118,6 +119,11 @@ sessionController
 
 // Register background token refresh alarm (Outlook tokens expire after ~1 hour)
 registerTokenRefreshAlarm()
+
+// Recover Google Messages tab state after service worker restarts
+getMessagesTabManager().recoverFromRestart().catch((error) => {
+  console.warn("[InboxKey] Failed to recover Google Messages tab state:", error)
+})
 
 // Track lifecycle across restarts
 let startupTimestamp = Date.now()
@@ -252,6 +258,26 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     return true
   }
 
+  // Google Messages connect/disconnect handlers
+  if (msg.type === "CONNECT_GOOGLE_MESSAGES") {
+    handleConnectGoogleMessages(msg, sendResponse)
+    return true
+  }
+
+  if (msg.type === "CHECK_GM_PAIRING_STATUS") {
+    handleCheckGmPairingStatus(sendResponse)
+    return true
+  }
+
+  if (msg.type === "CANCEL_GM_SETUP") {
+    handleCancelGmSetup(sendResponse)
+    return true
+  }
+
+  if (msg.type === "DISCONNECT_GOOGLE_MESSAGES") {
+    handleDisconnectGoogleMessages(msg, sendResponse)
+    return true
+  }
 
   if (msg.type === "CLEAR_ALL_CODES") {
     handleClearAllCodes(sendResponse)
@@ -883,3 +909,203 @@ function handleResetSettings(sendResponse: (response: any) => void) {
  * Handle MARK_CODES_SEEN requests.
  */
 // Removed handleMarkCodesSeen - now handled in popup-handler.ts
+
+/**
+ * Handle CONNECT_GOOGLE_MESSAGES requests.
+ * Opens the Messages for Web tab, persists pending setup, and checks pairing.
+ */
+function handleConnectGoogleMessages(
+  msg: { phoneNumber: string },
+  sendResponse: (response: any) => void
+) {
+  ;(async () => {
+    try {
+      const tabManager = getMessagesTabManager()
+
+      // 1. Persist pending setup to session storage
+      await tabManager.savePendingSetup({
+        phoneNumber: msg.phoneNumber,
+        owned: false,
+        startedAt: Date.now(),
+      })
+
+      // 2. Ensure a Messages tab is open (creates or reuses)
+      const tab = await tabManager.ensureTab()
+
+      // 3. Update pending setup with tab info
+      await tabManager.savePendingSetup({
+        phoneNumber: msg.phoneNumber,
+        tabId: tab.tabId,
+        owned: tab.owned,
+        startedAt: Date.now(),
+      })
+
+      // 4. Check if already paired
+      const pairingStatus = await tabManager.checkPairingStatus(tab.tabId)
+
+      if (pairingStatus === 'paired') {
+        // Already paired -- save mailbox immediately
+        const storage = await StorageFactory.create()
+
+        // Enforce one-account limit
+        const existing = await storage.getMailboxes()
+        const hasGm = existing.some((m) => m.providerId === 'google-messages')
+        if (hasGm) {
+          await tabManager.clearPendingSetup()
+          sendResponse({ status: 'error', error: 'A Google Messages account already exists' })
+          return
+        }
+
+        const mailbox: Mailbox = {
+          id: crypto.randomUUID(),
+          providerId: 'google-messages',
+          email: 'sms@google-messages.local',
+          gmPhoneNumber: msg.phoneNumber,
+          addedAt: Date.now(),
+          lastSyncedAt: 0,
+        }
+
+        await storage.addMailbox(mailbox)
+        await tabManager.clearPendingSetup()
+
+        // Update popup cache
+        const mailboxes = await storage.getMailboxes()
+        await popupCacheManager.warmCache([], mailboxes.length, mailboxes)
+
+        sendResponse({ status: 'paired' })
+      } else {
+        // Not paired -- UI will poll via CHECK_GM_PAIRING_STATUS
+        sendResponse({ status: 'pairing' })
+      }
+    } catch (error) {
+      console.error("[Background] Failed to connect Google Messages:", error)
+      sendResponse({
+        status: 'error',
+        error: error instanceof Error ? error.message : String(error),
+      })
+    }
+  })().catch((error) => {
+    console.error("[Background] handleConnectGoogleMessages unhandled rejection:", error)
+  })
+}
+
+/**
+ * Handle CHECK_GM_PAIRING_STATUS requests.
+ * Polls pairing state from the pending setup tab. Saves mailbox when paired.
+ */
+function handleCheckGmPairingStatus(sendResponse: (response: any) => void) {
+  ;(async () => {
+    try {
+      const tabManager = getMessagesTabManager()
+      const pending = await tabManager.getPendingSetup()
+
+      if (!pending) {
+        sendResponse({ status: 'not-open' })
+        return
+      }
+
+      if (!pending.tabId) {
+        sendResponse({ status: 'unpaired' })
+        return
+      }
+
+      const pairingStatus = await tabManager.checkPairingStatus(pending.tabId)
+
+      if (pairingStatus === 'paired') {
+        const storage = await StorageFactory.create()
+
+        // Enforce one-account limit
+        const existing = await storage.getMailboxes()
+        const hasGm = existing.some((m) => m.providerId === 'google-messages')
+        if (hasGm) {
+          await tabManager.clearPendingSetup()
+          await tabManager.closeIfOwned()
+          sendResponse({ status: 'error', error: 'A Google Messages account already exists' })
+          return
+        }
+
+        const mailbox: Mailbox = {
+          id: crypto.randomUUID(),
+          providerId: 'google-messages',
+          email: 'sms@google-messages.local',
+          gmPhoneNumber: pending.phoneNumber,
+          addedAt: Date.now(),
+          lastSyncedAt: 0,
+        }
+
+        await storage.addMailbox(mailbox)
+        await tabManager.clearPendingSetup()
+        await tabManager.closeIfOwned()
+
+        // Update popup cache
+        const mailboxes = await storage.getMailboxes()
+        await popupCacheManager.warmCache([], mailboxes.length, mailboxes)
+
+        sendResponse({ status: 'paired' })
+      } else {
+        sendResponse({ status: 'unpaired' })
+      }
+    } catch (error) {
+      console.error("[Background] Failed to check GM pairing status:", error)
+      sendResponse({
+        status: 'error',
+        error: error instanceof Error ? error.message : String(error),
+      })
+    }
+  })().catch((error) => {
+    console.error("[Background] handleCheckGmPairingStatus unhandled rejection:", error)
+  })
+}
+
+/**
+ * Handle CANCEL_GM_SETUP requests.
+ * Cleans up pending setup and closes the tab if extension-owned.
+ */
+function handleCancelGmSetup(sendResponse: (response: any) => void) {
+  ;(async () => {
+    try {
+      const tabManager = getMessagesTabManager()
+      await tabManager.clearPendingSetup()
+      await tabManager.closeIfOwned()
+      sendResponse({ ok: true })
+    } catch (error) {
+      console.error("[Background] Failed to cancel GM setup:", error)
+      sendResponse({
+        ok: false,
+        error: error instanceof Error ? error.message : String(error),
+      })
+    }
+  })().catch((error) => {
+    console.error("[Background] handleCancelGmSetup unhandled rejection:", error)
+  })
+}
+
+/**
+ * Handle DISCONNECT_GOOGLE_MESSAGES requests.
+ * Removes the Google Messages mailbox from storage.
+ */
+function handleDisconnectGoogleMessages(
+  msg: { mailboxId: string },
+  sendResponse: (response: any) => void
+) {
+  ;(async () => {
+    try {
+      const storage = await StorageFactory.create()
+      await storage.removeMailbox(msg.mailboxId)
+
+      // Update popup cache
+      const mailboxes = await storage.getMailboxes()
+      await popupCacheManager.warmCache([], mailboxes.length, mailboxes)
+
+      sendResponse({ ok: true })
+    } catch (error) {
+      console.error("[Background] Failed to disconnect Google Messages:", error)
+      sendResponse({
+        ok: false,
+        error: error instanceof Error ? error.message : String(error),
+      })
+    }
+  })().catch((error) => {
+    console.error("[Background] handleDisconnectGoogleMessages unhandled rejection:", error)
+  })
+}
