@@ -21,6 +21,7 @@ import type { DetectionResult } from '@/lib/types'
 import { isExtensionEnabled } from '@/lib/utils/domain'
 import { detectSplitInputGroup } from '@/lib/detection/split-input-detector'
 import { hasEmailContext } from '@/lib/detection/email-context-guard'
+import { hydrateSmsCache } from '@/lib/detection/sms-feature-cache'
 
 /**
  * Global Set to track processed representative fields across all batches
@@ -84,6 +85,11 @@ export function clearProcessedFields(): void {
       // Always bypass for OTP autocomplete values
       const autocomplete = field.getAttribute('autocomplete')?.toLowerCase() || ''
       if (['one-time-code', 'one-time-password', 'otp'].includes(autocomplete)) {
+        return true
+      }
+
+      // SMS fields are inherently high-intent (user is on a page expecting an SMS code)
+      if (detectionResult.detectedChannels?.includes('sms')) {
         return true
       }
 
@@ -214,6 +220,10 @@ export function clearProcessedFields(): void {
    * Detect existing fields on page load
    */
   async function detectExistingFields(): Promise<void> {
+    // Hydrate SMS feature cache before first detection run.
+    // This prevents a race where SMS fields get rejected before the cache loads.
+    await hydrateSmsCache()
+
     // Check automation level setting
     try {
       const result = await chrome.storage.local.get('settings')

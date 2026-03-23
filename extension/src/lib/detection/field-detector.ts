@@ -91,6 +91,7 @@ function tier1ToDetectionResult(
     tier: 1,
     signals: [result.reason],
     executionTime,
+    detectedChannels: result.detectedChannels,
   }
 }
 
@@ -116,6 +117,7 @@ function tier2ToDetectionResult(
     tier: 2,
     signals: [result.reason],
     executionTime,
+    detectedChannels: result.detectedChannels,
   }
 }
 

@@ -13,6 +13,7 @@ import { classifyDeliveryChannel } from './signal-classifier'
 import { classifyNonEmailIntent } from './non-email-contexts'
 import { detectSplitInputGroup } from './split-input-detector'
 import { getAriaDescribedbyText } from './detection-utils'
+import { smsFeatureEnabledCache } from './sms-feature-cache'
 import type { TextSources } from './types'
 import {
   getLabelMatchStrength,
@@ -337,6 +338,8 @@ export interface Tier2Result {
   score: number
   /** Human-readable reason for decision */
   reason: string
+  /** Detected delivery channels from signal classifier. Absent = ['email'] (default). */
+  detectedChannels?: Array<'email' | 'sms' | 'authenticator'>
   /** Detection metadata for debugging */
   metadata?: {
     labelMatch?: string
@@ -604,7 +607,7 @@ export function detectTier2(
 
   if (channelResult.channel === 'sms') {
     const hasEmailOption = channelResult.allChannels?.includes('email')
-    if (!hasEmailOption) {
+    if (!hasEmailOption && !smsFeatureEnabledCache) {
       cooldown.markRejected(input)
       return {
         detected: false,
@@ -717,6 +720,7 @@ export function detectTier2(
     confidence: Math.min(score / THRESHOLD, 1.0),
     score,
     reason: `Tier2 match (${scoreBreakdown.join(', ')})`,
+    detectedChannels: channelResult.allChannels ?? ['email'],
     metadata: {
       layer: 'label',
       labelMatch: labelMatch || undefined,

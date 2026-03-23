@@ -71,6 +71,10 @@ global.chrome = {
   storage: {
     local: createMockStorage(),
     session: createMockStorage(),
+    onChanged: {
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+    },
   },
   tabs: {
     query: vi.fn(),
