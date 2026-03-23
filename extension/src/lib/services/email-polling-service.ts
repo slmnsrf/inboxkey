@@ -24,7 +24,7 @@ import { SeenMessageStore } from './seen-message-store'
 
 // ---------------- Types ----------------
 
-export type ProviderId = 'gmail' | 'outlook' | 'imap' | 'imap-bridge'
+export type ProviderId = 'gmail' | 'outlook' | 'imap' | 'imap-bridge' | 'google-messages'
 
 export interface EmailLike {
   id: string
@@ -207,7 +207,8 @@ export class EmailPollingService {
               pageDomain: ctx.pageDomain,
               brandHints: ctx.brandHints,
               meta: {
-                provider: msg.provider,
+                // Cast: google-messages adapters don't use extractFromEmail (SMS has its own pipeline)
+                provider: msg.provider as 'gmail' | 'outlook' | 'imap' | 'imap-bridge',
                 sender: msg.from,
                 subject,
                 received: msg.receivedEpochMs
