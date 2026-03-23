@@ -2,7 +2,7 @@
  * Core type definitions for InboxKey
  */
 
-export type ProviderId = "gmail" | "outlook" | "imap-bridge"
+export type ProviderId = "gmail" | "outlook" | "imap-bridge" | "google-messages"
 
 export interface WatchSession {
   id: string
@@ -83,5 +83,7 @@ export interface DetectionResult {
   tier: 1 | 2
   signals: string[] // Which heuristics matched
   executionTime: number // ms
+  /** Detected delivery channels from signal classifier. Absent = ['email'] (default). */
+  detectedChannels?: Array<'email' | 'sms' | 'authenticator'>
 }
 

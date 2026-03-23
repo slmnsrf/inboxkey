@@ -496,6 +496,8 @@ export class PopupCacheManager {
         return 'Gmail'
       case 'outlook':
         return 'Outlook'
+      case 'google-messages':
+        return 'Google Messages'
       case 'imap-bridge':
         return undefined
       default:

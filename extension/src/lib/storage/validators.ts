@@ -20,7 +20,17 @@ export function validateMailboxBeforeWrite(mailbox: Mailbox): void {
     throw new ValidationError('Invalid mailbox schema: missing required fields');
   }
 
-  if (mailbox.providerId === 'imap-bridge') {
+  if (mailbox.providerId === 'google-messages') {
+    if (mailbox.accessToken || mailbox.refreshToken || mailbox.tokenExpiresAt) {
+      throw new ValidationError('Google Messages mailboxes cannot have OAuth tokens');
+    }
+    if (mailbox.imapServer || mailbox.imapPort || mailbox.imapAccountId) {
+      throw new ValidationError('Google Messages mailboxes cannot have IMAP fields');
+    }
+    if (!mailbox.gmPhoneNumber) {
+      throw new ValidationError('Google Messages mailboxes require gmPhoneNumber');
+    }
+  } else if (mailbox.providerId === 'imap-bridge') {
     // IMAP mailboxes must NOT have OAuth tokens
     if (mailbox.accessToken || mailbox.refreshToken || mailbox.tokenExpiresAt) {
       throw new ValidationError('IMAP mailboxes cannot have OAuth tokens');

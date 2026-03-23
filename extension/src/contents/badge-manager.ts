@@ -65,9 +65,20 @@ const ANIMATION = {
 } as const
 
 /**
- * Global state for animation management
+ * Auto-dismiss timers (ms) -- badge clears itself after this delay.
+ * Matches the chip auto-dismiss timings in field-feedback.ts.
+ */
+const AUTO_DISMISS_MS = {
+  success: 3000,    // 3s -- matches chip filled dismiss
+  noCode: 4000,     // 4s -- matches chip timeout dismiss
+  syncError: 15000, // 15s -- actionable but shouldn't persist forever
+} as const
+
+/**
+ * Global state for animation and auto-dismiss management
  */
 let animationInterval: ReturnType<typeof setInterval> | null = null
+let autoDismissTimer: ReturnType<typeof setTimeout> | null = null
 let isAnimating = false // Track if listening animation is active
 
 /**
@@ -79,6 +90,20 @@ function stopAnimation(): void {
     animationInterval = null
   }
   isAnimating = false // Clear animation flag when stopping
+}
+
+/**
+ * Schedule auto-dismiss: clears badge after a delay.
+ * Cancels any previous auto-dismiss timer.
+ */
+function scheduleAutoDismiss(delayMs: number): void {
+  if (autoDismissTimer !== null) {
+    clearTimeout(autoDismissTimer)
+  }
+  autoDismissTimer = setTimeout(() => {
+    autoDismissTimer = null
+    clearBadge()
+  }, delayMs)
 }
 
 /**
@@ -222,6 +247,7 @@ export function setBadgeSuccess(): void {
 
   setBadgeBackgroundColor(COLORS.success)
   setBadgeText('OK')
+  scheduleAutoDismiss(AUTO_DISMISS_MS.success)
 }
 
 /**
@@ -249,6 +275,7 @@ export function setBadgeNoCode(): void {
 
   setBadgeBackgroundColor(COLORS.noCode)
   setBadgeText('!')
+  scheduleAutoDismiss(AUTO_DISMISS_MS.noCode)
 }
 
 /**
@@ -312,6 +339,7 @@ export function setBadgeSyncError(): void {
 
   setBadgeBackgroundColor(COLORS.syncError)
   setBadgeText('X')
+  scheduleAutoDismiss(AUTO_DISMISS_MS.syncError)
 }
 
 /**
@@ -326,6 +354,10 @@ export function setBadgeSyncError(): void {
 export function clearBadge(): void {
   stopAnimation()
   isAnimating = false // Explicit flag clear
+  if (autoDismissTimer !== null) {
+    clearTimeout(autoDismissTimer)
+    autoDismissTimer = null
+  }
 
   // Always reset priority to IDLE, even if API unavailable
   // This ensures tests can reset state properly

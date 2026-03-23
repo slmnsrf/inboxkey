@@ -24,6 +24,7 @@ import { validateContext } from './context-validator'
 import { validateURL } from './url-pattern-validator'
 import { classifyDeliveryChannel } from './signal-classifier'
 import { getAriaDescribedbyText } from './detection-utils'
+import { smsFeatureEnabledCache } from './sms-feature-cache'
 import type { TextSources } from './types'
 import {
   ATTRIBUTE_PATTERNS,
@@ -43,6 +44,8 @@ export interface Tier1Result {
   confidence: number
   /** Human-readable reason for decision */
   reason: string
+  /** Detected delivery channels from signal classifier. Absent = ['email'] (default). */
+  detectedChannels?: Array<'email' | 'sms' | 'authenticator'>
   /** Detection metadata for debugging */
   metadata?: {
     /** Matched HTML attribute (name, id, autocomplete) */
@@ -161,7 +164,7 @@ function getNearbyText(input: HTMLInputElement): string {
 function validateFieldContext(
   input: HTMLInputElement,
   cooldown: CooldownRegistry
-): { pass: true; textSources: TextSources } | { pass: false; result: Tier1Result } {
+): { pass: true; textSources: TextSources; allChannels?: Array<'email' | 'sms' | 'authenticator'> } | { pass: false; result: Tier1Result } {
   const labelText = getLabelText(input)
   const nearbyText = getNearbyText(input)
   const textSources: TextSources = {
@@ -198,7 +201,7 @@ function validateFieldContext(
 
   if (signalClassification.channel === 'sms') {
     const hasEmailOption = signalClassification.allChannels?.includes('email')
-    if (!hasEmailOption) {
+    if (!hasEmailOption && !smsFeatureEnabledCache) {
       cooldown.markRejected(input)
       return {
         pass: false,
@@ -240,7 +243,7 @@ function validateFieldContext(
     }
   }
 
-  return { pass: true, textSources }
+  return { pass: true, textSources, allChannels: signalClassification.allChannels }
 }
 
 /**
@@ -415,6 +418,7 @@ export function detectTier1(
       detected: true,
       confidence: 1.0,
       reason: `autocomplete="${autocomplete}"`,
+      detectedChannels: validation.allChannels ?? ['email'],
       metadata: {
         layer: 'autocomplete',
         matchedAttribute: 'autocomplete',
@@ -432,6 +436,7 @@ export function detectTier1(
       detected: true,
       confidence: 0.95,
       reason: `name/id="${identifier}" (exact match)`,
+      detectedChannels: validation.allChannels ?? ['email'],
       metadata: {
         layer: 'attribute',
         matchedAttribute: name ? 'name' : 'id',
@@ -449,6 +454,7 @@ export function detectTier1(
       detected: true,
       confidence: 0.9,
       reason: `name/id="${identifier}" (contains match)`,
+      detectedChannels: validation.allChannels ?? ['email'],
       metadata: {
         layer: 'attribute',
         matchedAttribute: name ? 'name' : 'id',
@@ -472,6 +478,7 @@ export function detectTier1(
       detected: true,
       confidence: 0.85,
       reason: `inputmode="${inputmode}" + maxlength=${maxLength}`,
+      detectedChannels: validation.allChannels ?? ['email'],
       metadata: {
         layer: 'attribute',
         matchedAttribute: 'inputmode',

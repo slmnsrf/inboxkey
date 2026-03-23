@@ -36,7 +36,7 @@ export interface StorageSchema {
 /**
  * Provider types supported by InboxKey
  */
-export type ProviderId = "gmail" | "outlook" | "imap-bridge"
+export type ProviderId = "gmail" | "outlook" | "imap-bridge" | "google-messages"
 
 /**
  * Mailbox account with OAuth tokens or IMAP credentials
@@ -71,6 +71,11 @@ export interface Mailbox {
   imapUsername?: string
   /** Native app account ID (e.g., "acc_abc123") - reference to OS keychain entry */
   imapAccountId?: string
+
+  // Google Messages specific (required for 'google-messages'; must be undefined for other providers)
+  /** Full phone number in international format (e.g., "+905551234455").
+   *  Validation: must start with '+', at least 7 digits after stripping spaces/dashes/parens. */
+  gmPhoneNumber?: string
 
   addedAt: number // Unix timestamp (ms)
   lastSyncedAt: number // Unix timestamp (ms)
@@ -341,7 +346,7 @@ export function isValidUUID(uuid: string): boolean {
 }
 
 export function isValidProviderId(id: string): id is ProviderId {
-  return id === "gmail" || id === "outlook" || id === "imap-bridge"
+  return id === "gmail" || id === "outlook" || id === "imap-bridge" || id === "google-messages"
 }
 
 export function isValidTimestamp(timestamp: number): boolean {
@@ -384,6 +389,20 @@ export function isMailbox(obj: unknown): obj is Mailbox {
   if (!basicValid) return false
 
   // Provider-specific validation
+  if (m.providerId === 'google-messages') {
+    return (
+      m.accessToken === undefined &&
+      m.refreshToken === undefined &&
+      m.tokenExpiresAt === undefined &&
+      m.imapServer === undefined &&
+      m.imapPort === undefined &&
+      m.imapUsername === undefined &&
+      m.imapAccountId === undefined &&
+      typeof m.gmPhoneNumber === 'string' &&
+      m.gmPhoneNumber.length > 0
+    )
+  }
+
   if (m.providerId === "imap-bridge") {
     // IMAP provider: require IMAP fields, OAuth fields must be undefined
     return (
