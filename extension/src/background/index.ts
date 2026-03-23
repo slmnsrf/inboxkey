@@ -915,12 +915,22 @@ function handleResetSettings(sendResponse: (response: any) => void) {
  * Opens the Messages for Web tab, persists pending setup, and checks pairing.
  */
 function handleConnectGoogleMessages(
-  msg: { phoneNumber: string },
+  msg: { phoneNumber: string; repair?: boolean },
   sendResponse: (response: any) => void
 ) {
   ;(async () => {
     try {
       const tabManager = getMessagesTabManager()
+
+      // If re-pairing, delete the existing google-messages mailbox first
+      if (msg.repair) {
+        const storage = await StorageFactory.create()
+        const existing = await storage.getMailboxes()
+        const gmMailbox = existing.find((m) => m.providerId === 'google-messages')
+        if (gmMailbox) {
+          await storage.removeMailbox(gmMailbox.id)
+        }
+      }
 
       // 1. Persist pending setup to session storage
       await tabManager.savePendingSetup({
@@ -967,6 +977,7 @@ function handleConnectGoogleMessages(
 
         await storage.addMailbox(mailbox)
         await tabManager.clearPendingSetup()
+        await tabManager.closeIfOwned()
 
         // Update popup cache
         const mailboxes = await storage.getMailboxes()
