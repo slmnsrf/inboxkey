@@ -1,0 +1,1476 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="status" content="Ideation">
+  <meta name="date" content="2026-03-23">
+  <meta name="category" content="settings">
+  <title>Google Messages Card - InboxKey Prototype</title>
+  <link rel="stylesheet" href="../shared/tokens.css">
+
+  <!-- Lucide Icons CDN for prototype -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <style>
+    /* ============================
+       PROTOTYPE CONTROLS
+       ============================ */
+
+    .proto-state-controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--space-3);
+      align-items: center;
+    }
+
+    .proto-state-controls label {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-2);
+      font-size: var(--font-size-xs);
+      color: var(--color-text-secondary);
+      cursor: pointer;
+    }
+
+    .proto-state-controls select {
+      padding: 2px var(--space-2);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-sm);
+      background: var(--surface-card);
+      color: var(--color-text-primary);
+      font-size: var(--font-size-xs);
+      font-family: var(--font-system);
+    }
+
+    .proto-separator {
+      width: 1px;
+      height: 20px;
+      background: var(--color-border);
+    }
+
+    /* ============================
+       PAGE SHELL (mirrors options.css)
+       ============================ */
+
+    *, *::before, *::after { box-sizing: border-box; }
+    body { margin: 0; }
+
+    .options-container {
+      min-height: 100vh;
+      background: var(--color-bg-primary);
+      color: var(--color-text-primary);
+      font-family: var(--font-system);
+      font-size: var(--font-size-base);
+      line-height: var(--line-height-normal);
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    .options-shell {
+      max-width: 840px;
+      margin: 0 auto;
+      padding: var(--space-6);
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-6);
+    }
+
+    /* ============================
+       HEADER
+       ============================ */
+
+    .options-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding-bottom: var(--space-3);
+      border-bottom: 1px solid var(--color-border);
+    }
+
+    .options-header__identity {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+    }
+
+    .brand__icon {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 40px;
+      height: 40px;
+      background: var(--color-primary);
+      color: var(--color-text-inverse);
+      border-radius: var(--radius-lg);
+    }
+
+    .brand__title {
+      margin: 0;
+      font-size: var(--font-size-2xl);
+      font-weight: var(--font-weight-bold);
+      letter-spacing: -0.03em;
+    }
+
+    .privacy-line {
+      margin: 0;
+      font-size: var(--font-size-xs);
+      color: var(--color-text-tertiary);
+      letter-spacing: var(--letter-spacing-wide);
+    }
+
+    .options-header__actions {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+    }
+
+    .support-link {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: var(--space-2) var(--space-3);
+      border-radius: var(--radius-full);
+      font-size: var(--font-size-xs);
+      font-weight: var(--font-weight-medium);
+      color: var(--color-text-secondary);
+      background: var(--surface-card);
+      border: 1px solid var(--color-border);
+      text-decoration: none;
+      transition: background var(--duration-fast) ease-out;
+    }
+
+    .support-link:hover {
+      background: var(--surface-card-muted);
+    }
+
+    .coffee-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-2);
+      padding: var(--space-2) var(--space-4);
+      border-radius: var(--radius-full);
+      font-size: var(--font-size-xs);
+      font-weight: var(--font-weight-semibold);
+      color: var(--color-support-text);
+      background: var(--color-support-bg);
+      border: 1px solid var(--color-support-border);
+      text-decoration: none;
+      cursor: pointer;
+      transition: filter var(--duration-fast) ease-out;
+    }
+
+    .coffee-btn:hover {
+      filter: brightness(0.95);
+    }
+
+    /* ============================
+       TRUST BANNER
+       ============================ */
+
+    .trust-banner {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: var(--space-3);
+      padding: var(--space-5) var(--space-6);
+      background: var(--surface-card);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-xl);
+      box-shadow: var(--shadow-sm);
+      text-align: center;
+    }
+
+    .trust-banner__headline {
+      margin: 0;
+      font-size: var(--font-size-sm);
+      color: var(--color-text-secondary);
+      font-weight: var(--font-weight-medium);
+    }
+
+    .trust-banner__pillars {
+      display: flex;
+      align-items: center;
+      gap: var(--space-6);
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .trust-pillar {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+    }
+
+    .trust-pillar__icon {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 28px;
+      height: 28px;
+      border-radius: var(--radius-md);
+      background: var(--color-primary-light);
+      color: var(--color-primary);
+    }
+
+    .trust-pillar__label {
+      font-size: var(--font-size-sm);
+      font-weight: var(--font-weight-medium);
+      color: var(--color-text-primary);
+      white-space: nowrap;
+    }
+
+    /* ============================
+       TAB NAVIGATION
+       ============================ */
+
+    .tab-navigation {
+      display: flex;
+      border-bottom: 1px solid var(--color-border);
+      gap: 0;
+    }
+
+    .tab-button {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-2);
+      padding: var(--space-3) var(--space-4);
+      border: none;
+      background: transparent;
+      color: var(--color-text-secondary);
+      font-family: var(--font-system);
+      font-size: var(--font-size-sm);
+      font-weight: var(--font-weight-medium);
+      cursor: pointer;
+      position: relative;
+      transition: color var(--duration-fast) ease-out;
+    }
+
+    .tab-button__icon {
+      display: flex;
+      align-items: center;
+      opacity: 0.7;
+    }
+
+    .tab-button:hover {
+      color: var(--color-text-primary);
+    }
+
+    .tab-button--active {
+      color: var(--color-primary);
+    }
+
+    .tab-button--active .tab-button__icon {
+      opacity: 1;
+    }
+
+    .tab-button--active::after {
+      content: '';
+      position: absolute;
+      bottom: -1px;
+      left: var(--space-4);
+      right: var(--space-4);
+      height: 2px;
+      background: var(--color-primary);
+      border-radius: 1px 1px 0 0;
+    }
+
+    /* ============================
+       SECTION (accounts container)
+       ============================ */
+
+    .section {
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-xl);
+      background: var(--surface-card);
+      box-shadow: var(--shadow-sm);
+      overflow: hidden;
+    }
+
+    /* ============================
+       ACCOUNTS PANEL
+       ============================ */
+
+    .accounts-panel {
+      display: grid;
+      gap: var(--space-5);
+      padding: var(--space-5);
+    }
+
+    /* ============================
+       PROVIDER CARD
+       ============================ */
+
+    .accounts-section {
+      display: grid;
+      gap: var(--space-4);
+      padding: var(--space-5);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      background: var(--surface-card);
+      box-shadow: var(--shadow-sm);
+      position: relative;
+    }
+
+    .accounts-section__header {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: baseline;
+      gap: var(--space-2);
+      justify-content: space-between;
+    }
+
+    .accounts-section__title {
+      margin: 0;
+      font-size: var(--font-size-xl);
+      font-weight: var(--font-weight-semibold);
+      letter-spacing: -0.02em;
+      color: var(--color-text-primary);
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+    }
+
+    .accounts-section__description {
+      margin: 0;
+      color: var(--color-text-secondary);
+      font-size: var(--font-size-sm);
+    }
+
+    .provider-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .provider-dot--gmail { background: var(--color-gmail); }
+    .provider-dot--outlook { background: var(--color-outlook); }
+    .provider-dot--imap { background: var(--color-gray-400); }
+    .provider-dot--messages { background: #1A73E8; }
+
+    /* ============================
+       ACCOUNT ROW
+       ============================ */
+
+    .account-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--space-3);
+      padding: var(--space-3) var(--space-4);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+      background: var(--surface-card-muted);
+      transition: border-color var(--duration-fast) ease-out;
+    }
+
+    .account-row:hover {
+      border-color: var(--color-border-hover);
+    }
+
+    .account-row__info {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .account-row__email {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+      font-weight: var(--font-weight-medium);
+      color: var(--color-text-primary);
+    }
+
+    .account-row__phone {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+      font-weight: var(--font-weight-medium);
+      color: var(--color-text-primary);
+    }
+
+    .account-row__phone-text {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      max-width: 280px;
+      font-family: var(--font-system);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .account-row__meta {
+      font-size: var(--font-size-xs);
+      color: var(--color-text-tertiary);
+    }
+
+    .account-row__actions {
+      display: flex;
+      gap: var(--space-2);
+      flex-shrink: 0;
+    }
+
+    /* Status dot */
+    .status-dot {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .status-dot--online { background: var(--color-success); }
+    .status-dot--offline { background: var(--color-error); }
+    .status-dot--warning { background: var(--color-warning); }
+
+    /* Status chip */
+    .status-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-1);
+      padding: 2px var(--space-3);
+      border-radius: var(--radius-full);
+      font-size: var(--font-size-xs);
+      font-weight: var(--font-weight-medium);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .status-chip--connected {
+      color: var(--color-success-dark);
+      background: rgba(16, 185, 129, 0.12);
+    }
+
+    .status-chip--disconnected {
+      color: var(--color-text-tertiary);
+      background: var(--surface-card-muted);
+      border: 1px solid var(--color-border);
+    }
+
+    /* ============================
+       EMPTY STATE (no account connected)
+       ============================ */
+
+    .empty-slot {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: var(--space-3);
+      padding: var(--space-6) var(--space-4);
+      border: 1px dashed var(--color-border-strong);
+      border-radius: var(--radius-md);
+      text-align: center;
+      color: var(--color-text-secondary);
+      background: var(--surface-card-muted);
+    }
+
+    .empty-slot__icon {
+      width: 48px;
+      height: 48px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: var(--radius-lg);
+      background: var(--color-bg-secondary);
+      color: var(--color-text-tertiary);
+    }
+
+    .empty-slot__text {
+      margin: 0;
+      font-size: var(--font-size-sm);
+      max-width: 320px;
+    }
+
+    /* ============================
+       BUTTONS
+       ============================ */
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: var(--space-2);
+      padding: var(--space-2) var(--space-4);
+      border-radius: var(--radius-md);
+      font-family: var(--font-system);
+      font-size: var(--font-size-sm);
+      font-weight: var(--font-weight-medium);
+      cursor: pointer;
+      border: none;
+      transition: background var(--duration-fast) ease-out,
+                  border-color var(--duration-fast) ease-out,
+                  color var(--duration-fast) ease-out;
+      min-height: 36px;
+      text-decoration: none;
+    }
+
+    .btn:focus-visible {
+      outline: 2px solid var(--color-primary);
+      outline-offset: 2px;
+    }
+
+    .btn--primary {
+      background: var(--color-primary);
+      color: var(--color-text-inverse);
+    }
+
+    .btn--primary:hover { background: var(--color-primary-hover); }
+
+    .btn--secondary {
+      background: var(--surface-card);
+      color: var(--color-text-primary);
+      border: 1px solid var(--color-border);
+    }
+
+    .btn--secondary:hover { background: var(--surface-card-muted); }
+
+    .btn--danger-ghost {
+      background: transparent;
+      color: var(--color-error-dark);
+      border: 1px solid transparent;
+    }
+
+    .btn--danger-ghost:hover {
+      background: var(--color-error-light);
+      border-color: rgba(239, 68, 68, 0.2);
+    }
+
+    .btn--danger {
+      background: var(--color-error);
+      color: var(--color-text-inverse);
+      border: none;
+    }
+
+    .btn--danger:hover {
+      background: var(--color-error-hover);
+    }
+
+    .btn--sm {
+      padding: var(--space-1) var(--space-3);
+      font-size: var(--font-size-xs);
+      min-height: 28px;
+    }
+
+    .btn--ghost {
+      background: transparent;
+      color: var(--color-text-secondary);
+      border: 1px solid transparent;
+    }
+
+    .btn--ghost:hover {
+      background: var(--surface-card-muted);
+      color: var(--color-text-primary);
+    }
+
+    .btn--link {
+      background: transparent;
+      border: none;
+      color: var(--color-text-link);
+      padding: 0;
+      min-height: auto;
+      font-size: var(--font-size-sm);
+      cursor: pointer;
+      text-decoration: underline;
+      text-underline-offset: 2px;
+    }
+
+    .btn--link:hover {
+      color: var(--color-primary);
+    }
+
+    .btn[disabled],
+    .btn--disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+      pointer-events: none;
+    }
+
+    /* ============================
+       CONNECTING ANIMATION
+       ============================ */
+
+    .connecting-stage {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+      padding: var(--space-3) var(--space-4);
+      border: 1px solid rgba(0, 122, 255, 0.2);
+      border-radius: var(--radius-md);
+      background: var(--color-primary-light);
+      color: var(--color-primary);
+      font-size: var(--font-size-sm);
+      font-weight: var(--font-weight-medium);
+    }
+
+    .connecting-stage__text {
+      flex: 1;
+    }
+
+    .connecting-dots {
+      display: flex;
+      gap: 4px;
+    }
+
+    .connecting-dots span {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--color-primary);
+      animation: pulse 1.4s ease-in-out infinite;
+    }
+
+    .connecting-dots span:nth-child(2) { animation-delay: 0.2s; }
+    .connecting-dots span:nth-child(3) { animation-delay: 0.4s; }
+
+    @keyframes pulse {
+      0%, 80%, 100% { opacity: 0.3; transform: scale(0.8); }
+      40% { opacity: 1; transform: scale(1); }
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* ============================
+       MICROCOPY
+       ============================ */
+
+    .microcopy {
+      color: var(--color-text-tertiary);
+      font-size: var(--font-size-xs);
+      margin: 0;
+      line-height: var(--line-height-normal);
+    }
+
+    /* ============================
+       WARNING BANNER
+       ============================ */
+
+    .warning-banner {
+      display: flex;
+      align-items: flex-start;
+      gap: var(--space-2);
+      border-radius: var(--radius-md);
+      padding: var(--space-2) var(--space-3);
+      background: var(--color-warning-light);
+      color: var(--color-warning-dark);
+      font-size: var(--font-size-sm);
+      border: 1px solid rgba(245, 158, 11, 0.2);
+    }
+
+    /* ============================
+       ERROR BANNER
+       ============================ */
+
+    .error-banner {
+      display: flex;
+      align-items: flex-start;
+      gap: var(--space-2);
+      border-radius: var(--radius-md);
+      padding: var(--space-2) var(--space-3);
+      background: var(--color-error-light);
+      color: var(--color-error-dark);
+      font-size: var(--font-size-sm);
+      border: 1px solid rgba(239, 68, 68, 0.2);
+    }
+
+    /* ============================
+       INLINE CONFIRMATION
+       ============================ */
+
+    .confirm-inline {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-3);
+      padding: var(--space-4);
+      border: 1px solid rgba(239, 68, 68, 0.25);
+      border-radius: var(--radius-md);
+      background: var(--color-error-light);
+    }
+
+    .confirm-inline__text {
+      margin: 0;
+      font-size: var(--font-size-sm);
+      color: var(--color-error-dark);
+      line-height: var(--line-height-relaxed);
+    }
+
+    .confirm-inline__actions {
+      display: flex;
+      gap: var(--space-2);
+    }
+
+    /* ============================
+       PHONE NUMBER INPUT
+       ============================ */
+
+    .disclosure-box {
+      padding: var(--space-3);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+      background: var(--surface-card-muted);
+    }
+
+    .disclosure-box + .disclosure-box {
+      margin-top: var(--space-2);
+    }
+
+    .disclosure-box:last-of-type {
+      margin-bottom: var(--space-3);
+    }
+
+    .disclosure-box__title {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+      font-size: var(--font-size-sm);
+      font-weight: var(--font-weight-medium);
+      color: var(--color-text-primary);
+      margin-bottom: var(--space-2);
+    }
+
+    .disclosure-box__title i,
+    .disclosure-box__title svg {
+      color: var(--color-text-tertiary);
+    }
+
+    .disclosure-box__text {
+      margin: 0;
+      font-size: var(--font-size-xs);
+      line-height: 1.6;
+      color: var(--color-text-secondary);
+    }
+
+    .phone-input-group {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-3);
+      padding: var(--space-4);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+      background: var(--surface-card-muted);
+    }
+
+    .phone-input-group__label {
+      margin: 0;
+      font-size: var(--font-size-sm);
+      font-weight: var(--font-weight-medium);
+      color: var(--color-text-primary);
+    }
+
+    .form-input {
+      width: 100%;
+      padding: var(--space-2) var(--space-3);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+      background: var(--surface-card);
+      color: var(--color-text-primary);
+      font-family: var(--font-system);
+      font-size: var(--font-size-base);
+      font-variant-numeric: tabular-nums;
+      transition: border-color var(--duration-fast) ease-out;
+      min-height: 36px;
+    }
+
+    .form-input:focus {
+      outline: none;
+      border-color: var(--color-border-focus);
+      box-shadow: 0 0 0 2px rgba(0, 122, 255, 0.15);
+    }
+
+    .form-input::placeholder {
+      color: var(--color-text-tertiary);
+    }
+
+    .form-hint {
+      margin: 0;
+      font-size: var(--font-size-xs);
+      color: var(--color-text-tertiary);
+    }
+
+    .form-error {
+      margin: 0;
+      font-size: var(--font-size-xs);
+      color: var(--color-error);
+    }
+
+    .form-input--invalid {
+      border-color: var(--color-error);
+    }
+
+    .form-input--invalid:focus {
+      box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.15);
+    }
+
+    .phone-input-actions {
+      display: flex;
+      gap: var(--space-2);
+      align-items: center;
+    }
+
+    /* ============================
+       GOOGLE MESSAGES BRAND
+       ============================ */
+
+    .gm-logo {
+      width: 18px;
+      height: 18px;
+      flex-shrink: 0;
+    }
+
+    /* Inline SVG icon for Google Messages */
+    .gm-icon {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 18px;
+      height: 18px;
+      flex-shrink: 0;
+    }
+
+    .gm-icon svg {
+      width: 18px;
+      height: 18px;
+    }
+
+    .gm-icon--lg {
+      width: 48px;
+      height: 48px;
+    }
+
+    .gm-icon--lg svg {
+      width: 48px;
+      height: 48px;
+    }
+
+    /* ============================
+       SCENARIO LABELS
+       ============================ */
+
+    .scenario-label {
+      display: none;
+      position: absolute;
+      top: calc(-1 * var(--space-3));
+      left: var(--space-3);
+      padding: 1px var(--space-2);
+      border-radius: var(--radius-sm);
+      font-size: 10px;
+      font-weight: var(--font-weight-bold);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      background: var(--color-warning);
+      color: #000;
+      z-index: 1;
+    }
+
+    .show-labels .scenario-label {
+      display: block;
+    }
+
+    /* ============================
+       PROVIDER BADGE (for recent section)
+       ============================ */
+
+    .provider-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 1px var(--space-2);
+      border-radius: var(--radius-full);
+      font-size: 11px;
+      font-weight: var(--font-weight-medium);
+      background: var(--surface-card);
+      border: 1px solid var(--color-border);
+      color: var(--color-text-secondary);
+    }
+
+    .provider-badge__dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+    }
+
+    .provider-badge__dot--gmail { background: var(--color-gmail); }
+    .provider-badge__dot--messages { background: #1A73E8; }
+
+    /* ============================
+       RECENT EMAILS SECTION
+       ============================ */
+
+    .recent-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: var(--space-3);
+    }
+
+    .recent-list {
+      display: grid;
+      gap: var(--space-2);
+    }
+
+    .recent-card {
+      display: grid;
+      gap: var(--space-2);
+      padding: var(--space-3) var(--space-4);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+      background: var(--surface-card-muted);
+      transition: border-color var(--duration-fast) ease-out;
+    }
+
+    .recent-card:hover {
+      border-color: var(--color-border-hover);
+    }
+
+    .recent-card__meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--space-2);
+      align-items: center;
+      color: var(--color-text-tertiary);
+      font-size: var(--font-size-xs);
+    }
+
+    .recent-card__title {
+      margin: 0;
+      font-size: var(--font-size-base);
+      font-weight: var(--font-weight-semibold);
+      color: var(--color-text-primary);
+    }
+
+    .recent-code {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-2);
+      padding: var(--space-2) var(--space-3);
+      border-radius: var(--radius-md);
+      font-family: var(--font-mono);
+      font-size: var(--font-size-lg);
+      letter-spacing: 0.08em;
+      background: var(--color-gray-800);
+      color: var(--color-text-inverse);
+    }
+
+    [data-theme="dark"] .recent-code {
+      background: var(--color-gray-200);
+      color: var(--color-text-primary);
+    }
+
+    .recent-actions {
+      display: flex;
+      gap: var(--space-2);
+    }
+
+    .meta-dot {
+      width: 3px;
+      height: 3px;
+      border-radius: 50%;
+      background: var(--color-text-tertiary);
+    }
+
+    /* ============================
+       STAGGER ENTRANCE ANIMATION
+       ============================ */
+
+    @keyframes fadeUp {
+      from {
+        opacity: 0;
+        transform: translateY(12px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .accounts-panel > * {
+      animation: fadeUp 350ms cubic-bezier(0.16, 1, 0.3, 1) both;
+    }
+
+    .accounts-panel > *:nth-child(1) { animation-delay: 0ms; }
+    .accounts-panel > *:nth-child(2) { animation-delay: 60ms; }
+    .accounts-panel > *:nth-child(3) { animation-delay: 120ms; }
+    .accounts-panel > *:nth-child(4) { animation-delay: 180ms; }
+    .accounts-panel > *:nth-child(5) { animation-delay: 240ms; }
+
+    @media (prefers-reduced-motion: reduce) {
+      .accounts-panel > * {
+        animation: none;
+      }
+      .connecting-dots span {
+        animation: none;
+        opacity: 0.6;
+      }
+    }
+
+    /* ============================
+       EDGE CASE: "SMS only" LABEL
+       ============================ */
+
+    .source-type-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 1px var(--space-2);
+      border-radius: var(--radius-full);
+      font-size: 11px;
+      font-weight: var(--font-weight-medium);
+      background: var(--color-primary-light);
+      border: 1px solid rgba(0, 122, 255, 0.12);
+      color: var(--color-primary);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    /* ============================
+       RESPONSIVE
+       ============================ */
+
+    @media (max-width: 640px) {
+      .options-shell {
+        padding: var(--space-4);
+        gap: var(--space-4);
+      }
+
+      .options-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: var(--space-3);
+      }
+
+      .trust-banner__pillars {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .account-row {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .account-row__actions {
+        width: 100%;
+      }
+
+      .account-row__actions .btn {
+        flex: 1;
+      }
+
+      .account-row__phone-text {
+        max-width: 180px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- ========================================
+       PROTOTYPE TOOLBAR
+       ======================================== -->
+  <div class="proto-toolbar">
+    <div class="proto-toolbar__left">
+      <span class="proto-toolbar__title">Google Messages Card</span>
+      <span class="proto-toolbar__status" data-status="ideation">Ideation</span>
+      <span class="proto-toolbar__date">2026-03-22</span>
+    </div>
+    <div class="proto-toolbar__right">
+      <div class="proto-state-controls">
+        <label>
+          GM State:
+          <select id="ctrl-gm-state">
+            <option value="not-connected" selected>Not Connected</option>
+            <option value="phone-input">Phone Input</option>
+            <option value="pairing">Pairing In Progress</option>
+            <option value="connected">Connected</option>
+            <option value="disconnect-confirm">Disconnect Confirm</option>
+            <option value="session-expired">Session Expired</option>
+          </select>
+        </label>
+        <div class="proto-separator"></div>
+        <label>
+          <input type="checkbox" id="ctrl-labels">
+          Labels
+        </label>
+      </div>
+      <div class="proto-separator"></div>
+      <div class="proto-theme-toggle">
+        <button data-theme-btn="light" aria-pressed="true">Light</button>
+        <button data-theme-btn="dark" aria-pressed="false">Dark</button>
+      </div>
+      <button class="proto-decisions-toggle">Decisions</button>
+    </div>
+  </div>
+
+  <!-- ========================================
+       DECISIONS PANEL
+       ======================================== -->
+  <div class="proto-decisions-panel">
+    <button class="proto-decisions-close">&times;</button>
+    <h3>Design Decisions</h3>
+    <ol></ol>
+  </div>
+
+  <!-- ========================================
+       PROTOTYPE CANVAS
+       ======================================== -->
+  <main class="proto-canvas">
+    <div class="options-container">
+      <div class="options-shell">
+
+        <!-- GOOGLE MESSAGES CARD (focused prototype) -->
+        <div class="section">
+          <div class="accounts-panel" id="accounts-panel">
+
+            <!-- ========================
+                 GOOGLE MESSAGES SECTION
+                 ======================== -->
+            <div class="accounts-section" id="gm-section">
+              <span class="scenario-label">Google Messages</span>
+              <div class="accounts-section__header">
+                <h2 class="accounts-section__title">
+                  <span class="gm-icon" aria-hidden="true">
+                    <svg viewBox="0 0 192 192" xmlns="http://www.w3.org/2000/svg"><path fill="#86A9FF" d="M58.639,123.429C26.222,123.429,0,95.767,0,61.714S26.222,0,58.639,0h61.008 c32.417,0,58.639,27.662,58.639,61.714s-26.222,61.714-58.639,61.714H58.639z"/><path fill="#578CFF" d="M98.181,148.368V186c0,3.274-2.637,6-5.798,6c-1.547-0.011-3.022-0.651-4.087-1.773l-57.189-58.903 c-11.201-11.451-17.393-27.13-17.393-43.358c0-33.405,26.222-60.538,58.639-60.538h61.008c32.417,0,58.639,27.134,58.639,60.538 s-26.222,60.538-58.639,60.538H98.181V148.368z"/><path fill="#0057CC" d="M58.354,123.429h61.155c32.493,0,58.776-28.303,58.776-63.147c0-4.125-0.398-8.105-1.056-12.089 c-10.697-12.799-26.283-20.763-43.587-20.763H72.49c-32.493,0-58.776,28.303-58.776,63.147c0,4.125,0.398,8.105,1.056,11.945 c10.697,12.799,26.283,20.907,43.587,20.907H58.354z"/></svg>
+                  </span>
+                  Google Messages
+                  <span class="source-type-badge">SMS</span>
+                </h2>
+                <span class="status-chip status-chip--disconnected" id="gm-status">Not connected</span>
+              </div>
+
+              <!-- STATE: Not Connected -->
+              <div id="gm-not-connected">
+                <div class="empty-slot">
+                  <div class="gm-icon gm-icon--lg" aria-hidden="true">
+                    <svg viewBox="0 0 192 192" xmlns="http://www.w3.org/2000/svg"><path fill="#86A9FF" d="M58.639,123.429C26.222,123.429,0,95.767,0,61.714S26.222,0,58.639,0h61.008 c32.417,0,58.639,27.662,58.639,61.714s-26.222,61.714-58.639,61.714H58.639z"/><path fill="#578CFF" d="M98.181,148.368V186c0,3.274-2.637,6-5.798,6c-1.547-0.011-3.022-0.651-4.087-1.773l-57.189-58.903 c-11.201-11.451-17.393-27.13-17.393-43.358c0-33.405,26.222-60.538,58.639-60.538h61.008c32.417,0,58.639,27.134,58.639,60.538 s-26.222,60.538-58.639,60.538H98.181V148.368z"/><path fill="#0057CC" d="M58.354,123.429h61.155c32.493,0,58.776-28.303,58.776-63.147c0-4.125-0.398-8.105-1.056-12.089 c-10.697-12.799-26.283-20.763-43.587-20.763H72.49c-32.493,0-58.776,28.303-58.776,63.147c0,4.125,0.398,8.105,1.056,11.945 c10.697,12.799,26.283,20.907,43.587,20.907H58.354z"/></svg>
+                  </div>
+                  <p class="empty-slot__text">SMS verification codes can be retrieved through Google Messages for Web. An Android device paired with Google Messages is required.</p>
+                  <button class="btn btn--primary" onclick="setGmState('phone-input')">
+                    <i data-lucide="smartphone" style="width:14px;height:14px"></i>
+                    Connect Google Messages
+                  </button>
+                </div>
+              </div>
+
+              <!-- STATE: Phone Number Input -->
+              <div id="gm-phone-input" style="display:none">
+                <div class="phone-input-group">
+
+                  <!-- SECTION 1: How it works (the tab lifecycle) -->
+                  <div class="disclosure-box" role="note" aria-label="How Google Messages integration works">
+                    <div class="disclosure-box__title">
+                      <i data-lucide="info" style="width:14px;height:14px;flex-shrink:0"></i>
+                      How this works
+                    </div>
+                    <p class="disclosure-box__text">
+                      When a website asks for an SMS code, InboxKey opens Google Messages for Web in a background tab. It reads only the preview text of the last few messages, looking for a verification code. If a code is found, it is extracted and the tab is closed. If nothing is found within about 20 seconds, the tab is closed anyway. The tab is visible in the browser. Nothing is hidden.
+                    </p>
+                  </div>
+
+                  <!-- SECTION 2: Why the phone number -->
+                  <div class="disclosure-box" role="note" aria-label="Why the phone number is needed">
+                    <div class="disclosure-box__title">
+                      <i data-lucide="smartphone" style="width:14px;height:14px;flex-shrink:0"></i>
+                      Why the phone number
+                    </div>
+                    <p class="disclosure-box__text">
+                      The phone number is stored only on this device, nowhere else. It helps InboxKey tell the difference between an SMS code and an email code. When a website shows hints like a country code, the last digits of a number, or words like "text message", InboxKey uses the phone number to recognize the field as SMS and check Google Messages. Without it, InboxKey would not know when to look.
+                    </p>
+                  </div>
+
+                  <!-- SECTION 3: Good to know (session, no API) -->
+                  <div class="disclosure-box" role="note" aria-label="Things to keep in mind">
+                    <div class="disclosure-box__title">
+                      <i data-lucide="eye" style="width:14px;height:14px;flex-shrink:0"></i>
+                      Good to know
+                    </div>
+                    <p class="disclosure-box__text">
+                      There is no API for Google Messages. This feature works by opening the website and reading the page, the same way a person would. The Google Messages session in the browser can expire over time. If it does, re-pair the device from messages.google.com. InboxKey will let you know when that happens.
+                    </p>
+                  </div>
+
+                  <label class="phone-input-group__label" for="phone-number-input">Phone number</label>
+                  <input
+                    type="tel"
+                    id="phone-number-input"
+                    class="form-input"
+                    placeholder="+XX XXX XXX XXXX"
+                    value="+90 555 123 4455"
+                    aria-required="true"
+                    aria-describedby="phone-hint"
+                  >
+                  <p class="form-hint" id="phone-hint">Must start with + and contain at least 7 digits. Stored locally on this device only.</p>
+                  <p class="form-error" id="phone-error" style="display:none">Please enter a valid phone number starting with + and at least 7 digits.</p>
+                  <div class="phone-input-actions">
+                    <button class="btn btn--primary btn--sm" onclick="validateAndContinue()">Continue</button>
+                    <button class="btn--link" onclick="setGmState('not-connected')">Cancel</button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- STATE: Pairing In Progress -->
+              <div id="gm-pairing" style="display:none">
+                <div class="connecting-stage">
+                  <div class="connecting-dots">
+                    <span></span><span></span><span></span>
+                  </div>
+                  <div class="connecting-stage__text">
+                    <div>Waiting for Google Messages to be paired...</div>
+                    <div style="font-weight:400;font-size:var(--font-size-xs);color:var(--color-text-secondary);margin-top:2px">
+                      A tab was opened for messages.google.com. Please pair your phone there.
+                    </div>
+                    <div style="font-weight:400;font-size:var(--font-size-xs);color:var(--color-text-tertiary);margin-top:var(--space-2)">
+                      Tab didn't open? <a href="https://messages.google.com" target="_blank" rel="noopener" style="color:var(--color-primary)">Open Google Messages manually</a>
+                    </div>
+                  </div>
+                  <button class="btn btn--ghost btn--sm" onclick="setGmState('not-connected')">Cancel</button>
+                </div>
+              </div>
+
+              <!-- STATE: Connected -->
+              <div id="gm-connected" style="display:none">
+                <div class="account-row">
+                  <div class="account-row__info">
+                    <span class="account-row__phone">
+                      <span class="status-dot status-dot--online" aria-label="Connected"></span>
+                      <span class="account-row__phone-text">+90 555 123 4455</span>
+                    </span>
+                    <span class="account-row__meta">When an SMS code is needed, Google Messages is checked automatically.</span>
+                  </div>
+                  <div class="account-row__actions">
+                    <button class="btn btn--danger-ghost btn--sm" onclick="setGmState('disconnect-confirm')">Disconnect</button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- STATE: Disconnect Confirmation -->
+              <div id="gm-disconnect-confirm" style="display:none">
+                <div class="confirm-inline" role="alertdialog" aria-label="Disconnect Google Messages">
+                  <p class="confirm-inline__text">
+                    Disconnect Google Messages? SMS verification codes will no longer be retrieved.
+                  </p>
+                  <div class="confirm-inline__actions">
+                    <button class="btn btn--danger btn--sm" onclick="setGmState('not-connected')">Confirm Disconnect</button>
+                    <button class="btn btn--secondary btn--sm" onclick="setGmState('connected')">Cancel</button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- STATE: Session Expired (error) -->
+              <div id="gm-session-expired" style="display:none">
+                <div class="error-banner" role="alert">
+                  <i data-lucide="alert-circle" style="width:16px;height:16px;flex-shrink:0;margin-top:1px"></i>
+                  <span>The Google Messages session has expired. Please visit messages.google.com and re-pair your device.</span>
+                </div>
+                <div class="account-row" style="margin-top:var(--space-3);border-color:rgba(239,68,68,0.15)">
+                  <div class="account-row__info">
+                    <span class="account-row__phone">
+                      <span class="status-dot status-dot--offline" aria-label="Session expired"></span>
+                      <span class="account-row__phone-text">+90 555 123 4455</span>
+                    </span>
+                    <span class="account-row__meta">The browser session for Google Messages needs to be renewed.</span>
+                  </div>
+                  <div class="account-row__actions">
+                    <button class="btn btn--primary btn--sm" onclick="setGmState('pairing')">Re-pair</button>
+                    <button class="btn btn--danger-ghost btn--sm" onclick="setGmState('disconnect-confirm')">Disconnect</button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Description (shown below content, varies by state) -->
+              <p class="accounts-section__description" id="gm-description"></p>
+            </div>
+
+            <!-- ========================
+                 EDGE CASE: Very Long Phone Number
+                 ======================== -->
+            <div class="accounts-section" id="edge-long-phone" style="display:none">
+              <span class="scenario-label">Edge: Long Phone</span>
+              <div class="accounts-section__header">
+                <h2 class="accounts-section__title">
+                  <span class="gm-icon" aria-hidden="true">
+                    <svg viewBox="0 0 192 192" xmlns="http://www.w3.org/2000/svg"><path fill="#86A9FF" d="M58.639,123.429C26.222,123.429,0,95.767,0,61.714S26.222,0,58.639,0h61.008 c32.417,0,58.639,27.662,58.639,61.714s-26.222,61.714-58.639,61.714H58.639z"/><path fill="#578CFF" d="M98.181,148.368V186c0,3.274-2.637,6-5.798,6c-1.547-0.011-3.022-0.651-4.087-1.773l-57.189-58.903 c-11.201-11.451-17.393-27.13-17.393-43.358c0-33.405,26.222-60.538,58.639-60.538h61.008c32.417,0,58.639,27.134,58.639,60.538 s-26.222,60.538-58.639,60.538H98.181V148.368z"/><path fill="#0057CC" d="M58.354,123.429h61.155c32.493,0,58.776-28.303,58.776-63.147c0-4.125-0.398-8.105-1.056-12.089 c-10.697-12.799-26.283-20.763-43.587-20.763H72.49c-32.493,0-58.776,28.303-58.776,63.147c0,4.125,0.398,8.105,1.056,11.945 c10.697,12.799,26.283,20.907,43.587,20.907H58.354z"/></svg>
+                  </span>
+                  Google Messages
+                  <span class="source-type-badge">SMS</span>
+                </h2>
+                <span class="status-chip status-chip--connected">Connected</span>
+              </div>
+              <div class="account-row">
+                <div class="account-row__info">
+                  <span class="account-row__phone">
+                    <span class="status-dot status-dot--online" aria-label="Connected"></span>
+                    <span class="account-row__phone-text">+44 20 7946 0958 ext. 12345</span>
+                  </span>
+                  <span class="account-row__meta">SMS codes are monitored through Google Messages for Web.</span>
+                </div>
+                <div class="account-row__actions">
+                  <button class="btn btn--danger-ghost btn--sm">Disconnect</button>
+                </div>
+              </div>
+              <p class="accounts-section__description">Edge case: very long phone number with extension. Truncation applies at 280px (180px mobile).</p>
+            </div>
+
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </main>
+
+  <!-- ========================================
+       DESIGN DECISIONS (MANDATORY)
+       ======================================== -->
+  <script type="application/json" id="decisions">
+  [
+    "SMS badge on section title - A small blue 'SMS' pill next to 'Google Messages' immediately communicates this is a different source type from the email providers above. Removes ambiguity about what this card does without requiring the user to read the description.",
+    "Phone number display uses tabular-nums - Phone numbers are displayed with tabular-nums font-variant for consistent digit width and alignment. This is subtle but prevents the number from visually 'jumping' when digits change, and makes the number easier to verify at a glance.",
+    "Inline phone input instead of modal - The phone number step appears directly inside the card (not a modal) to keep the user in context. This follows the same pattern as IMAP connection where form fields appear in-card. Reduces cognitive overhead of a modal for a single-field input.",
+    "Pairing state includes user instruction text - The pairing spinner shows both 'Waiting for Google Messages to be paired...' (status) and 'Please pair your phone with Google Messages for Web in the opened tab.' (instruction). Two lines serve different purposes: one for status awareness, one for what-to-do-next. Without the instruction, users might wait indefinitely not knowing they need to act in the opened tab.",
+    "Cancel available at every intermediate state - Phone input has Cancel (returns to not-connected). Pairing has Cancel (returns to not-connected). Disconnect has Cancel (returns to connected). This ensures no dead ends. Per the design spec, cancelling during pairing also closes the tab if extension-owned.",
+    "Disconnect confirmation is inline, not modal - Following the established pattern from Gmail/Outlook disconnect flows. The red-tinted inline panel replaces the account row temporarily. Destructive action copy is direct and honest: 'SMS verification codes will no longer be available.' This tells the user exactly what they lose.",
+    "Three-section disclosure during setup - Instead of one dense paragraph, the connect flow presents three focused disclosure boxes: (1) How it works -- the tab lifecycle (open, scrape previews, extract or close after 20s), (2) Why the phone number -- classification trigger, stored locally only, not sent anywhere, (3) Good to know -- no API exists, session can expire, re-pair is manual. Each section has its own icon and title. This structure follows progressive disclosure: the user processes one concern at a time instead of parsing a wall of text. Proceeding past these constitutes informed consent. Also satisfies Chrome Web Store's 'prominent in-extension disclosure' requirement.",
+    "Google Messages brand icon from extension assets - Uses the real Google Messages logo SVG from extension/assets/providers/google-messages.svg. Three-tone blue chat bubble (#86A9FF, #578CFF, #0057CC) matching the official brand. Rendered at 18px inline and 48px in the empty/connect state.",
+    "Description text changes based on state - Not connected: explains what it does and requirements. Connected: 'When an SMS code is needed, Google Messages is checked automatically.' -- simple, present tense, no jargon. Setup states show no description (the disclosure boxes are the content). Session expired: explains what happened and what to do. Each state tells the user only what they need to know right now.",
+    "No 'last sync time' for connected state - Unlike email providers that sync periodically, Google Messages is scraped on-demand when an SMS field is detected. Showing 'last synced' would be misleading since there is no periodic polling. The connected state shows 'When an SMS code is needed, Google Messages is checked automatically.' -- present tense, describes the on-demand behavior honestly.",
+    "Only 4 card states, no phone-disconnected - The spec explicitly removed the phone-disconnected state: when scraping fails due to phone connectivity, the session simply times out silently. The extension cannot reliably detect phone-offline vs other transient failures from the Messages DOM. Only session-expired (QR needed) is an actionable hard failure worth showing to the user.",
+    "Re-pair button uses primary style for session-expired - Session expired (re-pair) is the primary call-to-action because the user must act. This visual hierarchy guides the user toward the action needed to restore SMS functionality.",
+    "Phone number validation: + prefix and 7+ digits - Light validation that catches obvious mistakes without rejecting valid international numbers. Must start with + (ensures international format for country code classification), at least 7 digits (shortest valid numbers globally). Formatting characters (spaces, dashes, parens) are stripped before validation. Error shown inline below the input, not as an alert.",
+    "Manual open fallback on pairing screen - 'Tab didn't open? Open Google Messages manually' link below the instruction text. Covers popup blockers, Chrome tab throttling, and extension restarts that could prevent the tab from opening. Tertiary text weight so it does not compete with the primary instruction but is findable when needed. A dead end during setup would break trust.",
+    "No bottom description when card content is self-explanatory - The description paragraph below the card is empty for all states except not-connected (where the empty slot needs context). Connected state communicates via the account row meta text. Setup states have the disclosure boxes. Session expired has the error banner. Showing a description that repeats what is already visible would be redundant."
+  ]
+  </script>
+
+  <!-- ========================================
+       SCRIPTS
+       ======================================== -->
+  <script src="../shared/theme-switcher.js"></script>
+  <script>
+    // Initialize Lucide icons
+    lucide.createIcons();
+
+    // ==============================
+    // State management
+    // ==============================
+
+    var ctrlGmState = document.getElementById('ctrl-gm-state');
+    var ctrlLabels = document.getElementById('ctrl-labels');
+
+    var gmStates = [
+      'gm-not-connected', 'gm-phone-input', 'gm-pairing',
+      'gm-connected', 'gm-disconnect-confirm',
+      'gm-session-expired'
+    ];
+
+    var gmDescriptions = {
+      'not-connected': '',
+      'phone-input': '',
+      'pairing': '',
+      'connected': '',
+      'disconnect-confirm': '',
+      'session-expired': ''
+    };
+
+    function validateAndContinue() {
+      var input = document.getElementById('phone-number-input');
+      var error = document.getElementById('phone-error');
+      var value = input.value.replace(/[\s\-\(\)]/g, ''); // strip formatting
+      var digits = value.replace(/[^\d]/g, '');
+      var valid = value.startsWith('+') && digits.length >= 7;
+
+      if (valid) {
+        input.classList.remove('form-input--invalid');
+        error.style.display = 'none';
+        setGmState('pairing');
+      } else {
+        input.classList.add('form-input--invalid');
+        error.style.display = '';
+      }
+    }
+
+    function setGmState(state) {
+      // Update dropdown to match
+      ctrlGmState.value = state;
+      updateGmState();
+    }
+
+    function updateGmState() {
+      var v = ctrlGmState.value;
+      var statusEl = document.getElementById('gm-status');
+      var descEl = document.getElementById('gm-description');
+
+      // Hide all states
+      gmStates.forEach(function (id) {
+        var el = document.getElementById(id);
+        if (el) el.style.display = 'none';
+      });
+
+      // Show target state
+      var targetId = 'gm-' + v;
+      var target = document.getElementById(targetId);
+      if (target) target.style.display = '';
+
+      // Update status chip
+      if (v === 'connected' || v === 'disconnect-confirm') {
+        statusEl.textContent = 'Connected';
+        statusEl.className = 'status-chip status-chip--connected';
+      } else if (v === 'session-expired') {
+        statusEl.textContent = 'Expired';
+        statusEl.className = 'status-chip status-chip--disconnected';
+      } else if (v === 'pairing') {
+        statusEl.textContent = 'Pairing...';
+        statusEl.className = 'status-chip status-chip--connected';
+        statusEl.style.opacity = '0.6';
+      } else if (v === 'phone-input') {
+        statusEl.textContent = 'Setting up';
+        statusEl.className = 'status-chip status-chip--disconnected';
+      } else {
+        statusEl.textContent = 'Not connected';
+        statusEl.className = 'status-chip status-chip--disconnected';
+      }
+
+      // Reset opacity for non-pairing states
+      if (v !== 'pairing') {
+        statusEl.style.opacity = '';
+      }
+
+      // Update description
+      if (descEl && gmDescriptions[v]) {
+        descEl.textContent = gmDescriptions[v];
+      }
+
+      // Re-init icons for newly visible elements
+      lucide.createIcons();
+    }
+
+    // ==============================
+    // Context management
+    // ==============================
+
+    // ==============================
+    // Labels toggle
+    // ==============================
+
+    function updateLabels() {
+      var canvas = document.querySelector('.proto-canvas');
+      if (ctrlLabels.checked) {
+        canvas.classList.add('show-labels');
+      } else {
+        canvas.classList.remove('show-labels');
+      }
+    }
+
+    // ==============================
+    // Event listeners
+    // ==============================
+
+    ctrlGmState.addEventListener('change', updateGmState);
+    ctrlLabels.addEventListener('change', updateLabels);
+
+    // Initial render
+    updateGmState();
+  </script>
+</body>
+</html>

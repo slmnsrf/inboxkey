@@ -69,3 +69,19 @@ inboxbridge/target/
 # Local tooling
 .mcp.json
 .theteamlead/
+
+# Snapshots and local exports
+.pr7snapshot/
+prototypes.zip
+prototypes/**/screenshots/
+
+# Downloaded web pages (local testing artifacts)
+*.html_files/
+Google Messages for web_*
+Two-Factor Authorization*
+
+# Windows null device artifact
+inboxbridge/nul
+
+# Google Messages DOM exports
+google-messages-exports/
