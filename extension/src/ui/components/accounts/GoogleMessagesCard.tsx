@@ -26,6 +26,7 @@ type CardState =
   | 'phone-input'
   | 'countdown'
   | 'pairing'
+  | 'pairing-success'
   | 'connected'
   | 'disconnect-confirm'
   | 'session-expired'
@@ -102,6 +103,20 @@ export function GoogleMessagesCard({ mailbox, onUpdate }: GoogleMessagesCardProp
     }
   }, [])
 
+  /** Show success state, focus settings tab, then transition to connected after 3s. */
+  const showPairingSuccess = useCallback(() => {
+    setCardState('pairing-success')
+    onUpdate?.()
+
+    // Focus this settings tab (don't close the Messages tab)
+    chrome.runtime.sendMessage({ type: 'FOCUS_EXTENSION_TAB' }).catch(() => {
+      // Best effort -- if the message type doesn't exist yet, we still show success
+    })
+
+    // Transition to connected after 3 seconds
+    setTimeout(() => setCardState('connected'), 3000)
+  }, [onUpdate])
+
   const startPairingPoll = useCallback(() => {
     stopPolling()
     pollingRef.current = setInterval(async () => {
@@ -115,8 +130,7 @@ export function GoogleMessagesCard({ mailbox, onUpdate }: GoogleMessagesCardProp
             clearTimeout(manualLinkTimerRef.current)
             manualLinkTimerRef.current = null
           }
-          setCardState('connected')
-          onUpdate?.()
+          showPairingSuccess()
         } else if (response.status === 'not-open') {
           // Pending setup lost (SW restart?) -- stop polling, show error
           stopPolling()
@@ -194,8 +208,7 @@ export function GoogleMessagesCard({ mailbox, onUpdate }: GoogleMessagesCardProp
           clearTimeout(manualLinkTimerRef.current)
           manualLinkTimerRef.current = null
         }
-        setCardState('connected')
-        onUpdate?.()
+        showPairingSuccess()
       } else if (response.status === 'pairing') {
         startPairingPoll()
       } else {
@@ -302,7 +315,7 @@ export function GoogleMessagesCard({ mailbox, onUpdate }: GoogleMessagesCardProp
   }
 
   // Determine status chip props
-  const isConnected = cardState === 'connected' || cardState === 'disconnect-confirm'
+  const isConnected = cardState === 'connected' || cardState === 'disconnect-confirm' || cardState === 'pairing-success'
   const statusLabel = getStatusLabel(cardState)
 
   // Determine description text (empty for most states per prototype)
@@ -338,6 +351,8 @@ export function GoogleMessagesCard({ mailbox, onUpdate }: GoogleMessagesCardProp
         return renderCountdown()
       case 'pairing':
         return renderPairing()
+      case 'pairing-success':
+        return renderPairingSuccess()
       case 'connected':
         return renderConnected()
       case 'disconnect-confirm':
@@ -528,6 +543,33 @@ export function GoogleMessagesCard({ mailbox, onUpdate }: GoogleMessagesCardProp
     )
   }
 
+  function renderPairingSuccess() {
+    return (
+      <div className="connecting-stage connecting-stage--success" role="status" aria-live="polite">
+        <div className="success-checkmark" aria-hidden="true">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="20 6 9 17 4 12" />
+          </svg>
+        </div>
+        <div className="connecting-stage__text">
+          <div style={{ fontWeight: 'var(--font-weight-semibold)' as any }}>
+            Google Messages connected successfully.
+          </div>
+          <div
+            style={{
+              fontWeight: 400,
+              fontSize: 'var(--font-size-xs)',
+              color: 'var(--color-text-secondary)',
+              marginTop: '2px',
+            }}
+          >
+            SMS verification codes will be retrieved automatically when needed.
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   function renderConnected() {
     return (
       <div className="account-row">
@@ -638,6 +680,7 @@ export function GoogleMessagesCard({ mailbox, onUpdate }: GoogleMessagesCardProp
 /** Map card state to status chip label. */
 function getStatusLabel(state: CardState): string {
   switch (state) {
+    case 'pairing-success':
     case 'connected':
     case 'disconnect-confirm':
       return t('accounts_status_connected')

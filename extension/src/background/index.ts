@@ -279,6 +279,22 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     return true
   }
 
+  if (msg.type === "FOCUS_EXTENSION_TAB") {
+    // Focus the extension's options/settings tab (used after pairing success)
+    chrome.runtime.getURL('options.html')
+    chrome.tabs.query({ url: chrome.runtime.getURL('options.html') + '*' }, (tabs) => {
+      if (tabs.length > 0 && tabs[0].id) {
+        chrome.tabs.update(tabs[0].id, { active: true })
+        // Also focus the window containing the tab
+        if (tabs[0].windowId) {
+          chrome.windows.update(tabs[0].windowId, { focused: true })
+        }
+      }
+    })
+    sendResponse({ ok: true })
+    return true
+  }
+
   if (msg.type === "CLEAR_ALL_CODES") {
     handleClearAllCodes(sendResponse)
     return true
@@ -977,7 +993,8 @@ function handleConnectGoogleMessages(
 
         await storage.addMailbox(mailbox)
         await tabManager.clearPendingSetup()
-        await tabManager.closeIfOwned()
+        // Don't close Messages tab on pairing success --
+        // settings tab is focused back, user keeps Messages open
 
         // Update popup cache
         const mailboxes = await storage.getMailboxes()
@@ -1046,7 +1063,8 @@ function handleCheckGmPairingStatus(sendResponse: (response: any) => void) {
 
         await storage.addMailbox(mailbox)
         await tabManager.clearPendingSetup()
-        await tabManager.closeIfOwned()
+        // Don't close Messages tab on pairing success --
+        // settings tab is focused back, user keeps Messages open
 
         // Update popup cache
         const mailboxes = await storage.getMailboxes()
