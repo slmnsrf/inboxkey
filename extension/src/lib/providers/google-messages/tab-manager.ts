@@ -90,6 +90,13 @@ export class MessagesTabManager {
     const existing = await chrome.tabs.query({ url: 'https://messages.google.com/*' })
     if (existing.length > 0 && existing[0].id) {
       this.tabState = { tabId: existing[0].id, owned: false }
+      if (forPairing) {
+        // Activate the tab and navigate to the welcome/pairing page
+        await chrome.tabs.update(existing[0].id, {
+          active: true,
+          url: MESSAGES_URL_WELCOME,
+        })
+      }
       await this.persistTabState()
       return this.tabState
     }

@@ -239,7 +239,10 @@ export class SessionController {
       session.lastUpdated = Date.now()
     }
 
-    // TODO(Task 6): getMessagesTabManager().resetPollCount(session.id)
+    try {
+      const { getMessagesTabManager } = await import('@/lib/providers/google-messages/tab-manager')
+      getMessagesTabManager().resetPollCount(session.id)
+    } catch { /* tab manager not loaded */ }
 
     // V2: Delegate to SessionPoller for cancellation
     this.poller.cancelPolls(sessionId)
@@ -292,7 +295,10 @@ export class SessionController {
       if (code) {
         session.status = "filled"
         session.lastCode = code
-        // TODO(Task 6): getMessagesTabManager().resetPollCount(session.id)
+        try {
+          const { getMessagesTabManager } = await import('@/lib/providers/google-messages/tab-manager')
+          getMessagesTabManager().resetPollCount(session.id)
+        } catch { /* tab manager not loaded */ }
         await this.persistSessions()
         this.poller.cancelPolls(sessionId) // V2: Cancel remaining polls
         this.callbacks.onSessionCompleted(session, { status: "filled", code })
@@ -304,7 +310,10 @@ export class SessionController {
 
       if (pollsRemaining <= 0) {
         session.status = "timedout"
-        // TODO(Task 6): getMessagesTabManager().resetPollCount(session.id)
+        try {
+          const { getMessagesTabManager } = await import('@/lib/providers/google-messages/tab-manager')
+          getMessagesTabManager().resetPollCount(session.id)
+        } catch { /* tab manager not loaded */ }
         await this.persistSessions()
         this.poller.cancelPolls(sessionId) // V2: Clean up poller
         this.callbacks.onSessionCompleted(session, { status: "timedout" })
@@ -326,7 +335,10 @@ export class SessionController {
 
       if (pollsRemaining <= 0) {
         session.status = "timedout"
-        // TODO(Task 6): getMessagesTabManager().resetPollCount(session.id)
+        try {
+          const { getMessagesTabManager } = await import('@/lib/providers/google-messages/tab-manager')
+          getMessagesTabManager().resetPollCount(session.id)
+        } catch { /* tab manager not loaded */ }
         await this.persistSessions()
         this.poller.cancelPolls(sessionId) // V2: Clean up poller
         this.callbacks.onSessionCompleted(session, { status: "timedout" })
@@ -473,7 +485,21 @@ export class SessionController {
 
       // Get codes from PopupCache (ephemeral only)
       const cache = this.popupCacheManager ? await this.popupCacheManager.getCache() : null
-      const codes = cache ? cache.codes.map(c => ({
+      const allCachedCodes = cache ? cache.codes : []
+
+      // Filter cached codes by channel to prevent cross-channel contamination
+      // SMS-only sessions should only see google-messages codes; email-only should exclude them
+      const channelFilteredCodes = allCachedCodes.filter(c => {
+        if (channels.includes('sms') && !channels.includes('email')) {
+          return c.providerId === 'google-messages'
+        }
+        if (channels.includes('email') && !channels.includes('sms')) {
+          return c.providerId !== 'google-messages'
+        }
+        return true // hybrid: keep all
+      })
+
+      const codes = channelFilteredCodes.map(c => ({
         code: c.code,
         timestamp: c.receivedAt,
         source: c.source,
@@ -483,7 +509,7 @@ export class SessionController {
         senderETLD: c.senderETLD,
         receivedAt: c.receivedAt,
         domainAffinity: c.domainAffinity,
-      })) : []
+      }))
 
       // V2: Pass sessionStart and expectedShape to v2 scoring algorithm (if enabled)
       // When v2 is disabled, fall back to basic matching without session/shape parameters

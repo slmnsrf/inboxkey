@@ -24,6 +24,7 @@ function buildChromeMock() {
       get: vi.fn(
         async (id: number) => ({ id }) as chrome.tabs.Tab
       ),
+      update: vi.fn(async () => {}),
       remove: vi.fn(async () => {}),
     },
     scripting: {
@@ -80,7 +81,7 @@ describe('MessagesTabManager', () => {
         url: 'https://messages.google.com/*',
       })
       expect(chromeMock.tabs.create).toHaveBeenCalledWith({
-        url: 'https://messages.google.com',
+        url: 'https://messages.google.com/web/conversations',
         pinned: true,
         active: false,
       })
@@ -125,6 +126,40 @@ describe('MessagesTabManager', () => {
       expect(callCount).toBe(1)
       expect(a).toEqual(b)
       expect(a.tabId).toBe(200)
+    })
+
+    it('creates an active tab with welcome URL when forPairing is true', async () => {
+      chromeMock.tabs.query.mockResolvedValue([])
+      chromeMock.tabs.create.mockResolvedValue({ id: 55 } as chrome.tabs.Tab)
+
+      const mgr = new MessagesTabManager()
+      const state = await mgr.ensureTab({ forPairing: true })
+
+      expect(chromeMock.tabs.create).toHaveBeenCalledWith({
+        url: 'https://messages.google.com/web/welcome',
+        pinned: false,
+        active: true,
+      })
+      expect(state).toEqual({ tabId: 55, owned: true })
+    })
+
+    it('activates and navigates existing tab when forPairing reuses a user tab', async () => {
+      chromeMock.tabs.query.mockResolvedValue([
+        { id: 77, url: 'https://messages.google.com/web/conversations' } as chrome.tabs.Tab,
+      ])
+
+      const mgr = new MessagesTabManager()
+      const state = await mgr.ensureTab({ forPairing: true })
+
+      // Should reuse the existing tab
+      expect(chromeMock.tabs.create).not.toHaveBeenCalled()
+      expect(state).toEqual({ tabId: 77, owned: false })
+
+      // Should activate and navigate to welcome URL
+      expect(chromeMock.tabs.update).toHaveBeenCalledWith(77, {
+        active: true,
+        url: 'https://messages.google.com/web/welcome',
+      })
     })
 
     it('re-validates cached tabId and falls back if tab was closed externally', async () => {

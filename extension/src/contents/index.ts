@@ -220,9 +220,7 @@ export function clearProcessedFields(): void {
    * Detect existing fields on page load
    */
   async function detectExistingFields(): Promise<void> {
-    // Hydrate SMS feature cache before first detection run.
-    // This prevents a race where SMS fields get rejected before the cache loads.
-    await hydrateSmsCache()
+    // SMS cache is hydrated in initialize() before this function is called.
 
     // Check automation level setting
     try {
@@ -329,14 +327,18 @@ export function clearProcessedFields(): void {
   /**
    * Initialize the content script
    */
-  function initialize(): void {
+  async function initialize(): Promise<void> {
     // Initialize processed set BEFORE detection (focus gate needs it)
     globalProcessedRepresentatives = new Set<HTMLInputElement>()
 
-    // Detect fields immediately
-    detectExistingFields()
+    // Hydrate SMS cache once before any detection (prevents race where
+    // MutationObserver evaluates SMS fields before the cache is ready)
+    await hydrateSmsCache()
 
-    // Start observing for dynamic fields
+    // Detect fields immediately (cache already hydrated above)
+    await detectExistingFields()
+
+    // Start observing for dynamic fields (cache guaranteed ready)
     startDynamicDetection()
 
     // Monitor for field removal

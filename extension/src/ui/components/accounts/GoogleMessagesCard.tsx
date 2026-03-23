@@ -57,6 +57,8 @@ export function GoogleMessagesCard({ mailbox, onUpdate }: GoogleMessagesCardProp
 
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const phoneInputRef = useRef<HTMLInputElement>(null)
+  const cancelledRef = useRef(false)
+  const manualLinkTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   // Derive initial state from mailbox prop
   useEffect(() => {
@@ -71,12 +73,16 @@ export function GoogleMessagesCard({ mailbox, onUpdate }: GoogleMessagesCardProp
     }
   }, [mailbox?.id, mailbox?.lastSyncError])
 
-  // Cleanup polling on unmount
+  // Cleanup polling and timers on unmount
   useEffect(() => {
     return () => {
       if (pollingRef.current) {
         clearInterval(pollingRef.current)
         pollingRef.current = null
+      }
+      if (manualLinkTimerRef.current) {
+        clearTimeout(manualLinkTimerRef.current)
+        manualLinkTimerRef.current = null
       }
     }
   }, [])
@@ -105,11 +111,33 @@ export function GoogleMessagesCard({ mailbox, onUpdate }: GoogleMessagesCardProp
         })
         if (response.status === 'paired') {
           stopPolling()
+          if (manualLinkTimerRef.current) {
+            clearTimeout(manualLinkTimerRef.current)
+            manualLinkTimerRef.current = null
+          }
           setCardState('connected')
           onUpdate?.()
+        } else if (response.status === 'not-open') {
+          // Pending setup lost (SW restart?) -- stop polling, show error
+          stopPolling()
+          if (manualLinkTimerRef.current) {
+            clearTimeout(manualLinkTimerRef.current)
+            manualLinkTimerRef.current = null
+          }
+          setCardState('phone-input')
+          setFeedbackMessage(t('toast_connect_failed'))
         }
+        // 'unpaired' continues polling (expected during pairing)
       } catch (error) {
         console.error('[GoogleMessagesCard] Pairing poll error:', error)
+        // Communication error -- stop polling, show error
+        stopPolling()
+        if (manualLinkTimerRef.current) {
+          clearTimeout(manualLinkTimerRef.current)
+          manualLinkTimerRef.current = null
+        }
+        setCardState('phone-input')
+        setFeedbackMessage(t('toast_connect_failed'))
       }
     }, PAIRING_POLL_INTERVAL)
   }, [stopPolling, onUpdate])
@@ -126,6 +154,7 @@ export function GoogleMessagesCard({ mailbox, onUpdate }: GoogleMessagesCardProp
     }
 
     setPhoneError(false)
+    cancelledRef.current = false
 
     // Countdown from 3 before opening the tab
     setCardState('countdown')
@@ -135,12 +164,13 @@ export function GoogleMessagesCard({ mailbox, onUpdate }: GoogleMessagesCardProp
     for (let i = 3; i >= 1; i--) {
       setCountdown(i)
       await new Promise(r => setTimeout(r, 1000))
+      if (cancelledRef.current) return
     }
 
     setCardState('pairing')
 
     // Show "Tab didn't open?" link after 10 seconds
-    const manualLinkTimer = setTimeout(() => setShowManualLink(true), 10000)
+    manualLinkTimerRef.current = setTimeout(() => setShowManualLink(true), 10000)
 
     try {
       const response = await chrome.runtime.sendMessage({
@@ -148,19 +178,30 @@ export function GoogleMessagesCard({ mailbox, onUpdate }: GoogleMessagesCardProp
         phoneNumber: phoneNumber.replace(/[\s\-\(\)]/g, ''),
       })
 
+      if (cancelledRef.current) return
+
       if (response.status === 'paired') {
-        clearTimeout(manualLinkTimer)
+        if (manualLinkTimerRef.current) {
+          clearTimeout(manualLinkTimerRef.current)
+          manualLinkTimerRef.current = null
+        }
         setCardState('connected')
         onUpdate?.()
       } else if (response.status === 'pairing') {
         startPairingPoll()
       } else {
-        clearTimeout(manualLinkTimer)
+        if (manualLinkTimerRef.current) {
+          clearTimeout(manualLinkTimerRef.current)
+          manualLinkTimerRef.current = null
+        }
         setCardState('phone-input')
         setFeedbackMessage(response.error || t('toast_connect_failed'))
       }
     } catch (error) {
-      clearTimeout(manualLinkTimer)
+      if (manualLinkTimerRef.current) {
+        clearTimeout(manualLinkTimerRef.current)
+        manualLinkTimerRef.current = null
+      }
       console.error('[GoogleMessagesCard] Connect error:', error)
       setCardState('phone-input')
       setFeedbackMessage(t('toast_connect_failed'))
@@ -168,7 +209,12 @@ export function GoogleMessagesCard({ mailbox, onUpdate }: GoogleMessagesCardProp
   }
 
   const handleCancel = async () => {
+    cancelledRef.current = true
     stopPolling()
+    if (manualLinkTimerRef.current) {
+      clearTimeout(manualLinkTimerRef.current)
+      manualLinkTimerRef.current = null
+    }
     try {
       await chrome.runtime.sendMessage({ type: 'CANCEL_GM_SETUP' })
     } catch {
@@ -178,6 +224,7 @@ export function GoogleMessagesCard({ mailbox, onUpdate }: GoogleMessagesCardProp
     setPhoneNumber('')
     setPhoneError(false)
     setFeedbackMessage(null)
+    setShowManualLink(false)
   }
 
   const handleDisconnect = async () => {
@@ -215,6 +262,7 @@ export function GoogleMessagesCard({ mailbox, onUpdate }: GoogleMessagesCardProp
     chrome.runtime.sendMessage({
       type: 'CONNECT_GOOGLE_MESSAGES',
       phoneNumber: phoneNumber.replace(/[\s\-\(\)]/g, ''),
+      repair: true,
     }).then((response) => {
       if (response.status === 'paired') {
         setCardState('connected')
