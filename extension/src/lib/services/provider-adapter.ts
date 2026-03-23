@@ -10,6 +10,7 @@ import type { IEmailProvider } from '@/lib/providers/provider-interface'
 import { GmailProvider } from '@/lib/providers/gmail/gmail-provider'
 import { OutlookProvider } from '@/lib/providers/outlook/outlook-provider'
 import { IMAPBridgeAdapter } from '@/lib/providers/imap-bridge/imap-bridge-adapter'
+import { MessagesProviderAdapter } from '@/lib/providers/google-messages/adapter'
 import type { Mailbox } from '@/lib/storage/schema'
 import { type ProviderAdapter, type EmailLike, type ProviderId } from './email-polling-service'
 
@@ -128,27 +129,46 @@ export class StorageProviderAdapter implements ProviderAdapter {
 /**
  * Factory function to create adapters from all configured mailboxes.
  * This bridges the v1 storage layer with v2 adapter pattern.
+ *
+ * @param storage - Storage instance for mailbox retrieval and token refresh
+ * @param sessionId - Watch session ID. When provided, google-messages adapters
+ *   are included with per-session poll budgeting. When undefined (popup sync),
+ *   google-messages adapters are excluded since SMS scraping requires a session.
  */
 export async function createAdaptersFromMailboxes(
-  storage: IStorage
+  storage: IStorage,
+  sessionId?: string
 ): Promise<ProviderAdapter[]> {
   const mailboxes = await storage.getMailboxes()
 
-  return mailboxes.map(mailbox => {
-    if (mailbox.providerId === 'imap-bridge') {
-      // IMAP provider: use IMAPBridgeAdapter (no OAuth provider needed)
-      return new IMAPBridgeAdapter(
-        mailbox.imapAccountId || '',
-        mailbox.email,
-        mailbox.id
-      )
-    } else {
+  const adapters: Array<ProviderAdapter | null> = await Promise.all(
+    mailboxes.map(async (mailbox): Promise<ProviderAdapter | null> => {
+      if (mailbox.providerId === 'google-messages') {
+        // Google Messages (SMS): requires an active watch session for poll budgeting.
+        // Excluded from popup/manual sync (no sessionId) since SMS scraping is
+        // session-scoped and has no meaningful "manual refresh" concept.
+        if (!sessionId) return null
+        const { getMessagesTabManager } = await import('@/lib/providers/google-messages/tab-manager')
+        return new MessagesProviderAdapter(getMessagesTabManager(), mailbox.id, sessionId)
+      }
+
+      if (mailbox.providerId === 'imap-bridge') {
+        // IMAP provider: use IMAPBridgeAdapter (no OAuth provider needed)
+        return new IMAPBridgeAdapter(
+          mailbox.imapAccountId || '',
+          mailbox.email,
+          mailbox.id
+        )
+      }
+
       // OAuth provider: use StorageProviderAdapter with Gmail/Outlook provider
       const provider = mailbox.providerId === 'gmail'
         ? new GmailProvider()
         : new OutlookProvider()
 
       return new StorageProviderAdapter(storage, provider, mailbox)
-    }
-  })
+    })
+  )
+
+  return adapters.filter((a): a is ProviderAdapter => a !== null)
 }
