@@ -1,4 +1,4 @@
-export type ProviderKey = 'gmail' | 'outlook'
+export type ProviderKey = 'gmail' | 'outlook' | 'google-messages'
 
 export type ProviderStatus = 'connected' | 'disconnected' | 'connecting' | 'locked'
 

@@ -1,8 +1,9 @@
 /**
  * AccountsPanel Component (UI Rework)
  *
- * Presents Gmail/Outlook single-slot cards, IMAP placeholder section, and
- * recent email activity aligned with the inboxkey-accounts-single.v2.html design.
+ * Presents Gmail/Outlook single-slot cards, Google Messages SMS card,
+ * IMAP placeholder section, and recent email activity aligned with
+ * the inboxkey-accounts-single.v2.html design.
  */
 
 import React, { useEffect, useMemo, useState } from 'react'
@@ -13,6 +14,7 @@ import type { ProviderKey, ImapAccountRow, OutlookAccountRow, RecentItem } from 
 import { GmailAccountCard } from './accounts/GmailAccountCard'
 import { OutlookAccountCard } from './accounts/OutlookAccountCard'
 import { ImapAccountCard } from './accounts/ImapAccountCard'
+import { GoogleMessagesCard } from './accounts/GoogleMessagesCard'
 import { RecentEmailsSection } from './accounts/RecentEmailsSection'
 import { AddImapAccountModal } from './accounts/AddImapAccountModal'
 
@@ -20,7 +22,7 @@ import './accounts/AccountsPanel.css'
 
 interface MailboxInfo {
   id: string
-  providerId: 'gmail' | 'outlook' | 'imap-bridge'
+  providerId: 'gmail' | 'outlook' | 'imap-bridge' | 'google-messages'
   email: string
   addedAt: number
   lastSyncedAt: number
@@ -32,6 +34,8 @@ interface MailboxInfo {
   imapServer?: string
   /** IMAP server port (only for IMAP providers) */
   imapPort?: number
+  /** Google Messages phone number (only for google-messages provider) */
+  gmPhoneNumber?: string
 }
 
 type PopupResponseData = UnifiedPopupCache | null
@@ -202,6 +206,16 @@ export function AccountsPanel() {
       }))
   }, [mailboxes])
 
+  const googleMessagesMailbox = useMemo(() => {
+    const mailbox = mailboxes.find((mb) => mb.providerId === 'google-messages')
+    if (!mailbox) return undefined
+    return {
+      id: mailbox.id,
+      gmPhoneNumber: mailbox.gmPhoneNumber,
+      lastSyncError: mailbox.lastSyncError,
+    }
+  }, [mailboxes])
+
   const handleCopyCode = async (item: RecentItem) => {
     if (!item.code) return
     try {
@@ -257,6 +271,14 @@ export function AccountsPanel() {
         maxAccounts={10}
         onAddImap={handleAddImap}
         onReconnectImap={handleReconnectImap}
+      />
+
+      <GoogleMessagesCard
+        mailbox={googleMessagesMailbox}
+        onUpdate={async () => {
+          await loadMailboxes()
+          await loadRecentItems()
+        }}
       />
 
       <AddImapAccountModal
