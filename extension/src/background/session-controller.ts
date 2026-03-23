@@ -239,11 +239,14 @@ export class SessionController {
       session.lastUpdated = Date.now()
     }
 
-    try {
-      const { getMessagesTabManager } = await import('@/lib/providers/google-messages/tab-manager')
-      getMessagesTabManager().resetPollCount(session.id)
-      await getMessagesTabManager().closeIfOwned()
-    } catch { /* tab manager not loaded */ }
+    // Clean up Google Messages poll state only for SMS sessions
+    if (session.detectedChannels?.includes('sms')) {
+      try {
+        const { getMessagesTabManager } = await import('@/lib/providers/google-messages/tab-manager')
+        getMessagesTabManager().resetPollCount(session.id)
+        await getMessagesTabManager().closeIfOwned()
+      } catch { /* tab manager not loaded or no GM session */ }
+    }
 
     // V2: Delegate to SessionPoller for cancellation
     this.poller.cancelPolls(sessionId)
@@ -296,11 +299,13 @@ export class SessionController {
       if (code) {
         session.status = "filled"
         session.lastCode = code
-        try {
-          const { getMessagesTabManager } = await import('@/lib/providers/google-messages/tab-manager')
-          getMessagesTabManager().resetPollCount(session.id)
-          await getMessagesTabManager().closeIfOwned()
-        } catch { /* tab manager not loaded */ }
+        if (session.detectedChannels?.includes('sms')) {
+          try {
+            const { getMessagesTabManager } = await import('@/lib/providers/google-messages/tab-manager')
+            getMessagesTabManager().resetPollCount(session.id)
+            await getMessagesTabManager().closeIfOwned()
+          } catch { /* tab manager not loaded or no GM session */ }
+        }
         await this.persistSessions()
         this.poller.cancelPolls(sessionId) // V2: Cancel remaining polls
         this.callbacks.onSessionCompleted(session, { status: "filled", code })
@@ -312,11 +317,13 @@ export class SessionController {
 
       if (pollsRemaining <= 0) {
         session.status = "timedout"
-        try {
-          const { getMessagesTabManager } = await import('@/lib/providers/google-messages/tab-manager')
-          getMessagesTabManager().resetPollCount(session.id)
-          await getMessagesTabManager().closeIfOwned()
-        } catch { /* tab manager not loaded */ }
+        if (session.detectedChannels?.includes('sms')) {
+          try {
+            const { getMessagesTabManager } = await import('@/lib/providers/google-messages/tab-manager')
+            getMessagesTabManager().resetPollCount(session.id)
+            await getMessagesTabManager().closeIfOwned()
+          } catch { /* tab manager not loaded or no GM session */ }
+        }
         await this.persistSessions()
         this.poller.cancelPolls(sessionId) // V2: Clean up poller
         this.callbacks.onSessionCompleted(session, { status: "timedout" })
@@ -338,11 +345,13 @@ export class SessionController {
 
       if (pollsRemaining <= 0) {
         session.status = "timedout"
-        try {
-          const { getMessagesTabManager } = await import('@/lib/providers/google-messages/tab-manager')
-          getMessagesTabManager().resetPollCount(session.id)
-          await getMessagesTabManager().closeIfOwned()
-        } catch { /* tab manager not loaded */ }
+        if (session.detectedChannels?.includes('sms')) {
+          try {
+            const { getMessagesTabManager } = await import('@/lib/providers/google-messages/tab-manager')
+            getMessagesTabManager().resetPollCount(session.id)
+            await getMessagesTabManager().closeIfOwned()
+          } catch { /* tab manager not loaded or no GM session */ }
+        }
         await this.persistSessions()
         this.poller.cancelPolls(sessionId) // V2: Clean up poller
         this.callbacks.onSessionCompleted(session, { status: "timedout" })
