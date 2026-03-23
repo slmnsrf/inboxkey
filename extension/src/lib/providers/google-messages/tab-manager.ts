@@ -202,8 +202,11 @@ export class MessagesTabManager {
       })
 
       const result = results?.[0]?.result as ScrapeResult | undefined
-      if (!result || result.status !== 'paired') {
+      if (!result || result.status === 'not-ready') {
         return []
+      }
+      if (result.status === 'unpaired') {
+        throw new Error('session_expired')
       }
       return result.previews
     } catch (error) {
