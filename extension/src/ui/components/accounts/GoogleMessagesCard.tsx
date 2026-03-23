@@ -126,6 +126,15 @@ export function GoogleMessagesCard({ mailbox, onUpdate }: GoogleMessagesCardProp
           }
           setCardState('phone-input')
           setFeedbackMessage(t('toast_connect_failed'))
+        } else if (response.status === 'error') {
+          // Background returned an error -- stop polling, show message
+          stopPolling()
+          if (manualLinkTimerRef.current) {
+            clearTimeout(manualLinkTimerRef.current)
+            manualLinkTimerRef.current = null
+          }
+          setCardState('phone-input')
+          setFeedbackMessage(response.error || t('toast_connect_failed'))
         }
         // 'unpaired' continues polling (expected during pairing)
       } catch (error) {
