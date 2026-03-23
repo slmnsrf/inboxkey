@@ -61,6 +61,18 @@ interface SessionState {
    * @since v2
    */
   sessionStart: number
+  /**
+   * Delivery channels detected on the input field.
+   * Used for channel-aware adapter filtering during polling.
+   * @since SMS support
+   */
+  detectedChannels: Array<'email' | 'sms'>
+  /**
+   * Effective session timeout in seconds, after channel-specific capping.
+   * SMS-only sessions are capped at 20s. Sent back to content script for chip timer.
+   * @since SMS support
+   */
+  effectiveTimeout: number
   startedAt: number
   status: SessionStatus
   pollSchedule: number[]
@@ -137,8 +149,9 @@ export class SessionController {
     url: string
     expected: SessionExpected
     timeoutSeconds?: number
+    detectedChannels?: Array<'email' | 'sms'>
   }): Promise<SessionState> {
-    const { tabId, url, expected, timeoutSeconds } = params
+    const { tabId, url, expected, timeoutSeconds, detectedChannels } = params
 
     // Cancel existing session for tab
     for (const existing of this.sessions.values()) {
@@ -150,9 +163,15 @@ export class SessionController {
     const id = crypto.randomUUID()
     const now = Date.now()
 
-    // Use fixed poll schedule, filtered by user's timeout setting
+    // Compute effective timeout: SMS-only sessions capped at 20s
+    const channels = detectedChannels ?? ['email']
+    const effectiveTimeout = channels.length === 1 && channels[0] === 'sms'
+      ? Math.min(timeoutSeconds ?? 30, 20)
+      : (timeoutSeconds ?? 20)
+
+    // Use fixed poll schedule, filtered by effective timeout
     // This allows users to control session duration while maintaining optimized poll density
-    const timeoutMs = (timeoutSeconds ?? 20) * 1000
+    const timeoutMs = effectiveTimeout * 1000
 
     // Filter poll times that fall within user's timeout
     const pollTimesMs = WATCH_SESSION_SCORING.pollTimesMs.filter(
@@ -187,6 +206,8 @@ export class SessionController {
       expected,
       expectedShape,         // V2: Store shape for v2 matching
       sessionStart: now,     // V2: Store session start for sessionBoost
+      detectedChannels: channels,  // SMS: Channel-aware adapter filtering
+      effectiveTimeout,            // SMS: Capped timeout sent back to content script
       startedAt: now,
       status: "active",
       pollSchedule,
@@ -217,6 +238,8 @@ export class SessionController {
       session.status = "canceled"
       session.lastUpdated = Date.now()
     }
+
+    // TODO(Task 6): getMessagesTabManager().resetPollCount(session.id)
 
     // V2: Delegate to SessionPoller for cancellation
     this.poller.cancelPolls(sessionId)
@@ -269,6 +292,7 @@ export class SessionController {
       if (code) {
         session.status = "filled"
         session.lastCode = code
+        // TODO(Task 6): getMessagesTabManager().resetPollCount(session.id)
         await this.persistSessions()
         this.poller.cancelPolls(sessionId) // V2: Cancel remaining polls
         this.callbacks.onSessionCompleted(session, { status: "filled", code })
@@ -280,6 +304,7 @@ export class SessionController {
 
       if (pollsRemaining <= 0) {
         session.status = "timedout"
+        // TODO(Task 6): getMessagesTabManager().resetPollCount(session.id)
         await this.persistSessions()
         this.poller.cancelPolls(sessionId) // V2: Clean up poller
         this.callbacks.onSessionCompleted(session, { status: "timedout" })
@@ -301,6 +326,7 @@ export class SessionController {
 
       if (pollsRemaining <= 0) {
         session.status = "timedout"
+        // TODO(Task 6): getMessagesTabManager().resetPollCount(session.id)
         await this.persistSessions()
         this.poller.cancelPolls(sessionId) // V2: Clean up poller
         this.callbacks.onSessionCompleted(session, { status: "timedout" })
@@ -336,7 +362,17 @@ export class SessionController {
       }
 
       // Create adapters from mailboxes (v2 pattern)
-      const adapters = await createAdaptersFromMailboxes(storage)
+      const allAdapters = await createAdaptersFromMailboxes(storage)
+
+      // Channel-aware filtering: only poll adapters matching detected channels
+      // Fallback to ['email'] for sessions restored from storage before SMS support
+      const channels = session.detectedChannels ?? ['email']
+      const adapters = allAdapters.filter(adapter => {
+        if (adapter.id === 'google-messages') {
+          return channels.includes('sms')
+        }
+        return channels.includes('email')
+      })
 
       // Poll emails from all connected mailboxes (v2 API) - share seenStore to persist across polls
       const pollingService = new EmailPollingService(adapters, this.seenStore)

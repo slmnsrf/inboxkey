@@ -37,6 +37,7 @@ interface StartSessionMessage {
     charset?: "digits" | "alnum"
   }
   timeoutSeconds?: number
+  detectedChannels?: Array<'email' | 'sms'>
 }
 
 interface StopSessionMessage {
@@ -403,6 +404,7 @@ async function handleWatchPortMessage(
       url: message.url,
       expected,
       timeoutSeconds: message.timeoutSeconds,
+      detectedChannels: message.detectedChannels,
     })
 
     // Replace existing session mapping if necessary
@@ -416,6 +418,7 @@ async function handleWatchPortMessage(
     port.postMessage({
       type: "SESSION_STARTED",
       session: serializeSession(session),
+      effectiveTimeoutSeconds: session.effectiveTimeout,
     })
 
     ensureKeepAlivePing(context, port)
