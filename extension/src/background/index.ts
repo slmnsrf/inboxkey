@@ -929,8 +929,8 @@ function handleConnectGoogleMessages(
         startedAt: Date.now(),
       })
 
-      // 2. Ensure a Messages tab is open (creates or reuses)
-      const tab = await tabManager.ensureTab()
+      // 2. Ensure a Messages tab is open (visible for pairing)
+      const tab = await tabManager.ensureTab({ forPairing: true })
 
       // 3. Update pending setup with tab info
       await tabManager.savePendingSetup({
