@@ -1648,7 +1648,7 @@
     "description": "Badge label for SMS source type"
   },
   "accounts_gm_empty_text": {
-    "message": "SMS verification codes can be retrieved through Google Messages for Web. An Android device paired with Google Messages is required.",
+    "message": "SMS verifications? There is a way. Autofill SMS codes from Google Messages.",
     "description": "Empty state description for Google Messages card"
   },
   "accounts_gm_connect": {

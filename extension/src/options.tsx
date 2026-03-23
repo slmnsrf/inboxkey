@@ -26,7 +26,7 @@ import './ui/components/security/SecurityInfo.css'
 
 function OptionsApp() {
   const [mailboxCount, setMailboxCount] = useState<number | null>(null)
-  const [activeTab, setActiveTab] = useState<Tab>('settings')
+  const [activeTab, setActiveTab] = useState<Tab>('accounts')
   const [isBlacklistModalOpen, setIsBlacklistModalOpen] = useState(false)
   const [blacklistInitialTab, setBlacklistInitialTab] = useState<'domains' | 'urls'>('domains')
 
@@ -52,8 +52,8 @@ function OptionsApp() {
     if (tabParam && ['accounts', 'security', 'settings', 'about'].includes(tabParam)) {
       setActiveTab(tabParam)
     } else if (mailboxCount !== null) {
-      // Default to accounts tab if no mailboxes, otherwise settings tab
-      setActiveTab(mailboxCount === 0 ? 'accounts' : 'settings')
+      // Always default to accounts tab
+      setActiveTab('accounts')
     }
   }, [mailboxCount])
 

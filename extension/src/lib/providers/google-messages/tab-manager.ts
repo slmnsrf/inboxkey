@@ -18,7 +18,8 @@ import { scrapeMessages } from './scrape-messages'
 // Constants
 // ---------------------------------------------------------------------------
 
-const MESSAGES_URL = 'https://messages.google.com/web/conversations'
+const MESSAGES_URL_WELCOME = 'https://messages.google.com/web/welcome'
+const MESSAGES_URL_CONVERSATIONS = 'https://messages.google.com/web/conversations'
 const SESSION_STORAGE_KEY = 'gm_tab_state'
 const PENDING_SETUP_KEY = 'gm_pending_setup'
 const MAX_POLLS_PER_SESSION = 5
@@ -94,10 +95,10 @@ export class MessagesTabManager {
     }
 
     // Nothing found -- open a new tab
-    // Pairing: visible + active so user can interact with the QR/pairing flow
-    // Scraping: pinned + background so it doesn't interrupt the user
+    // Pairing: welcome page, visible + active so user can interact with QR/pairing
+    // Scraping: conversations page, pinned + background so it doesn't interrupt
     const tab = await chrome.tabs.create({
-      url: MESSAGES_URL,
+      url: forPairing ? MESSAGES_URL_WELCOME : MESSAGES_URL_CONVERSATIONS,
       pinned: !forPairing,
       active: forPairing,
     })

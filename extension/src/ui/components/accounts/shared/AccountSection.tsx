@@ -86,6 +86,9 @@ export function AccountSection({
               <Server size={16} className="provider-logo provider-logo--imap" aria-hidden="true" />
             )}
             {displayName}
+            {provider === 'google-messages' && (
+              <span className="source-type-badge">SMS</span>
+            )}
           </h3>
           {showCounter && (
             <span
