@@ -140,6 +140,24 @@ export class ErrorStateManager {
   }
 
   /**
+   * Remove errors for a specific mailbox (e.g., when mailbox is disconnected).
+   * Prevents stale error entries from inflating the banner count.
+   */
+  async removeMailboxErrors(mailboxId: string): Promise<void> {
+    const state = await this.load()
+    const before = state.currentErrors.length
+    state.currentErrors = state.currentErrors.filter(e => e.mailboxId !== mailboxId)
+
+    if (state.currentErrors.length < before) {
+      if (state.currentErrors.length === 0) {
+        state.consecutiveFailures = 0
+        state.lastErrorTime = null
+      }
+      await this.save(state)
+    }
+  }
+
+  /**
    * Clear error state
    */
   async clear(): Promise<void> {

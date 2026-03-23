@@ -671,6 +671,9 @@ function handleRemoveMailbox(msg: any, sendResponse: (response: any) => void) {
 
       await storage.removeMailbox(msg.mailboxId)
 
+      // Clean up any error entries for this mailbox
+      await errorStateManager.removeMailboxErrors(msg.mailboxId)
+
       // Also remove from InboxBridge native app if IMAP
       if (isImap && mailbox?.imapAccountId) {
         try {
@@ -1121,6 +1124,9 @@ function handleDisconnectGoogleMessages(
     try {
       const storage = await StorageFactory.create()
       await storage.removeMailbox(msg.mailboxId)
+
+      // Clean up any error entries for this mailbox
+      await errorStateManager.removeMailboxErrors(msg.mailboxId)
 
       // Update popup cache
       const mailboxes = await storage.getMailboxes()
