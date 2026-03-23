@@ -106,7 +106,8 @@ export class WatchSession {
       (AUTOCOMPLETE_VALUES as readonly string[]).includes(autocomplete)
     const isSplitInput = detectSplitInputGroup(this.field) !== null
 
-    if (!isOtpAutocomplete && !isSplitInput) {
+    const isSmsChannel = this.detectionResult.detectedChannels?.includes('sms')
+    if (!isOtpAutocomplete && !isSplitInput && !isSmsChannel) {
       if (!hasEmailContext(this.field)) {
         console.log("[WatchSession] No email context near field, skipping watch session")
         this.callbacks.onVetoed?.()
@@ -142,12 +143,17 @@ export class WatchSession {
     const settings = await storage.getSettings()
     const timeoutSeconds = settings.sessionTimeoutSeconds ?? 20
 
+    // Filter out 'authenticator' -- background only accepts 'email' | 'sms'
+    const actionableChannels = (this.detectionResult.detectedChannels ?? ['email'])
+      .filter((ch): ch is 'email' | 'sms' => ch === 'email' || ch === 'sms')
+
     try {
       this.port.postMessage({
         type: "START_SESSION",
         url: window.location.href,
         expected,
         timeoutSeconds,
+        detectedChannels: actionableChannels.length > 0 ? actionableChannels : ['email'],
       })
     } catch (error) {
       console.error("[WatchSession] Failed to send START_SESSION:", error)
@@ -209,18 +215,24 @@ export class WatchSession {
       case "SESSION_STARTED": {
         const session = message as {
           session: { id: string }
+          effectiveTimeoutSeconds?: number
         }
         this.sessionId = session.session.id
 
-        // Load settings for timeout
-        const storage = await StorageFactory.create()
-        const settings = await storage.getSettings()
-        const timeoutSeconds = settings.sessionTimeoutSeconds ?? 20
-
+        // Use effective timeout from background (accounts for SMS capping)
+        // Falls back to settings value if not provided (backward compat)
+        let chipTimeout: number
+        if (session.effectiveTimeoutSeconds != null) {
+          chipTimeout = session.effectiveTimeoutSeconds
+        } else {
+          const storage = await StorageFactory.create()
+          const settings = await storage.getSettings()
+          chipTimeout = settings.sessionTimeoutSeconds ?? 20
+        }
         // V2: Show chip in "listening" state with timeout and close callback
         this.chipHandle = await showSessionChip(
           this.field,
-          timeoutSeconds,
+          chipTimeout,
           {
             onClose: async () => {
               console.log('[WatchSession] User closed session chip, adding URL to blacklist')
