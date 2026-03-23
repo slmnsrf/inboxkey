@@ -1100,6 +1100,15 @@
   flex: 1;
 }
 
+.countdown-number {
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-primary);
+  font-variant-numeric: tabular-nums;
+  min-width: 24px;
+  text-align: center;
+}
+
 .connecting-dots {
   display: flex;
   gap: 4px;

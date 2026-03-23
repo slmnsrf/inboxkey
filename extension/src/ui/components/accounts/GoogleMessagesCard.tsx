@@ -24,6 +24,7 @@ import googleMessagesLogo from 'url:~assets/providers/google-messages.svg'
 type CardState =
   | 'not-connected'
   | 'phone-input'
+  | 'countdown'
   | 'pairing'
   | 'connected'
   | 'disconnect-confirm'
@@ -113,6 +114,9 @@ export function GoogleMessagesCard({ mailbox, onUpdate }: GoogleMessagesCardProp
     }, PAIRING_POLL_INTERVAL)
   }, [stopPolling, onUpdate])
 
+  const [countdown, setCountdown] = useState(0)
+  const [showManualLink, setShowManualLink] = useState(false)
+
   const handleConnect = async () => {
     setFeedbackMessage(null)
 
@@ -122,7 +126,21 @@ export function GoogleMessagesCard({ mailbox, onUpdate }: GoogleMessagesCardProp
     }
 
     setPhoneError(false)
+
+    // Countdown from 3 before opening the tab
+    setCardState('countdown')
+    setCountdown(3)
+    setShowManualLink(false)
+
+    for (let i = 3; i >= 1; i--) {
+      setCountdown(i)
+      await new Promise(r => setTimeout(r, 1000))
+    }
+
     setCardState('pairing')
+
+    // Show "Tab didn't open?" link after 10 seconds
+    const manualLinkTimer = setTimeout(() => setShowManualLink(true), 10000)
 
     try {
       const response = await chrome.runtime.sendMessage({
@@ -131,15 +149,18 @@ export function GoogleMessagesCard({ mailbox, onUpdate }: GoogleMessagesCardProp
       })
 
       if (response.status === 'paired') {
+        clearTimeout(manualLinkTimer)
         setCardState('connected')
         onUpdate?.()
       } else if (response.status === 'pairing') {
         startPairingPoll()
       } else {
+        clearTimeout(manualLinkTimer)
         setCardState('phone-input')
         setFeedbackMessage(response.error || t('toast_connect_failed'))
       }
     } catch (error) {
+      clearTimeout(manualLinkTimer)
       console.error('[GoogleMessagesCard] Connect error:', error)
       setCardState('phone-input')
       setFeedbackMessage(t('toast_connect_failed'))
@@ -258,6 +279,8 @@ export function GoogleMessagesCard({ mailbox, onUpdate }: GoogleMessagesCardProp
         return renderNotConnected()
       case 'phone-input':
         return renderPhoneInput()
+      case 'countdown':
+        return renderCountdown()
       case 'pairing':
         return renderPairing()
       case 'connected':
@@ -377,6 +400,26 @@ export function GoogleMessagesCard({ mailbox, onUpdate }: GoogleMessagesCardProp
     )
   }
 
+  function renderCountdown() {
+    return (
+      <div className="connecting-stage" role="status" aria-live="polite">
+        <div className="countdown-number" aria-hidden="true">
+          {countdown}
+        </div>
+        <div className="connecting-stage__text">
+          <div>Opening Google Messages in {countdown}...</div>
+        </div>
+        <button
+          type="button"
+          className="btn btn--ghost btn--sm"
+          onClick={handleCancel}
+        >
+          {t('accounts_gm_cancel')}
+        </button>
+      </div>
+    )
+  }
+
   function renderPairing() {
     return (
       <div className="connecting-stage" role="status" aria-live="polite">
@@ -395,24 +438,26 @@ export function GoogleMessagesCard({ mailbox, onUpdate }: GoogleMessagesCardProp
           >
             {t('accounts_gm_pairing_instruction')}
           </div>
-          <div
-            style={{
-              fontWeight: 400,
-              fontSize: 'var(--font-size-xs)',
-              color: 'var(--color-text-tertiary)',
-              marginTop: 'var(--space-2)',
-            }}
-          >
-            {t('accounts_gm_pairing_fallback_prefix')}{' '}
-            <a
-              href="https://messages.google.com"
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{ color: 'var(--color-primary)' }}
+          {showManualLink && (
+            <div
+              style={{
+                fontWeight: 400,
+                fontSize: 'var(--font-size-xs)',
+                color: 'var(--color-text-tertiary)',
+                marginTop: 'var(--space-2)',
+              }}
             >
-              {t('accounts_gm_pairing_fallback_link')}
-            </a>
-          </div>
+              {t('accounts_gm_pairing_fallback_prefix')}{' '}
+              <a
+                href="https://messages.google.com/web/conversations"
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{ color: 'var(--color-primary)' }}
+              >
+                {t('accounts_gm_pairing_fallback_link')}
+              </a>
+            </div>
+          )}
         </div>
         <button
           type="button"
@@ -538,6 +583,7 @@ function getStatusLabel(state: CardState): string {
     case 'connected':
     case 'disconnect-confirm':
       return t('accounts_status_connected')
+    case 'countdown':
     case 'pairing':
       return t('accounts_gm_status_pairing')
     case 'phone-input':

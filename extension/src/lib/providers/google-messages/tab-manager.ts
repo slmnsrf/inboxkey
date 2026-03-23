@@ -18,7 +18,7 @@ import { scrapeMessages } from './scrape-messages'
 // Constants
 // ---------------------------------------------------------------------------
 
-const MESSAGES_URL = 'https://messages.google.com'
+const MESSAGES_URL = 'https://messages.google.com/web/conversations'
 const SESSION_STORAGE_KEY = 'gm_tab_state'
 const PENDING_SETUP_KEY = 'gm_pending_setup'
 const MAX_POLLS_PER_SESSION = 5
@@ -51,16 +51,20 @@ export class MessagesTabManager {
 
   /**
    * Ensure a Google Messages tab is available. If one already exists it is
-   * reused; otherwise a new pinned background tab is created.
+   * reused; otherwise a new tab is created.
+   *
+   * @param opts.forPairing - When true, opens a visible active tab (not pinned)
+   *   so the user can see the pairing flow. When false (default), opens a pinned
+   *   background tab for silent scraping.
    *
    * Concurrent calls are serialized -- the second caller awaits the first
    * rather than creating a duplicate tab.
    */
-  async ensureTab(): Promise<TabState> {
+  async ensureTab(opts?: { forPairing?: boolean }): Promise<TabState> {
     if (this.ensureMutex) {
       return this.ensureMutex
     }
-    this.ensureMutex = this._ensureTab()
+    this.ensureMutex = this._ensureTab(opts)
     try {
       return await this.ensureMutex
     } finally {
@@ -68,7 +72,9 @@ export class MessagesTabManager {
     }
   }
 
-  private async _ensureTab(): Promise<TabState> {
+  private async _ensureTab(opts?: { forPairing?: boolean }): Promise<TabState> {
+    const forPairing = opts?.forPairing ?? false
+
     // Re-validate a previously cached tabId
     if (this.tabState) {
       try {
@@ -80,18 +86,20 @@ export class MessagesTabManager {
     }
 
     // Look for an existing Google Messages tab the user may have open
-    const existing = await chrome.tabs.query({ url: `${MESSAGES_URL}/*` })
+    const existing = await chrome.tabs.query({ url: 'https://messages.google.com/*' })
     if (existing.length > 0 && existing[0].id) {
       this.tabState = { tabId: existing[0].id, owned: false }
       await this.persistTabState()
       return this.tabState
     }
 
-    // Nothing found -- open a new pinned background tab
+    // Nothing found -- open a new tab
+    // Pairing: visible + active so user can interact with the QR/pairing flow
+    // Scraping: pinned + background so it doesn't interrupt the user
     const tab = await chrome.tabs.create({
       url: MESSAGES_URL,
-      pinned: true,
-      active: false,
+      pinned: !forPairing,
+      active: forPairing,
     })
 
     this.tabState = { tabId: tab.id!, owned: true }
