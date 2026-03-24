@@ -366,6 +366,11 @@ export class WatchSession {
     } else if (!autofilled) {
       // If autofill failed, use fallback
       await this.handleAutofillFailure(codeResult)
+      // Silent Chrome notification (visible even if user is on another tab)
+      chrome.runtime.sendMessage({
+        type: 'SHOW_CODE_NOTIFICATION',
+        code: codeResult.code,
+      }).catch(() => { /* best effort */ })
     }
   }
 
