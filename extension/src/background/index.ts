@@ -669,8 +669,15 @@ function handleRemoveMailbox(msg: any, sendResponse: (response: any) => void) {
       const mailbox = allMailboxes.find(m => m.id === msg.mailboxId)
       const isImap = mailbox?.providerId === 'imap-bridge'
 
-      // Revoke Gmail token + clear Chrome cache before removal (best-effort)
-      if (mailbox?.providerId === 'gmail' && mailbox.accessToken) {
+      // Remove from storage FIRST -- if this fails, token stays valid (safe)
+      await storage.removeMailbox(msg.mailboxId)
+
+      // Clean up any error entries for this mailbox
+      await errorStateManager.removeMailboxErrors(msg.mailboxId)
+
+      // Revoke Gmail token AFTER successful removal (best-effort).
+      // Skip if msg.skipRevoke is true (reconnect flow: same token is about to be re-stored).
+      if (mailbox?.providerId === 'gmail' && mailbox.accessToken && !msg.skipRevoke) {
         try {
           const { GmailAuth } = await import('@/lib/providers/gmail/gmail-auth')
           const auth = new GmailAuth()
@@ -685,11 +692,6 @@ function handleRemoveMailbox(msg: any, sendResponse: (response: any) => void) {
           } catch { /* best effort */ }
         }
       }
-
-      await storage.removeMailbox(msg.mailboxId)
-
-      // Clean up any error entries for this mailbox
-      await errorStateManager.removeMailboxErrors(msg.mailboxId)
 
       // Also remove from InboxBridge native app if IMAP
       if (isImap && mailbox?.imapAccountId) {
