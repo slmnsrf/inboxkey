@@ -70,7 +70,9 @@ const popupMessageHandler = new PopupMessageHandler(
 
 // One-time migration: remove legacy Outlook OAuth mailboxes (Outlook now uses IMAP only).
 // Reads raw storage to bypass schema validation (outlook is no longer a valid ProviderId).
-;(async () => {
+// MUST complete before serving any storage-backed requests (GET_MAILBOXES, TRIGGER_SYNC, etc.)
+// to prevent race where validated getMailboxes() rejects stale 'outlook' rows.
+const outlookMigrationDone = (async () => {
   try {
     const raw = await chrome.storage.local.get('mailboxes_plain')
     const all: Array<{ id: string; providerId: string; email?: string }> =
@@ -243,8 +245,8 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     msg.type === "GET_SYNC_ERROR" ||
     msg.type === "GET_MAILBOXES"
   ) {
-    popupMessageHandler
-      .handleMessage(msg)
+    outlookMigrationDone
+      .then(() => popupMessageHandler.handleMessage(msg))
       .then(sendResponse)
       .catch((error) => {
         sendResponse({
