@@ -474,7 +474,7 @@ export function GoogleMessagesCard({ mailbox, onUpdate }: GoogleMessagesCardProp
             type="tel"
             id="gm-phone-input"
             className="phone-input-field"
-            placeholder="90 555 123 4455"
+            placeholder="1 234 567 8900"
             value={phoneNumber}
             onChange={handlePhoneChange}
             onKeyDown={handlePhoneKeyDown}
