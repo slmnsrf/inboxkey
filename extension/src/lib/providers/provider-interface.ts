@@ -1,11 +1,11 @@
 /**
  * Email Provider Interface
  *
- * Defines the contract for email provider adapters (Gmail, Outlook, etc.)
+ * Defines the contract for email provider adapters (Gmail, IMAP Bridge, etc.)
  * Each provider implements OAuth authentication and email fetching.
  */
 
-export type ProviderId = 'gmail' | 'outlook' | 'imap-bridge'
+export type ProviderId = 'gmail' | 'imap-bridge'
 
 export interface ProviderConfig {
   clientId: string
@@ -84,7 +84,7 @@ export interface IEmailProvider {
 /**
  * PKCE OAuth Provider Interface
  *
- * For providers that use OAuth 2.0 PKCE flow (Outlook, IMAP Bridge, etc.)
+ * For providers that use OAuth 2.0 PKCE flow (IMAP Bridge, etc.)
  * Requires explicit startAuth/completeAuth methods to handle the OAuth flow.
  */
 export interface IPKCEProvider extends IEmailProvider {

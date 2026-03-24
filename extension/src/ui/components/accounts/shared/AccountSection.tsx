@@ -4,16 +4,14 @@ import { t } from '@/lib/i18n';
 import { InlineAlert } from './InlineAlert';
 
 import gmailLogo from 'url:~assets/providers/gmail.svg';
-import outlookLogo from 'url:~assets/providers/microsoft-outlook.svg';
 import googleMessagesLogo from 'url:~assets/providers/google-messages.svg';
 
-type ProviderType = 'gmail' | 'outlook' | 'imap-bridge' | 'google-messages';
+type ProviderType = 'gmail' | 'imap-bridge' | 'google-messages';
 type FeedbackType = 'success' | 'error' | 'warning' | 'info';
 
 /** Maps provider type to the imported logo URL (null = use icon fallback). */
 const PROVIDER_LOGOS: Record<ProviderType, string | null> = {
   gmail: gmailLogo,
-  outlook: outlookLogo,
   'imap-bridge': null,
   'google-messages': googleMessagesLogo,
 };
@@ -44,7 +42,7 @@ interface AccountSectionProps {
  * - Description text (microcopy) after the content
  * - Inline feedback for success/error states
  *
- * Used by Gmail, Outlook, IMAP, and Google Messages sections.
+ * Used by Gmail, IMAP, and Google Messages sections.
  */
 export function AccountSection({
   provider,

@@ -9,31 +9,17 @@ vi.mock('@/lib/providers/gmail/chrome-auth', () => ({
   authenticateGmail: vi.fn(),
 }))
 
-vi.mock('@/lib/providers/outlook/chrome-auth', () => ({
-  authenticateOutlook: vi.fn(),
-}))
-
 vi.mock('@/lib/providers/gmail/profile', () => ({
   fetchGmailProfile: vi.fn(),
-}))
-
-vi.mock('@/lib/providers/outlook/profile', () => ({
-  fetchOutlookProfile: vi.fn(),
 }))
 
 vi.mock('@/lib/providers/gmail/config', () => ({
   isGmailConfigured: () => true,
 }))
 
-vi.mock('@/lib/providers/outlook/config', () => ({
-  isOutlookConfigured: () => true,
-}))
-
 // Import the mocked functions after mocks are set up
 const { authenticateGmail: mockAuthenticateGmail } = await import('@/lib/providers/gmail/chrome-auth')
-const { authenticateOutlook: _mockAuthenticateOutlook } = await import('@/lib/providers/outlook/chrome-auth')
 const { fetchGmailProfile: mockFetchGmailProfile } = await import('@/lib/providers/gmail/profile')
-const { fetchOutlookProfile: _mockFetchOutlookProfile } = await import('@/lib/providers/outlook/profile')
 
 const renderWithProviders = (ui: React.ReactElement) => {
   return render(
@@ -97,13 +83,9 @@ describe('AccountsPanel (UI Rework)', () => {
         getMessage: (key: string, substitutions?: string | string[]) => {
           const translations: Record<string, string> = {
             accounts_provider_gmail: "Gmail",
-            accounts_provider_outlook: "Outlook",
             accounts_microcopy_gmail: "One account supported via Chrome Identity API.",
-            accounts_microcopy_outlook: "Add up to 10 Outlook accounts.",
             accounts_empty_gmail: "No Gmail account connected.",
-            accounts_empty_outlook: "No Outlook accounts connected.",
             accounts_connect_gmail: "Connect Gmail",
-            accounts_connect_outlook: "Connect Outlook",
             accounts_recent_title: "Recent Emails",
             accounts_recent_description: "Your latest verification codes and magic links",
             accounts_recent_empty: "No recent activity",
@@ -170,13 +152,12 @@ describe('AccountsPanel (UI Rework)', () => {
   it('renders provider cards and recent emails section', async () => {
     renderWithProviders(<AccountsPanel />)
 
-    // Component renders per-provider sections (Gmail, Outlook) instead of a single heading
+    // Component renders per-provider sections (Gmail) instead of a single heading
     await waitFor(() => {
       expect(screen.getByRole('heading', { name: /gmail/i })).toBeInTheDocument()
     })
 
     expect(screen.getByRole('button', { name: /connect gmail/i })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /add outlook account/i })).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: /recent emails/i })).toBeInTheDocument()
   })
 
@@ -261,7 +242,7 @@ describe('AccountsPanel (UI Rework)', () => {
                 type: 'login',
                 source: 'Example - Magic link',
                 receivedAt: now - 60000,
-                providerId: 'outlook',
+                providerId: 'gmail',
               },
             ],
             lastSync: now,

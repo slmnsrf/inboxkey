@@ -624,10 +624,6 @@ body {
   background: var(--color-gmail);
 }
 
-.badge-outlook {
-  background: var(--color-outlook);
-}
-
 .badge-active {
   background: var(--color-success);
 }
@@ -650,11 +646,6 @@ body {
 
 .provider-badge[data-provider="gmail"] {
   background: var(--color-gmail);
-  color: white;
-}
-
-.provider-badge[data-provider="outlook"] {
-  background: var(--color-outlook);
   color: white;
 }
 
@@ -744,20 +735,6 @@ body {
 
 .btn-gmail:focus-visible {
   outline: var(--focus-ring-width) solid var(--color-gmail);
-  outline-offset: var(--focus-ring-offset);
-}
-
-.btn-outlook {
-  background: var(--color-outlook);
-  color: white;
-}
-
-.btn-outlook:hover:not(:disabled) {
-  background: var(--color-outlook-hover);
-}
-
-.btn-outlook:focus-visible {
-  outline: var(--focus-ring-width) solid var(--color-outlook);
   outline-offset: var(--focus-ring-offset);
 }
 

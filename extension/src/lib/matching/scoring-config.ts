@@ -54,7 +54,7 @@ export const WATCH_SESSION_SCORING = {
    * Fixed polling schedule optimized for email delivery patterns (in milliseconds).
    *
    * Strategy:
-   * - First 20s: Dense 5s intervals → catches fast providers (Gmail, Outlook)
+   * - First 20s: Dense 5s intervals → catches fast providers (Gmail)
    * - After 20s: Sparse 10s intervals → catches slow providers (IMAP)
    *
    * Full schedule: [0, 5, 10, 15, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120]s

@@ -194,21 +194,6 @@
   gap: var(--space-2);
 }
 
-.outlook-list {
-  max-height: calc(6 * (60px + var(--space-2)));
-  overflow-y: auto;
-  border-radius: var(--radius-md);
-}
-
-.outlook-list::-webkit-scrollbar {
-  width: 8px;
-}
-
-.outlook-list::-webkit-scrollbar-thumb {
-  background: var(--color-border);
-  border-radius: var(--radius-full);
-}
-
 .imap-row {
   display: grid;
   grid-template-columns: 1fr auto;
@@ -985,7 +970,6 @@
 }
 
 .provider-badge__dot--gmail { background: var(--color-gmail); }
-.provider-badge__dot--outlook { background: var(--color-outlook); }
 .provider-badge__dot--imap { background: var(--color-text-tertiary); }
 
 /* Meta Dot Separator */

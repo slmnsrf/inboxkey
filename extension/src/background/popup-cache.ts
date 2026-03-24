@@ -494,8 +494,6 @@ export class PopupCacheManager {
     switch (providerId) {
       case 'gmail':
         return 'Gmail'
-      case 'outlook':
-        return 'Outlook'
       case 'google-messages':
         return 'Google Messages'
       case 'imap-bridge':

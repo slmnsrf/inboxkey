@@ -36,12 +36,12 @@ export interface StorageSchema {
 /**
  * Provider types supported by InboxKey
  */
-export type ProviderId = "gmail" | "outlook" | "imap-bridge" | "google-messages"
+export type ProviderId = "gmail" | "imap-bridge" | "google-messages"
 
 /**
  * Mailbox account with OAuth tokens or IMAP credentials
  *
- * OAuth providers (Gmail, Outlook):
+ * Gmail OAuth provider:
  * - accessToken: Required (stored in plaintext; encryption planned)
  * - refreshToken: Optional (stored in plaintext; Chrome Identity API handles refresh for Gmail)
  * - tokenExpiresAt: Required
@@ -57,7 +57,7 @@ export interface Mailbox {
   providerId: ProviderId
   email: string // Email address
 
-  // OAuth fields (required for 'gmail', 'outlook'; must be undefined for 'imap-bridge')
+  // OAuth fields (required for 'gmail'; must be undefined for 'imap-bridge')
   accessToken?: string // Stored in plaintext; encryption planned
   refreshToken?: string // Stored in plaintext; encryption planned (optional for Gmail)
   tokenExpiresAt?: number // Unix timestamp (ms)
@@ -241,7 +241,7 @@ export interface Settings {
    * Controls session duration and number of polls executed.
    *
    * Poll schedule:
-   * - 0-20s: Every 5s (dense, for fast providers like Gmail/Outlook)
+   * - 0-20s: Every 5s (dense, for fast providers like Gmail)
    * - 20-120s: Every 10s (sparse, for slow providers like IMAP)
    *
    * Examples:
@@ -346,7 +346,7 @@ export function isValidUUID(uuid: string): boolean {
 }
 
 export function isValidProviderId(id: string): id is ProviderId {
-  return id === "gmail" || id === "outlook" || id === "imap-bridge" || id === "google-messages"
+  return id === "gmail" || id === "imap-bridge" || id === "google-messages"
 }
 
 export function isValidTimestamp(timestamp: number): boolean {

@@ -18,7 +18,7 @@ interface AccountRowProps {
  * - Right: Action buttons
  * - Bottom: Optional additional content (children)
  *
- * Used by Gmail, Outlook, and IMAP account cards.
+ * Used by Gmail and IMAP account cards.
  */
 export function AccountRow({
   email,
