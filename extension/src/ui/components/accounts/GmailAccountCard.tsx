@@ -142,7 +142,7 @@ export function GmailAccountCard({
       })
       if (response.success) {
         setTestState('success')
-        setTimeout(() => setTestState('idle'), 3000)
+        setTimeout(() => setTestState('idle'), 15000)
       } else {
         setTestState('error')
         setConnectionError(response.error || 'Connection test failed.')
@@ -264,7 +264,7 @@ export function GmailAccountCard({
                     type="button"
                     className={`btn btn--sm ${testState === 'success' ? 'btn--success-ghost' : testState === 'error' ? 'btn--danger-ghost' : 'btn--secondary'}`}
                     onClick={testState === 'error' ? () => { setTestState('idle'); setConnectionError(null) } : handleTest}
-                    disabled={disabled || testState === 'loading' || connectionState === 'loading'}
+                    disabled={disabled || testState === 'loading' || testState === 'success' || connectionState === 'loading'}
                     aria-busy={testState === 'loading'}
                   >
                     {testState === 'loading' ? t('accounts_testing')
