@@ -100,7 +100,6 @@ export class PlaintextStorage {
 
       // Check for duplicate email within the same provider
       // This allows:
-      // - Multiple Outlook accounts with different emails
       // - Multiple IMAP accounts with different emails
       // - Same email across different providers (rare but valid, e.g., Google Workspace via both Gmail API and IMAP)
       if (mailboxes.some((m) => m.email === mailbox.email && m.providerId === mailbox.providerId)) {
@@ -231,16 +230,11 @@ export class PlaintextStorage {
         throw new ValidationError("IMAP account ID cannot be empty", "imapAccountId")
       }
     } else {
-      // OAuth mailbox validation (gmail, outlook)
+      // Gmail OAuth mailbox validation
       if (!mailbox.accessToken || mailbox.accessToken.length === 0) {
         throw new ValidationError("Access token cannot be empty", "accessToken")
       }
-      // Refresh token is only required for providers using PKCE (not Gmail with chrome.identity)
-      if (mailbox.providerId !== 'gmail') {
-        if (!mailbox.refreshToken || mailbox.refreshToken.length === 0) {
-          throw new ValidationError("Refresh token cannot be empty", "refreshToken")
-        }
-      }
+      // Gmail uses chrome.identity; refresh token is optional
       if (!isValidTimestamp(mailbox.tokenExpiresAt)) {
         throw new ValidationError("Invalid token expiration timestamp", "tokenExpiresAt")
       }

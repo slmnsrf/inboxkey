@@ -2,7 +2,7 @@
  * Shared connection error message resolver
  *
  * Extracts the duplicated getConnectionErrorMessage() function from
- * GmailAccountCard, OutlookAccountCard, and AccountsPanel into a
+ * GmailAccountCard and AccountsPanel into a
  * single shared utility.
  */
 

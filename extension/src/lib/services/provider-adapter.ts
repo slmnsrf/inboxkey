@@ -8,7 +8,6 @@
 import type { IStorage } from '@/lib/storage/storage-interface'
 import type { IEmailProvider } from '@/lib/providers/provider-interface'
 import { GmailProvider } from '@/lib/providers/gmail/gmail-provider'
-import { OutlookProvider } from '@/lib/providers/outlook/outlook-provider'
 import { IMAPBridgeAdapter } from '@/lib/providers/imap-bridge/imap-bridge-adapter'
 import { MessagesProviderAdapter } from '@/lib/providers/google-messages/adapter'
 import type { Mailbox } from '@/lib/storage/schema'
@@ -161,10 +160,8 @@ export async function createAdaptersFromMailboxes(
         )
       }
 
-      // OAuth provider: use StorageProviderAdapter with Gmail/Outlook provider
-      const provider = mailbox.providerId === 'gmail'
-        ? new GmailProvider()
-        : new OutlookProvider()
+      // OAuth provider: use StorageProviderAdapter with Gmail provider
+      const provider = new GmailProvider()
 
       return new StorageProviderAdapter(storage, provider, mailbox)
     })

@@ -221,7 +221,7 @@
     "description": "Empty state: no mailboxes title"
   },
   "empty_no_mailboxes_message": {
-    "message": "Connect Gmail or Outlook to get started.",
+    "message": "Connect Gmail to get started.",
     "description": "Empty state: no mailboxes message"
   },
   "button_connect_mailbox": {
@@ -802,34 +802,6 @@
     "message": "Add IMAP Account",
     "description": "Primary CTA button in IMAP empty state"
   },
-  "accounts_outlook_counter": {
-    "message": "$1 accounts",
-    "description": "Outlook accounts count"
-  },
-  "accounts_outlook_title": {
-    "message": "Microsoft Outlook",
-    "description": "Outlook accounts section title"
-  },
-  "accounts_outlook_add": {
-    "message": "Add Outlook Account",
-    "description": "Button to add Outlook account"
-  },
-  "accounts_outlook_description": {
-    "message": "Add multiple work and personal accounts",
-    "description": "Outlook accounts description"
-  },
-  "accounts_outlook_empty": {
-    "message": "No Outlook accounts connected. Add your first account to get started.",
-    "description": "Empty state for Outlook accounts"
-  },
-  "aria_reconnect_outlook": {
-    "message": "Reconnect $1",
-    "description": "ARIA label for reconnecting Outlook account"
-  },
-  "aria_remove_outlook": {
-    "message": "Remove $1 from InboxKey",
-    "description": "ARIA label for removing Outlook account"
-  },
   "aria_reconnect_imap": {
     "message": "Reconnect $1",
     "description": "ARIA label for reconnecting IMAP account"
@@ -1210,18 +1182,6 @@
     "message": "Disconnect Gmail account",
     "description": "ARIA label for disconnect Gmail button"
   },
-  "aria_connect_outlook": {
-    "message": "Connect Outlook account",
-    "description": "ARIA label for connect Outlook button"
-  },
-  "accounts_connect_outlook": {
-    "message": "Connect Outlook",
-    "description": "Connect Outlook button text"
-  },
-  "aria_disconnect_outlook": {
-    "message": "Disconnect Outlook account",
-    "description": "ARIA label for disconnect Outlook button"
-  },
   "accounts_disconnect": {
     "message": "Disconnect",
     "description": "Disconnect button text"
@@ -1261,18 +1221,6 @@
   "accounts_empty_gmail": {
     "message": "Verification codes from Gmail can be detected and filled automatically. Nothing leaves this device.",
     "description": "Gmail empty/disconnected state with trust signal"
-  },
-  "accounts_provider_outlook": {
-    "message": "Outlook",
-    "description": "Outlook provider name in accounts panel"
-  },
-  "accounts_microcopy_outlook": {
-    "message": "Read-only access. Multiple Outlook accounts can be connected.",
-    "description": "Outlook section description with trust signal"
-  },
-  "accounts_empty_outlook": {
-    "message": "Outlook and Microsoft 365 accounts are supported. All scanning happens locally on this device.",
-    "description": "Outlook empty/disconnected state with trust signal"
   },
   "automation_heading": {
     "message": "Automation Level",
@@ -1581,10 +1529,6 @@
   "accounts_empty_imap": {
     "message": "ProtonMail, Fastmail, Yahoo, and most other providers are supported. Everything stays local.",
     "description": "IMAP empty state with trust signal"
-  },
-  "toast_outlook_connected": {
-    "message": "Outlook account connected successfully",
-    "description": "Toast message when Outlook account is connected"
   },
   "toast_connect_duplicate": {
     "message": "This account is already connected",
@@ -2109,17 +2053,13 @@
     "message": "Connect Gmail account",
     "description": "ARIA label for connect Gmail button in empty state"
   },
-  "aria_add_outlook_account": {
-    "message": "Add Outlook account",
-    "description": "ARIA label for add Outlook account button"
-  },
   "aria_reconnect_account": {
     "message": "Reconnect $ACCOUNT$",
     "description": "ARIA label for reconnect button with account email",
     "placeholders": {
       "account": {
         "content": "$1",
-        "example": "user@outlook.com"
+        "example": "user@example.com"
       }
     }
   },
@@ -2129,7 +2069,7 @@
     "placeholders": {
       "account": {
         "content": "$1",
-        "example": "user@outlook.com"
+        "example": "user@example.com"
       }
     }
   },
@@ -2139,11 +2079,11 @@
     "placeholders": {
       "expected": {
         "content": "$1",
-        "example": "user@outlook.com"
+        "example": "user@example.com"
       },
       "actual": {
         "content": "$2",
-        "example": "other@outlook.com"
+        "example": "other@example.com"
       }
     }
   },
