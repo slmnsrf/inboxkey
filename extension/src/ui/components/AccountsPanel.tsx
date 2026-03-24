@@ -7,14 +7,11 @@
  */
 
 import React, { useEffect, useMemo, useState } from 'react'
-import { useToast } from '../contexts/ToastContext'
-import { t, timeAgo } from '@/lib/i18n'
-import type { UnifiedPopupCache } from '@/shared/popup-messages'
-import type { ImapAccountRow, RecentItem } from './accounts/types'
+import { t } from '@/lib/i18n'
+import type { ImapAccountRow } from './accounts/types'
 import { GmailAccountCard } from './accounts/GmailAccountCard'
 import { ImapAccountCard } from './accounts/ImapAccountCard'
 import { GoogleMessagesCard } from './accounts/GoogleMessagesCard'
-import { RecentEmailsSection } from './accounts/RecentEmailsSection'
 import { AddImapAccountModal } from './accounts/AddImapAccountModal'
 
 import './accounts/AccountsPanel.css'
@@ -40,13 +37,10 @@ interface MailboxInfo {
 type PopupResponseData = UnifiedPopupCache | null
 
 export function AccountsPanel() {
-  const { showToast } = useToast()
 
   const [mailboxes, setMailboxes] = useState<MailboxInfo[]>([])
   const [isConnecting, setIsConnecting] = useState(false)
 
-  const [recentItems, setRecentItems] = useState<RecentItem[]>([])
-  const [recentLoading, setRecentLoading] = useState(false)
 
   // IMAP modal state
   const [showAddImapModal, setShowAddImapModal] = useState(false)
@@ -60,7 +54,6 @@ export function AccountsPanel() {
 
   useEffect(() => {
     void loadMailboxes()
-    void loadRecentItems()
   }, [])
 
   const loadMailboxes = async () => {
@@ -76,29 +69,6 @@ export function AccountsPanel() {
     }
   }
 
-  const loadRecentItems = async () => {
-    setRecentLoading(true)
-    try {
-      const response = (await chrome.runtime.sendMessage({ type: 'GET_POPUP_DATA' })) as {
-        success: boolean
-        data?: PopupResponseData
-        error?: string
-      }
-
-      if (!response.success || !response.data) {
-        console.warn('[AccountsPanel] No recent popup data available:', response.error)
-        setRecentItems([])
-        return
-      }
-
-      setRecentItems(transformRecentItems(response.data))
-    } catch (error) {
-      console.warn('[AccountsPanel] Failed to load recent items:', error)
-      setRecentItems([])
-    } finally {
-      setRecentLoading(false)
-    }
-  }
 
   const handleAddImap = () => {
     setReconnectingMailboxId(null)
@@ -201,37 +171,12 @@ export function AccountsPanel() {
     }
   }, [mailboxes])
 
-  const handleCopyCode = async (item: RecentItem) => {
-    if (!item.code) return
-    try {
-      await navigator.clipboard.writeText(item.code)
-      await chrome.runtime.sendMessage({ type: 'MARK_CODE_USED', code: item.code })
-      // Visual feedback via button text change - no toast needed
-    } catch (error) {
-      console.warn('[AccountsPanel] Failed to copy code:', error)
-      showToast(t('toast_error_copy'), 'error', 5000)
-    }
-  }
-
-  const handleOpenLink = async (item: RecentItem) => {
-    if (!item.url) return
-    try {
-      await chrome.runtime.sendMessage({ type: 'MARK_LINK_OPENED', url: item.url })
-      await chrome.tabs.create({ url: item.url })
-      // Visual feedback via button text color transition - no toast needed
-    } catch (error) {
-      console.warn('[AccountsPanel] Failed to open link:', error)
-      showToast(t('toast_error_link'), 'error', 5000)
-    }
-  }
-
   return (
     <div className="accounts-panel">
       <GmailAccountCard
         account={gmailAccount}
         onAccountChanged={async () => {
           await loadMailboxes()
-          await loadRecentItems()
         }}
         disabled={isConnecting}
       />
@@ -240,7 +185,6 @@ export function AccountsPanel() {
         accounts={imapAccounts}
         onAccountChanged={async () => {
           await loadMailboxes()
-          await loadRecentItems()
         }}
         disabled={isConnecting}
         maxAccounts={10}
@@ -252,7 +196,6 @@ export function AccountsPanel() {
         mailbox={googleMessagesMailbox}
         onUpdate={async () => {
           await loadMailboxes()
-          await loadRecentItems()
         }}
       />
 
@@ -263,47 +206,8 @@ export function AccountsPanel() {
         prefillData={imapPrefillData}
       />
 
-      <RecentEmailsSection
-        items={recentItems}
-        onCopyCode={handleCopyCode}
-        onOpenLink={handleOpenLink}
-        loading={recentLoading}
-      />
-
     </div>
   )
 }
 
-function transformRecentItems(cache: UnifiedPopupCache): RecentItem[] {
-  const codes = (cache.codes || []).map<RecentItem>((code) => ({
-    id: `code:${code.code}:${code.receivedAt}`,
-    kind: 'code',
-    provider: mapProvider(code.providerId),
-    from: code.from,
-    subject: code.subject,
-    receivedAt: code.receivedAt,
-    receivedLabel: timeAgo(code.receivedAt),
-    code: code.code,
-  }))
-
-  const links = (cache.magicLinks || []).map<RecentItem>((link) => ({
-    id: `link:${link.url}:${link.receivedAt}`,
-    kind: 'link',
-    provider: mapProvider(link.providerId),
-    from: link.from,
-    subject: link.subject,
-    receivedAt: link.receivedAt,
-    receivedLabel: timeAgo(link.receivedAt),
-    url: link.url,
-    domain: link.source,
-  }))
-
-  return [...codes, ...links].sort((a, b) => b.receivedAt - a.receivedAt)
-}
-
-function mapProvider(providerId?: string): 'gmail' | 'imap' | undefined {
-  if (providerId === 'gmail') return providerId
-  if (providerId === 'imap-bridge') return 'imap'
-  return undefined
-}
 
