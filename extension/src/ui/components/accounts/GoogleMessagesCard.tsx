@@ -55,6 +55,7 @@ export function GoogleMessagesCard({ mailbox, onUpdate }: GoogleMessagesCardProp
   const [phoneError, setPhoneError] = useState(false)
   const [feedbackMessage, setFeedbackMessage] = useState<string | null>(null)
   const [isDisconnecting, setIsDisconnecting] = useState(false)
+  const [testState, setTestState] = useState<'idle' | 'loading' | 'success' | 'error'>('idle')
 
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const phoneInputRef = useRef<HTMLInputElement>(null)
@@ -252,6 +253,34 @@ export function GoogleMessagesCard({ mailbox, onUpdate }: GoogleMessagesCardProp
     setPhoneError(false)
     setFeedbackMessage(null)
     setShowManualLink(false)
+  }
+
+  const handleTest = async () => {
+    if (!mailbox) return
+    setTestState('loading')
+    setFeedbackMessage(null)
+    try {
+      const response = await chrome.runtime.sendMessage({
+        type: 'TEST_MAILBOX_CONNECTION',
+        mailboxId: mailbox.id,
+      })
+      if (response.success) {
+        setTestState('success')
+        setTimeout(() => setTestState('idle'), 2000)
+      } else {
+        setTestState('error')
+        setFeedbackMessage(response.error || 'Connection test failed')
+        setTimeout(() => setTestState('idle'), 4000)
+        // If session expired, switch to that card state
+        if (response.error?.includes('expired')) {
+          setCardState('session-expired')
+        }
+      }
+    } catch {
+      setTestState('error')
+      setFeedbackMessage('Test failed unexpectedly')
+      setTimeout(() => setTestState('idle'), 4000)
+    }
   }
 
   const handleDisconnect = async () => {
@@ -592,6 +621,18 @@ export function GoogleMessagesCard({ mailbox, onUpdate }: GoogleMessagesCardProp
           </span>
         </div>
         <div className="account-row__actions">
+          <button
+            type="button"
+            className={`btn btn--sm ${testState === 'success' ? 'btn--success-ghost' : testState === 'error' ? 'btn--danger-ghost' : 'btn--secondary'}`}
+            onClick={handleTest}
+            disabled={testState === 'loading'}
+            aria-busy={testState === 'loading'}
+          >
+            {testState === 'loading' ? t('accounts_testing')
+              : testState === 'success' ? t('accounts_test_ok')
+              : testState === 'error' ? t('accounts_test_failed')
+              : t('accounts_test')}
+          </button>
           <button
             type="button"
             className="btn btn--danger-ghost btn--sm"

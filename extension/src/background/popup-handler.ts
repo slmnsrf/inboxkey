@@ -318,6 +318,70 @@ export class PopupMessageHandler {
           }
         }
 
+        case 'TEST_MAILBOX_CONNECTION': {
+          const { mailboxId } = request as { type: string; mailboxId: string }
+          const storage = await StorageFactory.create()
+          const mailboxes = await storage.getMailboxes()
+          const mailbox = mailboxes.find(m => m.id === mailboxId)
+
+          if (!mailbox) {
+            return { success: false, error: 'Account not found' }
+          }
+
+          try {
+            if (mailbox.providerId === 'gmail') {
+              // Gmail: lightweight profile check proves token validity
+              const { GmailAPIClient } = await import('@/lib/providers/gmail/gmail-api')
+              const api = new GmailAPIClient()
+              await api.getUserProfile(mailbox.accessToken!)
+              return { success: true }
+            }
+
+            if (mailbox.providerId === 'imap-bridge') {
+              // IMAP: fetch 1 message to prove connection
+              const { IMAPBridgeAdapter } = await import('@/lib/providers/imap-bridge/imap-bridge-adapter')
+              const adapter = new IMAPBridgeAdapter(
+                mailbox.imapAccountId || '',
+                mailbox.email,
+                mailbox.id
+              )
+              await adapter.listRecent({
+                sinceEpochMs: Date.now() - 10 * 60 * 1000,
+                max: 1,
+              })
+              return { success: true }
+            }
+
+            if (mailbox.providerId === 'google-messages') {
+              // Google Messages: check pairing status via tab manager
+              const { getMessagesTabManager } = await import('@/lib/providers/google-messages/tab-manager')
+              const tabManager = getMessagesTabManager()
+              const tab = await tabManager.ensureTab()
+              const status = await tabManager.checkPairingStatus(tab.tabId)
+              await tabManager.closeIfOwned()
+              if (status === 'paired') {
+                return { success: true }
+              }
+              return { success: false, error: 'Google Messages session has expired. Please re-pair your device.' }
+            }
+
+            return { success: false, error: 'Unknown provider' }
+          } catch (error) {
+            const msg = error instanceof Error ? error.message : String(error)
+            // Classify common errors
+            if (msg.includes('401') || msg.includes('auth') || msg.includes('token')) {
+              return { success: false, error: 'Access expired. Reconnect needed.' }
+            }
+            if (msg.includes('network') || msg.includes('fetch') || msg.includes('TIMEOUT')) {
+              return { success: false, error: 'Connection failed. Check your network.' }
+            }
+            if (msg.includes('PORT_DISCONNECTED') || msg.includes('native')) {
+              return { success: false, error: 'InboxBridge is not running.' }
+            }
+            return { success: false, error: msg }
+          }
+        }
+
         case 'GET_MAILBOXES': {
           try {
             const storage = await StorageFactory.create()
