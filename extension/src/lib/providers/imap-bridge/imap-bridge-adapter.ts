@@ -67,7 +67,7 @@ export class IMAPBridgeAdapter implements ProviderAdapter {
       // Map errors to user-facing messages, then re-throw so pollOnce() can
       // record this adapter as failed in adapterResults with a meaningful message.
       const userMessage = this.getUserFacingError(error)
-      console.error(`[IMAPBridgeAdapter] ${userMessage}`)
+      console.warn(`[IMAPBridgeAdapter] ${userMessage}`)
 
       // Re-throw with user-facing message so it propagates to lastSyncError
       throw new Error(userMessage)

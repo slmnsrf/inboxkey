@@ -159,7 +159,7 @@ export function GoogleMessagesCard({ mailbox, onUpdate }: GoogleMessagesCardProp
         }
         // 'unpaired' continues polling (expected during pairing)
       } catch (error) {
-        console.error('[GoogleMessagesCard] Pairing poll error:', error)
+        console.warn('[GoogleMessagesCard] Pairing poll error:', error)
         // Communication error -- stop polling, show error
         stopPolling()
         if (manualLinkTimerRef.current) {
@@ -231,7 +231,7 @@ export function GoogleMessagesCard({ mailbox, onUpdate }: GoogleMessagesCardProp
         clearTimeout(manualLinkTimerRef.current)
         manualLinkTimerRef.current = null
       }
-      console.error('[GoogleMessagesCard] Connect error:', error)
+      console.warn('[GoogleMessagesCard] Connect error:', error)
       setCardState('phone-input')
       setFeedbackMessage(t('toast_connect_failed'))
     }
@@ -304,7 +304,7 @@ export function GoogleMessagesCard({ mailbox, onUpdate }: GoogleMessagesCardProp
         setCardState('connected')
       }
     } catch (error) {
-      console.error('[GoogleMessagesCard] Disconnect error:', error)
+      console.warn('[GoogleMessagesCard] Disconnect error:', error)
       setFeedbackMessage(t('toast_disconnect_failed'))
       setCardState('connected')
     } finally {
@@ -331,7 +331,7 @@ export function GoogleMessagesCard({ mailbox, onUpdate }: GoogleMessagesCardProp
         setFeedbackMessage(response.error || t('toast_connect_failed'))
       }
     }).catch((error) => {
-      console.error('[GoogleMessagesCard] Re-pair error:', error)
+      console.warn('[GoogleMessagesCard] Re-pair error:', error)
       setCardState('session-expired')
       setFeedbackMessage(t('toast_connect_failed'))
     })

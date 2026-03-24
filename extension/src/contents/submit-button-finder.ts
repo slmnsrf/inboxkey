@@ -235,7 +235,7 @@ function findBestPseudoButton(
     logBetaFeatureUsage('pseudo_button_detected', {
       selector: best.element.tagName,
       score: best.score
-    }).catch(err => console.error('[ButtonFinder] Failed to log telemetry:', err))
+    }).catch(err => console.warn('[ButtonFinder] Failed to log telemetry:', err))
 
     return best
   }

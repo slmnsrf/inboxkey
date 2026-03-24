@@ -72,7 +72,7 @@ export function AccountsPanel() {
         console.warn('[AccountsPanel] Failed to load mailboxes:', response.error)
       }
     } catch (error) {
-      console.error('[AccountsPanel] Failed to load mailboxes:', error)
+      console.warn('[AccountsPanel] Failed to load mailboxes:', error)
     }
   }
 
@@ -93,7 +93,7 @@ export function AccountsPanel() {
 
       setRecentItems(transformRecentItems(response.data))
     } catch (error) {
-      console.error('[AccountsPanel] Failed to load recent items:', error)
+      console.warn('[AccountsPanel] Failed to load recent items:', error)
       setRecentItems([])
     } finally {
       setRecentLoading(false)
@@ -143,7 +143,7 @@ export function AccountsPanel() {
         throw new Error(response.error || t('toast_connect_failed'))
       }
     } catch (error) {
-      console.error('[AccountsPanel] Failed to add IMAP account:', error)
+      console.warn('[AccountsPanel] Failed to add IMAP account:', error)
       throw error
     }
   }
@@ -208,7 +208,7 @@ export function AccountsPanel() {
       await chrome.runtime.sendMessage({ type: 'MARK_CODE_USED', code: item.code })
       // Visual feedback via button text change - no toast needed
     } catch (error) {
-      console.error('[AccountsPanel] Failed to copy code:', error)
+      console.warn('[AccountsPanel] Failed to copy code:', error)
       showToast(t('toast_error_copy'), 'error', 5000)
     }
   }
@@ -220,7 +220,7 @@ export function AccountsPanel() {
       await chrome.tabs.create({ url: item.url })
       // Visual feedback via button text color transition - no toast needed
     } catch (error) {
-      console.error('[AccountsPanel] Failed to open link:', error)
+      console.warn('[AccountsPanel] Failed to open link:', error)
       showToast(t('toast_error_link'), 'error', 5000)
     }
   }

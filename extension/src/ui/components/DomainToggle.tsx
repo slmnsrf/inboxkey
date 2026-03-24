@@ -49,7 +49,7 @@ export function DomainToggle() {
       const blacklisted = await isBlacklisted(currentUrl)
       setUrlBlacklisted(blacklisted)
     } catch (err) {
-      console.error('[DomainToggle] Failed to load domain state:', err)
+      console.warn('[DomainToggle] Failed to load domain state:', err)
       setError(t('error_domain_load'))
     } finally {
       setLoading(false)
@@ -86,7 +86,7 @@ export function DomainToggle() {
 
       console.log(`[DomainToggle] Domain ${domain} ${newState ? 'enabled' : 'disabled'}`)
     } catch (err) {
-      console.error('[DomainToggle] Failed to toggle domain:', err)
+      console.warn('[DomainToggle] Failed to toggle domain:', err)
       setEnabled(!enabled)
       setError(t('error_domain_update'))
     }

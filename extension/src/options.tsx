@@ -39,7 +39,7 @@ function OptionsApp() {
           setMailboxCount(response.mailboxes.length)
         }
       } catch (error) {
-        console.error('Failed to fetch mailboxes:', error)
+        console.warn('Failed to fetch mailboxes:', error)
       }
     }
     fetchMailboxCount()

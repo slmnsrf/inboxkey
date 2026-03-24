@@ -68,7 +68,7 @@ export async function logAutoSubmitFailure(
 
     console.log(`[Telemetry] Logged auto-submit failure: ${reason} on ${urlDomain}`)
   } catch (error) {
-    console.error('[Telemetry] Failed to log auto-submit failure:', error)
+    console.warn('[Telemetry] Failed to log auto-submit failure:', error)
   }
 }
 
@@ -82,7 +82,7 @@ export async function getRecentFailures(limit: number = MAX_FAILURES): Promise<A
     const failures: AutoSubmitFailure[] = settings.autoSubmitFailures || []
     return failures.slice(0, limit)
   } catch (error) {
-    console.error('[Telemetry] Failed to get recent failures:', error)
+    console.warn('[Telemetry] Failed to get recent failures:', error)
     return []
   }
 }
@@ -98,7 +98,7 @@ export async function clearTelemetry(): Promise<void> {
     await chrome.storage.local.set({ settings })
     console.log('[Telemetry] Cleared all auto-submit telemetry')
   } catch (error) {
-    console.error('[Telemetry] Failed to clear telemetry:', error)
+    console.warn('[Telemetry] Failed to clear telemetry:', error)
   }
 }
 
@@ -153,6 +153,6 @@ export async function logBetaFeatureUsage(
 
     console.log(`[Telemetry] Beta feature usage logged: ${feature} on ${urlDomain}`)
   } catch (error) {
-    console.error('[Telemetry] Failed to log beta feature usage:', error)
+    console.warn('[Telemetry] Failed to log beta feature usage:', error)
   }
 }

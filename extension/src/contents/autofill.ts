@@ -252,14 +252,14 @@ export async function findAndClickSubmitButton(
       console.log('[Autofill] Submit button clicked successfully')
       return true
     } catch (clickError) {
-      console.error('[Autofill] Failed to click button:', clickError)
+      console.warn('[Autofill] Failed to click button:', clickError)
       await logAutoSubmitFailure(url, 'click_failed', {
         buttonText: button.textContent || undefined
       })
       return false
     }
   } catch (error) {
-    console.error('[Autofill] findAndClickSubmitButton error:', error)
+    console.warn('[Autofill] findAndClickSubmitButton error:', error)
     await logAutoSubmitFailure(url, 'no_buttons')
     return false
   }
