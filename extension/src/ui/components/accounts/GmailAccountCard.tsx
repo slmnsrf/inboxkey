@@ -51,6 +51,7 @@ export function GmailAccountCard({
   const [connectionError, setConnectionError] = useState<string | null>(null)
   const [showLimitModal, setShowLimitModal] = useState(false)
   const [confirmingDisconnect, setConfirmingDisconnect] = useState(false)
+  const [isReconnecting, setIsReconnecting] = useState(false)
 
   // Calculate account status
   const { status, label: statusLabel } = useMemo(
@@ -69,6 +70,7 @@ export function GmailAccountCard({
   const handleConnect = async () => {
     setConnectionState('loading')
     setConnectionError(null)
+    if (account) setIsReconnecting(true)
 
     try {
       // 1. Check config
@@ -99,6 +101,7 @@ export function GmailAccountCard({
         const removeResponse = await chrome.runtime.sendMessage({
           type: 'REMOVE_MAILBOX',
           mailboxId: account.id,
+          skipRevoke: true, // Reconnect: same token is about to be re-stored
         })
         if (!removeResponse.success) {
           setConnectionState('idle')
@@ -127,6 +130,7 @@ export function GmailAccountCard({
       setConnectionError(getConnectionErrorMessage(error))
     } finally {
       setConnectionStage(null)
+      setIsReconnecting(false)
     }
   }
 
@@ -239,8 +243,11 @@ export function GmailAccountCard({
                     onClick={handleConnect}
                     disabled={disabled || connectionState === 'loading'}
                     aria-label={t('aria_reconnect_gmail')}
+                    aria-busy={isReconnecting && connectionState === 'loading'}
                   >
-                    {t('accounts_reconnect')}
+                    {isReconnecting && connectionState === 'loading'
+                      ? t('accounts_reconnecting')
+                      : t('accounts_reconnect')}
                   </button>
                   <button
                     type="button"
