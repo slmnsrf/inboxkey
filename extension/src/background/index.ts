@@ -190,6 +190,21 @@ chrome.runtime.onStartup.addListener(async () => {
 // V2: SessionPoller handles alarms internally via its own listener
 // No need to register chrome.alarms.onAlarm listener here
 
+// Click-to-copy for code notifications
+let lastNotificationCode: Record<string, string> = {}
+chrome.notifications.onClicked.addListener((notifId) => {
+  const code = lastNotificationCode[notifId]
+  if (code) {
+    // Copy code to clipboard (service worker can use Clipboard API in recent Chrome)
+    try {
+      // @ts-ignore -- navigator.clipboard available in SW in Chrome 105+
+      navigator.clipboard.writeText(code).catch(() => {})
+    } catch { /* fallback: user can still open popup */ }
+    delete lastNotificationCode[notifId]
+  }
+  chrome.notifications.clear(notifId)
+})
+
 chrome.runtime.onConnect.addListener((port) => {
   if (port.name !== "watch-session") {
     return
@@ -232,6 +247,26 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   // Handle badge update messages from content scripts
   if (msg.type === "UPDATE_BADGE") {
     handleBadgeUpdate(msg)
+    return false
+  }
+
+  // Silent notification when code found but autofill failed
+  if (msg.type === "SHOW_CODE_NOTIFICATION") {
+    const notifId = `inboxkey-code-${Date.now()}`
+    lastNotificationCode[notifId] = msg.code
+    chrome.notifications.create(notifId, {
+      type: 'basic',
+      iconUrl: chrome.runtime.getURL('icon128.plasmo.png'),
+      title: 'Verification code found',
+      message: `${msg.code} -- click to copy.`,
+      silent: true,
+      priority: 1,
+    })
+    // Auto-dismiss after 7 seconds
+    setTimeout(() => {
+      chrome.notifications.clear(notifId)
+      delete lastNotificationCode[notifId]
+    }, 7000)
     return false
   }
 
