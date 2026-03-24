@@ -43,10 +43,10 @@ interface GoogleMessagesCardProps {
 const PAIRING_POLL_INTERVAL = 4000
 
 /** Validate international phone number: starts with +, at least 7 digits. */
+/** Validate phone number (without the + prefix which is fixed in the UI). At least 7 digits. */
 function isValidPhoneNumber(value: string): boolean {
-  const stripped = value.replace(/[\s\-\(\)]/g, '')
-  const digits = stripped.replace(/[^\d]/g, '')
-  return stripped.startsWith('+') && digits.length >= 7
+  const digits = value.replace(/[^\d]/g, '')
+  return digits.length >= 7
 }
 
 export function GoogleMessagesCard({ mailbox, onUpdate }: GoogleMessagesCardProps) {
@@ -68,7 +68,8 @@ export function GoogleMessagesCard({ mailbox, onUpdate }: GoogleMessagesCardProp
       const isExpired = mailbox.lastSyncError === 'session_expired'
       setCardState(isExpired ? 'session-expired' : 'connected')
       if (mailbox.gmPhoneNumber) {
-        setPhoneNumber(mailbox.gmPhoneNumber)
+        // Strip leading + for display (prefix is fixed in the UI)
+        setPhoneNumber(mailbox.gmPhoneNumber.replace(/^\+/, ''))
       }
     } else {
       setCardState('not-connected')
@@ -204,7 +205,7 @@ export function GoogleMessagesCard({ mailbox, onUpdate }: GoogleMessagesCardProp
     try {
       const response = await chrome.runtime.sendMessage({
         type: 'CONNECT_GOOGLE_MESSAGES',
-        phoneNumber: phoneNumber.replace(/[\s\-\(\)]/g, ''),
+        phoneNumber: `+${phoneNumber.replace(/[\s\-\(\)]/g, '')}`,
       })
 
       if (cancelledRef.current) return
@@ -466,19 +467,22 @@ export function GoogleMessagesCard({ mailbox, onUpdate }: GoogleMessagesCardProp
         <label className="phone-input-group__label" htmlFor="gm-phone-input">
           {t('accounts_gm_phone_label')}
         </label>
-        <input
-          ref={phoneInputRef}
-          type="tel"
-          id="gm-phone-input"
-          className={`form-input${phoneError ? ' form-input--invalid' : ''}`}
-          placeholder={t('accounts_gm_phone_placeholder')}
-          value={phoneNumber}
-          onChange={handlePhoneChange}
-          onKeyDown={handlePhoneKeyDown}
-          aria-required="true"
-          aria-describedby="gm-phone-hint gm-phone-error"
-          aria-invalid={phoneError}
-        />
+        <div className={`phone-input-with-prefix${phoneError ? ' phone-input-with-prefix--invalid' : ''}`}>
+          <span className="phone-input-prefix" aria-hidden="true">+</span>
+          <input
+            ref={phoneInputRef}
+            type="tel"
+            id="gm-phone-input"
+            className="phone-input-field"
+            placeholder="90 555 123 4455"
+            value={phoneNumber}
+            onChange={handlePhoneChange}
+            onKeyDown={handlePhoneKeyDown}
+            aria-required="true"
+            aria-describedby="gm-phone-hint gm-phone-error"
+            aria-invalid={phoneError}
+          />
+        </div>
         <p className="form-hint" id="gm-phone-hint">
           {t('accounts_gm_phone_hint')}
         </p>
