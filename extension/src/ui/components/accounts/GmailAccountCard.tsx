@@ -258,18 +258,20 @@ export function GmailAccountCard({
             }
             actions={
                 <>
-                  <button
-                    type="button"
-                    className={`btn btn--sm ${testState === 'success' ? 'btn--success-ghost' : testState === 'error' ? 'btn--danger-ghost' : 'btn--secondary'}`}
-                    onClick={handleTest}
-                    disabled={disabled || testState === 'loading' || connectionState === 'loading'}
-                    aria-busy={testState === 'loading'}
-                  >
-                    {testState === 'loading' ? t('accounts_testing')
-                      : testState === 'success' ? t('accounts_test_ok')
-                      : testState === 'error' ? t('accounts_test_failed')
-                      : t('accounts_test')}
-                  </button>
+                  {status === 'online' && (
+                    <button
+                      type="button"
+                      className={`btn btn--sm ${testState === 'success' ? 'btn--success-ghost' : testState === 'error' ? 'btn--danger-ghost' : 'btn--secondary'}`}
+                      onClick={handleTest}
+                      disabled={disabled || testState === 'loading' || connectionState === 'loading'}
+                      aria-busy={testState === 'loading'}
+                    >
+                      {testState === 'loading' ? t('accounts_testing')
+                        : testState === 'success' ? t('accounts_test_ok')
+                        : testState === 'error' ? t('accounts_test_failed')
+                        : t('accounts_test')}
+                    </button>
+                  )}
                   <button
                     type="button"
                     className="btn btn--danger-ghost btn--sm"
