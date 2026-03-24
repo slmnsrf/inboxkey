@@ -237,18 +237,20 @@ export function GmailAccountCard({
             }
             actions={
                 <>
-                  <button
-                    type="button"
-                    className="btn btn--secondary btn--sm"
-                    onClick={handleConnect}
-                    disabled={disabled || connectionState === 'loading'}
-                    aria-label={t('aria_reconnect_gmail')}
-                    aria-busy={isReconnecting && connectionState === 'loading'}
-                  >
-                    {isReconnecting && connectionState === 'loading'
-                      ? t('accounts_reconnecting')
-                      : t('accounts_reconnect')}
-                  </button>
+                  {status !== 'online' && (
+                    <button
+                      type="button"
+                      className="btn btn--secondary btn--sm"
+                      onClick={handleConnect}
+                      disabled={disabled || connectionState === 'loading'}
+                      aria-label={t('aria_reconnect_gmail')}
+                      aria-busy={isReconnecting && connectionState === 'loading'}
+                    >
+                      {isReconnecting && connectionState === 'loading'
+                        ? t('accounts_reconnecting')
+                        : t('accounts_reconnect')}
+                    </button>
+                  )}
                   <button
                     type="button"
                     className="btn btn--danger-ghost btn--sm"
