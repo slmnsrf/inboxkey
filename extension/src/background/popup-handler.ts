@@ -17,6 +17,9 @@ import { setBadgeCount, setBadgeSyncError, clearBadge } from '@/contents/badge-m
 import { BADGE_EXPIRY_MS } from '@/lib/popup/popup-config'
 import { sortByPriority } from '@/lib/popup/popup-priority'
 import { separateItems } from '@/lib/popup/popup-filters'
+import { GmailAPIClient } from '@/lib/providers/gmail/gmail-api'
+import { IMAPBridgeAdapter } from '@/lib/providers/imap-bridge/imap-bridge-adapter'
+import { getMessagesTabManager } from '@/lib/providers/google-messages/tab-manager'
 
 /**
  * Handles popup-related messages from the UI
@@ -330,16 +333,17 @@ export class PopupMessageHandler {
 
           try {
             if (mailbox.providerId === 'gmail') {
+              if (!mailbox.accessToken) {
+                return { success: false, error: 'No access token. Reconnect needed.' }
+              }
               // Gmail: lightweight profile check proves token validity
-              const { GmailAPIClient } = await import('@/lib/providers/gmail/gmail-api')
               const api = new GmailAPIClient()
-              await api.getUserProfile(mailbox.accessToken!)
+              await api.getUserProfile(mailbox.accessToken)
               return { success: true }
             }
 
             if (mailbox.providerId === 'imap-bridge') {
               // IMAP: fetch 1 message to prove connection
-              const { IMAPBridgeAdapter } = await import('@/lib/providers/imap-bridge/imap-bridge-adapter')
               const adapter = new IMAPBridgeAdapter(
                 mailbox.imapAccountId || '',
                 mailbox.email,
@@ -354,7 +358,6 @@ export class PopupMessageHandler {
 
             if (mailbox.providerId === 'google-messages') {
               // Google Messages: check pairing status via tab manager
-              const { getMessagesTabManager } = await import('@/lib/providers/google-messages/tab-manager')
               const tabManager = getMessagesTabManager()
               const tab = await tabManager.ensureTab()
               const status = await tabManager.checkPairingStatus(tab.tabId)
