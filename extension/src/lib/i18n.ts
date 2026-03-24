@@ -165,19 +165,17 @@ export function hasMessage(key: string): boolean {
 }
 
 /**
- * Format provider name (Gmail, Outlook, IMAP)
+ * Format provider name (Gmail, IMAP)
  *
  * @param providerId - Provider ID
  * @returns Formatted provider name
  *
  * @example
  * formatProvider('gmail') // "Gmail"
- * formatProvider('outlook') // "Outlook"
  */
 export function formatProvider(providerId: string): string {
   const providers: Record<string, string> = {
     gmail: 'Gmail',
-    outlook: 'Outlook',
     imap: 'IMAP',
     'google-messages': 'Google Messages',
   }

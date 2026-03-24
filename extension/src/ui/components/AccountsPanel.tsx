@@ -1,7 +1,7 @@
 /**
  * AccountsPanel Component (UI Rework)
  *
- * Presents Gmail/Outlook single-slot cards, Google Messages SMS card,
+ * Presents Gmail single-slot card, Google Messages SMS card,
  * IMAP placeholder section, and recent email activity aligned with
  * the inboxkey-accounts-single.v2.html design.
  */
@@ -10,9 +10,8 @@ import React, { useEffect, useMemo, useState } from 'react'
 import { useToast } from '../contexts/ToastContext'
 import { t, timeAgo } from '@/lib/i18n'
 import type { UnifiedPopupCache } from '@/shared/popup-messages'
-import type { ProviderKey, ImapAccountRow, OutlookAccountRow, RecentItem } from './accounts/types'
+import type { ImapAccountRow, RecentItem } from './accounts/types'
 import { GmailAccountCard } from './accounts/GmailAccountCard'
-import { OutlookAccountCard } from './accounts/OutlookAccountCard'
 import { ImapAccountCard } from './accounts/ImapAccountCard'
 import { GoogleMessagesCard } from './accounts/GoogleMessagesCard'
 import { RecentEmailsSection } from './accounts/RecentEmailsSection'
@@ -22,7 +21,7 @@ import './accounts/AccountsPanel.css'
 
 interface MailboxInfo {
   id: string
-  providerId: 'gmail' | 'outlook' | 'imap-bridge' | 'google-messages'
+  providerId: 'gmail' | 'imap-bridge' | 'google-messages'
   email: string
   addedAt: number
   lastSyncedAt: number
@@ -192,20 +191,6 @@ export function AccountsPanel() {
     }
   }, [mailboxes])
 
-  const outlookAccounts: OutlookAccountRow[] = useMemo(() => {
-    return mailboxes
-      .filter((mb) => mb.providerId === 'outlook')
-      .map((mb) => ({
-        id: mb.id,
-        email: mb.email,
-        lastSyncedLabel: mb.lastSyncedAt ? timeAgo(mb.lastSyncedAt) : undefined,
-        lastSyncedAt: mb.lastSyncedAt,
-        tokenExpiresAt: mb.tokenExpiresAt,
-        isSyncing: false,
-        lastSyncError: mb.lastSyncError,
-      }))
-  }, [mailboxes])
-
   const googleMessagesMailbox = useMemo(() => {
     const mailbox = mailboxes.find((mb) => mb.providerId === 'google-messages')
     if (!mailbox) return undefined
@@ -249,16 +234,6 @@ export function AccountsPanel() {
           await loadRecentItems()
         }}
         disabled={isConnecting}
-      />
-
-      <OutlookAccountCard
-        accounts={outlookAccounts}
-        onAccountChanged={async () => {
-          await loadMailboxes()
-          await loadRecentItems()
-        }}
-        disabled={isConnecting}
-        maxAccounts={10}
       />
 
       <ImapAccountCard
@@ -326,8 +301,8 @@ function transformRecentItems(cache: UnifiedPopupCache): RecentItem[] {
   return [...codes, ...links].sort((a, b) => b.receivedAt - a.receivedAt)
 }
 
-function mapProvider(providerId?: string): 'gmail' | 'outlook' | 'imap' | undefined {
-  if (providerId === 'gmail' || providerId === 'outlook') return providerId
+function mapProvider(providerId?: string): 'gmail' | 'imap' | undefined {
+  if (providerId === 'gmail') return providerId
   if (providerId === 'imap-bridge') return 'imap'
   return undefined
 }

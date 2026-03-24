@@ -691,15 +691,6 @@ body,
   background: var(--color-gmail-hover);
 }
 
-.btn-outlook {
-  background: var(--color-outlook);
-  color: white;
-}
-
-.btn-outlook:hover {
-  background: var(--color-outlook-hover);
-}
-
 /* ===========================
    FORM CONTROLS
    =========================== */
@@ -883,10 +874,6 @@ textarea.input {
 
 .badge-gmail {
   background: var(--color-gmail);
-}
-
-.badge-outlook {
-  background: var(--color-outlook);
 }
 
 .badge-active {

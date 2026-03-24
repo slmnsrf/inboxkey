@@ -132,7 +132,6 @@ global.chrome = {
         trust_indicator_local_storage: "Local storage only",
         trust_indicator_local: "All processing happens locally",
         provider_gmail_connect: "Connect Gmail",
-        provider_outlook_connect: "Connect Outlook",
         accounts_panel_heading: "Connected Accounts",
         accounts_panel_summary: "Manage your email accounts",
         accounts_status_not_connected: "Not connected",

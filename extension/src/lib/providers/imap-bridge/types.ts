@@ -2,7 +2,7 @@
  * IMAP Provider Interface
  *
  * IMAP providers use Native Messaging to communicate with InboxBridge native app.
- * Unlike OAuth providers (Gmail, Outlook), IMAP credentials are stored in OS keychain
+ * Unlike the Gmail OAuth provider, IMAP credentials are stored in OS keychain
  * by the native app, not in extension storage.
  */
 

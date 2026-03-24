@@ -123,7 +123,7 @@ describe('per-adapter result tracking', () => {
       listRecent: vi.fn().mockResolvedValue([]),
     }
     const badAdapter: ProviderAdapter = {
-      id: 'outlook',
+      id: 'imap-bridge',
       mailboxId: 'mbx-bad',
       listRecent: vi.fn().mockRejectedValue(new Error('Network error')),
     }

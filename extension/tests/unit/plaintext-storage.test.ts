@@ -228,19 +228,6 @@ describe("PlaintextStorage", () => {
       expect(retrieved).toHaveLength(1)
     })
 
-    it("should require refresh token for non-Gmail providers", async () => {
-      const outlookMailbox = createTestMailbox({
-        providerId: "outlook",
-        refreshToken: "",
-      })
-      await expect(storage.addMailbox(outlookMailbox)).rejects.toThrow(
-        ValidationError
-      )
-      await expect(storage.addMailbox(outlookMailbox)).rejects.toThrow(
-        "Refresh token cannot be empty"
-      )
-    })
-
     it("should validate timestamps", async () => {
       const invalidMailbox = createTestMailbox({ tokenExpiresAt: -1 })
       await expect(storage.addMailbox(invalidMailbox)).rejects.toThrow(
@@ -501,15 +488,6 @@ describe("PlaintextStorage", () => {
         id: crypto.randomUUID(),
       })
       await expect(storage.addMailbox(gmailMailbox)).resolves.not.toThrow()
-
-      // Outlook: OAuth with refresh token required
-      const outlookMailbox = createTestMailbox({
-        providerId: "outlook",
-        email: "outlook@example.com",
-        id: crypto.randomUUID(),
-        refreshToken: "outlook-refresh-token",
-      })
-      await expect(storage.addMailbox(outlookMailbox)).resolves.not.toThrow()
 
       // IMAP Bridge: requires IMAP-specific fields, no OAuth fields
       const imapMailbox: Mailbox = {

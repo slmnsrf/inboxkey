@@ -27,7 +27,6 @@ import {
   clearBadge,
 } from "@/contents/badge-manager"
 import { addBlacklistedDomain, removeBlacklistedDomain } from "@/lib/utils/blacklist"
-import { registerTokenRefreshAlarm, refreshExpiringTokens } from "./token-refresh"
 import { getMessagesTabManager } from "@/lib/providers/google-messages/tab-manager"
 
 interface StartSessionMessage {
@@ -68,6 +67,30 @@ const popupMessageHandler = new PopupMessageHandler(
   popupCacheManager,
   errorStateManager
 )
+
+// One-time migration: remove legacy Outlook OAuth mailboxes (Outlook now uses IMAP only).
+// Reads raw storage to bypass schema validation (outlook is no longer a valid ProviderId).
+// MUST complete before serving any storage-backed requests (GET_MAILBOXES, TRIGGER_SYNC, etc.)
+// to prevent race where validated getMailboxes() rejects stale 'outlook' rows.
+const outlookMigrationDone = (async () => {
+  try {
+    const raw = await chrome.storage.local.get('mailboxes_plain')
+    const all: Array<{ id: string; providerId: string; email?: string }> =
+      raw['mailboxes_plain'] || []
+    const outlookIds = all.filter(m => m.providerId === 'outlook')
+    if (outlookIds.length === 0) return
+
+    const kept = all.filter(m => m.providerId !== 'outlook')
+    await chrome.storage.local.set({ mailboxes_plain: kept })
+
+    for (const mb of outlookIds) {
+      await errorStateManager.removeMailboxErrors(mb.id)
+      console.log(`[Background] Removed legacy Outlook OAuth mailbox: ${mb.email ?? mb.id}`)
+    }
+  } catch (e) {
+    console.warn('[Background] Outlook migration cleanup failed:', e)
+  }
+})()
 
 const sessionController = new SessionController(
   {
@@ -117,9 +140,6 @@ sessionController
     console.error("[InboxKey] Failed to initialize:", error)
   })
 
-// Register background token refresh alarm (Outlook tokens expire after ~1 hour)
-registerTokenRefreshAlarm()
-
 // Recover Google Messages tab state after service worker restarts
 getMessagesTabManager().recoverFromRestart().catch((error) => {
   console.warn("[InboxKey] Failed to recover Google Messages tab state:", error)
@@ -147,9 +167,6 @@ chrome.runtime.onInstalled.addListener(async (details) => {
     })
   }
 
-  // Refresh Outlook tokens on extension install/update
-  await refreshExpiringTokens()
-
   // Clean up legacy migration-related storage keys on any install/update
   // (Harmless if keys don't exist)
   await chrome.storage.local.remove([
@@ -168,8 +185,6 @@ chrome.runtime.onStartup.addListener(async () => {
   console.log("[InboxKey] SW onStartup fired at:", new Date().toISOString())
   startupTimestamp = Date.now()
 
-  // Refresh any Outlook tokens that may have expired while the browser was closed
-  await refreshExpiringTokens()
 })
 
 // V2: SessionPoller handles alarms internally via its own listener
@@ -230,8 +245,8 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     msg.type === "GET_SYNC_ERROR" ||
     msg.type === "GET_MAILBOXES"
   ) {
-    popupMessageHandler
-      .handleMessage(msg)
+    outlookMigrationDone
+      .then(() => popupMessageHandler.handleMessage(msg))
       .then(sendResponse)
       .catch((error) => {
         sendResponse({
@@ -624,7 +639,7 @@ function handleStoreMailbox(msg: any, sendResponse: (response: any) => void) {
       // Create mailbox record
       const mailbox: Mailbox = {
         id: crypto.randomUUID(),
-        providerId: msg.provider, // 'gmail' | 'outlook'
+        providerId: msg.provider, // 'gmail'
         email: msg.email,
         accessToken: msg.tokens.accessToken,
         refreshToken: msg.tokens.refreshToken,

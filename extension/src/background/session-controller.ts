@@ -14,7 +14,7 @@
  * - Passes sessionStart and expectedShape to findBestMatchingCode() for v2 algorithm
  * - Reduced LOC from 477 to ~400 by delegating polling to SessionPoller
  * - Changed to fixed 12-poll schedule: [0, 5, 10, 15, 20, 30, 40, 50, 60, 70, 80, 90]s
- * - First 20s: 5s intervals (fast providers like Gmail/Outlook)
+ * - First 20s: 5s intervals (fast providers like Gmail)
  * - After 20s: 10s intervals (slow providers like IMAP)
  * - Extended max timeout from 75s to 90s
  */
