@@ -142,16 +142,18 @@ export function GmailAccountCard({
       })
       if (response.success) {
         setTestState('success')
-        setTimeout(() => setTestState('idle'), 2000)
+        setTimeout(() => setTestState('idle'), 3000)
       } else {
         setTestState('error')
-        setConnectionError(response.error || 'Connection test failed')
-        setTimeout(() => setTestState('idle'), 4000)
+        setConnectionError(response.error || 'Connection test failed.')
+        // Don't auto-reset to idle -- keep the error visible until dismissed
+        // Refresh the account data so status updates (connected -> warning)
+        await onAccountChanged()
       }
     } catch (error) {
       setTestState('error')
-      setConnectionError('Test failed unexpectedly')
-      setTimeout(() => setTestState('idle'), 4000)
+      setConnectionError('Connection test failed unexpectedly.')
+      await onAccountChanged()
     }
   }
 
@@ -211,8 +213,8 @@ export function GmailAccountCard({
       maxAccounts={1}
       isConnected={!!account}
       feedbackMessage={connectionError || undefined}
-      feedbackType="error"
-      feedbackAutoDismiss={connectionError !== t('toast_oauth_cancelled')}
+      feedbackType={testState === 'error' ? 'warning' : 'error'}
+      feedbackAutoDismiss={testState !== 'error' && connectionError !== t('toast_oauth_cancelled')}
     >
       {account ? (
         <>
@@ -258,20 +260,18 @@ export function GmailAccountCard({
             }
             actions={
                 <>
-                  {status === 'online' && (
-                    <button
-                      type="button"
-                      className={`btn btn--sm ${testState === 'success' ? 'btn--success-ghost' : testState === 'error' ? 'btn--danger-ghost' : 'btn--secondary'}`}
-                      onClick={handleTest}
-                      disabled={disabled || testState === 'loading' || connectionState === 'loading'}
-                      aria-busy={testState === 'loading'}
-                    >
-                      {testState === 'loading' ? t('accounts_testing')
-                        : testState === 'success' ? t('accounts_test_ok')
-                        : testState === 'error' ? t('accounts_test_failed')
-                        : t('accounts_test')}
-                    </button>
-                  )}
+                  <button
+                    type="button"
+                    className={`btn btn--sm ${testState === 'success' ? 'btn--success-ghost' : testState === 'error' ? 'btn--danger-ghost' : 'btn--secondary'}`}
+                    onClick={testState === 'error' ? () => { setTestState('idle'); setConnectionError(null) } : handleTest}
+                    disabled={disabled || testState === 'loading' || connectionState === 'loading'}
+                    aria-busy={testState === 'loading'}
+                  >
+                    {testState === 'loading' ? t('accounts_testing')
+                      : testState === 'success' ? t('accounts_test_success')
+                      : testState === 'error' ? t('accounts_test_failed')
+                      : t('accounts_test')}
+                  </button>
                   <button
                     type="button"
                     className="btn btn--danger-ghost btn--sm"
