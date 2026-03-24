@@ -629,7 +629,7 @@ export function GoogleMessagesCard({ mailbox, onUpdate }: GoogleMessagesCardProp
             type="button"
             className={`btn btn--sm ${testState === 'success' ? 'btn--success-ghost' : testState === 'error' ? 'btn--danger-ghost' : 'btn--secondary'}`}
             onClick={handleTest}
-            disabled={testState === 'loading'}
+            disabled={testState !== 'idle'}
             aria-busy={testState === 'loading'}
           >
             {testState === 'loading' ? t('accounts_testing')
