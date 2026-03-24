@@ -1510,6 +1510,22 @@
     "message": "Reconnected",
     "description": "Success message after account reconnection"
   },
+  "accounts_test": {
+    "message": "Test",
+    "description": "Test connection button label"
+  },
+  "accounts_testing": {
+    "message": "Testing...",
+    "description": "Test connection in progress"
+  },
+  "accounts_test_ok": {
+    "message": "OK",
+    "description": "Test connection succeeded"
+  },
+  "accounts_test_failed": {
+    "message": "Failed",
+    "description": "Test connection failed"
+  },
   "accounts_remove_button": {
     "message": "Remove",
     "description": "Button text to remove an account"
