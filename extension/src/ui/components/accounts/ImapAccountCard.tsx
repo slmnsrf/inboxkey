@@ -242,7 +242,7 @@ export function ImapAccountCard({
                       type="button"
                       className={`btn btn--sm ${testResult[account.id] === 'success' ? 'btn--success-ghost' : testResult[account.id] === 'error' ? 'btn--danger-ghost' : 'btn--secondary'}`}
                       onClick={() => handleTest(account.id)}
-                      disabled={disabled || testingId === account.id}
+                      disabled={disabled || testingId === account.id || testResult[account.id] != null}
                       aria-busy={testingId === account.id}
                     >
                       {testingId === account.id ? t('accounts_testing')
