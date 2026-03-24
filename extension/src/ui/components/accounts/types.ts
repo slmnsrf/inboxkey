@@ -1,4 +1,4 @@
-export type ProviderKey = 'gmail' | 'outlook' | 'google-messages'
+export type ProviderKey = 'gmail' | 'google-messages'
 
 export type ProviderStatus = 'connected' | 'disconnected' | 'connecting' | 'locked'
 
@@ -27,22 +27,12 @@ export interface ImapAccountRow {
   lastSyncError?: string
 }
 
-export interface OutlookAccountRow {
-  id: string
-  email: string
-  lastSyncedLabel?: string
-  lastSyncedAt?: number
-  tokenExpiresAt?: number
-  isSyncing?: boolean
-  lastSyncError?: string
-}
-
 export type RecentItemKind = 'code' | 'link'
 
 export interface RecentItem {
   id: string
   kind: RecentItemKind
-  provider?: 'gmail' | 'outlook' | 'imap'
+  provider?: 'gmail' | 'imap'
   from?: string
   subject?: string
   receivedAt: number

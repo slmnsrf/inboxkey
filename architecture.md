@@ -48,7 +48,6 @@ InboxKey is a Manifest V3 Chrome/Chromium extension that keeps verification-code
 │   │   │   ├── providers/       # Email provider adapters
 │   │   │   │   ├── provider-interface.ts
 │   │   │   │   ├── gmail/           # Gmail API + PKCE OAuth
-│   │   │   │   ├── outlook/         # Microsoft Graph + PKCE OAuth
 │   │   │   │   └── imap-bridge/     # IMAP Bridge (native messaging)
 │   │   │   ├── services/        # Application services
 │   │   │   │   ├── email-polling-service.ts
@@ -133,7 +132,7 @@ InboxKey is a Manifest V3 Chrome/Chromium extension that keeps verification-code
 ### Domain Layer
 - **Extraction Core (`@inboxkey/extraction-core`):** Pure TypeScript package with OTP/magic-link detection logic and matching utilities (shape-matcher, domain-affinity, recency-scorer). Shared between main extension and Reviewer. Contains the v2.3 extraction algorithm migrated from production (2025-10-21).
 - Detection (`lib/detection`) scores candidate fields on the page. Matching (`lib/matching`) contains extension-specific code like code-matcher.ts used by session-controller and popup-cache.
-- Provider adapters (`lib/providers/gmail`, `lib/providers/outlook`, `lib/providers/imap-bridge`) normalize mail APIs into a single polling contract. InboxBridge (IMAP) is implemented and protocol-tested as of 2025-10-20.
+- Provider adapters (`lib/providers/gmail`, `lib/providers/imap-bridge`) normalize mail APIs into a single polling contract. InboxBridge (IMAP) is implemented and protocol-tested as of 2025-10-20.
 - The watch-session controller coordinates timing windows, cache hydration, confidence scoring, and manual fallback data.
 
 ### Infrastructure Layer
@@ -244,13 +243,12 @@ Integrated within Tier 1 (<0.05ms), distinguishes email-based codes (InboxKey ca
 
 - **Local-only data path.** No remote services; OAuth tokens and parsed content never leave the device.
 - **Storage.** Tokens stored in chrome.storage.local (plaintext). Verification codes are ephemeral (chrome.storage.session only, cleared on browser close). Encryption at rest (AES-256-GCM) is planned for a future release.
-- **Permissions.** Minimal manifest scopes: Gmail `gmail.readonly`, Outlook `Mail.Read`, `User.Read`, `offline_access`, identity, storage, and activeTab; all disclosed in Settings/About alongside license/source/support links.
+- **Permissions.** Minimal manifest scopes: Gmail `gmail.readonly`, identity, storage, and activeTab; all disclosed in Settings/About alongside license/source/support links.
 - **Safety blocks.** The extension never auto-launches password reset links, warns on risky actions, and preserves focus-visible keyboard navigation throughout.
 
 ## Provider Integrations
 
 - **Gmail.** Chrome Identity API with managed OAuth (PKCE, no client secret), message queries `newer_than:10m`. Tokens cached by Chrome; worker retries via exponential backoff on quota issues.
-- **Outlook (Microsoft Graph).** `launchWebAuthFlow` PKCE exchange, scopes `Mail.Read`, `User.Read`, `offline_access`; polling throttled to 10k req/10 min limits.
 - **InboxBridge (IMAP).** ✅ **Implemented and hardened (2026-03-14).** Native Rust app communicates over Chrome Native Messaging using JSON-RPC v1 protocol. Provides IMAP support for Yahoo Mail, ProtonMail Bridge, custom mail servers, and other IMAP providers. Account state persisted to disk-backed JSON (`accounts.json`) with `fs2` cross-process file locking and self-repairing corruption recovery. IMAP client supports both TLS (port 993) and plaintext connections via `ImapSession` enum; plaintext restricted to loopback addresses only (security guard for local bridges like ProtonMail Bridge). Credentials stored in OS keychain keyed by `(accountId, host:port)` to prevent collisions. `--cleanup` CLI flag deletes all keychain entries for uninstall scripts. Extension uses a single consolidated native messaging client (`lib/native-messaging/`). See `/inboxbridge/PROTOCOL.md` for specification.
 
 - **Google Messages (SMS).** ✅ **Implemented (2026-03-23).** DOM scraping of Google Messages for Web (`messages.google.com`) for SMS verification codes. No API -- opens the web UI in a browser tab and reads conversation list previews via `chrome.scripting.executeScript()`. Reactive tab lifecycle: opens on demand when an SMS field is detected, polls up to 5 times, closes if extension-owned. Selectors target stable `data-e2e-*` attributes and `mws-*` custom elements. SMS-only sessions capped at 20s. Channel-aware detection: signal classifier identifies SMS fields via 21-language keyword patterns; detection conditional on Google Messages account being connected. Settings UI communicates with tab manager via `chrome.runtime` message passing (MV3 context boundary). One account per browser profile. Phone number stored locally for display and field classification.
@@ -286,10 +284,10 @@ A companion dev tool extension for improving extraction accuracy through manual 
 **Architecture:**
 - Separate MV3 extension with unique extension ID (no conflicts with main extension)
 - Shares `@inboxkey/extraction-core` for consistent extraction logic
-- Uses same OAuth setup (Gmail/Outlook) but requires separate client credentials
+- Uses same OAuth setup (Gmail) but requires separate client credentials
 
 **Workflow:**
-1. Connect Gmail/Outlook accounts (read-only OAuth)
+1. Connect Gmail accounts (read-only OAuth)
 2. Fetch email batches (100-500 messages) with filters (date, sender, keywords)
 3. Pre-tag using `@inboxkey/extraction-core`
 4. Manual review UI (list → preview → label as TRUE/FALSE/MISSED)

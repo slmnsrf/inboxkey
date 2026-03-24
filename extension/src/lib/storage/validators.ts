@@ -41,16 +41,16 @@ export function validateMailboxBeforeWrite(mailbox: Mailbox): void {
       throw new ValidationError('IMAP mailboxes require imapAccountId, imapServer, and imapPort');
     }
   } else {
-    // OAuth providers (gmail, outlook)
+    // Gmail OAuth provider
 
-    // OAuth mailboxes must NOT have IMAP fields
+    // Gmail mailboxes must NOT have IMAP fields
     if (mailbox.imapServer || mailbox.imapPort || mailbox.imapAccountId) {
-      throw new ValidationError('OAuth mailboxes cannot have IMAP fields');
+      throw new ValidationError('Gmail mailboxes cannot have IMAP fields');
     }
 
-    // OAuth mailboxes MUST have tokens
+    // Gmail mailboxes MUST have tokens
     if (!mailbox.accessToken || !mailbox.tokenExpiresAt) {
-      throw new ValidationError('OAuth mailboxes require accessToken and tokenExpiresAt');
+      throw new ValidationError('Gmail mailboxes require accessToken and tokenExpiresAt');
     }
   }
 }

@@ -102,8 +102,6 @@
 
   --color-gmail: #ea4335;  /* Gmail red - Contrast: 4.5:1 on white (WCAG AA compliant) */
   --color-gmail-hover: #d53a2d;
-  --color-outlook: #0078d4;  /* Outlook blue - Contrast: 4.6:1 on white (WCAG AA compliant) */
-  --color-outlook-hover: #0069bb;
   --color-imap: var(--color-gray-600);  /* Future IMAP neutral */
 
   /* ========================================
