@@ -1662,7 +1662,7 @@
     "description": "Placeholder for phone number input"
   },
   "accounts_gm_phone_hint": {
-    "message": "Must start with + and contain at least 7 digits. Stored locally on this device only.",
+    "message": "Enter at least 7 digits with country code. Stored locally on this device only.",
     "description": "Hint text below phone number input"
   },
   "accounts_gm_phone_error": {
