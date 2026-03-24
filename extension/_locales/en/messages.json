@@ -1511,7 +1511,7 @@
     "description": "Success message after account reconnection"
   },
   "accounts_test": {
-    "message": "Test",
+    "message": "Test Connection",
     "description": "Test connection button label"
   },
   "accounts_testing": {
