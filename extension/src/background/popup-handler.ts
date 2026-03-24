@@ -401,7 +401,8 @@ export class PopupMessageHandler {
                 } catch { /* tab not ready */ }
                 await new Promise(r => setTimeout(r, 1000))
               }
-              // Don't close the tab after test -- non-destructive check
+              // Close tab if extension opened it (user-owned tabs stay open)
+              await tabManager.closeIfOwned()
               if (pairingStatus === 'paired') {
                 await recordResult(true)
                 return { success: true }
