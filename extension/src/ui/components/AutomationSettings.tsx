@@ -59,7 +59,7 @@ export function AutomationSettings() {
           setLevel(result.settings.automationLevel)
         }
       } catch (error) {
-        console.error('[AutomationSettings] Failed to load settings:', error)
+        console.warn('[AutomationSettings] Failed to load settings:', error)
       } finally {
         setIsLoading(false)
       }
@@ -88,7 +88,7 @@ export function AutomationSettings() {
         showToast(t('toast_settings_failed'), 'error')
       }
     } catch (error) {
-      console.error('[AutomationSettings] Failed to save settings:', error)
+      console.warn('[AutomationSettings] Failed to save settings:', error)
       showToast(t('toast_settings_failed'), 'error')
     }
   }

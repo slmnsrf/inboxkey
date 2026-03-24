@@ -51,7 +51,7 @@ export function AdvancedSettings() {
       setAutomationLevel(settings.automationLevel || 'autofill')
       setDisableOnBankingSites(settings.disableOnBankingSites ?? false)
     } catch (error) {
-      console.error('[AdvancedSettings] Failed to load settings:', error)
+      console.warn('[AdvancedSettings] Failed to load settings:', error)
       showToast(t('toast_settings_failed'), 'error')
     } finally {
       setLoading(false)
@@ -76,7 +76,7 @@ export function AdvancedSettings() {
 
       showToast(t('toast_settings_saved'), 'success')
     } catch (error) {
-      console.error('[AdvancedSettings] Failed to save extended button detection:', error)
+      console.warn('[AdvancedSettings] Failed to save extended button detection:', error)
       // Revert on error
       setExtendedButtonDetection(!extendedButtonDetection)
 
@@ -108,7 +108,7 @@ export function AdvancedSettings() {
 
       showToast(t('toast_settings_saved'), 'success')
     } catch (error) {
-      console.error('[AdvancedSettings] Failed to save banking blocklist setting:', error)
+      console.warn('[AdvancedSettings] Failed to save banking blocklist setting:', error)
       setDisableOnBankingSites(!disableOnBankingSites) // Revert on error
 
       // Announce error to screen readers

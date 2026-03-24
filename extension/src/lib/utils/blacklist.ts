@@ -89,7 +89,7 @@ export async function isBlacklisted(url: string): Promise<boolean> {
 
     return false
   } catch (error) {
-    console.error('[Blacklist] Failed to check if URL is blacklisted:', url, error)
+    console.warn('[Blacklist] Failed to check if URL is blacklisted:', url, error)
     return false // Default to not blacklisted on error
   }
 }
@@ -154,7 +154,7 @@ export async function addBlacklistedDomain(domain: string): Promise<BlacklistRes
 
     return { success: true }
   } catch (error) {
-    console.error('[Blacklist] Failed to add domain:', domain, error)
+    console.warn('[Blacklist] Failed to add domain:', domain, error)
     return {
       success: false,
       error: 'STORAGE_ERROR',
@@ -230,7 +230,7 @@ export async function addBlacklistedUrl(url: string): Promise<BlacklistResult> {
 
     return { success: true }
   } catch (error) {
-    console.error('[Blacklist] Failed to add URL:', url, error)
+    console.warn('[Blacklist] Failed to add URL:', url, error)
     return {
       success: false,
       error: 'STORAGE_ERROR',
@@ -264,7 +264,7 @@ export async function removeBlacklistedDomain(domain: string): Promise<Blacklist
 
     return { success: true }
   } catch (error) {
-    console.error('[Blacklist] Failed to remove domain:', domain, error)
+    console.warn('[Blacklist] Failed to remove domain:', domain, error)
     return {
       success: false,
       error: 'STORAGE_ERROR',
@@ -305,7 +305,7 @@ export async function removeBlacklistedUrl(url: string): Promise<BlacklistResult
 
     return { success: true }
   } catch (error) {
-    console.error('[Blacklist] Failed to remove URL:', url, error)
+    console.warn('[Blacklist] Failed to remove URL:', url, error)
     return {
       success: false,
       error: 'STORAGE_ERROR',
@@ -333,7 +333,7 @@ export async function clearBlacklistedDomains(): Promise<BlacklistResult> {
 
     return { success: true }
   } catch (error) {
-    console.error('[Blacklist] Failed to clear domains:', error)
+    console.warn('[Blacklist] Failed to clear domains:', error)
     return {
       success: false,
       error: 'STORAGE_ERROR',
@@ -361,7 +361,7 @@ export async function clearBlacklistedUrls(): Promise<BlacklistResult> {
 
     return { success: true }
   } catch (error) {
-    console.error('[Blacklist] Failed to clear URLs:', error)
+    console.warn('[Blacklist] Failed to clear URLs:', error)
     return {
       success: false,
       error: 'STORAGE_ERROR',
@@ -381,7 +381,7 @@ export async function getBlacklistedDomains(): Promise<string[]> {
     const settings: Settings = result[STORAGE_KEYS.SETTINGS]
     return settings?.blacklistedDomains || []
   } catch (error) {
-    console.error('[Blacklist] Failed to get domains:', error)
+    console.warn('[Blacklist] Failed to get domains:', error)
     return []
   }
 }
@@ -397,7 +397,7 @@ export async function getBlacklistedUrls(): Promise<string[]> {
     const settings: Settings = result[STORAGE_KEYS.SETTINGS]
     return settings?.blacklistedUrls || []
   } catch (error) {
-    console.error('[Blacklist] Failed to get URLs:', error)
+    console.warn('[Blacklist] Failed to get URLs:', error)
     return []
   }
 }

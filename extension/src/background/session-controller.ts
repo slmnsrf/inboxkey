@@ -334,7 +334,7 @@ export class SessionController {
       this.callbacks.onSessionUpdated?.(session)
       // V2: SessionPoller handles next poll scheduling automatically
     } catch (error) {
-      console.error("[SessionController] Poll execution failed:", error)
+      console.warn("[SessionController] Poll execution failed:", error)
 
       session.pollsCompleted.push(pollIndex)
       session.pollsCompleted.sort((a, b) => a - b)
@@ -576,7 +576,7 @@ export class SessionController {
         timestamp: best.timestamp,
       }
     } catch (error) {
-      console.error("[SessionController] Poll failed:", error)
+      console.warn("[SessionController] Poll failed:", error)
       return null
     }
   }

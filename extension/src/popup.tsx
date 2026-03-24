@@ -50,7 +50,7 @@ function PopupContent() {
       // Visual feedback via code text color flash - no toast needed
     } catch (err) {
       showToast(t('toast_error_copy'), 'error', 5000)
-      console.error('[Popup] Copy failed:', err)
+      console.warn('[Popup] Copy failed:', err)
     }
   }
 
@@ -65,7 +65,7 @@ function PopupContent() {
       } else {
         showToast(t('toast_error_link'), 'error', 5000)
       }
-      console.error('[Popup] Open link failed:', err)
+      console.warn('[Popup] Open link failed:', err)
     }
   }
 
@@ -87,7 +87,7 @@ function PopupContent() {
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : 'Sync failed'
       showToast(errorMsg, 'error', 5000)
-      console.error('[Popup] Sync failed:', err)
+      console.warn('[Popup] Sync failed:', err)
     } finally {
       setIsManualSyncing(false)
     }

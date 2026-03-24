@@ -278,7 +278,7 @@ export class PopupMessageHandler {
               data: cache,
             }
           } catch (error) {
-            console.error('[PopupHandler] Manual sync failed:', error)
+            console.warn('[PopupHandler] Manual sync failed:', error)
 
             // Track sync failures for error badge
             await this.errorManager.recordFailure(error as Error)
@@ -313,7 +313,7 @@ export class PopupMessageHandler {
             clearBadge()
             return { success: true }
           } catch (error) {
-            console.error('[PopupHandler] MARK_CODES_SEEN failed:', error)
+            console.warn('[PopupHandler] MARK_CODES_SEEN failed:', error)
             return {
               success: false,
               error: error instanceof Error ? error.message : String(error),
@@ -456,7 +456,7 @@ export class PopupMessageHandler {
               })),
             }
           } catch (error) {
-            console.error('[PopupHandler] GET_MAILBOXES failed:', error)
+            console.warn('[PopupHandler] GET_MAILBOXES failed:', error)
             return {
               success: false,
               error: error instanceof Error ? error.message : String(error),
@@ -470,7 +470,7 @@ export class PopupMessageHandler {
         }
       }
     } catch (error) {
-      console.error('[PopupHandler] Error:', error)
+      console.warn('[PopupHandler] Error:', error)
       return {
         success: false,
         error: error instanceof Error ? error.message : String(error),

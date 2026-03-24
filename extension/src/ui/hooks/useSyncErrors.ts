@@ -145,7 +145,7 @@ export function useSyncErrors(options?: { onRetrySuccess?: () => void }) {
                 setSyncError(null)
                 options?.onRetrySuccess?.()
               } catch (err) {
-                console.error('[useSyncErrors] Retry sync failed:', err)
+                console.warn('[useSyncErrors] Retry sync failed:', err)
                 setSyncError(prev => prev ? {
                   ...prev,
                   actionLabel: 'Retry Sync',
@@ -182,7 +182,7 @@ export function useSyncErrors(options?: { onRetrySuccess?: () => void }) {
           }
         }
       } catch (error) {
-        console.error('[useSyncErrors] Failed to fetch sync error:', error)
+        console.warn('[useSyncErrors] Failed to fetch sync error:', error)
         setSyncError(null)
       }
     }

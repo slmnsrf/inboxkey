@@ -229,7 +229,7 @@ export function AddImapAccountModal({
         } else {
           // Generic fallback with dev-friendly console log
           if (process.env.NODE_ENV === 'development') {
-            console.error('[AddImapAccountModal] Connection error:', error)
+            console.warn('[AddImapAccountModal] Connection error:', error)
           }
           setTestError(error.message || t('accounts_imap_error_generic'))
         }

@@ -41,7 +41,7 @@ export function SessionChipSettings() {
       setSessionTimeoutSeconds(timeout)
       setDisplayTimeout(timeout)
     } catch (error) {
-      console.error('[SessionChipSettings] Failed to load settings:', error)
+      console.warn('[SessionChipSettings] Failed to load settings:', error)
       showToast(t('error_generic'), 'error')
     } finally {
       setLoading(false)
@@ -66,7 +66,7 @@ export function SessionChipSettings() {
 
       showToast(t('toast_settings_saved'), 'success')
     } catch (error) {
-      console.error('[SessionChipSettings] Failed to save setting:', error)
+      console.warn('[SessionChipSettings] Failed to save setting:', error)
       // Revert on error
       setShowSessionChips(!showSessionChips)
 
@@ -94,7 +94,7 @@ export function SessionChipSettings() {
 
       showToast(t('toast_settings_saved'), 'success')
     } catch (error) {
-      console.error('[SessionChipSettings] Failed to save timeout:', error)
+      console.warn('[SessionChipSettings] Failed to save timeout:', error)
       // Revert on error
       await loadSettings()
 
