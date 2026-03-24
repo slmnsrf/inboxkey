@@ -664,10 +664,27 @@ function handleRemoveMailbox(msg: any, sendResponse: (response: any) => void) {
       // Use StorageFactory to get appropriate storage
       const storage = await StorageFactory.create()
 
-      // Check if this is an IMAP mailbox before removing from storage
+      // Read mailbox before removal for provider-specific cleanup
       const allMailboxes = await storage.getMailboxes()
       const mailbox = allMailboxes.find(m => m.id === msg.mailboxId)
       const isImap = mailbox?.providerId === 'imap-bridge'
+
+      // Revoke Gmail token + clear Chrome cache before removal (best-effort)
+      if (mailbox?.providerId === 'gmail' && mailbox.accessToken) {
+        try {
+          const { GmailAuth } = await import('@/lib/providers/gmail/gmail-auth')
+          const auth = new GmailAuth()
+          await auth.revokeTokens(mailbox.accessToken)
+        } catch (e) {
+          console.warn('[Background] Gmail token revocation failed (best-effort):', e)
+          // revokeTokens throws if Google endpoint fails, skipping Chrome cache clear.
+          // Fallback: clear Chrome cache directly so account picker shows on next Connect.
+          try {
+            const { clearGmailToken } = await import('@/lib/providers/gmail/chrome-auth')
+            await clearGmailToken(mailbox.accessToken)
+          } catch { /* best effort */ }
+        }
+      }
 
       await storage.removeMailbox(msg.mailboxId)
 
