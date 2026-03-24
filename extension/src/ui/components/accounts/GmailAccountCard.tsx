@@ -101,6 +101,7 @@ export function GmailAccountCard({
         const removeResponse = await chrome.runtime.sendMessage({
           type: 'REMOVE_MAILBOX',
           mailboxId: account.id,
+          skipRevoke: true, // Reconnect: same token is about to be re-stored
         })
         if (!removeResponse.success) {
           setConnectionState('idle')
