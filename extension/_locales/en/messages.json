@@ -1515,15 +1515,15 @@
     "description": "Test connection button label"
   },
   "accounts_testing": {
-    "message": "Testing...",
+    "message": "Testing connection...",
     "description": "Test connection in progress"
   },
-  "accounts_test_ok": {
-    "message": "OK",
+  "accounts_test_success": {
+    "message": "Connection successful",
     "description": "Test connection succeeded"
   },
   "accounts_test_failed": {
-    "message": "Failed",
+    "message": "Connection failed",
     "description": "Test connection failed"
   },
   "accounts_remove_button": {

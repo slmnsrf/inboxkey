@@ -331,19 +331,34 @@ export class PopupMessageHandler {
             return { success: false, error: 'Account not found' }
           }
 
+          // Helper: record test result on mailbox so UI status updates
+          const recordResult = async (ok: boolean, errorMsg?: string) => {
+            if (ok) {
+              await storage.updateMailbox(mailboxId, {
+                lastSyncedAt: Date.now(),
+                lastSyncError: undefined,
+              })
+            } else if (errorMsg) {
+              await storage.updateMailbox(mailboxId, {
+                lastSyncError: errorMsg,
+              })
+            }
+          }
+
           try {
             if (mailbox.providerId === 'gmail') {
               if (!mailbox.accessToken) {
-                return { success: false, error: 'No access token. Reconnect needed.' }
+                const err = 'No access token. Please reconnect your Gmail account.'
+                await recordResult(false, err)
+                return { success: false, error: err }
               }
-              // Gmail: lightweight profile check proves token validity
               const api = new GmailAPIClient()
               await api.getUserProfile(mailbox.accessToken)
+              await recordResult(true)
               return { success: true }
             }
 
             if (mailbox.providerId === 'imap-bridge') {
-              // IMAP: fetch 1 message to prove connection
               const adapter = new IMAPBridgeAdapter(
                 mailbox.imapAccountId || '',
                 mailbox.email,
@@ -353,35 +368,39 @@ export class PopupMessageHandler {
                 sinceEpochMs: Date.now() - 10 * 60 * 1000,
                 max: 1,
               })
+              await recordResult(true)
               return { success: true }
             }
 
             if (mailbox.providerId === 'google-messages') {
-              // Google Messages: check pairing status via tab manager
               const tabManager = getMessagesTabManager()
               const tab = await tabManager.ensureTab()
-              const status = await tabManager.checkPairingStatus(tab.tabId)
+              const pairingStatus = await tabManager.checkPairingStatus(tab.tabId)
               await tabManager.closeIfOwned()
-              if (status === 'paired') {
+              if (pairingStatus === 'paired') {
+                await recordResult(true)
                 return { success: true }
               }
-              return { success: false, error: 'Google Messages session has expired. Please re-pair your device.' }
+              const err = 'Google Messages session has expired. Please re-pair your device.'
+              await recordResult(false, 'session_expired')
+              return { success: false, error: err }
             }
 
             return { success: false, error: 'Unknown provider' }
           } catch (error) {
-            const msg = error instanceof Error ? error.message : String(error)
-            // Classify common errors
-            if (msg.includes('401') || msg.includes('auth') || msg.includes('token')) {
-              return { success: false, error: 'Access expired. Reconnect needed.' }
+            const raw = error instanceof Error ? error.message : String(error)
+            let userMsg: string
+            if (raw.includes('401') || raw.includes('auth') || raw.includes('token') || raw.includes('unauthorized')) {
+              userMsg = 'Access expired. Please reconnect your account.'
+            } else if (raw.includes('network') || raw.includes('fetch') || raw.includes('TIMEOUT') || raw.includes('Failed to fetch')) {
+              userMsg = 'Network error. Please check your internet connection.'
+            } else if (raw.includes('PORT_DISCONNECTED') || raw.includes('native') || raw.includes('Native host has exited')) {
+              userMsg = 'InboxBridge is not running. Please start it and try again.'
+            } else {
+              userMsg = raw
             }
-            if (msg.includes('network') || msg.includes('fetch') || msg.includes('TIMEOUT')) {
-              return { success: false, error: 'Connection failed. Check your network.' }
-            }
-            if (msg.includes('PORT_DISCONNECTED') || msg.includes('native')) {
-              return { success: false, error: 'InboxBridge is not running.' }
-            }
-            return { success: false, error: msg }
+            await recordResult(false, userMsg).catch(() => {})
+            return { success: false, error: userMsg }
           }
         }
 
