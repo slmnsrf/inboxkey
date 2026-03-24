@@ -1526,6 +1526,20 @@
     "message": "Connection failed",
     "description": "Test connection failed"
   },
+  "time_just_now_short": {
+    "message": "now",
+    "description": "Short label for 'just now' time (under 60 seconds ago)"
+  },
+  "aria_received_time": {
+    "message": "Received $TIME$",
+    "description": "Screen reader label for when an item was received",
+    "placeholders": {
+      "TIME": {
+        "content": "$1",
+        "example": "2 minutes ago"
+      }
+    }
+  },
   "accounts_remove_button": {
     "message": "Remove",
     "description": "Button text to remove an account"
