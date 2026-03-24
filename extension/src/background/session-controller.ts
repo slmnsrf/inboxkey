@@ -69,7 +69,7 @@ interface SessionState {
   detectedChannels: Array<'email' | 'sms'>
   /**
    * Effective session timeout in seconds, after channel-specific capping.
-   * SMS-only sessions are capped at 20s. Sent back to content script for chip timer.
+   * Sent back to content script for chip timer. Default 45s for all session types.
    * @since SMS support
    */
   effectiveTimeout: number
@@ -163,11 +163,9 @@ export class SessionController {
     const id = crypto.randomUUID()
     const now = Date.now()
 
-    // Compute effective timeout: SMS-only sessions capped at 20s
+    // Compute effective timeout (same for all session types)
     const channels = detectedChannels ?? ['email']
-    const effectiveTimeout = channels.length === 1 && channels[0] === 'sms'
-      ? Math.min(timeoutSeconds ?? 30, 20)
-      : (timeoutSeconds ?? 20)
+    const effectiveTimeout = timeoutSeconds ?? 45
 
     // Use fixed poll schedule, filtered by effective timeout
     // This allows users to control session duration while maintaining optimized poll density
