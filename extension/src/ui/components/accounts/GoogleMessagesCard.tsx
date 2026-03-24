@@ -633,7 +633,7 @@ export function GoogleMessagesCard({ mailbox, onUpdate }: GoogleMessagesCardProp
             aria-busy={testState === 'loading'}
           >
             {testState === 'loading' ? t('accounts_testing')
-              : testState === 'success' ? t('accounts_test_ok')
+              : testState === 'success' ? t('accounts_test_success')
               : testState === 'error' ? t('accounts_test_failed')
               : t('accounts_test')}
           </button>

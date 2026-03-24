@@ -246,7 +246,7 @@ export function ImapAccountCard({
                       aria-busy={testingId === account.id}
                     >
                       {testingId === account.id ? t('accounts_testing')
-                        : testResult[account.id] === 'success' ? t('accounts_test_ok')
+                        : testResult[account.id] === 'success' ? t('accounts_test_success')
                         : testResult[account.id] === 'error' ? t('accounts_test_failed')
                         : t('accounts_test')}
                     </button>
