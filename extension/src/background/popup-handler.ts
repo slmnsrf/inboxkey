@@ -375,8 +375,33 @@ export class PopupMessageHandler {
             if (mailbox.providerId === 'google-messages') {
               const tabManager = getMessagesTabManager()
               const tab = await tabManager.ensureTab()
-              const pairingStatus = await tabManager.checkPairingStatus(tab.tabId)
-              await tabManager.closeIfOwned()
+
+              // Wait for page to be ready before checking pairing
+              // Poll until we get a definitive answer (not just empty DOM)
+              let pairingStatus: 'paired' | 'unpaired' = 'unpaired'
+              const maxWait = 15000
+              const start = Date.now()
+              while (Date.now() - start < maxWait) {
+                try {
+                  // Check if the conversations list OR QR code is present
+                  const results = await chrome.scripting.executeScript({
+                    target: { tabId: tab.tabId },
+                    func: () => {
+                      if (document.querySelector('mws-conversations-list')) return 'paired'
+                      if (document.querySelector('mw-qr-code')) return 'unpaired'
+                      if (document.querySelector('[data-e2e-welcome-page-container]')) return 'unpaired'
+                      return 'loading' // Neither element yet -- still loading
+                    },
+                  })
+                  const result = results?.[0]?.result as string
+                  if (result === 'paired' || result === 'unpaired') {
+                    pairingStatus = result
+                    break
+                  }
+                } catch { /* tab not ready */ }
+                await new Promise(r => setTimeout(r, 1000))
+              }
+              // Don't close the tab after test -- non-destructive check
               if (pairingStatus === 'paired') {
                 await recordResult(true)
                 return { success: true }
