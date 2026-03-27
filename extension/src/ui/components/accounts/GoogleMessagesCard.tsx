@@ -266,6 +266,8 @@ export function GoogleMessagesCard({ mailbox, onUpdate }: GoogleMessagesCardProp
         mailboxId: mailbox.id,
       })
       if (response.success) {
+        setCardState('connected')
+        onUpdate?.()
         setTestState('success')
         setTimeout(() => setTestState('idle'), 2000)
       } else {
