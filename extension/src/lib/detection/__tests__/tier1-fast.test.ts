@@ -467,7 +467,7 @@ describe('Tier 1 Fast Detection', () => {
       expect(result.reason).toContain('sign in')
     })
 
-    it('should reject field with "log in" nearby text', () => {
+    it('should allow field with "log in" in nearby text (ambient login negatives excluded in Tier 1)', () => {
       const input = createInput({ autocomplete: 'one-time-code', id: 'code' })
       const container = document.createElement('div')
       const nearbyText = document.createElement('p')
@@ -479,8 +479,9 @@ describe('Tier 1 Fast Detection', () => {
 
       const result = detectTier1(input, cooldown)
 
-      expect(result.detected).toBe(false)
-      expect(result.reason).toContain('Context validation failed')
+      // Tier 1 excludes ambient login negatives from nearbyText;
+      // "log in" in nearby text (e.g. site nav) should not veto strong OTP signals
+      expect(result.detected).toBe(true)
     })
   })
 

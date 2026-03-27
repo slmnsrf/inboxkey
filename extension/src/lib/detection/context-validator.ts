@@ -425,41 +425,34 @@ function matchesAllowList(text: string): boolean {
 }
 
 /**
- * Search for negative keywords in normalized text
- * Returns matched keywords and detected language
+ * Search for negative keywords of a specific category in normalized text.
+ * Centralizes the 21-language normalization, script-hint handling, and
+ * language detection logic so callers can vary the text scope per category
+ * without duplicating the multilingual matching pipeline.
+ *
+ * @param normalizedText - Pre-normalized (lowercase, no diacritics) text to search
+ * @param originalText - Original text (for CJK/Cyrillic/Arabic/Hindi matching)
+ * @param category - Which keyword category to search ('password' or 'login')
  */
-function findNegativeKeywords(
+function findNegativeKeywordsByCategory(
   normalizedText: string,
-  originalText: string
+  originalText: string,
+  category: 'password' | 'login'
 ): { matched: string[]; language: string | null } {
   const matched = new Set<string>()
   let detectedLanguage: string | null = null
 
-  // Detect language hint from character sets
   const langHint = detectLanguageHint(originalText)
 
   // Priority order for Latin-based languages (most common first)
-  // Note: CJK (zh, ja, ko), Cyrillic (ru, uk), Arabic (ar), and Devanagari (hi) are checked separately via character hints
   const langPriority = [
-    'en', // 60.4%
-    'es', // 4.5%
-    'pt', // 3.9%
-    'de', // 2.7%
-    'fr', // 2.6%
-    'tr', // 2.1%
-    'it', // 1.7%
-    'nl', // 1.4%
-    'pl', // 1.3%
-    'sv', // 1.1%
-    'fi', // 0.9%
-    'da', // 0.8%
-    'no', // 0.7%
-    'cs', // 0.6%
+    'en', 'es', 'pt', 'de', 'fr', 'tr', 'it', 'nl', 'pl', 'sv', 'fi', 'da', 'no', 'cs',
   ]
 
-  // Search password keywords
+  const keywordMap = NEGATIVE_KEYWORDS[category]
+
   for (const lang of langPriority) {
-    const keywords = NEGATIVE_KEYWORDS.password[lang as keyof typeof NEGATIVE_KEYWORDS.password]
+    const keywords = keywordMap[lang as keyof typeof keywordMap]
     if (!keywords) continue
 
     for (const keyword of keywords) {
@@ -473,40 +466,12 @@ function findNegativeKeywords(
     }
   }
 
-  // Search login keywords
-  for (const lang of langPriority) {
-    const keywords = NEGATIVE_KEYWORDS.login[lang as keyof typeof NEGATIVE_KEYWORDS.login]
-    if (!keywords) continue
-
-    for (const keyword of keywords) {
-      const normalizedKeyword = normalizeText(keyword)
-      if (normalizedText.includes(normalizedKeyword)) {
-        matched.add(keyword)
-        if (!detectedLanguage) {
-          detectedLanguage = lang
-        }
-      }
-    }
-  }
-
-  // Check CJK languages if hint detected
+  // CJK languages (character-hint gated)
   if (langHint === 'cjk') {
     const cjkLangs = ['ja', 'ko', 'zh'] as const
     for (const lang of cjkLangs) {
-      // Check password keywords
-      const pwdKeywords = NEGATIVE_KEYWORDS.password[lang]
-      for (const keyword of pwdKeywords) {
-        if (originalText.includes(keyword)) {
-          matched.add(keyword)
-          if (!detectedLanguage) {
-            detectedLanguage = lang
-          }
-        }
-      }
-
-      // Check login keywords
-      const loginKeywords = NEGATIVE_KEYWORDS.login[lang]
-      for (const keyword of loginKeywords) {
+      const keywords = keywordMap[lang]
+      for (const keyword of keywords) {
         if (originalText.includes(keyword)) {
           matched.add(keyword)
           if (!detectedLanguage) {
@@ -517,15 +482,10 @@ function findNegativeKeywords(
     }
   }
 
-  // Check language-specific scripts (case-insensitive)
+  // Arabic (character-hint gated)
   const lowerOriginal = originalText.toLowerCase()
-
   if (langHint === 'ar') {
-    const keywords = [
-      ...NEGATIVE_KEYWORDS.password.ar,
-      ...NEGATIVE_KEYWORDS.login.ar,
-    ]
-    for (const keyword of keywords) {
+    for (const keyword of keywordMap.ar) {
       if (lowerOriginal.includes(keyword.toLowerCase())) {
         matched.add(keyword)
         detectedLanguage = 'ar'
@@ -533,36 +493,21 @@ function findNegativeKeywords(
     }
   }
 
+  // Cyrillic: Russian + Ukrainian (character-hint gated)
   if (langHint === 'ru') {
-    // Create Ukrainian keyword set for language detection
-    const ukKeywords = new Set<string>([...NEGATIVE_KEYWORDS.password.uk, ...NEGATIVE_KEYWORDS.login.uk])
-    
-    // Combine Russian and Ukrainian keywords
-    const keywords = [
-      ...NEGATIVE_KEYWORDS.password.ru,
-      ...NEGATIVE_KEYWORDS.login.ru,
-      ...NEGATIVE_KEYWORDS.password.uk,
-      ...NEGATIVE_KEYWORDS.login.uk,
-    ]
+    const ukKeywords = new Set<string>(NEGATIVE_KEYWORDS[category].uk)
+    const keywords = [...keywordMap.ru, ...keywordMap.uk]
     for (const keyword of keywords) {
       if (lowerOriginal.includes(keyword.toLowerCase())) {
         matched.add(keyword)
-        // Detect language more precisely
-        if (ukKeywords.has(keyword)) {
-          detectedLanguage = 'uk'
-        } else {
-          detectedLanguage = 'ru'
-        }
+        detectedLanguage = ukKeywords.has(keyword) ? 'uk' : 'ru'
       }
     }
   }
 
+  // Hindi (character-hint gated)
   if (langHint === 'hi') {
-    const keywords = [
-      ...NEGATIVE_KEYWORDS.password.hi,
-      ...NEGATIVE_KEYWORDS.login.hi,
-    ]
-    for (const keyword of keywords) {
+    for (const keyword of keywordMap.hi) {
       if (lowerOriginal.includes(keyword.toLowerCase())) {
         matched.add(keyword)
         detectedLanguage = 'hi'
@@ -574,6 +519,33 @@ function findNegativeKeywords(
     matched: Array.from(matched),
     language: detectedLanguage,
   }
+}
+
+/**
+ * Search for all negative keywords (both password and login categories).
+ * Combines results from both categories with consistent language detection.
+ *
+ * @param normalizedText - Pre-normalized text for Latin matching
+ * @param originalText - Original text for script-specific matching
+ * @param loginNormalizedText - Optional separate normalized text for login keywords
+ * @param loginOriginalText - Optional separate original text for login keywords
+ */
+function findNegativeKeywords(
+  normalizedText: string,
+  originalText: string,
+  loginNormalizedText?: string,
+  loginOriginalText?: string,
+): { matched: string[]; language: string | null } {
+  const pwd = findNegativeKeywordsByCategory(normalizedText, originalText, 'password')
+  const login = findNegativeKeywordsByCategory(
+    loginNormalizedText ?? normalizedText,
+    loginOriginalText ?? originalText,
+    'login'
+  )
+
+  const matched = [...pwd.matched, ...login.matched]
+  const language = pwd.language || login.language
+  return { matched, language }
 }
 
 /**
@@ -590,9 +562,18 @@ function findNegativeKeywords(
  * Performance: <0.20ms for 500-char text (no increase from setup patterns)
  *
  * @param textSources - Label, placeholder, nearby text, aria-label, pageTitle
+ * @param options.ambientLoginNegatives - Controls whether login-category negatives
+ *   (e.g. "sign in", "log in") are checked against ambient text (nearbyText, pageTitle).
+ *   'include' (default): check login negatives against all text sources.
+ *   'exclude': check login negatives only against direct field context
+ *   (label, placeholder, ariaLabel, ariaDescribedby), ignoring nearbyText/pageTitle.
+ *   Password-category negatives always check all text sources regardless of this option.
  * @returns Validation result with pass/fail, matched keywords, language, confidence
  */
-export function validateContext(textSources: TextSources): ContextValidationResult {
+export function validateContext(
+  textSources: TextSources,
+  options?: { ambientLoginNegatives?: 'include' | 'exclude' }
+): ContextValidationResult {
   // Combine all text sources (including pageTitle and ariaDescribedby)
   const combinedText = [
     textSources.label,
@@ -666,8 +647,28 @@ export function validateContext(textSources: TextSources): ContextValidationResu
   // Normalize text for matching
   const normalizedText = normalizeText(combinedText)
 
+  // Build login-specific text scope when ambient login negatives are excluded.
+  // Direct field context = label + placeholder + ariaLabel + ariaDescribedby
+  // (excludes nearbyText and pageTitle which contain ambient navigation like "Sign in")
+  const excludeAmbient = options?.ambientLoginNegatives === 'exclude'
+  let loginNormalized: string | undefined
+  let loginOriginal: string | undefined
+  if (excludeAmbient) {
+    const fieldOnlyText = [
+      textSources.label,
+      textSources.placeholder,
+      textSources.ariaLabel || '',
+      textSources.ariaDescribedby || '',
+    ].filter(Boolean).join(' ')
+    loginNormalized = normalizeText(fieldOnlyText)
+    loginOriginal = fieldOnlyText
+  }
+
   // Search for negative keywords
-  const { matched, language } = findNegativeKeywords(normalizedText, combinedText)
+  const { matched, language } = findNegativeKeywords(
+    normalizedText, combinedText,
+    loginNormalized, loginOriginal
+  )
 
   // Return result
   if (matched.length > 0) {
