@@ -18,6 +18,7 @@ import { BADGE_EXPIRY_MS } from '@/lib/popup/popup-config'
 import { sortByPriority } from '@/lib/popup/popup-priority'
 import { separateItems } from '@/lib/popup/popup-filters'
 import { GmailAPIClient } from '@/lib/providers/gmail/gmail-api'
+import { GmailAuth } from '@/lib/providers/gmail/gmail-auth'
 import { IMAPBridgeAdapter } from '@/lib/providers/imap-bridge/imap-bridge-adapter'
 import { getMessagesTabManager } from '@/lib/providers/google-messages/tab-manager'
 
@@ -352,9 +353,18 @@ export class PopupMessageHandler {
                 await recordResult(false, err)
                 return { success: false, error: err }
               }
+              // Refresh token before testing (Chrome manages token lifecycle via
+              // chrome.identity; refreshTokens removes cached token and gets fresh one)
+              const auth = new GmailAuth()
+              const freshTokens = await auth.refreshTokens(mailbox.accessToken)
+              await storage.updateMailbox(mailboxId, {
+                accessToken: freshTokens.accessToken,
+                tokenExpiresAt: Date.now() + freshTokens.expiresIn * 1000,
+              })
               const api = new GmailAPIClient()
-              await api.getUserProfile(mailbox.accessToken)
+              await api.getUserProfile(freshTokens.accessToken)
               await recordResult(true)
+              this.errorManager.recordSuccess(mailboxId)
               return { success: true }
             }
 
@@ -369,6 +379,7 @@ export class PopupMessageHandler {
                 max: 1,
               })
               await recordResult(true)
+              this.errorManager.recordSuccess(mailboxId)
               return { success: true }
             }
 
@@ -405,6 +416,7 @@ export class PopupMessageHandler {
               await tabManager.closeIfOwned()
               if (pairingStatus === 'paired') {
                 await recordResult(true)
+                this.errorManager.recordSuccess(mailboxId)
                 return { success: true }
               }
               const err = 'Google Messages session has expired. Please re-pair your device.'
