@@ -935,12 +935,12 @@
     "description": "Appearance settings hint"
   },
   "settings_session_chips_heading": {
-    "message": "On-Page Indicator",
-    "description": "Session chip settings heading"
+    "message": "Code Check",
+    "description": "Code check settings heading"
   },
   "settings_session_chips_description": {
-    "message": "A small floating badge appears on pages while emails are being checked for codes.",
-    "description": "Session chip settings description"
+    "message": "Controls how long the extension looks for incoming verification codes.",
+    "description": "Code check settings description"
   },
   "settings_session_chips_toggle_label": {
     "message": "Show indicator",
@@ -963,7 +963,7 @@
     "description": "Session timeout slider description"
   },
   "settings_session_timeout_hint": {
-    "message": "20-30 seconds is enough for most email providers. Increase this if codes tend to arrive slowly.",
+    "message": "60 seconds works well for most providers. Increase if codes tend to arrive slowly.",
     "description": "Session timeout hint"
   },
   "data_management_heading": {
@@ -1529,6 +1529,16 @@
   "time_just_now_short": {
     "message": "now",
     "description": "Short label for 'just now' time (under 60 seconds ago)"
+  },
+  "time_minutes_short": {
+    "message": "$COUNT$m ago",
+    "description": "Short label for minutes ago (e.g. '3m ago')",
+    "placeholders": {
+      "COUNT": {
+        "content": "$1",
+        "example": "3"
+      }
+    }
   },
   "aria_received_time": {
     "message": "Received $TIME$",
