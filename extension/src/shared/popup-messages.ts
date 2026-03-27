@@ -174,6 +174,7 @@ export type PopupRequest =
   | { type: 'MARK_LINK_OPENED'; url: string }
   | { type: 'GET_MAILBOXES' }
   | { type: 'GET_SYNC_ERROR' }
+  | { type: 'TEST_MAILBOX_CONNECTION'; mailboxId: string }
 
 /**
  * Sync error info

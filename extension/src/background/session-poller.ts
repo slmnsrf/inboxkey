@@ -198,7 +198,7 @@ export class SessionPoller {
 
     const sessionId = this.extractSessionId(alarm.name);
     if (!sessionId) {
-      console.error(`[SessionPoller] Invalid alarm name: ${alarm.name}`);
+      console.warn(`[SessionPoller] Invalid alarm name: ${alarm.name}`);
       return;
     }
 
@@ -238,7 +238,7 @@ export class SessionPoller {
     try {
       await this.onPoll(sessionId);
     } catch (error) {
-      console.error(`[SessionPoller] Error polling session ${sessionId}:`, error);
+      console.warn(`[SessionPoller] Error polling session ${sessionId}:`, error);
     }
   }
 

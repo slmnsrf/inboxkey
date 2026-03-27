@@ -221,6 +221,9 @@ function validateFieldContext(
   }
 
   // Layer 6: Context Validation - reject password/setup keywords
+  // Tier 1 excludes ambient login negatives (e.g. "Sign in" from site nav) because
+  // strong attribute matches (autocomplete, name/id, inputmode) provide sufficient
+  // positive signal. Login negatives are still checked against direct field context.
   const contextResult = validateContext({
     label: labelText,
     placeholder: input.placeholder || '',
@@ -228,7 +231,7 @@ function validateFieldContext(
     ariaLabel: input.getAttribute('aria-label') || '',
     ariaDescribedby: textSources.ariaDescribedby,
     pageTitle: document.title || '',
-  })
+  }, { ambientLoginNegatives: 'exclude' })
 
   if (!contextResult.pass) {
     cooldown.markRejected(input)
@@ -333,10 +336,14 @@ export function detectTier1(
     'i'
   )
 
+  // Descriptive attributes whose text content is already validated by
+  // Layer 6 (context validator) with proper OTP allow-lists.
+  // Layer 2 only checks programmatic attributes (name, id, data-*, custom).
+  const DESCRIPTIVE_ATTRS = new Set(['autocomplete', 'aria-label', 'placeholder'])
+
   const allAttributes = Array.from(input.attributes)
   for (const attr of allAttributes) {
-    // Skip autocomplete attribute (already handled by Layer 3)
-    if (attr.name === 'autocomplete') {
+    if (DESCRIPTIVE_ATTRS.has(attr.name)) {
       continue
     }
 

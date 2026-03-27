@@ -190,6 +190,21 @@ chrome.runtime.onStartup.addListener(async () => {
 // V2: SessionPoller handles alarms internally via its own listener
 // No need to register chrome.alarms.onAlarm listener here
 
+// Click-to-copy for code notifications
+let lastNotificationCode: Record<string, string> = {}
+chrome.notifications.onClicked.addListener((notifId) => {
+  const code = lastNotificationCode[notifId]
+  if (code) {
+    // Copy code to clipboard (service worker can use Clipboard API in recent Chrome)
+    try {
+      // @ts-ignore -- navigator.clipboard available in SW in Chrome 105+
+      navigator.clipboard.writeText(code).catch(() => {})
+    } catch { /* fallback: user can still open popup */ }
+    delete lastNotificationCode[notifId]
+  }
+  chrome.notifications.clear(notifId)
+})
+
 chrome.runtime.onConnect.addListener((port) => {
   if (port.name !== "watch-session") {
     return
@@ -235,6 +250,26 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     return false
   }
 
+  // Silent notification when code found but autofill failed
+  if (msg.type === "SHOW_CODE_NOTIFICATION") {
+    const notifId = `inboxkey-code-${Date.now()}`
+    lastNotificationCode[notifId] = msg.code
+    chrome.notifications.create(notifId, {
+      type: 'basic',
+      iconUrl: chrome.runtime.getURL('icon128.plasmo.png'),
+      title: 'Verification code found',
+      message: `${msg.code} -- click to copy.`,
+      silent: true,
+      priority: 1,
+    })
+    // Auto-dismiss after 7 seconds
+    setTimeout(() => {
+      chrome.notifications.clear(notifId)
+      delete lastNotificationCode[notifId]
+    }, 7000)
+    return false
+  }
+
   // Handle popup messages
   if (
     msg.type === "GET_POPUP_DATA" ||
@@ -243,7 +278,8 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     msg.type === "MARK_CODES_SEEN" ||
     msg.type === "MARK_LINK_OPENED" ||
     msg.type === "GET_SYNC_ERROR" ||
-    msg.type === "GET_MAILBOXES"
+    msg.type === "GET_MAILBOXES" ||
+    msg.type === "TEST_MAILBOX_CONNECTION"
   ) {
     outlookMigrationDone
       .then(() => popupMessageHandler.handleMessage(msg))
@@ -427,7 +463,7 @@ function attachPort(context: WatchPortContext, port: chrome.runtime.Port): void 
 
   port.onMessage.addListener((message: WatchPortMessage) => {
     handleWatchPortMessage(context, port, message).catch((error) => {
-      console.error("[InboxKey] Failed handling watch-port message:", error)
+      console.warn("[InboxKey] Failed handling watch-port message:", error)
     })
   })
 }
@@ -659,7 +695,7 @@ function handleStoreMailbox(msg: any, sendResponse: (response: any) => void) {
         mailbox: { id: mailbox.id, email: mailbox.email },
       })
     } catch (error) {
-      console.error("[Background] Failed to store mailbox:", error)
+      console.warn("[Background] Failed to store mailbox:", error)
       sendResponse({
         success: false,
         error: error instanceof Error ? error.message : String(error),
@@ -725,7 +761,7 @@ function handleRemoveMailbox(msg: any, sendResponse: (response: any) => void) {
 
       sendResponse({ success: true })
     } catch (error) {
-      console.error("[Background] Failed to remove mailbox:", error)
+      console.warn("[Background] Failed to remove mailbox:", error)
       sendResponse({
         success: false,
         error: error instanceof Error ? error.message : String(error),
@@ -769,7 +805,7 @@ function handleStoreImapMailbox(msg: any, sendResponse: (response: any) => void)
         mailbox: { id: mailbox.id, email: mailbox.email },
       })
     } catch (error) {
-      console.error("[Background] Failed to store IMAP mailbox:", error)
+      console.warn("[Background] Failed to store IMAP mailbox:", error)
       sendResponse({
         success: false,
         error: error instanceof Error ? error.message : String(error),
@@ -797,7 +833,7 @@ function handleClearAllCodes(sendResponse: (response: any) => void) {
 
       sendResponse({ success: true })
     } catch (error) {
-      console.error("[Background] Failed to clear all codes:", error)
+      console.warn("[Background] Failed to clear all codes:", error)
       sendResponse({
         success: false,
         error: error instanceof Error ? error.message : String(error),
@@ -825,7 +861,7 @@ function handleClearCache(sendResponse: (response: any) => void) {
       console.log("[Background] Popup cache cleared and refreshed")
       sendResponse({ success: true })
     } catch (error) {
-      console.error("[Background] Failed to clear cache:", error)
+      console.warn("[Background] Failed to clear cache:", error)
       sendResponse({
         success: false,
         error: error instanceof Error ? error.message : String(error),
@@ -847,7 +883,7 @@ function handleGetAutomationLevel(sendResponse: (response: any) => void) {
 
       sendResponse({ success: true, level: automationLevel })
     } catch (error) {
-      console.error("[Background] Failed to get automation level:", error)
+      console.warn("[Background] Failed to get automation level:", error)
       sendResponse({
         success: false,
         error: error instanceof Error ? error.message : String(error),
@@ -878,7 +914,7 @@ function handleSetAutomationLevel(msg: any, sendResponse: (response: any) => voi
       console.log(`[Background] Automation level updated to: ${msg.level}`)
       sendResponse({ success: true })
     } catch (error) {
-      console.error("[Background] Failed to set automation level:", error)
+      console.warn("[Background] Failed to set automation level:", error)
       sendResponse({
         success: false,
         error: error instanceof Error ? error.message : String(error),
@@ -922,7 +958,7 @@ function handleSetDomainPreference(msg: any, sendResponse: (response: any) => vo
       console.log(`[Background] Domain preference updated: ${msg.domain} -> ${msg.enabled}`)
       sendResponse({ success: true })
     } catch (error) {
-      console.error("[Background] Failed to set domain preference:", error)
+      console.warn("[Background] Failed to set domain preference:", error)
       sendResponse({
         success: false,
         error: error instanceof Error ? error.message : String(error),
@@ -947,7 +983,7 @@ function handleResetSettings(sendResponse: (response: any) => void) {
       console.log("[Background] Settings reset to defaults")
       sendResponse({ success: true })
     } catch (error) {
-      console.error("[Background] Failed to reset settings:", error)
+      console.warn("[Background] Failed to reset settings:", error)
       sendResponse({
         success: false,
         error: error instanceof Error ? error.message : String(error),
@@ -1043,7 +1079,7 @@ function handleConnectGoogleMessages(
         sendResponse({ status: 'pairing' })
       }
     } catch (error) {
-      console.error("[Background] Failed to connect Google Messages:", error)
+      console.warn("[Background] Failed to connect Google Messages:", error)
       sendResponse({
         status: 'error',
         error: error instanceof Error ? error.message : String(error),
@@ -1112,7 +1148,7 @@ function handleCheckGmPairingStatus(sendResponse: (response: any) => void) {
         sendResponse({ status: 'unpaired' })
       }
     } catch (error) {
-      console.error("[Background] Failed to check GM pairing status:", error)
+      console.warn("[Background] Failed to check GM pairing status:", error)
       sendResponse({
         status: 'error',
         error: error instanceof Error ? error.message : String(error),
@@ -1135,7 +1171,7 @@ function handleCancelGmSetup(sendResponse: (response: any) => void) {
       await tabManager.closeIfOwned()
       sendResponse({ ok: true })
     } catch (error) {
-      console.error("[Background] Failed to cancel GM setup:", error)
+      console.warn("[Background] Failed to cancel GM setup:", error)
       sendResponse({
         ok: false,
         error: error instanceof Error ? error.message : String(error),
@@ -1168,7 +1204,7 @@ function handleDisconnectGoogleMessages(
 
       sendResponse({ ok: true })
     } catch (error) {
-      console.error("[Background] Failed to disconnect Google Messages:", error)
+      console.warn("[Background] Failed to disconnect Google Messages:", error)
       sendResponse({
         ok: false,
         error: error instanceof Error ? error.message : String(error),

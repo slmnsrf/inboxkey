@@ -119,8 +119,8 @@ export class WatchSession {
       this.port = chrome.runtime.connect({ name: "watch-session" })
     } catch (error) {
       // Extension context invalidated (extension reloaded while content script still running)
-      console.error("[WatchSession] Failed to connect to background:", error)
-      console.error("[WatchSession] Extension context invalidated. Please refresh the page.")
+      console.warn("[WatchSession] Failed to connect to background:", error)
+      console.warn("[WatchSession] Extension context invalidated. Please refresh the page.")
 
       // Show user notification
       showNotification({
@@ -156,7 +156,7 @@ export class WatchSession {
         detectedChannels: actionableChannels.length > 0 ? actionableChannels : ['email'],
       })
     } catch (error) {
-      console.error("[WatchSession] Failed to send START_SESSION:", error)
+      console.warn("[WatchSession] Failed to send START_SESSION:", error)
       this.cleanup()
       return
     }
@@ -278,7 +278,7 @@ export class WatchSession {
               this.cleanup()
             })
             .catch((error) => {
-              console.error("[WatchSession] Autofill error:", error)
+              console.warn("[WatchSession] Autofill error:", error)
               this.cleanup()
             })
         } else {
@@ -343,7 +343,7 @@ export class WatchSession {
       const result = await chrome.storage.local.get('settings')
       automationLevel = result.settings?.automationLevel || 'autofill'
     } catch (error) {
-      console.error("[WatchSession] Failed to load automation level:", error)
+      console.warn("[WatchSession] Failed to load automation level:", error)
     }
 
     console.log(`[WatchSession] Automation level: ${automationLevel}`)
@@ -366,6 +366,11 @@ export class WatchSession {
     } else if (!autofilled) {
       // If autofill failed, use fallback
       await this.handleAutofillFailure(codeResult)
+      // Silent Chrome notification (visible even if user is on another tab)
+      chrome.runtime.sendMessage({
+        type: 'SHOW_CODE_NOTIFICATION',
+        code: codeResult.code,
+      }).catch(() => { /* best effort */ })
     }
   }
 
@@ -393,7 +398,7 @@ export class WatchSession {
       }
       return success
     } catch (error) {
-      console.error("[WatchSession] Autofill error:", error)
+      console.warn("[WatchSession] Autofill error:", error)
       return false
     }
   }
@@ -419,7 +424,7 @@ export class WatchSession {
         console.log("[WatchSession] No submit button found for auto-submit")
       }
     } catch (error) {
-      console.error("[WatchSession] Auto-submit failed:", error)
+      console.warn("[WatchSession] Auto-submit failed:", error)
     }
   }
 
@@ -450,7 +455,7 @@ export class WatchSession {
 
       console.log("[WatchSession] Code copied to clipboard and user notified")
     } catch (clipboardError) {
-      console.error("[WatchSession] Clipboard copy failed:", clipboardError)
+      console.warn("[WatchSession] Clipboard copy failed:", clipboardError)
 
       // Even if clipboard fails, show notification with code
       showNotification({
@@ -535,7 +540,7 @@ export function startWatch(
       return activeWatch
     }
     // No active session but rate limit triggered - possible bug, log and allow
-    console.error('[WatchSession] No active session but rate limit triggered - allowing this session')
+    console.warn('[WatchSession] No active session but rate limit triggered - allowing this session')
   }
 
   // DEFENSE 2: Same field check

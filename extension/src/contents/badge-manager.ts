@@ -134,7 +134,7 @@ function setBadgeText(text: string): void {
   try {
     chrome.action.setBadgeText({ text })
   } catch (error) {
-    console.error('[BadgeManager] Failed to set badge text:', error)
+    console.warn('[BadgeManager] Failed to set badge text:', error)
   }
 }
 
@@ -152,7 +152,7 @@ function setBadgeBackgroundColor(color: string): void {
   try {
     chrome.action.setBadgeBackgroundColor({ color })
   } catch (error) {
-    console.error('[BadgeManager] Failed to set badge background color:', error)
+    console.warn('[BadgeManager] Failed to set badge background color:', error)
   }
 }
 

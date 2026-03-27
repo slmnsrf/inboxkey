@@ -51,7 +51,7 @@ export function GmailAccountCard({
   const [connectionError, setConnectionError] = useState<string | null>(null)
   const [showLimitModal, setShowLimitModal] = useState(false)
   const [confirmingDisconnect, setConfirmingDisconnect] = useState(false)
-  const [isReconnecting, setIsReconnecting] = useState(false)
+  const [testState, setTestState] = useState<'idle' | 'loading' | 'success' | 'error'>('idle')
 
   // Calculate account status
   const { status, label: statusLabel } = useMemo(
@@ -70,8 +70,6 @@ export function GmailAccountCard({
   const handleConnect = async () => {
     setConnectionState('loading')
     setConnectionError(null)
-    if (account) setIsReconnecting(true)
-
     try {
       // 1. Check config
       if (!isGmailConfigured()) {
@@ -130,7 +128,32 @@ export function GmailAccountCard({
       setConnectionError(getConnectionErrorMessage(error))
     } finally {
       setConnectionStage(null)
-      setIsReconnecting(false)
+    }
+  }
+
+  const handleTest = async () => {
+    if (!account) return
+    setTestState('loading')
+    setConnectionError(null)
+    try {
+      const response = await chrome.runtime.sendMessage({
+        type: 'TEST_MAILBOX_CONNECTION',
+        mailboxId: account.id,
+      })
+      if (response.success) {
+        setTestState('success')
+        setTimeout(() => setTestState('idle'), 15000)
+      } else {
+        setTestState('error')
+        setConnectionError(response.error || 'Connection test failed.')
+        // Don't auto-reset to idle -- keep the error visible until dismissed
+        // Refresh the account data so status updates (connected -> warning)
+        await onAccountChanged()
+      }
+    } catch (error) {
+      setTestState('error')
+      setConnectionError('Connection test failed unexpectedly.')
+      await onAccountChanged()
     }
   }
 
@@ -190,8 +213,8 @@ export function GmailAccountCard({
       maxAccounts={1}
       isConnected={!!account}
       feedbackMessage={connectionError || undefined}
-      feedbackType="error"
-      feedbackAutoDismiss={connectionError !== t('toast_oauth_cancelled')}
+      feedbackType={testState === 'error' ? 'warning' : 'error'}
+      feedbackAutoDismiss={testState !== 'error' && connectionError !== t('toast_oauth_cancelled')}
     >
       {account ? (
         <>
@@ -237,20 +260,18 @@ export function GmailAccountCard({
             }
             actions={
                 <>
-                  {status !== 'online' && (
-                    <button
-                      type="button"
-                      className="btn btn--secondary btn--sm"
-                      onClick={handleConnect}
-                      disabled={disabled || connectionState === 'loading'}
-                      aria-label={t('aria_reconnect_gmail')}
-                      aria-busy={isReconnecting && connectionState === 'loading'}
-                    >
-                      {isReconnecting && connectionState === 'loading'
-                        ? t('accounts_reconnecting')
-                        : t('accounts_reconnect')}
-                    </button>
-                  )}
+                  <button
+                    type="button"
+                    className={`btn btn--sm ${testState === 'success' ? 'btn--success-ghost' : testState === 'error' ? 'btn--danger-ghost' : 'btn--secondary'}`}
+                    onClick={testState === 'error' ? () => { setTestState('idle'); setConnectionError(null) } : handleTest}
+                    disabled={disabled || testState === 'loading' || testState === 'success' || connectionState === 'loading'}
+                    aria-busy={testState === 'loading'}
+                  >
+                    {testState === 'loading' ? t('accounts_testing')
+                      : testState === 'success' ? t('accounts_test_success')
+                      : testState === 'error' ? t('accounts_test_failed')
+                      : t('accounts_test')}
+                  </button>
                   <button
                     type="button"
                     className="btn btn--danger-ghost btn--sm"

@@ -12,7 +12,7 @@
  */
 
 import React, { useState, useEffect } from 'react'
-import { Server, Plus, RefreshCw } from 'lucide-react'
+import { Server, Plus } from 'lucide-react'
 import { t } from '@/lib/i18n'
 import { getAccountStatus } from './account-status'
 import { AccountSection } from './shared/AccountSection'
@@ -33,7 +33,7 @@ interface ImapAccountCardProps {
   disabled?: boolean
   maxAccounts?: number
   onAddImap: () => void
-  onReconnectImap: (mailboxId: string) => void
+  onReconnectImap?: (mailboxId: string) => void
 }
 
 type RemoveState = 'idle' | 'loading' | 'success' | 'error'
@@ -44,13 +44,14 @@ export function ImapAccountCard({
   disabled = false,
   maxAccounts,
   onAddImap,
-  onReconnectImap,
 }: ImapAccountCardProps) {
   const [removeState, setRemoveState] = useState<RemoveState>('idle')
   const [removeError, setRemoveError] = useState<string | null>(null)
   const [removingId, setRemovingId] = useState<string | null>(null)
   const [confirmingRemoveId, setConfirmingRemoveId] = useState<string | null>(null)
   const [bridgeStatus, setBridgeStatus] = useState<'checking' | 'connected' | 'disconnected'>('checking')
+  const [testingId, setTestingId] = useState<string | null>(null)
+  const [testResult, setTestResult] = useState<Record<string, 'success' | 'error' | null>>({})
 
   // Check InboxBridge status when IMAP accounts exist
   useEffect(() => {
@@ -101,6 +102,38 @@ export function ImapAccountCard({
       setRemoveError(t('toast_disconnect_failed'))
     } finally {
       setRemovingId(null)
+    }
+  }
+
+  const handleTest = async (accountId: string) => {
+    setTestingId(accountId)
+    setTestResult(prev => ({ ...prev, [accountId]: null }))
+    setRemoveError(null)
+    try {
+      const response = await chrome.runtime.sendMessage({
+        type: 'TEST_MAILBOX_CONNECTION',
+        mailboxId: accountId,
+      })
+      if (response.success) {
+        setTestResult(prev => ({ ...prev, [accountId]: 'success' }))
+        setTimeout(() => {
+          setTestResult(prev => ({ ...prev, [accountId]: null }))
+        }, 2000)
+      } else {
+        setTestResult(prev => ({ ...prev, [accountId]: 'error' }))
+        setRemoveError(response.error || 'Connection test failed')
+        setTimeout(() => {
+          setTestResult(prev => ({ ...prev, [accountId]: null }))
+        }, 4000)
+      }
+    } catch {
+      setTestResult(prev => ({ ...prev, [accountId]: 'error' }))
+      setRemoveError('Test failed unexpectedly')
+      setTimeout(() => {
+        setTestResult(prev => ({ ...prev, [accountId]: null }))
+      }, 4000)
+    } finally {
+      setTestingId(null)
     }
   }
 
@@ -205,27 +238,18 @@ export function ImapAccountCard({
               }
               actions={
                   <>
-                    {account.lastSyncError ? (
-                      <button
-                        type="button"
-                        className="btn btn--secondary btn--sm"
-                        onClick={() => onReconnectImap(account.id)}
-                        disabled={disabled}
-                        aria-label={t('aria_reconnect_imap', [account.email])}
-                      >
-                        {t('accounts_imap_retry')}
-                      </button>
-                    ) : (
-                      <button
-                        type="button"
-                        className="btn btn--ghost btn--sm"
-                        onClick={() => onReconnectImap(account.id)}
-                        disabled={disabled}
-                        aria-label={t('aria_reconnect_imap', [account.email])}
-                      >
-                        <RefreshCw size={13} aria-hidden="true" />
-                      </button>
-                    )}
+                    <button
+                      type="button"
+                      className={`btn btn--sm ${testResult[account.id] === 'success' ? 'btn--success-ghost' : testResult[account.id] === 'error' ? 'btn--danger-ghost' : 'btn--secondary'}`}
+                      onClick={() => handleTest(account.id)}
+                      disabled={disabled || testingId === account.id || testResult[account.id] != null}
+                      aria-busy={testingId === account.id}
+                    >
+                      {testingId === account.id ? t('accounts_testing')
+                        : testResult[account.id] === 'success' ? t('accounts_test_success')
+                        : testResult[account.id] === 'error' ? t('accounts_test_failed')
+                        : t('accounts_test')}
+                    </button>
                     <button
                       type="button"
                       className="btn btn--danger-ghost btn--sm"

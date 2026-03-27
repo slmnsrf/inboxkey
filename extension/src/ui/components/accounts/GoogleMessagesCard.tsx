@@ -43,10 +43,10 @@ interface GoogleMessagesCardProps {
 const PAIRING_POLL_INTERVAL = 4000
 
 /** Validate international phone number: starts with +, at least 7 digits. */
+/** Validate phone number (without the + prefix which is fixed in the UI). At least 7 digits. */
 function isValidPhoneNumber(value: string): boolean {
-  const stripped = value.replace(/[\s\-\(\)]/g, '')
-  const digits = stripped.replace(/[^\d]/g, '')
-  return stripped.startsWith('+') && digits.length >= 7
+  const digits = value.replace(/[^\d]/g, '')
+  return digits.length >= 7
 }
 
 export function GoogleMessagesCard({ mailbox, onUpdate }: GoogleMessagesCardProps) {
@@ -55,6 +55,7 @@ export function GoogleMessagesCard({ mailbox, onUpdate }: GoogleMessagesCardProp
   const [phoneError, setPhoneError] = useState(false)
   const [feedbackMessage, setFeedbackMessage] = useState<string | null>(null)
   const [isDisconnecting, setIsDisconnecting] = useState(false)
+  const [testState, setTestState] = useState<'idle' | 'loading' | 'success' | 'error'>('idle')
 
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const phoneInputRef = useRef<HTMLInputElement>(null)
@@ -67,7 +68,8 @@ export function GoogleMessagesCard({ mailbox, onUpdate }: GoogleMessagesCardProp
       const isExpired = mailbox.lastSyncError === 'session_expired'
       setCardState(isExpired ? 'session-expired' : 'connected')
       if (mailbox.gmPhoneNumber) {
-        setPhoneNumber(mailbox.gmPhoneNumber)
+        // Strip leading + for display (prefix is fixed in the UI)
+        setPhoneNumber(mailbox.gmPhoneNumber.replace(/^\+/, ''))
       }
     } else {
       setCardState('not-connected')
@@ -157,7 +159,7 @@ export function GoogleMessagesCard({ mailbox, onUpdate }: GoogleMessagesCardProp
         }
         // 'unpaired' continues polling (expected during pairing)
       } catch (error) {
-        console.error('[GoogleMessagesCard] Pairing poll error:', error)
+        console.warn('[GoogleMessagesCard] Pairing poll error:', error)
         // Communication error -- stop polling, show error
         stopPolling()
         if (manualLinkTimerRef.current) {
@@ -203,7 +205,7 @@ export function GoogleMessagesCard({ mailbox, onUpdate }: GoogleMessagesCardProp
     try {
       const response = await chrome.runtime.sendMessage({
         type: 'CONNECT_GOOGLE_MESSAGES',
-        phoneNumber: phoneNumber.replace(/[\s\-\(\)]/g, ''),
+        phoneNumber: `+${phoneNumber.replace(/[\s\-\(\)]/g, '')}`,
       })
 
       if (cancelledRef.current) return
@@ -229,7 +231,7 @@ export function GoogleMessagesCard({ mailbox, onUpdate }: GoogleMessagesCardProp
         clearTimeout(manualLinkTimerRef.current)
         manualLinkTimerRef.current = null
       }
-      console.error('[GoogleMessagesCard] Connect error:', error)
+      console.warn('[GoogleMessagesCard] Connect error:', error)
       setCardState('phone-input')
       setFeedbackMessage(t('toast_connect_failed'))
     }
@@ -254,6 +256,36 @@ export function GoogleMessagesCard({ mailbox, onUpdate }: GoogleMessagesCardProp
     setShowManualLink(false)
   }
 
+  const handleTest = async () => {
+    if (!mailbox) return
+    setTestState('loading')
+    setFeedbackMessage(null)
+    try {
+      const response = await chrome.runtime.sendMessage({
+        type: 'TEST_MAILBOX_CONNECTION',
+        mailboxId: mailbox.id,
+      })
+      if (response.success) {
+        setCardState('connected')
+        onUpdate?.()
+        setTestState('success')
+        setTimeout(() => setTestState('idle'), 2000)
+      } else {
+        setTestState('error')
+        setFeedbackMessage(response.error || 'Connection test failed')
+        setTimeout(() => setTestState('idle'), 4000)
+        // If session expired, switch to that card state
+        if (response.error?.includes('expired')) {
+          setCardState('session-expired')
+        }
+      }
+    } catch {
+      setTestState('error')
+      setFeedbackMessage('Test failed unexpectedly')
+      setTimeout(() => setTestState('idle'), 4000)
+    }
+  }
+
   const handleDisconnect = async () => {
     if (!mailbox) return
     setIsDisconnecting(true)
@@ -274,7 +306,7 @@ export function GoogleMessagesCard({ mailbox, onUpdate }: GoogleMessagesCardProp
         setCardState('connected')
       }
     } catch (error) {
-      console.error('[GoogleMessagesCard] Disconnect error:', error)
+      console.warn('[GoogleMessagesCard] Disconnect error:', error)
       setFeedbackMessage(t('toast_disconnect_failed'))
       setCardState('connected')
     } finally {
@@ -301,7 +333,7 @@ export function GoogleMessagesCard({ mailbox, onUpdate }: GoogleMessagesCardProp
         setFeedbackMessage(response.error || t('toast_connect_failed'))
       }
     }).catch((error) => {
-      console.error('[GoogleMessagesCard] Re-pair error:', error)
+      console.warn('[GoogleMessagesCard] Re-pair error:', error)
       setCardState('session-expired')
       setFeedbackMessage(t('toast_connect_failed'))
     })
@@ -437,19 +469,22 @@ export function GoogleMessagesCard({ mailbox, onUpdate }: GoogleMessagesCardProp
         <label className="phone-input-group__label" htmlFor="gm-phone-input">
           {t('accounts_gm_phone_label')}
         </label>
-        <input
-          ref={phoneInputRef}
-          type="tel"
-          id="gm-phone-input"
-          className={`form-input${phoneError ? ' form-input--invalid' : ''}`}
-          placeholder={t('accounts_gm_phone_placeholder')}
-          value={phoneNumber}
-          onChange={handlePhoneChange}
-          onKeyDown={handlePhoneKeyDown}
-          aria-required="true"
-          aria-describedby="gm-phone-hint gm-phone-error"
-          aria-invalid={phoneError}
-        />
+        <div className={`phone-input-with-prefix${phoneError ? ' phone-input-with-prefix--invalid' : ''}`}>
+          <span className="phone-input-prefix" aria-hidden="true">+</span>
+          <input
+            ref={phoneInputRef}
+            type="tel"
+            id="gm-phone-input"
+            className="phone-input-field"
+            placeholder="1 234 567 8900"
+            value={phoneNumber}
+            onChange={handlePhoneChange}
+            onKeyDown={handlePhoneKeyDown}
+            aria-required="true"
+            aria-describedby="gm-phone-hint gm-phone-error"
+            aria-invalid={phoneError}
+          />
+        </div>
         <p className="form-hint" id="gm-phone-hint">
           {t('accounts_gm_phone_hint')}
         </p>
@@ -592,6 +627,18 @@ export function GoogleMessagesCard({ mailbox, onUpdate }: GoogleMessagesCardProp
           </span>
         </div>
         <div className="account-row__actions">
+          <button
+            type="button"
+            className={`btn btn--sm ${testState === 'success' ? 'btn--success-ghost' : testState === 'error' ? 'btn--danger-ghost' : 'btn--secondary'}`}
+            onClick={handleTest}
+            disabled={testState !== 'idle'}
+            aria-busy={testState === 'loading'}
+          >
+            {testState === 'loading' ? t('accounts_testing')
+              : testState === 'success' ? t('accounts_test_success')
+              : testState === 'error' ? t('accounts_test_failed')
+              : t('accounts_test')}
+          </button>
           <button
             type="button"
             className="btn btn--danger-ghost btn--sm"

@@ -62,7 +62,7 @@ export function StatefulButton(props: StatefulButtonProps) {
       if (!isControlled) {
         setInternalState('idle'); // Return to idle immediately (no error state)
       }
-      console.error('StatefulButton onClick error:', error);
+      console.warn('StatefulButton onClick error:', error);
     }
   }, [onClick, disabled, state, isControlled]);
 

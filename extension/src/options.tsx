@@ -18,7 +18,7 @@ import { AdvancedSettings } from './ui/components/AdvancedSettings'
 import { BuyMeACoffeeButton } from './ui/components/BuyMeACoffeeButton'
 import { BlacklistManageButton } from './ui/components/blacklist/BlacklistManageButton'
 import { BlacklistModal } from './ui/components/blacklist/BlacklistModal'
-import { KeyRound, ShieldCheck, EyeOff, Code2, Zap, MessageSquare, Palette, Globe, Settings as SettingsIcon, Github } from 'lucide-react'
+import { KeyRound, ShieldCheck, EyeOff, Code2, Zap, Timer, Palette, Globe, Settings as SettingsIcon, Github } from 'lucide-react'
 import { t } from './lib/i18n'
 import { GITHUB_REPO_URL } from './lib/constants'
 import './options.css'
@@ -39,7 +39,7 @@ function OptionsApp() {
           setMailboxCount(response.mailboxes.length)
         }
       } catch (error) {
-        console.error('Failed to fetch mailboxes:', error)
+        console.warn('Failed to fetch mailboxes:', error)
       }
     }
     fetchMailboxCount()
@@ -160,7 +160,7 @@ function OptionsApp() {
                     <div className="settings-card">
                       <div className="settings-card__header">
                         <h2 className="settings-card__title">
-                          <span className="settings-card__title-icon" aria-hidden="true"><MessageSquare size={16} /></span>
+                          <span className="settings-card__title-icon" aria-hidden="true"><Timer size={16} /></span>
                           {t('settings_session_chips_heading')}
                         </h2>
                         <p className="settings-card__description">{t('settings_session_chips_description')}</p>

@@ -34,7 +34,7 @@ export async function fetchCodesFromBackground(
     console.log(`[CodeFetcher] Latency: ${latency}ms`)
 
     if (response.error) {
-      console.error(`[CodeFetcher] Error from background:`, response.error)
+      console.warn(`[CodeFetcher] Error from background:`, response.error)
       return []
     }
 
@@ -46,7 +46,7 @@ export async function fetchCodesFromBackground(
     console.log(`[CodeFetcher] Retrieved ${response.codes.length} codes`)
     return response.codes
   } catch (error) {
-    console.error(`[CodeFetcher] Failed to fetch codes:`, error)
+    console.warn(`[CodeFetcher] Failed to fetch codes:`, error)
     throw error
   }
 }

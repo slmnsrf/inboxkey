@@ -161,7 +161,7 @@ export class NativeMessagingClient {
     } catch (error) {
       this.isConnecting = false
       const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-      console.error('[NativeMessagingClient] Connection failed:', errorMessage)
+      console.warn('[NativeMessagingClient] Connection failed:', errorMessage)
 
       throw new NativeMessagingError(
         `Failed to connect to InboxBridge: ${errorMessage}. Make sure InboxBridge is installed and the manifest is registered.`,
@@ -179,7 +179,7 @@ export class NativeMessagingClient {
   private handleMessage(message: unknown): void {
     // Validate message structure
     if (!this.isValidResponse(message)) {
-      console.error('[NativeMessagingClient] Invalid response format:', message)
+      console.warn('[NativeMessagingClient] Invalid response format:', message)
       return
     }
 

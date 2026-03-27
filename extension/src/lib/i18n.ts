@@ -38,7 +38,7 @@ export function t(key: string, substitutions?: string | string[]): string {
 
     return message
   } catch (error) {
-    console.error(`[i18n] Error getting message for key: ${key}`, error)
+    console.warn(`[i18n] Error getting message for key: ${key}`, error)
     return key
   }
 }

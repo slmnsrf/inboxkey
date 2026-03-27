@@ -17,6 +17,10 @@ import { setBadgeCount, setBadgeSyncError, clearBadge } from '@/contents/badge-m
 import { BADGE_EXPIRY_MS } from '@/lib/popup/popup-config'
 import { sortByPriority } from '@/lib/popup/popup-priority'
 import { separateItems } from '@/lib/popup/popup-filters'
+import { GmailAPIClient } from '@/lib/providers/gmail/gmail-api'
+import { GmailAuth } from '@/lib/providers/gmail/gmail-auth'
+import { IMAPBridgeAdapter } from '@/lib/providers/imap-bridge/imap-bridge-adapter'
+import { getMessagesTabManager } from '@/lib/providers/google-messages/tab-manager'
 
 /**
  * Handles popup-related messages from the UI
@@ -275,7 +279,7 @@ export class PopupMessageHandler {
               data: cache,
             }
           } catch (error) {
-            console.error('[PopupHandler] Manual sync failed:', error)
+            console.warn('[PopupHandler] Manual sync failed:', error)
 
             // Track sync failures for error badge
             await this.errorManager.recordFailure(error as Error)
@@ -310,11 +314,131 @@ export class PopupMessageHandler {
             clearBadge()
             return { success: true }
           } catch (error) {
-            console.error('[PopupHandler] MARK_CODES_SEEN failed:', error)
+            console.warn('[PopupHandler] MARK_CODES_SEEN failed:', error)
             return {
               success: false,
               error: error instanceof Error ? error.message : String(error),
             }
+          }
+        }
+
+        case 'TEST_MAILBOX_CONNECTION': {
+          const { mailboxId } = request as { type: string; mailboxId: string }
+          const storage = await StorageFactory.create()
+          const mailboxes = await storage.getMailboxes()
+          const mailbox = mailboxes.find(m => m.id === mailboxId)
+
+          if (!mailbox) {
+            return { success: false, error: 'Account not found' }
+          }
+
+          // Helper: record test result on mailbox so UI status updates
+          const recordResult = async (ok: boolean, errorMsg?: string) => {
+            if (ok) {
+              await storage.updateMailbox(mailboxId, {
+                lastSyncedAt: Date.now(),
+                lastSyncError: undefined,
+              })
+            } else if (errorMsg) {
+              await storage.updateMailbox(mailboxId, {
+                lastSyncError: errorMsg,
+              })
+            }
+          }
+
+          try {
+            if (mailbox.providerId === 'gmail') {
+              if (!mailbox.accessToken) {
+                const err = 'No access token. Please reconnect your Gmail account.'
+                await recordResult(false, err)
+                return { success: false, error: err }
+              }
+              // Refresh token before testing (Chrome manages token lifecycle via
+              // chrome.identity; refreshTokens removes cached token and gets fresh one)
+              const auth = new GmailAuth()
+              const freshTokens = await auth.refreshTokens(mailbox.accessToken)
+              await storage.updateMailbox(mailboxId, {
+                accessToken: freshTokens.accessToken,
+                tokenExpiresAt: Date.now() + freshTokens.expiresIn * 1000,
+              })
+              const api = new GmailAPIClient()
+              await api.getUserProfile(freshTokens.accessToken)
+              await recordResult(true)
+              await this.errorManager.recordSuccess(mailboxId)
+              return { success: true }
+            }
+
+            if (mailbox.providerId === 'imap-bridge') {
+              const adapter = new IMAPBridgeAdapter(
+                mailbox.imapAccountId || '',
+                mailbox.email,
+                mailbox.id
+              )
+              await adapter.listRecent({
+                sinceEpochMs: Date.now() - 10 * 60 * 1000,
+                max: 1,
+              })
+              await recordResult(true)
+              await this.errorManager.recordSuccess(mailboxId)
+              return { success: true }
+            }
+
+            if (mailbox.providerId === 'google-messages') {
+              const tabManager = getMessagesTabManager()
+              const tab = await tabManager.ensureTab()
+
+              // Wait for page to be ready before checking pairing
+              // Poll until we get a definitive answer (not just empty DOM)
+              let pairingStatus: 'paired' | 'unpaired' = 'unpaired'
+              const maxWait = 15000
+              const start = Date.now()
+              while (Date.now() - start < maxWait) {
+                try {
+                  // Check if the conversations list OR QR code is present
+                  const results = await chrome.scripting.executeScript({
+                    target: { tabId: tab.tabId },
+                    func: () => {
+                      if (document.querySelector('mws-conversations-list')) return 'paired'
+                      if (document.querySelector('mw-qr-code')) return 'unpaired'
+                      if (document.querySelector('[data-e2e-welcome-page-container]')) return 'unpaired'
+                      return 'loading' // Neither element yet -- still loading
+                    },
+                  })
+                  const result = results?.[0]?.result as string
+                  if (result === 'paired' || result === 'unpaired') {
+                    pairingStatus = result
+                    break
+                  }
+                } catch { /* tab not ready */ }
+                await new Promise(r => setTimeout(r, 1000))
+              }
+              // Close tab if extension opened it (user-owned tabs stay open)
+              await tabManager.closeIfOwned()
+              if (pairingStatus === 'paired') {
+                await recordResult(true)
+                await this.errorManager.recordSuccess(mailboxId)
+                return { success: true }
+              }
+              const err = 'Google Messages session has expired. Please re-pair your device.'
+              await recordResult(false, 'session_expired')
+              return { success: false, error: err }
+            }
+
+            return { success: false, error: 'Unknown provider' }
+          } catch (error) {
+            const raw = error instanceof Error ? error.message : String(error)
+            let userMsg: string
+            if (raw.includes('401') || raw.includes('auth') || raw.includes('token') || raw.includes('unauthorized')) {
+              userMsg = 'Access expired. Please reconnect your account.'
+            } else if (raw.includes('network') || raw.includes('fetch') || raw.includes('TIMEOUT') || raw.includes('Failed to fetch')) {
+              userMsg = 'Network error. Please check your internet connection.'
+            } else if (raw.includes('PORT_DISCONNECTED') || raw.includes('native') || raw.includes('Native host has exited')) {
+              userMsg = 'InboxBridge is not running. Please start it and try again.'
+            } else {
+              userMsg = raw
+            }
+            await recordResult(false, userMsg).catch(() => {})
+            return { success: false, error: userMsg }
           }
         }
 
@@ -344,7 +468,7 @@ export class PopupMessageHandler {
               })),
             }
           } catch (error) {
-            console.error('[PopupHandler] GET_MAILBOXES failed:', error)
+            console.warn('[PopupHandler] GET_MAILBOXES failed:', error)
             return {
               success: false,
               error: error instanceof Error ? error.message : String(error),
@@ -358,7 +482,7 @@ export class PopupMessageHandler {
         }
       }
     } catch (error) {
-      console.error('[PopupHandler] Error:', error)
+      console.warn('[PopupHandler] Error:', error)
       return {
         success: false,
         error: error instanceof Error ? error.message : String(error),

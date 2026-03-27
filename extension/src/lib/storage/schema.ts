@@ -183,10 +183,8 @@ export interface Settings {
   deniedDomains: string[]
   notificationsEnabled: boolean
   /**
-   * Enable Watch Sessions V2 scoring algorithm.
-   * When enabled, uses domain affinity, recency boost, session boost, and shape matching.
-   * When disabled, uses simplified matching without v2 enhancements.
-   * @default false (initially), true (after v2.0 stable release)
+   * @deprecated Runtime-ignored. V2 scoring is now always active in the session
+   * controller. Field retained to avoid storage migration for existing installs.
    */
   watchSessionV2Enabled?: boolean
   /**
@@ -246,11 +244,11 @@ export interface Settings {
    *
    * Examples:
    * - 10s → 3 polls [0, 5, 10]
-   * - 30s → 6 polls [0, 5, 10, 15, 20, 30] (default)
-   * - 60s → 9 polls [0, 5, 10, 15, 20, 30, 40, 50, 60]
+   * - 45s → 7 polls [0, 5, 10, 15, 20, 30, 40]
+   * - 60s → 9 polls [0, 5, 10, 15, 20, 30, 40, 50, 60] (default)
    * - 120s → 15 polls [0, 5, 10, 15, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120] (maximum)
    *
-   * @default 30
+   * @default 60
    */
   sessionTimeoutSeconds?: number
   /**
@@ -311,13 +309,13 @@ export const DEFAULT_SETTINGS: Settings = {
   allowedDomains: [],
   deniedDomains: [],
   notificationsEnabled: true,
-  watchSessionV2Enabled: false, // Conservative default: disabled for gradual rollout
+  watchSessionV2Enabled: false, // Deprecated: V2 is always active, field kept for storage compat
   debugScoringEnabled: false,
   automationLevel: 'autofill', // Default: auto-detect and autofill (current behavior)
   domainsEnabledByDefault: true, // Default: enable on all domains
   showSessionChips: true, // Default: show session status chips
   disableOnBankingSites: false, // Opt-in: users must enable manually
-  sessionTimeoutSeconds: 30, // Default: 30 seconds
+  sessionTimeoutSeconds: 60, // Default: 60 seconds
   blacklistedDomains: [], // Default: no blacklisted domains
   blacklistedUrls: [], // Default: no blacklisted URLs
 }

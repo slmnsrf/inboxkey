@@ -26,7 +26,7 @@ export function BlacklistManageButton({ onClick }: BlacklistManageButtonProps) {
         const urls = settings.blacklistedUrls?.length || 0
         setIgnoredCount(domains + urls)
       } catch (error) {
-        console.error('[BlacklistManageButton] Failed to load blacklist count:', error)
+        console.warn('[BlacklistManageButton] Failed to load blacklist count:', error)
       }
     }
     loadCount()

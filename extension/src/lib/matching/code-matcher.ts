@@ -12,11 +12,9 @@
  * - Upgraded to points-based scoring system with configurable weights
  * - Added backward compatibility for optional v2 fields (senderETLD, receivedAt)
  *
- * FEATURE FLAG:
- * - V2 features are gated by Settings.watchSessionV2Enabled (default: false)
- * - When enabled: sessionStart and expectedShape parameters activate v2 scoring
- * - When disabled: call without sessionStart/expectedShape for basic matching
- * - V1 implementation has been removed; v2 is the only algorithm
+ * NOTE: V2 scoring is always active. The watchSessionV2Enabled flag is
+ * deprecated and no longer read at runtime. sessionStart and expectedShape
+ * are always passed by the session controller.
  */
 
 import type { StoredCode } from "@/lib/storage/schema"

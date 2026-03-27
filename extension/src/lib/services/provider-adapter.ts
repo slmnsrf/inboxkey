@@ -10,6 +10,7 @@ import type { IEmailProvider } from '@/lib/providers/provider-interface'
 import { GmailProvider } from '@/lib/providers/gmail/gmail-provider'
 import { IMAPBridgeAdapter } from '@/lib/providers/imap-bridge/imap-bridge-adapter'
 import { MessagesProviderAdapter } from '@/lib/providers/google-messages/adapter'
+import { getMessagesTabManager } from '@/lib/providers/google-messages/tab-manager'
 import type { Mailbox } from '@/lib/storage/schema'
 import { type ProviderAdapter, type EmailLike, type ProviderId } from './email-polling-service'
 
@@ -147,7 +148,6 @@ export async function createAdaptersFromMailboxes(
         // Excluded from popup/manual sync (no sessionId) since SMS scraping is
         // session-scoped and has no meaningful "manual refresh" concept.
         if (!sessionId) return null
-        const { getMessagesTabManager } = await import('@/lib/providers/google-messages/tab-manager')
         return new MessagesProviderAdapter(getMessagesTabManager(), mailbox.id, sessionId)
       }
 
