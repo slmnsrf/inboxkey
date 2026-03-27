@@ -25,6 +25,7 @@ import { createAdaptersFromMailboxes } from "@/lib/services/provider-adapter"
 import { SeenMessageStore } from "@/lib/services/seen-message-store"
 import { SessionPoller } from "./session-poller"
 import { extractETLD } from "@/lib/matching/domain-affinity"
+import { getMessagesTabManager } from "@/lib/providers/google-messages/tab-manager"
 import { WATCH_SESSION_SCORING } from "@/lib/matching/scoring-config"
 import type { ExpectedShape } from "@/lib/matching/shape-matcher"
 import type { PopupCacheManager } from "./popup-cache"
@@ -165,7 +166,7 @@ export class SessionController {
 
     // Compute effective timeout (same for all session types)
     const channels = detectedChannels ?? ['email']
-    const effectiveTimeout = timeoutSeconds ?? 45
+    const effectiveTimeout = timeoutSeconds ?? 60
 
     // Use fixed poll schedule, filtered by effective timeout
     // This allows users to control session duration while maintaining optimized poll density
@@ -240,7 +241,6 @@ export class SessionController {
     // Clean up Google Messages poll state only for SMS sessions
     if (session.detectedChannels?.includes('sms')) {
       try {
-        const { getMessagesTabManager } = await import('@/lib/providers/google-messages/tab-manager')
         getMessagesTabManager().resetPollCount(session.id)
         await getMessagesTabManager().closeIfOwned()
       } catch { /* tab manager not loaded or no GM session */ }
@@ -299,7 +299,6 @@ export class SessionController {
         session.lastCode = code
         if (session.detectedChannels?.includes('sms')) {
           try {
-            const { getMessagesTabManager } = await import('@/lib/providers/google-messages/tab-manager')
             getMessagesTabManager().resetPollCount(session.id)
             await getMessagesTabManager().closeIfOwned()
           } catch { /* tab manager not loaded or no GM session */ }
@@ -317,7 +316,6 @@ export class SessionController {
         session.status = "timedout"
         if (session.detectedChannels?.includes('sms')) {
           try {
-            const { getMessagesTabManager } = await import('@/lib/providers/google-messages/tab-manager')
             getMessagesTabManager().resetPollCount(session.id)
             await getMessagesTabManager().closeIfOwned()
           } catch { /* tab manager not loaded or no GM session */ }
@@ -345,7 +343,6 @@ export class SessionController {
         session.status = "timedout"
         if (session.detectedChannels?.includes('sms')) {
           try {
-            const { getMessagesTabManager } = await import('@/lib/providers/google-messages/tab-manager')
             getMessagesTabManager().resetPollCount(session.id)
             await getMessagesTabManager().closeIfOwned()
           } catch { /* tab manager not loaded or no GM session */ }
@@ -371,10 +368,6 @@ export class SessionController {
     try {
       // Get appropriate storage for current mode (plaintext or encrypted)
       const storage = await StorageFactory.create()
-
-      // Check if Watch Sessions V2 is enabled
-      const settings = await storage.getSettings()
-      const v2Enabled = settings.watchSessionV2Enabled ?? false
 
       // Get mailboxes
       const mailboxes = await storage.getMailboxes()
@@ -535,22 +528,22 @@ export class SessionController {
         domainAffinity: c.domainAffinity,
       }))
 
-      // V2: Pass sessionStart and expectedShape to v2 scoring algorithm (if enabled)
-      // When v2 is disabled, fall back to basic matching without session/shape parameters
-      const best = v2Enabled
-        ? findBestMatchingCode(
-            codes,
-            session.url,
-            Date.now(),
-            session.sessionStart,   // V2: Enable sessionBoost
-            session.expectedShape   // V2: Enable shape matching
-          )
-        : findBestMatchingCode(
-            codes,
-            session.url,
-            Date.now()
-            // V1-compatible: no sessionStart or expectedShape
-          )
+      // Pre-filter: exclude codes that arrived before this session's window.
+      // Uses the same window as sessionBoost() in recency-scorer.ts to keep
+      // eligibility and scoring aligned on a single boundary.
+      const sessionFloor = session.sessionStart - WATCH_SESSION_SCORING.sessionBoostWindow
+      const sessionCodes = codes.filter(c => {
+        const received = c.receivedAt ?? c.timestamp
+        return received >= sessionFloor
+      })
+
+      const best = findBestMatchingCode(
+        sessionCodes,
+        session.url,
+        Date.now(),
+        session.sessionStart,
+        session.expectedShape
+      )
 
       if (!best) {
         return null
