@@ -364,7 +364,7 @@ export class PopupMessageHandler {
               const api = new GmailAPIClient()
               await api.getUserProfile(freshTokens.accessToken)
               await recordResult(true)
-              this.errorManager.recordSuccess(mailboxId)
+              await this.errorManager.recordSuccess(mailboxId)
               return { success: true }
             }
 
@@ -379,7 +379,7 @@ export class PopupMessageHandler {
                 max: 1,
               })
               await recordResult(true)
-              this.errorManager.recordSuccess(mailboxId)
+              await this.errorManager.recordSuccess(mailboxId)
               return { success: true }
             }
 
@@ -416,7 +416,7 @@ export class PopupMessageHandler {
               await tabManager.closeIfOwned()
               if (pairingStatus === 'paired') {
                 await recordResult(true)
-                this.errorManager.recordSuccess(mailboxId)
+                await this.errorManager.recordSuccess(mailboxId)
                 return { success: true }
               }
               const err = 'Google Messages session has expired. Please re-pair your device.'
