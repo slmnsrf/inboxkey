@@ -7,7 +7,7 @@
  */
 
 import React, { useEffect, useMemo, useState } from 'react'
-import { t } from '@/lib/i18n'
+import { t, timeAgo } from '@/lib/i18n'
 import type { ImapAccountRow } from './accounts/types'
 import { GmailAccountCard } from './accounts/GmailAccountCard'
 import { ImapAccountCard } from './accounts/ImapAccountCard'
