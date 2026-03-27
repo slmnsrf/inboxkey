@@ -107,7 +107,6 @@ export function AccountsPanel() {
 
       if (response.success) {
         await loadMailboxes()
-        await loadRecentItems()
         setShowAddImapModal(false)
       } else {
         throw new Error(response.error || t('toast_connect_failed'))
