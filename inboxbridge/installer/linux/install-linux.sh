@@ -20,8 +20,8 @@ fi
 
 # Check Secret Service (runtime dependency for keychain)
 if ! command -v gnome-keyring-daemon &> /dev/null && \
-   ! command -v seahorse &> /dev/null && \
-   ! command -v kwallet-query &> /dev/null; then
+   ! command -v kwallet-query &> /dev/null && \
+   ! ldconfig -p 2>/dev/null | grep -q libsecret-1; then
   echo "WARNING: No Secret Service provider detected (GNOME Keyring or KWallet)."
   echo "InboxBridge needs one to store credentials securely."
   echo ""

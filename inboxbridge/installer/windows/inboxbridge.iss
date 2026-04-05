@@ -9,17 +9,17 @@
 #define ExtensionId "mioicbneapdjamkppcidooggnmegpocn"
 
 [Setup]
-AppId={{A1B2C3D4-E5F6-7890-ABCD-EF1234567890}
+AppId={{B7E4F2A1-9C3D-4F8E-A6B5-1D2E3F4A5B6C}
 AppName={#AppName}
 AppVersion={#AppVersion}
 AppPublisher={#AppPublisher}
 AppPublisherURL={#AppURL}
-DefaultDirName={autopf}\InboxBridge
+DefaultDirName={localappdata}\InboxBridge
 DisableProgramGroupPage=yes
 OutputBaseFilename=InboxBridge-{#AppVersion}-windows-x64
 Compression=lzma
 SolidCompression=yes
-PrivilegesRequired=admin
+PrivilegesRequired=lowest
 UninstallDisplayIcon={app}\inboxbridge.exe
 
 [Files]

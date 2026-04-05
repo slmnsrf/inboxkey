@@ -9,6 +9,13 @@ BINARY_PATH="/usr/local/bin/inboxbridge"
 
 # Detect logged-in user (not root)
 CONSOLE_USER=$(stat -f "%Su" /dev/console)
+
+if [ -z "$CONSOLE_USER" ] || [ "$CONSOLE_USER" = "root" ]; then
+  echo "WARNING: No console user detected. Manifest must be created manually."
+  echo "Run: /usr/local/bin/inboxbridge --setup"
+  exit 0
+fi
+
 USER_HOME=$(dscl . -read /Users/"$CONSOLE_USER" NFSHomeDirectory | awk '{print $2}')
 
 # Chrome NativeMessagingHosts directory
