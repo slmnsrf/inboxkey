@@ -18,6 +18,8 @@ import { getAccountStatus } from './account-status'
 import { AccountSection } from './shared/AccountSection'
 import { AccountRow } from './shared/AccountRow'
 import { getNativeClient } from '@/lib/native-messaging'
+import { BridgeInstallGuide } from './BridgeInstallGuide'
+import { checkCompatibility, getUpdateUrl, type CompatibilityStatus } from '@/lib/native-messaging/version-check'
 
 interface ImapAccountCardProps {
   accounts: Array<{
@@ -50,26 +52,25 @@ export function ImapAccountCard({
   const [removingId, setRemovingId] = useState<string | null>(null)
   const [confirmingRemoveId, setConfirmingRemoveId] = useState<string | null>(null)
   const [bridgeStatus, setBridgeStatus] = useState<'checking' | 'connected' | 'disconnected'>('checking')
+  const [compatibility, setCompatibility] = useState<CompatibilityStatus | null>(null)
   const [testingId, setTestingId] = useState<string | null>(null)
   const [testResult, setTestResult] = useState<Record<string, 'success' | 'error' | null>>({})
 
-  // Check InboxBridge status when IMAP accounts exist
+  // Check InboxBridge status and compatibility
   useEffect(() => {
-    if (accounts.length === 0) {
-      setBridgeStatus('checking')
-      return
-    }
-
     let cancelled = false
     const checkBridge = async () => {
       try {
         const client = getNativeClient()
-        const status = await client.checkInstallStatus()
-        if (!cancelled) {
-          setBridgeStatus(status.installed ? 'connected' : 'disconnected')
-        }
+        const ping = await client.ping()
+        if (cancelled) return
+        setBridgeStatus('connected')
+        setCompatibility(checkCompatibility(ping))
       } catch {
-        if (!cancelled) setBridgeStatus('disconnected')
+        if (!cancelled) {
+          setBridgeStatus('disconnected')
+          setCompatibility(null)
+        }
       }
     }
 
@@ -168,6 +169,34 @@ export function ImapAccountCard({
           <p style={{ fontSize: 'var(--font-size-sm)', marginTop: 'var(--space-1, 4px)' }}>
             {t('accounts_imap_bridge_install_instructions')}
           </p>
+        </div>
+      )}
+      {compatibility && !compatibility.compatible && accounts.length > 0 && (
+        <div className="alert alert--error" role="alert" style={{ marginBottom: 'var(--space-3, 12px)' }}>
+          <p><strong>{t('bridge_update_required')}</strong></p>
+          <a
+            href={getUpdateUrl()}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="btn btn--primary btn--sm"
+            style={{ marginTop: 'var(--space-2, 8px)' }}
+          >
+            {t('bridge_update_download')}
+          </a>
+        </div>
+      )}
+      {compatibility?.compatible && compatibility.updateAvailable && accounts.length > 0 && (
+        <div className="alert alert--warning" role="status" style={{ marginBottom: 'var(--space-3, 12px)' }}>
+          <p>{t('bridge_update_available')}</p>
+          <a
+            href={getUpdateUrl()}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="btn btn--secondary btn--sm"
+            style={{ marginTop: 'var(--space-2, 8px)' }}
+          >
+            {t('bridge_update_download')}
+          </a>
         </div>
       )}
       {accounts.length > 0 ? (
@@ -284,6 +313,8 @@ export function ImapAccountCard({
             </AccountRow>
           )
         })
+      ) : bridgeStatus === 'disconnected' ? (
+        <BridgeInstallGuide onConnected={() => setBridgeStatus('connected')} />
       ) : (
         <div className="empty-slot" role="note">
           <div className="empty-slot__icon">
