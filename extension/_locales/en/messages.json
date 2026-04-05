@@ -1407,20 +1407,24 @@
     "description": "Title after cleanup completes"
   },
   "bridge_uninstall_done_windows": {
-    "message": "All IMAP accounts and keychain credentials have been removed. To finish uninstalling, open Windows Settings, go to Apps > Installed apps, find InboxBridge, and click Uninstall.",
+    "message": "All IMAP accounts have been removed. To finish uninstalling: if you used the installer, open Windows Settings > Apps > Installed apps, find InboxBridge, and click Uninstall. If you used the portable version, delete the InboxBridge folder from %LOCALAPPDATA%.",
     "description": "Post-cleanup instructions for Windows"
   },
   "bridge_uninstall_done_macos": {
-    "message": "All IMAP accounts and keychain credentials have been removed. To finish uninstalling, open Terminal and run: sudo rm /usr/local/bin/inboxbridge",
+    "message": "All IMAP accounts have been removed. To finish uninstalling, delete the InboxBridge binary. If you used the .pkg installer: sudo rm /usr/local/bin/inboxbridge. If you used the portable version: rm -rf ~/Library/Application\\ Support/InboxBridge",
     "description": "Post-cleanup instructions for macOS"
   },
   "bridge_uninstall_done_linux": {
-    "message": "All IMAP accounts and keychain credentials have been removed. To finish uninstalling, open a terminal and run: rm ~/.local/bin/inboxbridge",
+    "message": "All IMAP accounts have been removed. To finish uninstalling, run: rm ~/.local/bin/inboxbridge and rm ~/.config/google-chrome/NativeMessagingHosts/com.inboxkey.bridge.json",
     "description": "Post-cleanup instructions for Linux"
   },
   "bridge_uninstall_done_close": {
     "message": "Done",
     "description": "Close button after uninstall instructions"
+  },
+  "bridge_uninstall_partial": {
+    "message": "Some accounts could not be fully removed. You may need to reconnect and try again.",
+    "description": "Warning shown when some IMAP account removals fail during uninstall"
   },
   "bridge_warning_windows": {
     "message": "You may see a \"Windows protected your PC\" message when running the installer. This happens because InboxBridge is not digitally signed. Code signing certificates cost $200-500 per year, and as an open-source project without funding, we can't afford one. The app is completely safe -- you can review every line of source code on GitHub. To proceed: click \"More info\", then \"Run anyway\".",
