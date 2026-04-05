@@ -116,11 +116,13 @@ export function BridgeInstallGuide({ onConnected }: BridgeInstallGuideProps) {
         </>
       )}
 
-      {step === 'check' && checkResult === 'fail' && (
+      {step === 'check' && (checkResult === 'fail' || checkResult === 'checking') && (
         <>
-          <p className="bridge-install-guide__fail" role="alert">
-            {t('bridge_install_retry_fail')}
-          </p>
+          {checkResult === 'fail' && (
+            <p className="bridge-install-guide__fail" role="alert">
+              {t('bridge_install_retry_fail')}
+            </p>
+          )}
 
           <button
             type="button"
