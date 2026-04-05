@@ -5,7 +5,7 @@ edition = "2021"
 authors = ["InboxKey Contributors"]
 description = "Native messaging host for InboxKey IMAP support"
 license = "Apache-2.0"
-repository = "https://github.com/inboxkey/inboxkey"
+repository = "https://github.com/slmnsrf/inboxkey"
 
 [dependencies]
 tokio = { version = "1", features = ["rt-multi-thread", "macros", "io-util", "io-std", "time", "net"] }

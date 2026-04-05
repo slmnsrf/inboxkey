@@ -5,10 +5,23 @@ AGENTS.md
 # Local
 *docker*
 
-# Project documentation (kept local)
+# Internal documentation (kept local, not public)
 specifications.md
 implementation.md
 docs/*
+TEST_FAILURE_ANALYSIS.md
+intent-feature.md
+
+# Internal planning docs (kept local)
+inboxbridge/HARDENING-PLAN.md
+inboxbridge/RELEASE-PLAN.md
+roadmap.md
+
+# Fine-tuning data (may contain PII)
+fine-tune-json-data/
+
+# Prototypes (local UI experiments)
+prototypes/
 
 # Dependencies
 node_modules/
@@ -23,6 +36,8 @@ build/
 .next/
 out/
 
+# Plasmo generated files
+**/.plasmo/
 
 # Environment variables
 .env
@@ -58,9 +73,7 @@ test-results/
 # Demo/prototype files
 *demo*.html
 
-# Parcel cache
-apps/reviewer/.plasmo/cache/
-**/plasmo/cache/
+# Worktrees
 .worktrees/
 
 # Rust build artifacts (binary files break PR diffs if committed)
@@ -72,13 +85,12 @@ inboxbridge/target/
 
 # Snapshots and local exports
 .pr7snapshot/
-prototypes.zip
-prototypes/**/screenshots/
 
 # Downloaded web pages (local testing artifacts)
 *.html_files/
 Google Messages for web_*
 Two-Factor Authorization*
+example-cases-exports/
 
 # Windows null device artifact
 inboxbridge/nul
