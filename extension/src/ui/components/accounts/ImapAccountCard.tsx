@@ -140,6 +140,8 @@ export function ImapAccountCard({
     }
   }
 
+  const isBlocked = compatibility !== null && !compatibility.compatible
+
   return (
     <AccountSection
       provider="imap-bridge"
@@ -156,7 +158,7 @@ export function ImapAccountCard({
             type="button"
             className="btn btn--secondary btn--sm"
             onClick={onAddImap}
-            disabled={disabled}
+            disabled={disabled || isBlocked}
             aria-label={t('accounts_imap_add')}
           >
             <Plus size={14} aria-hidden="true" />
@@ -185,7 +187,7 @@ export function ImapAccountCard({
           </p>
         </div>
       )}
-      {compatibility && !compatibility.compatible && accounts.length > 0 && (
+      {compatibility && !compatibility.compatible && (
         <div className="alert alert--error" role="alert" style={{ marginBottom: 'var(--space-3, 12px)' }}>
           <p><strong>{t('bridge_update_required')}</strong></p>
           <a
@@ -328,7 +330,10 @@ export function ImapAccountCard({
           )
         })
       ) : bridgeStatus === 'disconnected' ? (
-        <BridgeInstallGuide onConnected={() => setBridgeStatus('connected')} />
+        <BridgeInstallGuide onConnected={(ping) => {
+          setBridgeStatus('connected')
+          setCompatibility(checkCompatibility(ping))
+        }} />
       ) : (
         <div className="empty-slot" role="note">
           <div className="empty-slot__icon">
@@ -339,7 +344,7 @@ export function ImapAccountCard({
             type="button"
             className="btn btn--primary"
             onClick={onAddImap}
-            disabled={disabled}
+            disabled={disabled || isBlocked}
           >
             {t('accounts_imap_add_cta')}
           </button>
