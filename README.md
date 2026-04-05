@@ -4,6 +4,8 @@
 
 Verification codes and magic links are detected in your email and filled automatically on websites. Everything is processed locally on your device. No servers, no tracking, no data leaves your browser.
 
+<!-- TODO: Add screenshot or GIF of autofill in action -->
+
 ---
 
 ## Why this exists
@@ -16,16 +18,27 @@ This is a hobby project by one developer. No company, no investors, no agenda. B
 
 ---
 
-## How it works
+## Install
 
-1. You visit a website that asks for a verification code
-2. InboxKey detects the input field and starts watching your email
-3. When the code arrives, it gets filled automatically
-4. A brief confirmation appears, then it gets out of your way
+<!-- **[Install from Chrome Web Store](https://chrome.google.com/webstore/detail/inboxkey/...)** -->
 
-For magic login links, the popup shows a safe preview. You decide whether to open it.
+Chrome Web Store listing is coming soon. For now, see [Building from source](#building-from-source) below.
 
-All of this happens on your device. The extension reads your recent emails (read-only), extracts codes and links locally, and never sends anything anywhere.
+---
+
+## Setup
+
+1. Connect your Gmail account (one click, read-only access)
+2. Visit a website that asks for a verification code
+3. InboxKey detects the field, watches your email, fills the code in
+
+That's it.
+
+### What about other email providers?
+
+For most people, one Gmail account is enough. If you also use Yahoo, Outlook, ProtonMail, or others, you don't need to connect each one separately. Just set up a forwarding rule in those providers to forward verification emails to your Gmail. Filter by keywords like "code", "verify", "confirmation", "one-time". All your codes land in one inbox, InboxKey handles the rest.
+
+If you prefer to connect other accounts directly without forwarding, there's an advanced option called [InboxBridge](#inboxbridge).
 
 ---
 
@@ -40,29 +53,38 @@ Email access is sensitive. There's no way around that. Here's how InboxKey handl
 - **Encryption at rest.** Stored codes are encrypted with AES-256-GCM in your browser's local storage.
 - **Open-source.** Every line of code is right here. Review it, audit it, build it yourself.
 
-The privacy policy is in [PRIVACY.md](PRIVACY.md) and the security model is documented in [SECURITY.md](SECURITY.md). These aren't boilerplate -- they describe exactly what happens and what doesn't.
+Details in [PRIVACY.md](PRIVACY.md) and [SECURITY.md](SECURITY.md).
 
 ---
 
-## Email providers
+## Support
 
-| Provider | How it connects |
-|----------|----------------|
-| **Gmail** | Chrome's built-in OAuth (chrome.identity) |
-| **Google Messages** (SMS codes) | Local tab connection |
-| **IMAP** (Yahoo, ProtonMail, Fastmail, Outlook, custom servers) | Via [InboxBridge](#inboxbridge-advanced) companion app |
+This is a free, open-source project maintained by one person in their spare time. If InboxKey saves you a few seconds every day and you want to support it, a coffee goes a long way:
 
-### Gmail
+[![Buy Me A Coffee](https://img.shields.io/badge/Buy%20Me%20A%20Coffee-support-yellow.svg)](https://buymeacoffee.com/inboxkey)
 
-Gmail uses Chrome's built-in identity system. You need to be signed in to Chrome with your Google account. Other Chromium-based browsers (Brave, Edge) may not work with Gmail -- that's a Chrome API limitation, not an InboxKey one.
+No pressure. Completely optional. The extension is free forever regardless.
 
-For most people, **one Gmail account is all you need.** If you use multiple email providers (Yahoo, Outlook, ProtonMail, etc.), you don't necessarily need to connect each one. Instead, set up email forwarding rules in those providers to forward verification emails to your Gmail account. Most providers let you filter by keywords like "code", "verify", "confirmation", "one-time", "sign in". That way, all your verification codes land in one inbox and InboxKey picks them up from there. Simple, no extra software needed.
+---
 
-### InboxBridge (advanced)
+## License
 
-If you prefer to connect your other email accounts directly without forwarding, InboxBridge is available. It is a small companion app that connects to IMAP email servers locally on your machine. This is entirely optional and only relevant if you want direct access to multiple mailboxes.
+Apache-2.0. See [LICENSE](LICENSE).
+
+Open-source under a permissive license because transparency is the only way to earn trust when an extension reads your email.
+
+---
+
+<details>
+<summary><strong>InboxBridge</strong></summary>
+
+### What is it
+
+InboxBridge is a small companion app that connects to IMAP email servers (Yahoo, ProtonMail, Fastmail, Outlook, custom servers) locally on your machine. It is entirely optional. Most users don't need it.
 
 Chrome extensions cannot make IMAP connections due to browser security restrictions. InboxBridge acts as a local bridge between the extension and your mail server.
+
+### Details
 
 - Open-source, written in Rust
 - Credentials stored in your OS keychain (never on disk)
@@ -71,15 +93,10 @@ Chrome extensions cannot make IMAP connections due to browser security restricti
 
 Download from [GitHub Releases](https://github.com/slmnsrf/inboxkey/releases).
 
----
+</details>
 
-## Installation
-
-### Chrome Web Store
-
-Coming soon.
-
-### From source
+<details>
+<summary><strong>Building from source</strong></summary>
 
 ```bash
 git clone https://github.com/slmnsrf/inboxkey.git
@@ -91,34 +108,20 @@ pnpm install
 # Build the extension
 cd extension
 npm run build
-
-# Load in Chrome:
-# 1. Go to chrome://extensions
-# 2. Enable "Developer mode"
-# 3. Click "Load unpacked"
-# 4. Select the extension/build/chrome-mv3-prod/ directory
 ```
 
----
+Then load in Chrome:
+1. Go to `chrome://extensions`
+2. Enable "Developer mode"
+3. Click "Load unpacked"
+4. Select the `extension/build/chrome-mv3-prod/` directory
 
-## Permissions
+</details>
 
-| Permission | Why |
-|------------|-----|
-| `identity` | Authenticate with Gmail via Chrome's OAuth |
-| `storage` | Store encrypted codes locally |
-| `tabs` | Detect when you're on a page with a verification field |
-| `scripting` | Fill codes into input fields |
-| `nativeMessaging` | Communicate with InboxBridge for IMAP accounts |
-| `notifications` | Notify when a code is found but auto-fill isn't possible |
+<details>
+<summary><strong>Development</strong></summary>
 
-No access to history, bookmarks, downloads, or browsing data.
-
----
-
-## Project structure
-
-This is a monorepo:
+### Project structure
 
 ```
 inboxkey/
@@ -139,11 +142,9 @@ inboxkey/
 - **Testing:** Vitest, Playwright
 - **IMAP bridge:** Rust, async-imap, tokio
 
----
+### Commands
 
-## Development
-
-All extension commands run from the `extension/` directory:
+All commands run from the `extension/` directory:
 
 ```bash
 cd extension
@@ -157,23 +158,7 @@ npm run typecheck    # TypeScript type checking
 
 See [development.md](development.md) for the full guide.
 
----
-
-## License
-
-Apache-2.0. See [LICENSE](LICENSE).
-
-Open-source under a permissive license because transparency is the only way to earn trust when an extension reads your email.
-
----
-
-## Support
-
-This is a free, open-source project maintained by one person in their spare time. If InboxKey saves you a few seconds every day and you want to support it, a coffee goes a long way:
-
-[![Buy Me A Coffee](https://img.shields.io/badge/Buy%20Me%20A%20Coffee-support-yellow.svg)](https://buymeacoffee.com/inboxkey)
-
-No pressure. Completely optional. The extension is free forever regardless.
+</details>
 
 ---
 
