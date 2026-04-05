@@ -1370,6 +1370,58 @@
     "message": "View source code",
     "description": "Link to GitHub source"
   },
+  "bridge_uninstall_button": {
+    "message": "Uninstall InboxBridge",
+    "description": "Button to start InboxBridge uninstall flow"
+  },
+  "bridge_uninstall_title": {
+    "message": "Uninstall InboxBridge",
+    "description": "Modal title"
+  },
+  "bridge_uninstall_warning": {
+    "message": "This will remove all IMAP accounts from InboxKey and clear stored credentials from your system keychain. You will lose access to all IMAP-connected email accounts in InboxKey.",
+    "description": "Warning text in uninstall modal"
+  },
+  "bridge_uninstall_confirm_label": {
+    "message": "Type UNINSTALL to confirm",
+    "description": "Label for confirmation input"
+  },
+  "bridge_uninstall_confirm_word": {
+    "message": "UNINSTALL",
+    "description": "The word the user must type to confirm"
+  },
+  "bridge_uninstall_action": {
+    "message": "Remove all data and uninstall",
+    "description": "Destructive action button"
+  },
+  "bridge_uninstall_cancel": {
+    "message": "Cancel",
+    "description": "Cancel button"
+  },
+  "bridge_uninstall_cleaning": {
+    "message": "Removing data...",
+    "description": "Shown while cleanup is in progress"
+  },
+  "bridge_uninstall_done_title": {
+    "message": "Data removed",
+    "description": "Title after cleanup completes"
+  },
+  "bridge_uninstall_done_windows": {
+    "message": "All IMAP accounts and keychain credentials have been removed. To finish uninstalling, open Windows Settings, go to Apps > Installed apps, find InboxBridge, and click Uninstall.",
+    "description": "Post-cleanup instructions for Windows"
+  },
+  "bridge_uninstall_done_macos": {
+    "message": "All IMAP accounts and keychain credentials have been removed. To finish uninstalling, open Terminal and run: sudo rm /usr/local/bin/inboxbridge",
+    "description": "Post-cleanup instructions for macOS"
+  },
+  "bridge_uninstall_done_linux": {
+    "message": "All IMAP accounts and keychain credentials have been removed. To finish uninstalling, open a terminal and run: rm ~/.local/bin/inboxbridge",
+    "description": "Post-cleanup instructions for Linux"
+  },
+  "bridge_uninstall_done_close": {
+    "message": "Done",
+    "description": "Close button after uninstall instructions"
+  },
   "bridge_warning_windows": {
     "message": "You may see a \"Windows protected your PC\" message when running the installer. This happens because InboxBridge is not digitally signed. Code signing certificates cost $200-500 per year, and as an open-source project without funding, we can't afford one. The app is completely safe -- you can review every line of source code on GitHub. To proceed: click \"More info\", then \"Run anyway\".",
     "description": "Unsigned software warning for Windows"

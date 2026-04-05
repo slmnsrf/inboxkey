@@ -19,6 +19,7 @@ import { AccountSection } from './shared/AccountSection'
 import { AccountRow } from './shared/AccountRow'
 import { getNativeClient } from '@/lib/native-messaging'
 import { BridgeInstallGuide } from './BridgeInstallGuide'
+import { UninstallBridgeModal } from './UninstallBridgeModal'
 import { checkCompatibility, getUpdateUrl, type CompatibilityStatus } from '@/lib/native-messaging/version-check'
 
 interface ImapAccountCardProps {
@@ -55,6 +56,7 @@ export function ImapAccountCard({
   const [compatibility, setCompatibility] = useState<CompatibilityStatus | null>(null)
   const [testingId, setTestingId] = useState<string | null>(null)
   const [testResult, setTestResult] = useState<Record<string, 'success' | 'error' | null>>({})
+  const [showUninstallModal, setShowUninstallModal] = useState(false)
 
   // Check InboxBridge status and compatibility
   useEffect(() => {
@@ -149,16 +151,28 @@ export function ImapAccountCard({
       feedbackMessage={removeError || undefined}
       feedbackType="error"
       actionButton={
-        <button
-          type="button"
-          className="btn btn--secondary btn--sm"
-          onClick={onAddImap}
-          disabled={disabled}
-          aria-label={t('accounts_imap_add')}
-        >
-          <Plus size={14} aria-hidden="true" />
-          {t('accounts_imap_add')}
-        </button>
+        <>
+          <button
+            type="button"
+            className="btn btn--secondary btn--sm"
+            onClick={onAddImap}
+            disabled={disabled}
+            aria-label={t('accounts_imap_add')}
+          >
+            <Plus size={14} aria-hidden="true" />
+            {t('accounts_imap_add')}
+          </button>
+          {bridgeStatus === 'connected' && (
+            <button
+              type="button"
+              className="btn btn--danger-ghost btn--sm"
+              onClick={() => setShowUninstallModal(true)}
+              disabled={disabled}
+            >
+              {t('bridge_uninstall_button')}
+            </button>
+          )}
+        </>
       }
     >
       {bridgeStatus === 'disconnected' && accounts.length > 0 && (
@@ -330,6 +344,17 @@ export function ImapAccountCard({
             {t('accounts_imap_add_cta')}
           </button>
         </div>
+      )}
+      {showUninstallModal && (
+        <UninstallBridgeModal
+          imapAccountIds={accounts.map(a => a.id)}
+          onComplete={() => {
+            setShowUninstallModal(false)
+            setBridgeStatus('disconnected')
+            onAccountChanged()
+          }}
+          onCancel={() => setShowUninstallModal(false)}
+        />
       )}
     </AccountSection>
   )
