@@ -1,0 +1,34 @@
+#!/bin/bash
+# postinstall -- runs as root during PKG installation
+# Writes Chrome Native Messaging manifest to the real user's home directory
+
+set -e
+
+EXTENSION_ID="mioicbneapdjamkppcidooggnmegpocn"
+BINARY_PATH="/usr/local/bin/inboxbridge"
+
+# Detect logged-in user (not root)
+CONSOLE_USER=$(stat -f "%Su" /dev/console)
+USER_HOME=$(dscl . -read /Users/"$CONSOLE_USER" NFSHomeDirectory | awk '{print $2}')
+
+# Chrome NativeMessagingHosts directory
+NM_DIR="$USER_HOME/Library/Application Support/Google/Chrome/NativeMessagingHosts"
+mkdir -p "$NM_DIR"
+
+# Write manifest
+cat > "$NM_DIR/com.inboxkey.bridge.json" <<EOF
+{
+  "name": "com.inboxkey.bridge",
+  "description": "InboxBridge Native Messaging Host for IMAP Support",
+  "path": "$BINARY_PATH",
+  "type": "stdio",
+  "allowed_origins": [
+    "chrome-extension://$EXTENSION_ID/"
+  ]
+}
+EOF
+
+# Fix ownership (created as root, should be owned by user)
+chown "$CONSOLE_USER" "$NM_DIR/com.inboxkey.bridge.json"
+
+exit 0
