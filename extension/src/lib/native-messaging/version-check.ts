@@ -36,7 +36,7 @@ export function checkCompatibility(ping: PingResult): CompatibilityStatus {
 }
 
 function isVersionSatisfied(current: string, minimum: string): boolean {
-  const parse = (v: string) => v.split('.').map(Number)
+  const parse = (v: string) => v.split('-')[0].split('.').map(Number)
   const [cMaj, cMin, cPat] = parse(current)
   const [mMaj, mMin, mPat] = parse(minimum)
   if (cMaj !== mMaj) return cMaj > mMaj
