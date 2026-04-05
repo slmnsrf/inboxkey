@@ -49,8 +49,7 @@ The privacy policy is in [PRIVACY.md](PRIVACY.md) and the security model is docu
 | Provider | How it connects | Status |
 |----------|----------------|--------|
 | **Gmail** | Chrome's built-in OAuth (chrome.identity) | Supported |
-| **Outlook** | OAuth 2.0 with PKCE | Supported |
-| **IMAP** (Yahoo, ProtonMail, Fastmail, custom servers) | Via [InboxBridge](#inboxbridge) companion app | Supported |
+| **IMAP** (Yahoo, ProtonMail, Fastmail, Outlook, custom servers) | Via [InboxBridge](#inboxbridge) companion app | Supported |
 | **Google Messages** (SMS codes) | Local tab connection | Supported |
 
 ### Gmail notes
