@@ -8,11 +8,11 @@ Verification codes and magic links are detected in your email and filled automat
 
 ## Why this exists
 
-I got tired of the copy-paste dance. Sign up for something, wait for the email, switch tabs, find the code, switch back, paste it, hope the field didn't reset. Multiply that by every login, every day.
+Every login, every signup, every password reset: check your email, find the code, copy it, paste it. Over and over.
 
-So I built InboxKey for myself. It watches your email, finds the code, and fills it in -- automatically, quietly, locally. After using it for a while, I figured: why not open-source it and let others use it too?
+InboxKey does that for you. It reads your email, finds the code, fills it in. Locally, on your device.
 
-This is a hobby project by a solo developer. No company behind it, no investors, no agenda. Just a tool that solves a small annoying problem.
+This is a hobby project by one developer. No company, no investors, no agenda. Built it for myself, decided to publish it for everyone.
 
 ---
 
