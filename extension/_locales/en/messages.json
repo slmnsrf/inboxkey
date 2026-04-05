@@ -1322,6 +1322,74 @@
     "message": "InboxBridge is required to connect IMAP accounts. Download and install it to continue.",
     "description": "Instructions for installing InboxBridge"
   },
+  "bridge_install_heading": {
+    "message": "Install InboxBridge",
+    "description": "Heading for the InboxBridge install guide"
+  },
+  "bridge_install_what": {
+    "message": "InboxBridge is a small companion app that lets InboxKey connect to your email server. It runs locally on your computer -- no data leaves your device.",
+    "description": "Description of what InboxBridge is"
+  },
+  "bridge_install_download": {
+    "message": "Download InboxBridge",
+    "description": "Download button label"
+  },
+  "bridge_install_hint_windows": {
+    "message": "Look for InboxBridge-...-windows-x64.exe",
+    "description": "OS-specific download filename hint for Windows"
+  },
+  "bridge_install_hint_macos": {
+    "message": "Look for InboxBridge-...-macos-universal.pkg",
+    "description": "OS-specific download filename hint for macOS"
+  },
+  "bridge_install_hint_linux": {
+    "message": "Look for InboxBridge-...-linux-x64.tar.gz",
+    "description": "OS-specific download filename hint for Linux"
+  },
+  "bridge_install_installed": {
+    "message": "I've installed it",
+    "description": "Button after user installs InboxBridge"
+  },
+  "bridge_install_restart": {
+    "message": "Now quit Chrome completely and reopen it, then click the button below.",
+    "description": "Instruction to restart Chrome after install"
+  },
+  "bridge_install_check": {
+    "message": "Check connection",
+    "description": "Button to retry bridge connection after restart"
+  },
+  "bridge_install_checking": {
+    "message": "Checking...",
+    "description": "Shown while pinging InboxBridge"
+  },
+  "bridge_install_retry_fail": {
+    "message": "Still not detected. Make sure you've quit Chrome completely (check your system tray) and reopened it.",
+    "description": "Shown when retry fails after install"
+  },
+  "bridge_install_source": {
+    "message": "View source code",
+    "description": "Link to GitHub source"
+  },
+  "bridge_warning_windows": {
+    "message": "You may see a \"Windows protected your PC\" message when running the installer. This happens because InboxBridge is not digitally signed. Code signing certificates cost $200-500 per year, and as an open-source project without funding, we can't afford one. The app is completely safe -- you can review every line of source code on GitHub. To proceed: click \"More info\", then \"Run anyway\".",
+    "description": "Unsigned software warning for Windows"
+  },
+  "bridge_warning_macos": {
+    "message": "You may see an \"unidentified developer\" warning when opening the installer. Apple charges $99 per year for a Developer Program membership required to sign apps, and as an open-source project without funding, we can't afford one. The app is completely safe -- you can review every line of source code on GitHub. To proceed: right-click the .pkg file, click \"Open\", then click \"Open\" again in the dialog.",
+    "description": "Unsigned software warning for macOS"
+  },
+  "bridge_update_required": {
+    "message": "InboxBridge needs to be updated to work with this version of InboxKey.",
+    "description": "Hard gate: protocol incompatible"
+  },
+  "bridge_update_available": {
+    "message": "A newer version of InboxBridge is available.",
+    "description": "Soft gate: outdated but compatible"
+  },
+  "bridge_update_download": {
+    "message": "Download Update",
+    "description": "Update download button label"
+  },
   "accounts_imap_install_bridge": {
     "message": "Download InboxBridge",
     "description": "Button to download InboxBridge"
