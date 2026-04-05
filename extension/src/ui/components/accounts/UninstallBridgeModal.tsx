@@ -4,7 +4,7 @@
  * Flow:
  * 1. Show warning + consequences
  * 2. User must type "UNINSTALL" to enable the button
- * 3. On confirm: remove all IMAP accounts, call bridge.cleanup via native messaging
+ * 3. On confirm: remove all IMAP accounts from extension storage
  * 4. Show OS-specific instructions for deleting the binary
  *
  * Uses the shared Modal component for focus trap, ESC key, and accessibility.
@@ -13,23 +13,10 @@
 import React, { useState } from 'react'
 import { AlertTriangle } from 'lucide-react'
 import { t } from '@/lib/i18n'
-import { getNativeClient } from '@/lib/native-messaging'
 import { Modal } from '@/ui/components/Modal'
+import { detectOS } from '@/lib/utils/detect-os'
 
 type Phase = 'confirm' | 'cleaning' | 'done'
-
-function detectOS(): 'windows' | 'macos' | 'linux' {
-  const platform = (navigator as any).userAgentData?.platform
-  if (platform) {
-    if (platform === 'Windows') return 'windows'
-    if (platform === 'macOS') return 'macos'
-    return 'linux'
-  }
-  const ua = navigator.platform
-  if (ua.startsWith('Win')) return 'windows'
-  if (ua.startsWith('Mac')) return 'macos'
-  return 'linux'
-}
 
 interface UninstallBridgeModalProps {
   imapAccountIds: string[]
@@ -44,6 +31,7 @@ export function UninstallBridgeModal({
 }: UninstallBridgeModalProps) {
   const [phase, setPhase] = useState<Phase>('confirm')
   const [confirmText, setConfirmText] = useState('')
+  const [partialFailure, setPartialFailure] = useState(false)
   const confirmWord = t('bridge_uninstall_confirm_word')
   const isConfirmed = confirmText.trim().toUpperCase() === confirmWord.toUpperCase()
   const os = detectOS()
@@ -51,25 +39,22 @@ export function UninstallBridgeModal({
   const handleUninstall = async () => {
     setPhase('cleaning')
 
-    // 1. Remove all IMAP accounts from extension storage
+    // Remove all IMAP accounts from extension storage
+    let failedCount = 0
     for (const mailboxId of imapAccountIds) {
       try {
-        await chrome.runtime.sendMessage({
+        const response = await chrome.runtime.sendMessage({
           type: 'REMOVE_MAILBOX',
           mailboxId,
         })
+        if (!response?.success) failedCount++
       } catch {
-        // Best effort -- continue even if one fails
+        failedCount++
       }
     }
 
-    // 2. Call InboxBridge --cleanup to clear keychain entries
-    try {
-      const client = getNativeClient()
-      await client.request('bridge.cleanup', {}, { timeout: 10000 })
-    } catch {
-      // Bridge may not support this RPC -- that's OK
-      // The OS uninstaller (or manual rm) will handle it
+    if (failedCount > 0) {
+      setPartialFailure(true)
     }
 
     setPhase('done')
@@ -167,7 +152,14 @@ export function UninstallBridgeModal({
       )}
 
       {phase === 'done' && (
-        <p>{t(`bridge_uninstall_done_${os}`)}</p>
+        <>
+          {partialFailure && (
+            <p className="alert alert--warning" role="alert" style={{ marginBottom: 'var(--space-3, 12px)' }}>
+              {t('bridge_uninstall_partial')}
+            </p>
+          )}
+          <p>{t(`bridge_uninstall_done_${os}`)}</p>
+        </>
       )}
     </Modal>
   )

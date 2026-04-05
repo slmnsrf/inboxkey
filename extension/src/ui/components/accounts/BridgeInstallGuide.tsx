@@ -10,22 +10,11 @@ import { Download, ExternalLink, RefreshCw } from 'lucide-react'
 import { t } from '@/lib/i18n'
 import { GITHUB_REPO_URL, INBOXBRIDGE_RELEASES_URL } from '@/lib/constants'
 import { getNativeClient } from '@/lib/native-messaging'
+import type { PingResult } from '@/lib/native-messaging/types'
+import { detectOS } from '@/lib/utils/detect-os'
 
 type Step = 'download' | 'restart' | 'check'
 type CheckResult = 'idle' | 'checking' | 'success' | 'fail'
-
-function detectOS(): 'windows' | 'macos' | 'linux' {
-  const platform = (navigator as any).userAgentData?.platform
-  if (platform) {
-    if (platform === 'Windows') return 'windows'
-    if (platform === 'macOS') return 'macos'
-    return 'linux'
-  }
-  const ua = navigator.platform
-  if (ua.startsWith('Win')) return 'windows'
-  if (ua.startsWith('Mac')) return 'macos'
-  return 'linux'
-}
 
 function getDownloadHint(os: 'windows' | 'macos' | 'linux'): string {
   return t(`bridge_install_hint_${os}`)
@@ -38,7 +27,7 @@ function getWarningKey(os: 'windows' | 'macos' | 'linux'): string | null {
 }
 
 interface BridgeInstallGuideProps {
-  onConnected: () => void
+  onConnected: (ping: PingResult) => void
 }
 
 export function BridgeInstallGuide({ onConnected }: BridgeInstallGuideProps) {
@@ -51,13 +40,9 @@ export function BridgeInstallGuide({ onConnected }: BridgeInstallGuideProps) {
     setCheckResult('checking')
     try {
       const client = getNativeClient()
-      const status = await client.checkInstallStatus()
-      if (status.installed) {
-        setCheckResult('success')
-        onConnected()
-      } else {
-        setCheckResult('fail')
-      }
+      const ping = await client.ping()
+      setCheckResult('success')
+      onConnected(ping)
     } catch {
       setCheckResult('fail')
     }
