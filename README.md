@@ -46,26 +46,30 @@ The privacy policy is in [PRIVACY.md](PRIVACY.md) and the security model is docu
 
 ## Email providers
 
-| Provider | How it connects | Status |
-|----------|----------------|--------|
-| **Gmail** | Chrome's built-in OAuth (chrome.identity) | Supported |
-| **IMAP** (Yahoo, ProtonMail, Fastmail, Outlook, custom servers) | Via [InboxBridge](#inboxbridge) companion app | Supported |
-| **Google Messages** (SMS codes) | Local tab connection | Supported |
+| Provider | How it connects |
+|----------|----------------|
+| **Gmail** | Chrome's built-in OAuth (chrome.identity) |
+| **Google Messages** (SMS codes) | Local tab connection |
+| **IMAP** (Yahoo, ProtonMail, Fastmail, Outlook, custom servers) | Via [InboxBridge](#inboxbridge-advanced) companion app |
 
-### Gmail notes
+### Gmail
 
 Gmail uses Chrome's built-in identity system. You need to be signed in to Chrome with your Google account. Other Chromium-based browsers (Brave, Edge) may not work with Gmail -- that's a Chrome API limitation, not an InboxKey one.
 
-### InboxBridge
+For most people, **one Gmail account is all you need.** If you use multiple email providers (Yahoo, Outlook, ProtonMail, etc.), you don't necessarily need to connect each one. Instead, set up email forwarding rules in those providers to forward verification emails to your Gmail account. Most providers let you filter by keywords like "code", "verify", "confirmation", "one-time", "sign in". That way, all your verification codes land in one inbox and InboxKey picks them up from there. Simple, no extra software needed.
 
-IMAP email providers (Yahoo, ProtonMail, Fastmail, or your own mail server) need a small companion app called InboxBridge. Chrome extensions can't make direct IMAP connections due to browser security restrictions, so InboxBridge acts as a local bridge.
+### InboxBridge (advanced)
 
-- Written in Rust
+If you prefer to connect your other email accounts directly without forwarding, InboxBridge is available. It is a small companion app that connects to IMAP email servers locally on your machine. This is entirely optional and only relevant if you want direct access to multiple mailboxes.
+
+Chrome extensions cannot make IMAP connections due to browser security restrictions. InboxBridge acts as a local bridge between the extension and your mail server.
+
+- Open-source, written in Rust
 - Credentials stored in your OS keychain (never on disk)
-- Communicates with the extension via Chrome's Native Messaging API (stdin/stdout, no network)
+- Communicates with the extension via Chrome's Native Messaging API (local stdin/stdout, no network)
 - Runs only when the extension needs it, then exits
 
-Download InboxBridge from [GitHub Releases](https://github.com/slmnsrf/inboxkey/releases).
+Download from [GitHub Releases](https://github.com/slmnsrf/inboxkey/releases).
 
 ---
 
