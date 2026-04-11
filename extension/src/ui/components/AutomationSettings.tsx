@@ -47,16 +47,20 @@ const AUTOMATION_LEVELS: AutomationOption[] = [
 export function AutomationSettings() {
   const [level, setLevel] = useState<AutomationLevel>('autofill')
   const [isLoading, setIsLoading] = useState(true)
-  const [warningDismissed, setWarningDismissed] = useState(false)
+  const [warningVisible, setWarningVisible] = useState(false)
   const { showToast } = useToast()
 
-  // Load from storage on mount
+  // Load from storage on mount (including warning dismissal state)
   useEffect(() => {
     const loadSettings = async () => {
       try {
-        const result = await chrome.storage.local.get('settings')
+        const result = await chrome.storage.local.get(['settings', 'fullAutoWarningDismissed'])
         if (result.settings?.automationLevel) {
           setLevel(result.settings.automationLevel)
+        }
+        // Show warning only if full-automation is active and not previously dismissed
+        if (result.settings?.automationLevel === 'full-automation' && !result.fullAutoWarningDismissed) {
+          setWarningVisible(true)
         }
       } catch (error) {
         console.warn('[AutomationSettings] Failed to load settings:', error)
@@ -68,11 +72,25 @@ export function AutomationSettings() {
     loadSettings()
   }, [])
 
+  // Auto-dismiss warning after 10 seconds
+  useEffect(() => {
+    if (!warningVisible) return
+    const timer = setTimeout(() => {
+      setWarningVisible(false)
+      chrome.storage.local.set({ fullAutoWarningDismissed: true })
+    }, 10_000)
+    return () => clearTimeout(timer)
+  }, [warningVisible])
+
   // Save to storage on change
   const handleChange = async (newLevel: AutomationLevel) => {
     setLevel(newLevel)
     if (newLevel === 'full-automation') {
-      setWarningDismissed(false)
+      // Reset dismissal so warning shows again on re-selection
+      setWarningVisible(true)
+      chrome.storage.local.set({ fullAutoWarningDismissed: false })
+    } else {
+      setWarningVisible(false)
     }
 
     try {
@@ -151,14 +169,17 @@ export function AutomationSettings() {
         })}
       </div>
 
-      {level === 'full-automation' && !warningDismissed && (
+      {warningVisible && (
         <div className="automation-warning" role="alert">
           <InfoIcon size={16} />
           <span>{t('automation_full_warning')}</span>
           <button
             type="button"
             className="automation-warning__dismiss"
-            onClick={() => setWarningDismissed(true)}
+            onClick={() => {
+              setWarningVisible(false)
+              chrome.storage.local.set({ fullAutoWarningDismissed: true })
+            }}
             aria-label={t('aria_dismiss_alert')}
           >
             <X size={14} />
