@@ -30,8 +30,13 @@ Root: HKCU; Subkey: "Software\Google\Chrome\NativeMessagingHosts\com.inboxkey.br
   ValueType: string; ValueData: "{app}\com.inboxkey.bridge.json"; Flags: uninsdeletekey
 
 [UninstallRun]
+; --cleanup wipes keychain entries + accounts.json via the shared
+; cleanup::run_full_cleanup code path. No `nowait` flag: the uninstaller
+; must wait for cleanup to finish before removing the install directory,
+; otherwise the guarantee in README-SETUP.md's "Installer version
+; (recommended)" section is just a race condition.
 Filename: "{app}\inboxbridge.exe"; Parameters: "--cleanup"; \
-  Flags: runhidden nowait skipifdoesntexist
+  Flags: runhidden skipifdoesntexist
 
 [Code]
 procedure CurStepChanged(CurStep: TSetupStep);
