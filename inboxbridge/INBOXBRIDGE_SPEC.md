@@ -898,7 +898,7 @@ Before public release, InboxBridge must pass this security audit:
 - Links to provider documentation
 
 **FAQ** (`docs/inboxbridge/FAQ.md`):
-- "Is InboxBridge safe?" → Yes, open-source, runs locally, uses OS keychain
+- "Is InboxBridge safe?" → Yes, source-available, runs locally, uses OS keychain
 - "Can it see my emails?" → Only messages from last 10 minutes, not full mailbox
 - "How do I uninstall?" → Instructions for each OS
 
@@ -1031,7 +1031,7 @@ cargo build --release
   Cargo.toml              # Dependencies
   README.md               # User-facing documentation
   BUILDING.md             # Developer build instructions
-  LICENSE                # MIT or Apache-2.0
+  LICENSE                # PolyForm Noncommercial 1.0.0
 ```
 
 ---

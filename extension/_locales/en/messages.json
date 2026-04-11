@@ -377,8 +377,8 @@
   },
 
   "about_open_source": {
-    "message": "Open-source",
-    "description": "About: open-source label"
+    "message": "Source-available",
+    "description": "About: source-available label"
   },
   "about_view_source": {
     "message": "View source",
@@ -437,7 +437,7 @@
     "description": "About: buy coffee button"
   },
   "about_support_disclaimer": {
-    "message": "Support is optional and never required. InboxKey is free and open-source forever.",
+    "message": "Support is optional and never required. InboxKey is free and source-available forever.",
     "description": "About: support disclaimer"
   },
   "about_version": {
@@ -454,7 +454,7 @@
   },
 
   "footer_local_only": {
-    "message": "Local-only. No servers. Open source.",
+    "message": "Local-only. No servers. Source-available.",
     "description": "Footer: local-only message"
   },
   "footer_buy_coffee": {
@@ -787,7 +787,7 @@
     "description": "Button to add IMAP account in section header"
   },
   "accounts_imap_description": {
-    "message": "For other email providers. Requires InboxBridge, a small open-source companion app that runs on this computer.",
+    "message": "For other email providers. Requires InboxBridge, a small companion app that runs on this computer.",
     "description": "IMAP section description with InboxBridge context"
   },
   "accounts_imap_empty": {
@@ -1063,8 +1063,8 @@
     "description": "Trust section title"
   },
   "about_trust_pill_open_source": {
-    "message": "Open Source",
-    "description": "Trust pill: open source"
+    "message": "Source Available",
+    "description": "Trust pill: source available"
   },
   "about_trust_pill_verified": {
     "message": "Verified Publisher",
@@ -1079,7 +1079,7 @@
     "description": "Label for view source link"
   },
   "about_source_description": {
-    "message": "Available on GitHub under Apache 2.0 license",
+    "message": "Available on GitHub under PolyForm Noncommercial license",
     "description": "Source code description"
   },
   "about_support_label": {
@@ -1103,8 +1103,8 @@
     "description": "Trust region label in settings"
   },
   "settings_trust_open_source": {
-    "message": "Open source",
-    "description": "Trust indicator: open source"
+    "message": "Source available",
+    "description": "Trust indicator: source available"
   },
   "settings_trust_see_source": {
     "message": "See",
@@ -1403,23 +1403,79 @@
     "description": "Shown while cleanup is in progress"
   },
   "bridge_uninstall_done_title": {
-    "message": "Data removed",
+    "message": "Finish uninstalling InboxBridge",
     "description": "Title after cleanup completes"
   },
-  "bridge_uninstall_done_windows": {
-    "message": "All IMAP accounts have been removed. To finish uninstalling: if you used the installer, open Windows Settings > Apps > Installed apps, find InboxBridge, and click Uninstall. If you used the portable version, delete the InboxBridge folder from %LOCALAPPDATA%.",
-    "description": "Post-cleanup instructions for Windows"
+  "bridge_uninstall_done_subtitle": {
+    "message": "InboxBridge is a separate app. Removing it from this device completes the uninstall.",
+    "description": "Subtitle in the uninstall-done phase"
   },
-  "bridge_uninstall_done_macos": {
-    "message": "All IMAP accounts have been removed. To finish uninstalling, delete the InboxBridge binary. If you used the .pkg installer: sudo rm /usr/local/bin/inboxbridge. If you used the portable version: rm -rf ~/Library/Application\\ Support/InboxBridge",
-    "description": "Post-cleanup instructions for macOS"
+  "bridge_uninstall_done_removed_heading": {
+    "message": "What was removed from this device:",
+    "description": "Heading above the checklist of removed items"
   },
-  "bridge_uninstall_done_linux": {
-    "message": "All IMAP accounts have been removed. To finish uninstalling, run: rm ~/.local/bin/inboxbridge and rm ~/.config/google-chrome/NativeMessagingHosts/com.inboxkey.bridge.json",
-    "description": "Post-cleanup instructions for Linux"
+  "bridge_uninstall_done_removed_accounts": {
+    "message": "IMAP account settings",
+    "description": "Checklist item: account configs were removed"
+  },
+  "bridge_uninstall_done_removed_credentials": {
+    "message": "Stored credentials from the system keychain",
+    "description": "Checklist item: credentials were removed from the OS keychain"
+  },
+  "bridge_uninstall_done_removed_codes": {
+    "message": "Cached verification codes",
+    "description": "Checklist item: cached codes were removed"
+  },
+  "bridge_uninstall_done_step_heading": {
+    "message": "One step remains",
+    "description": "Heading above the OS-specific uninstall instructions"
+  },
+  "bridge_uninstall_done_windows_steps": {
+    "message": "InboxBridge can be removed from Windows Settings, under Installed apps.",
+    "description": "Windows uninstall instruction sentence"
+  },
+  "bridge_uninstall_done_windows_cta": {
+    "message": "Open Windows Settings",
+    "description": "Windows primary CTA button label"
+  },
+  "bridge_uninstall_done_windows_manual": {
+    "message": "For manual installations, the InboxBridge folder can be deleted from:",
+    "description": "Windows fallback manual-install instructions"
+  },
+  "bridge_uninstall_done_windows_path": {
+    "message": "%LOCALAPPDATA%\\InboxBridge",
+    "description": "Windows install path literal; do not translate"
+  },
+  "bridge_uninstall_done_macos_steps": {
+    "message": "InboxBridge can be removed by dragging it from the Applications folder to the Trash.",
+    "description": "macOS uninstall instruction sentence"
+  },
+  "bridge_uninstall_done_macos_manual": {
+    "message": "For manual installations, this folder can be deleted:",
+    "description": "macOS fallback manual-install instructions"
+  },
+  "bridge_uninstall_done_macos_path": {
+    "message": "~/Library/Application Support/InboxBridge",
+    "description": "macOS install path literal; do not translate"
+  },
+  "bridge_uninstall_done_other_steps": {
+    "message": "InboxBridge can be removed using the operating system's app manager, or by deleting its folder from the home directory.",
+    "description": "Generic uninstall instructions for non-Windows, non-macOS systems"
+  },
+  "bridge_uninstall_done_other_link": {
+    "message": "View the uninstall guide",
+    "description": "Link to docs for non-Windows, non-macOS systems"
+  },
+  "bridge_uninstall_done_path_copy": {
+    "message": "Copy",
+    "description": "Label for button that copies install path to clipboard"
+  },
+  "bridge_uninstall_done_path_copied": {
+    "message": "Copied",
+    "description": "Label shown briefly after clipboard copy succeeds"
   },
   "bridge_uninstall_done_close": {
-    "message": "Done",
+    "message": "Close",
     "description": "Close button after uninstall instructions"
   },
   "bridge_uninstall_partial": {
@@ -1427,11 +1483,11 @@
     "description": "Warning shown when some IMAP account removals fail during uninstall"
   },
   "bridge_warning_windows": {
-    "message": "You may see a \"Windows protected your PC\" message when running the installer. This happens because InboxBridge is not digitally signed. Code signing certificates cost $200-500 per year, and as an open-source project without funding, we can't afford one. The app is completely safe -- you can review every line of source code on GitHub. To proceed: click \"More info\", then \"Run anyway\".",
+    "message": "You may see a \"Windows protected your PC\" message when running the installer. This happens because InboxBridge is not digitally signed. Code signing certificates cost $200-500 per year, and as a source-available project without funding, we can't afford one. The app is completely safe -- you can review every line of source code on GitHub. To proceed: click \"More info\", then \"Run anyway\".",
     "description": "Unsigned software warning for Windows"
   },
   "bridge_warning_macos": {
-    "message": "You may see an \"unidentified developer\" warning when opening the installer. Apple charges $99 per year for a Developer Program membership required to sign apps, and as an open-source project without funding, we can't afford one. The app is completely safe -- you can review every line of source code on GitHub. To proceed: right-click the .pkg file, click \"Open\", then click \"Open\" again in the dialog.",
+    "message": "You may see an \"unidentified developer\" warning when opening the installer. Apple charges $99 per year for a Developer Program membership required to sign apps, and as a source-available project without funding, we can't afford one. The app is completely safe -- you can review every line of source code on GitHub. To proceed: right-click the .pkg file, click \"Open\", then click \"Open\" again in the dialog.",
     "description": "Unsigned software warning for macOS"
   },
   "bridge_update_required": {
@@ -2018,12 +2074,12 @@
   },
 
   "security_opensource_title": {
-    "message": "Open source",
-    "description": "Security section: open source"
+    "message": "Source available",
+    "description": "Security section: source available"
   },
   "security_opensource_description": {
     "message": "The full source code is public",
-    "description": "Security section: open source subtitle"
+    "description": "Security section: source available subtitle"
   },
   "security_opensource_available_title": {
     "message": "Publicly available",
@@ -2105,7 +2161,7 @@
     "description": "About: developer note paragraph 1"
   },
   "about_devnote_p2": {
-    "message": "Email access is sensitive. I know that. That is exactly why everything is open-source, runs locally, and will never phone home. You should not have to trust a stranger with your inbox. You should be able to verify.",
+    "message": "Email access is sensitive. I know that. That is exactly why the full source code is public, everything runs locally, and will never phone home. You should not have to trust a stranger with your inbox. You should be able to verify.",
     "description": "About: developer note paragraph 2"
   },
   "about_devnote_signature": {
@@ -2153,7 +2209,7 @@
     "description": "About: support section disclaimer"
   },
   "about_license": {
-    "message": "Apache-2.0 License",
+    "message": "PolyForm Noncommercial 1.0.0",
     "description": "About footer: license badge"
   },
   "about_credits_made_by": {

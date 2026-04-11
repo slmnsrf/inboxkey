@@ -230,12 +230,12 @@ jobs:
 
             ### About the unsigned software warning
 
-            InboxBridge is not digitally signed because code signing certificates cost $200-500/year, which this open-source project cannot afford.
+            InboxBridge is not digitally signed because code signing certificates cost $200-500/year, which this project cannot afford.
 
             **Windows:** You may see "Windows protected your PC." Click "More info", then "Run anyway."
 
             **macOS:** You may see "unidentified developer." Right-click the file, click "Open", then "Open" again.
 
-            The app is 100% open-source. You can review every line of code in [the repository](https://github.com/slmnsrf/inboxkey/tree/main/inboxbridge).
+            The app is 100% source-available. You can review every line of code in [the repository](https://github.com/slmnsrf/inboxkey/tree/main/inboxbridge).
           files: release/*
           fail_on_unmatched_files: true

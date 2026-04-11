@@ -97,7 +97,7 @@ InboxKey is a Manifest V3 Chrome/Chromium extension that keeps verification-code
 ## Architecture Principles
 
 - **Layered microkernel.** Presentation → Application services → Domain logic → Infrastructure. Cross-layer access only through typed contracts; shared utilities stay below 350 LOC per file.
-- **Privacy-first zero trust.** No external servers, strict permission grants, local-only storage (encryption at rest planned), and explicit UI for open-source visibility plus "Buy me a coffee" support link.
+- **Privacy-first zero trust.** No external servers, strict permission grants, local-only storage (encryption at rest planned), and explicit UI for source transparency plus "Buy me a coffee" support link.
 - **Resilient MV3 runtime.** Every workflow tolerates service-worker restarts via idempotent requests, cached state, and defensive reconnect loops.
 - **Accessibility and maintainability.** UI surfaces use the design system tokens, ARIA semantics, keyboard flows, and predictable component boundaries.
 
@@ -146,7 +146,7 @@ InboxKey is a Manifest V3 Chrome/Chromium extension that keeps verification-code
 - **Content scripts (`extension/src/contents`).** Detect verification prompts, open Port connections for 15-second watch sessions, autofill codes, trigger link opens, render reduced-motion-friendly status chips, and recover gracefully if the worker restarts.
 - **Shared libraries (`extension/src/lib`).** Encapsulate detection heuristics, matching, and provider logic. All consumers import via `@/*` aliases to enforce layering.
 - **Extraction Core (`packages/extraction-core`).** Pure extraction logic imported by both main extension and Reviewer. No Chrome APIs.
-- **UI surfaces.** React components consume application services, show open-source/support state, and provide manual actions ("Copy last code", "Open last magic link") as fallbacks.
+- **UI surfaces.** React components consume application services, show source-available/support state, and provide manual actions ("Copy last code", "Open last magic link") as fallbacks.
 
 ## Detection & Triggering System
 

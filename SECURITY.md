@@ -2,13 +2,13 @@
 
 **Last Updated:** April 11, 2026
 
-InboxKey is a privacy-first Chrome extension. This document covers how to report vulnerabilities, what the current alpha release does today, and which security limitations are still open.
+InboxKey is a privacy-first Chrome extension. This document covers how to report vulnerabilities, what the current release line does today, and which security limitations are still open.
 
 ## Supported Versions
 
 | Version | Supported | Notes |
 | --- | --- | --- |
-| 0.0.x | Yes | Current alpha line |
+| 0.0.x | Yes | Current release line |
 | Older versions | No | Upgrade to the latest 0.0.x build |
 
 ## Reporting A Vulnerability
@@ -64,7 +64,7 @@ Current extension storage:
 
 Current limitation:
 
-- Additional application-level encryption at rest for extension storage is planned but is not shipped in the current alpha release.
+- Additional application-level encryption at rest for extension storage is planned but is not shipped in the current release line.
 
 ### Permissions
 
@@ -99,7 +99,7 @@ InboxKey does not request:
 
 ### Transparency
 
-InboxKey is open source under Apache-2.0.
+InboxKey is source-available under PolyForm Noncommercial 1.0.0.
 
 Current transparency mechanisms:
 
@@ -122,9 +122,9 @@ Important caveat:
 
 ## Known Security Considerations
 
-### 1. Alpha Status
+### 1. Ongoing Hardening
 
-InboxKey is still in alpha. Security hardening is ongoing, and documentation may change as the architecture settles.
+Security hardening is still ongoing, and documentation may change as the architecture settles.
 
 ### 2. No Additional Extension-level Encryption At Rest Yet
 
@@ -136,7 +136,7 @@ If the local device, browser profile, or operating system account is compromised
 
 ### 4. No Lock Mode In The Current Release
 
-The current alpha release does not ship a password or lock screen feature. On shared machines, rely on OS account protections rather than assuming the extension has a separate local lock.
+The current release line does not ship a password or lock screen feature. On shared machines, rely on OS account protections rather than assuming the extension has a separate local lock.
 
 ### 5. Development Builds May Log More Detail
 

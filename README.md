@@ -2,10 +2,10 @@
 
 Privacy-first email verification code autofill and magic-link opener for Chrome.
 
-[![Status: Alpha](https://img.shields.io/badge/status-alpha-b45309)](https://github.com/slmnsrf/inboxkey)
+[![Chrome Web Store soon](https://img.shields.io/badge/Chrome%20Web%20Store-coming%20soon-b45309)](https://github.com/slmnsrf/inboxkey)
 [![Browser: Chrome](https://img.shields.io/badge/browser-Chrome-4285F4?logo=googlechrome&logoColor=white)](https://www.google.com/chrome/)
 [![Local-only](https://img.shields.io/badge/local--only-yes-0f766e)](PRIVACY.md)
-[![License: Apache 2.0](https://img.shields.io/badge/license-Apache%202.0-2563eb)](LICENSE)
+[![License: PolyForm Noncommercial](https://img.shields.io/badge/license-PolyForm%20Noncommercial-2563eb)](LICENSE)
 
 > [!IMPORTANT]
 > InboxKey processes verification emails locally on your device. There is no backend, no analytics, and no third-party tracking.
@@ -16,12 +16,12 @@ Privacy-first email verification code autofill and magic-link opener for Chrome.
 
 Every sign-in flow that ends with "check your email" breaks momentum. InboxKey shortens that loop. It detects verification fields, checks recent verification emails, and fills the best match without routing your data through someone else's server.
 
-InboxKey is maintained as an open-source solo project. The goal is simple: make verification flows faster without turning email access into a cloud service.
+InboxKey is a source-available solo project. The full source code is public so you can verify exactly what it does with your data. The goal is simple: make verification flows faster without turning email access into a cloud service.
 
 ## Status
 
 > [!NOTE]
-> InboxKey is currently in alpha. The Chrome Web Store listing is not live yet.
+> InboxKey is preparing for Chrome Web Store launch. The listing is not live yet.
 
 Today, the supported install path is building from source and loading the extension unpacked in Chrome.
 
@@ -61,7 +61,7 @@ Load it in Chrome:
 - Local-only processing. InboxKey does not use a backend server.
 - Read-focused email access. Gmail uses the `gmail.readonly` scope, and InboxKey is implemented to scan recent verification emails rather than send or modify mail.
 - No analytics, telemetry, ads, or third-party scripts.
-- Open source under Apache-2.0.
+- Source-available under PolyForm Noncommercial 1.0.0. Full source code is public for transparency.
 - Local state uses Chrome `storage.local` and `storage.session`. Additional encryption at rest is planned and not yet shipped.
 - Production builds embed a short Git commit hash so a running build can be traced back to source.
 
@@ -69,7 +69,7 @@ Details: [PRIVACY.md](PRIVACY.md), [SECURITY.md](SECURITY.md), and [development.
 
 ## Support
 
-InboxKey is free and open source. If it saves you time and you want to support ongoing work, you can buy a coffee:
+InboxKey is free and source-available. If it saves you time and you want to support ongoing work, you can buy a coffee:
 
 [![Buy Me A Coffee](https://img.shields.io/badge/Buy%20Me%20A%20Coffee-support-yellow.svg)](https://buymeacoffee.com/inboxkey)
 
@@ -78,7 +78,7 @@ No pressure. The extension stays free either way.
 <details>
 <summary><strong>InboxBridge</strong></summary>
 
-InboxBridge is a small open-source companion app for direct IMAP access. Most users do not need it, but it is useful if you want to connect non-Gmail providers without forwarding.
+InboxBridge is a small companion app for direct IMAP access. Most users do not need it, but it is useful if you want to connect non-Gmail providers without forwarding.
 
 It:
 

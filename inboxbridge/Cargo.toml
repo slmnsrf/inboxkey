@@ -4,7 +4,7 @@ version = "1.0.0-rc1"
 edition = "2021"
 authors = ["InboxKey Contributors"]
 description = "Native messaging host for InboxKey IMAP support"
-license = "Apache-2.0"
+license = "PolyForm-Noncommercial-1.0.0"
 repository = "https://github.com/slmnsrf/inboxkey"
 
 [dependencies]

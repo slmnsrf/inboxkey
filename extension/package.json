@@ -4,7 +4,7 @@
   "version": "0.0.1",
   "description": "Privacy-first email code autofill and magic-link opener for Chrome",
   "author": "SelmanSeref",
-  "license": "Apache-2.0",
+  "license": "PolyForm-Noncommercial-1.0.0",
   "scripts": {
     "dev": "plasmo dev",
     "prebuild": "node -e \"require('fs').writeFileSync('.env.local','PLASMO_PUBLIC_GIT_HASH='+require('child_process').execSync('git rev-parse --short HEAD').toString().trim()+'\\n')\"",

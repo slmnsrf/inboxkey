@@ -12,7 +12,7 @@ InboxKey is a privacy-first browser extension. We process everything locally on 
 2. **No tracking** - We don't collect analytics, telemetry, or usage data
 3. **No servers** - We don't operate any backend servers or databases
 4. **No ads** - No advertising, tracking pixels, or third-party scripts
-5. **Open-source** - All code is publicly auditable on GitHub
+5. **Source-available** - All code is publicly auditable on GitHub
 
 ## Data We Access
 
@@ -215,10 +215,10 @@ InboxKey complies with:
 
 ## Transparency
 
-Our code is open-source and publicly auditable:
+Our code is source-available and publicly auditable:
 
 - **Repository**: https://github.com/slmnsrf/inboxkey
-- **License**: Apache-2.0
+- **License**: PolyForm Noncommercial 1.0.0
 - **Security Audits**: Welcome and encouraged
 
 ## Data Breach Notification

@@ -19,7 +19,7 @@
   },
   "keywords": ["otp", "extraction", "magic-link"],
   "author": "InboxKey Team",
-  "license": "Apache-2.0",
+  "license": "PolyForm-Noncommercial-1.0.0",
   "devDependencies": {
     "typescript": "^5.5.3",
     "vitest": "^1.6.0"
