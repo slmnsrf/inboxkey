@@ -3,6 +3,10 @@
  * Displays toast notifications to users within content script context
  */
 
+export const config = {
+  matches: ["https://*/*", "http://*/*"],
+}
+
 import { COLOR_SUCCESS, COLOR_ERROR, COLOR_PRIMARY } from '@/lib/design-tokens'
 
 interface NotificationOptions {

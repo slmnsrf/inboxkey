@@ -2,6 +2,11 @@
  * Session Chip - Backward Compatibility Wrapper
  * Delegates to field-feedback.ts which provides the shimmer border system.
  */
+
+export const config = {
+  matches: ["https://*/*", "http://*/*"],
+}
+
 import { showFieldFeedback } from './field-feedback'
 import type { ChipState, ChipHandle } from './field-feedback'
 

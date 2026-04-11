@@ -9,6 +9,10 @@
  * - CodeFetcher: Retrieves and matches codes from background
  */
 
+export const config = {
+  matches: ["https://*/*", "http://*/*"],
+}
+
 import { FieldDetector } from '@/lib/detection/field-detector'
 import {
   startWatch,

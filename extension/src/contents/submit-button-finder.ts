@@ -9,6 +9,10 @@
  * - Tier 2: Pseudo-buttons (<a>, [role="button"]) - ONLY if tier 1 fails AND feature enabled
  */
 
+export const config = {
+  matches: ["https://*/*", "http://*/*"],
+}
+
 import { matchesSafePattern, matchesDangerousPattern } from '@/lib/i18n/submit-button-patterns'
 import { logBetaFeatureUsage } from '@/lib/storage/telemetry'
 
