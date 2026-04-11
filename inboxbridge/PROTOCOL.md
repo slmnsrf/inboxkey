@@ -127,7 +127,7 @@ Healthcheck and connection validation.
   "id": "uuid-1",
   "result": {
     "ok": true,
-    "version": "1.1.0-rc1",
+    "version": "1.1.0",
     "protocolVersion": 1,
     "minProtocolVersion": 1,
     "features": {

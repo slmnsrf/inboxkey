@@ -29,4 +29,4 @@ export const EXTENSION_MAX_PROTOCOL = 1
  * Recommended InboxBridge app version
  * Shows non-blocking "update available" if native app is older (but protocol-compatible)
  */
-export const RECOMMENDED_INBOXBRIDGE_VERSION = '1.1.0-rc1'
+export const RECOMMENDED_INBOXBRIDGE_VERSION = '1.1.0'
