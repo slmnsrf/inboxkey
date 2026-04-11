@@ -23,6 +23,7 @@ import {
 import { autofillCode } from './autofill'
 import type { DetectionResult } from '@/lib/types'
 import { isExtensionEnabled } from '@/lib/utils/domain'
+import { isHTMLDocument } from '@/lib/utils/is-html-document'
 import { detectSplitInputGroup } from '@/lib/detection/split-input-detector'
 import { hasEmailContext } from '@/lib/detection/email-context-guard'
 import { hydrateSmsCache } from '@/lib/detection/sms-feature-cache'
@@ -53,6 +54,15 @@ export function clearProcessedFields(): void {
 
 // Wrap initialization in async IIFE to check domain before any execution
 ;(async () => {
+  // Bail out on non-HTML documents (SVG, XML, plain text). Content script
+  // match patterns restrict to http(s), but those schemes can still serve
+  // non-HTML top-level documents where `document.body` is null and the
+  // MutationObserver.observe(document.body, ...) call below crashes.
+  // This is a hard prerequisite for every other check in the IIFE.
+  if (!isHTMLDocument()) {
+    return
+  }
+
   // CRITICAL: Check extension state FIRST before any logging or initialization
   // If extension is disabled (by domain preference, banking blocklist, or blacklist), exit silently
   const enabled = await isExtensionEnabled(window.location.href)

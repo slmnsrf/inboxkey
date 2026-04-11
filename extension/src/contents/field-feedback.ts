@@ -17,6 +17,7 @@ export const config = {
 
 import { generateShadowCSS, generateEnhancedKeyframes } from '@/contents/field-feedback-styles'
 import { detectSplitInputGroup } from '@/lib/detection/split-input-detector'
+import { isHTMLDocument } from '@/lib/utils/is-html-document'
 
 // ─── Public types ────────────────────────────────────────────────────────────
 
@@ -106,6 +107,10 @@ const SR_ONLY_STYLES =
   'clip:rect(0,0,0,0);white-space:nowrap;border-width:0;'
 
 function ensureAriaRegions(): void {
+  // Bail out on non-HTML documents where document.body is null.
+  // Defense-in-depth for content scripts injected into SVG/XML pages.
+  if (!isHTMLDocument()) return
+
   if (!srStatusEl) {
     srStatusEl = document.getElementById('inboxkey-sr-status')
     if (!srStatusEl) {
@@ -605,6 +610,11 @@ export async function showFieldFeedback(
   field: HTMLInputElement,
   options: FieldFeedbackOptions = {}
 ): Promise<ChipHandle> {
+  // Bail out on non-HTML documents where document.body is null. The
+  // FieldOverlay constructor at line ~325 appends its host element to
+  // document.body and would otherwise crash on SVG/XML pages.
+  if (!isHTMLDocument()) return NO_OP_HANDLE
+
   // 1. Check setting
   try {
     const result = await chrome.storage.local.get('settings')

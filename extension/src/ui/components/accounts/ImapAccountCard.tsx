@@ -339,6 +339,10 @@ export function ImapAccountCard({
         <BridgeInstallGuide onConnected={(ping) => {
           setBridgeStatus('connected')
           setCompatibility(checkCompatibility(ping))
+          // Cache the full ping so the uninstall modal gets installInfo
+          // immediately after a fresh connect, without waiting for the
+          // effect to re-run on accounts.length change.
+          setBridgePing(ping)
         }} />
       ) : (
         <div className="empty-slot" role="note">
