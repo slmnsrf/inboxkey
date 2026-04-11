@@ -141,7 +141,7 @@ export class WatchSession {
     // Load timeout setting
     const storage = await StorageFactory.create()
     const settings = await storage.getSettings()
-    const timeoutSeconds = settings.sessionTimeoutSeconds ?? 20
+    const timeoutSeconds = settings.sessionTimeoutSeconds ?? 60
 
     // Filter out 'authenticator' -- background only accepts 'email' | 'sms'
     const actionableChannels = (this.detectionResult.detectedChannels ?? ['email'])
@@ -227,7 +227,7 @@ export class WatchSession {
         } else {
           const storage = await StorageFactory.create()
           const settings = await storage.getSettings()
-          chipTimeout = settings.sessionTimeoutSeconds ?? 20
+          chipTimeout = settings.sessionTimeoutSeconds ?? 60
         }
         // V2: Show chip in "listening" state with timeout and close callback
         this.chipHandle = await showSessionChip(
