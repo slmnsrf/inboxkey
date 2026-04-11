@@ -11,6 +11,10 @@
  *   Aria regions   (shared)    -- outside shadow DOM for screen reader access
  */
 
+export const config = {
+  matches: ["https://*/*", "http://*/*"],
+}
+
 import { generateShadowCSS, generateEnhancedKeyframes } from '@/contents/field-feedback-styles'
 import { detectSplitInputGroup } from '@/lib/detection/split-input-detector'
 

@@ -7,6 +7,10 @@
  * and notifies this module whenever a matching code is found or the session times out.
  */
 
+export const config = {
+  matches: ["https://*/*", "http://*/*"],
+}
+
 import type { DetectionResult } from "@/lib/types"
 import { showNotification } from "./notification"
 import { showSessionChip, type ChipHandle } from "./session-chip"

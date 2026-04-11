@@ -13,6 +13,10 @@
  *   data-focused="true"
  */
 
+export const config = {
+  matches: ["https://*/*", "http://*/*"],
+}
+
 import { FONT_FAMILY_UI } from '@/lib/design-tokens'
 
 // InboxKey brand colors (per spec: primary, success, warning)

@@ -3,6 +3,10 @@
  * Handles safe autofilling of verification codes with visual feedback
  */
 
+export const config = {
+  matches: ["https://*/*", "http://*/*"],
+}
+
 import { extractDomain, isDomainEnabled } from '@/lib/utils/domain'
 import { findSubmitButton } from './submit-button-finder'
 import { logAutoSubmitFailure } from '@/lib/storage/telemetry'

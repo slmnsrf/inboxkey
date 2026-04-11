@@ -3,6 +3,10 @@
  * Handles code retrieval and matching from background worker
  */
 
+export const config = {
+  matches: ["https://*/*", "http://*/*"],
+}
+
 import type { StoredCode } from '@/lib/storage/schema'
 import { findBestMatchingCode } from '@/lib/matching/code-matcher'
 

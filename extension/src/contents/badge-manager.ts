@@ -20,6 +20,10 @@
  * @module badge-manager
  */
 
+export const config = {
+  matches: ["https://*/*", "http://*/*"],
+}
+
 import {
   COLOR_PRIMARY,
   COLOR_SUCCESS,
