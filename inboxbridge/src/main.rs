@@ -3,6 +3,8 @@ mod dispatcher;
 mod keychain;
 mod state;
 mod imap_client;
+mod cleanup;
+mod install_info;
 
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use protocol::Request;
@@ -10,17 +12,54 @@ use std::sync::Arc;
 
 #[tokio::main]
 async fn main() {
-    // --cleanup: delete all keychain entries and exit (used by uninstall scripts)
+    // --cleanup: shared with bridge.uninstall RPC via cleanup::run_full_cleanup.
+    // Used by installer uninstall scripts (Windows Inno Setup [UninstallRun],
+    // macOS postremove, manual operator runs).
+    //
+    // Exit codes:
+    //   0 = cleanup completed (keychain wipe attempted for every account and
+    //       accounts.json is gone). Per-account keychain failures are logged
+    //       to stderr but do not change the exit code because they are
+    //       individually recoverable by the user later.
+    //   2 = snapshot read failed -- cleanup did not run at all.
+    //   3 = keychain wipe finished but accounts.json could not be deleted.
+    //
+    // stderr is operator-facing and intentionally English-only.
     if std::env::args().any(|a| a == "--cleanup") {
         let state = state::AppState::new(None);
-        for account in state.list_accounts().unwrap_or_default() {
-            let service = format!("InboxBridge:{}", account.id);
-            let user = format!("{}:{}", account.host, account.port);
-            if let Ok(entry) = keyring::Entry::new(&service, &user) {
-                entry.delete_password().ok();
+        let keychain = keychain::KeychainManager::new();
+
+        match cleanup::run_full_cleanup(&state, &keychain) {
+            Ok(result) => {
+                eprintln!(
+                    "InboxBridge cleanup: {} keychain entries removed, {} failed, accounts.json deleted: {}",
+                    result.keychain_entries_removed,
+                    result.keychain_entries_failed.len(),
+                    result.accounts_file_deleted,
+                );
+                for failure in &result.keychain_entries_failed {
+                    eprintln!(
+                        "  failed: accountId={} service={} reason={}",
+                        failure.account_id, failure.service, failure.reason
+                    );
+                }
+                std::process::exit(0);
+            }
+            Err(cleanup::CleanupError::SnapshotReadFailed(msg)) => {
+                eprintln!(
+                    "InboxBridge cleanup FAILED: could not read account list: {}",
+                    msg
+                );
+                std::process::exit(2);
+            }
+            Err(cleanup::CleanupError::AccountsFileDeleteFailed(msg)) => {
+                eprintln!(
+                    "InboxBridge cleanup partially completed: keychain cleared, but accounts.json could not be deleted: {}",
+                    msg
+                );
+                std::process::exit(3);
             }
         }
-        std::process::exit(0);
     }
 
     if let Err(e) = run_async().await {

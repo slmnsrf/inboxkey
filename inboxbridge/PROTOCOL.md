@@ -127,12 +127,17 @@ Healthcheck and connection validation.
   "id": "uuid-1",
   "result": {
     "ok": true,
-    "version": "1.0.0",
+    "version": "1.1.0-rc1",
     "protocolVersion": 1,
     "minProtocolVersion": 1,
     "features": {
       "idle": false,
       "tls13": true
+    },
+    "installInfo": {
+      "executablePath": "C:\\Users\\alice\\AppData\\Local\\InboxBridge\\inboxbridge.exe",
+      "kind": "directory",
+      "uninstallTarget": "C:\\Users\\alice\\AppData\\Local\\InboxBridge"
     }
   }
 }
@@ -144,6 +149,19 @@ Healthcheck and connection validation.
 - `protocolVersion`: Current protocol version supported by this native app
 - `minProtocolVersion`: Minimum protocol version required by this native app
 - `features`: Optional capability flags
+- `installInfo` *(optional, added in 1.1.0)*: Where the bridge binary lives and how to uninstall it. Older bridge versions omit this field; clients MUST treat it as optional and fall back to static per-OS copy when absent.
+
+**`installInfo` sub-fields:**
+- `executablePath`: Absolute canonicalized path of the running executable.
+- `kind`: One of `"single-binary"`, `"directory"`, `"app-bundle"`. Drives the UI verb in the uninstall modal ("delete this file" vs "delete this folder" vs "drag to Trash").
+- `uninstallTarget`: The exact file or directory the user should remove to complete the uninstall. For `single-binary` this equals `executablePath`. For `directory` this is the parent directory of the executable. For `app-bundle` this is the enclosing `.app` bundle.
+
+**Detection rules** (evaluated in order, first match wins):
+1. If any ancestor path segment of the executable ends in `.app`, treat as `app-bundle` and return the `.app` directory as `uninstallTarget`.
+2. If the executable's parent directory contains a file named `com.inboxkey.bridge.json` (co-located Chrome native messaging manifest), treat as `directory` and return the parent directory as `uninstallTarget`. This matches both the Windows Inno Setup installer and the Windows portable `install.ps1` layouts.
+3. Otherwise, treat as `single-binary` and return the executable file path as `uninstallTarget`. This matches the macOS pkg installer (`/usr/local/bin/inboxbridge` with manifest under `~/Library/Application Support/Google/Chrome/NativeMessagingHosts/`) and any portable single-file drop.
+
+Detection runs on every `bridge.ping`; there is no cache. The cost is one `current_exe` + canonicalize + up to one `Path::exists` check.
 
 ### 3.2 `installStatus.get`
 
@@ -474,6 +492,91 @@ Set logging level (temporary, for debugging).
 
 **Levels:** `"error"` | `"warn"` (default) | `"info"` | `"debug"`
 
+### 3.12 `bridge.uninstall`
+
+*Added in 1.1.0.*
+
+Atomic cleanup of all bridge-side state. Used by the extension's uninstall modal to remove keychain entries, `accounts.json`, and the lock file in one call.
+
+The bridge process does **not** self-terminate on success; it stays alive until the extension disconnects normally. This lets the extension also drive its own storage cleanup afterwards without racing a dying bridge.
+
+**Request:**
+```json
+{
+  "v": 1,
+  "id": "uuid-12",
+  "method": "bridge.uninstall",
+  "params": {}
+}
+```
+
+**Response (success or partial keychain failure):**
+```json
+{
+  "v": 1,
+  "id": "uuid-12",
+  "result": {
+    "keychainEntriesRemoved": 2,
+    "keychainEntriesFailed": [
+      {
+        "accountId": "acc_abc123",
+        "service": "InboxBridge:acc_abc123",
+        "reason": "keyring access denied"
+      }
+    ],
+    "accountsFileDeleted": true
+  }
+}
+```
+
+**Fields:**
+- `keychainEntriesRemoved`: Count of successfully removed keychain entries.
+- `keychainEntriesFailed`: Per-entry diagnostics for any keychain deletions that failed. Individual failures are not fatal; they are reported so the extension can surface a warning.
+- `accountsFileDeleted`: `true` if `accounts.json` was removed or never existed.
+
+**Error responses:**
+
+`CLEANUP_SNAPSHOT_FAILED` is returned when the bridge cannot read the account list at all. **Nothing was attempted**, state is unchanged. The extension should fall back to the legacy per-account `account.remove` loop.
+
+```json
+{
+  "v": 1,
+  "id": "uuid-12",
+  "error": {
+    "code": "CLEANUP_SNAPSHOT_FAILED",
+    "message": "Could not read account list before cleanup: ..."
+  }
+}
+```
+
+`CLEANUP_STATE_DELETE_FAILED` is returned when keychain cleanup completed but `accounts.json` could not be removed. **Credentials are gone**, but bridge state files linger. The extension should surface this as an info line, not a blocker.
+
+```json
+{
+  "v": 1,
+  "id": "uuid-12",
+  "error": {
+    "code": "CLEANUP_STATE_DELETE_FAILED",
+    "message": "Keychain cleanup completed but accounts.json could not be deleted: ..."
+  }
+}
+```
+
+**Ordering guarantee:**
+
+1. Account list snapshotted from `accounts.json`.
+2. Each keychain entry deleted in turn; failures recorded per-entry.
+3. `accounts.json` deleted under an exclusive lock.
+4. `accounts.lock` removed best-effort (never surfaced as an error).
+
+Step 1 is a hard precondition: without a snapshot the bridge cannot construct the keychain keys to delete, so a snapshot failure aborts the call before any mutation. Steps 2–4 proceed in order and the lock-file removal is never user-visible.
+
+**Compatibility:**
+
+The same cleanup routine is exposed via the `--cleanup` CLI flag for installer uninstall scripts. Both entry points share `cleanup::run_full_cleanup` in the Rust implementation; the extension RPC is preferred when a live bridge connection exists because the user can see the structured result in-UI.
+
+Old bridges predating 1.1.0 respond with `METHOD_NOT_FOUND`. Extensions MUST handle that error code and fall back to the legacy per-account `account.remove` loop.
+
 ---
 
 ## 4. Events
@@ -556,6 +659,8 @@ Emitted when connection is re-established after loss.
 | `MESSAGE_TOO_LARGE` | Message exceeds 10MB limit | No |
 | `WATCH_EXPIRED` | Watch session exceeded 15min | No (restart watch) |
 | `CONNECTION_LIMIT` | Max 5 accounts connected | No |
+| `CLEANUP_SNAPSHOT_FAILED` | `bridge.uninstall` could not read accounts.json; nothing was attempted | No |
+| `CLEANUP_STATE_DELETE_FAILED` | `bridge.uninstall` cleaned the keychain but could not delete accounts.json | No |
 | `UNEXPECTED` | Internal error (bug) | No |
 
 ---
