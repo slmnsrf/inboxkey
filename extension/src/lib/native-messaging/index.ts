@@ -6,7 +6,7 @@
 
 import { NativeMessagingClient } from './client'
 
-export { NativeMessagingClient, NativeMessagingError } from './client'
+export { NativeMessagingClient, NativeMessagingError, isMethodNotFound } from './client'
 export type {
   NativeRequest,
   NativeResponse,
@@ -14,6 +14,10 @@ export type {
   IMAPMessage,
   FetchRecentResult,
   NativeErrorCodeType,
+  InstallInfo,
+  InstallKind,
+  UninstallResult,
+  KeychainCleanupFailure,
 } from './types'
 export { NativeErrorCode } from './types'
 
