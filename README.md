@@ -1,4 +1,4 @@
-# InboxKey
+# InboxKey - Autofill Verification Codes
 
 Privacy-first email verification code autofill and magic-link opener for Chrome.
 
