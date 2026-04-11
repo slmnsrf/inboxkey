@@ -64,6 +64,20 @@ export interface InstallInfo {
    * For app-bundle this is the enclosing .app path.
    */
   uninstallTarget: string
+  /**
+   * True if the install was performed by a system installer that
+   * registered itself with the OS uninstaller UI (currently detected
+   * as the presence of Inno Setup's sibling uninstaller on Windows).
+   * False for portable/manual installs that do not create such an
+   * entry. Undefined when the concept does not apply or the bridge
+   * cannot determine it.
+   *
+   * The uninstall modal uses this to gate the "Open Windows Settings"
+   * primary CTA: the CTA is only shown when this is `true`, because
+   * otherwise the user lands on an "Installed apps" list that does
+   * not contain InboxBridge.
+   */
+  hasOsInstallerEntry?: boolean
 }
 
 /**

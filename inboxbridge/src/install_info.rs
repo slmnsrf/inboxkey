@@ -64,12 +64,15 @@ pub fn detect_install_info_for_exe(exe: &Path) -> InstallInfo {
             executable_path: exe_str,
             kind: InstallKind::AppBundle,
             uninstall_target: app_path.to_string_lossy().to_string(),
+            has_os_installer_entry: None,
         };
     }
 
     // Rule 2: Directory install via co-located Chrome native-messaging
     // manifest. Matches both Windows Inno Setup and Windows portable
-    // install.ps1 layouts.
+    // install.ps1 layouts. The `has_os_installer_entry` heuristic then
+    // distinguishes between those two paths by looking for Inno Setup's
+    // sibling uninstaller executable.
     if let Some(parent) = exe.parent() {
         let manifest = parent.join("com.inboxkey.bridge.json");
         if manifest.exists() {
@@ -77,6 +80,7 @@ pub fn detect_install_info_for_exe(exe: &Path) -> InstallInfo {
                 executable_path: exe_str,
                 kind: InstallKind::Directory,
                 uninstall_target: parent.to_string_lossy().to_string(),
+                has_os_installer_entry: detect_os_installer_entry(parent),
             };
         }
     }
@@ -89,7 +93,45 @@ pub fn detect_install_info_for_exe(exe: &Path) -> InstallInfo {
         executable_path: exe_str.clone(),
         kind: InstallKind::SingleBinary,
         uninstall_target: exe_str,
+        has_os_installer_entry: None,
     }
+}
+
+/// Detect whether an install directory was created by an OS installer
+/// that exposes itself in the system's uninstaller UI.
+///
+/// Currently scoped to Windows: Inno Setup drops an `unins000.exe`
+/// (and siblings `unins001.exe`, etc.) in the install directory and
+/// registers a matching entry under
+/// `HKCU\Software\Microsoft\Windows\CurrentVersion\Uninstall\...`.
+/// Portable installs created by our `install.ps1` do NOT drop that
+/// executable, so its absence is a strong signal that "Open Windows
+/// Settings" will not find InboxBridge.
+///
+/// Returns `Some(true)` when an Inno Setup uninstaller is present,
+/// `Some(false)` when it is absent (directory kind but no installer),
+/// and `None` when we cannot or should not answer (non-Windows, no
+/// parent directory, filesystem error).
+fn detect_os_installer_entry(install_dir: &Path) -> Option<bool> {
+    // The check is layout-based rather than OS-specific so tests can
+    // exercise it cross-platform. On Windows it captures both the Inno
+    // installer (unins000.exe) and any future installer that drops a
+    // sibling named `unins*.exe`. On other platforms this still runs
+    // but will almost always return Some(false) because Linux/macOS
+    // installers do not typically colocate an uninstaller binary.
+    let entries = match std::fs::read_dir(install_dir) {
+        Ok(e) => e,
+        Err(_) => return None,
+    };
+
+    for entry in entries.flatten() {
+        let name = entry.file_name();
+        let name_str = name.to_string_lossy().to_lowercase();
+        if name_str.starts_with("unins") && name_str.ends_with(".exe") {
+            return Some(true);
+        }
+    }
+    Some(false)
 }
 
 /// If any ancestor segment of `exe` ends in `.app`, return the path up
@@ -120,9 +162,11 @@ mod tests {
     }
 
     #[test]
-    fn detects_directory_install_via_colocated_manifest() {
-        // Mirrors Windows Inno Setup + portable install.ps1 layout:
-        // exe + com.inboxkey.bridge.json side by side.
+    fn detects_directory_install_portable_layout_no_os_installer_entry() {
+        // Mirrors Windows portable install.ps1 layout: exe +
+        // com.inboxkey.bridge.json side by side, but NO sibling Inno
+        // uninstaller. has_os_installer_entry should be Some(false) so
+        // the modal suppresses the "Open Windows Settings" CTA.
         let dir = test_dir();
         let exe = dir.join("inboxbridge.exe");
         std::fs::write(&exe, b"").unwrap();
@@ -132,6 +176,25 @@ mod tests {
         assert!(matches!(info.kind, InstallKind::Directory));
         assert_eq!(info.uninstall_target, dir.to_string_lossy());
         assert_eq!(info.executable_path, exe.to_string_lossy());
+        assert_eq!(info.has_os_installer_entry, Some(false));
+
+        std::fs::remove_dir_all(&dir).ok();
+    }
+
+    #[test]
+    fn detects_directory_install_inno_layout_with_os_installer_entry() {
+        // Mirrors Windows Inno Setup layout: exe + manifest + unins000.exe
+        // sibling. has_os_installer_entry should be Some(true) so the
+        // modal shows the "Open Windows Settings" CTA as a valid shortcut.
+        let dir = test_dir();
+        let exe = dir.join("inboxbridge.exe");
+        std::fs::write(&exe, b"").unwrap();
+        std::fs::write(dir.join("com.inboxkey.bridge.json"), b"{}").unwrap();
+        std::fs::write(dir.join("unins000.exe"), b"").unwrap();
+
+        let info = detect_install_info_for_exe(&exe);
+        assert!(matches!(info.kind, InstallKind::Directory));
+        assert_eq!(info.has_os_installer_entry, Some(true));
 
         std::fs::remove_dir_all(&dir).ok();
     }
@@ -141,6 +204,8 @@ mod tests {
         // Mirrors macOS pkg layout: binary alone, manifest lives
         // elsewhere. Should report the file itself as the uninstall
         // target, NOT the parent directory (which could be /usr/local/bin).
+        // has_os_installer_entry is None because the signal is not
+        // meaningful for single-binary installs.
         let dir = test_dir();
         let exe = dir.join("inboxbridge");
         std::fs::write(&exe, b"").unwrap();
@@ -149,6 +214,7 @@ mod tests {
         assert!(matches!(info.kind, InstallKind::SingleBinary));
         assert_eq!(info.uninstall_target, exe.to_string_lossy());
         assert_eq!(info.executable_path, exe.to_string_lossy());
+        assert_eq!(info.has_os_installer_entry, None);
 
         std::fs::remove_dir_all(&dir).ok();
     }
@@ -161,6 +227,7 @@ mod tests {
         let info = detect_install_info_for_exe(&exe);
         assert!(matches!(info.kind, InstallKind::AppBundle));
         assert_eq!(info.uninstall_target, "/Applications/InboxBridge.app");
+        assert_eq!(info.has_os_installer_entry, None);
     }
 
     #[test]

@@ -321,14 +321,20 @@ export function UninstallBridgeModal({
                 gap: 'var(--space-1, 4px)',
               }}
             >
-              <ChecklistItem label={t('bridge_uninstall_done_removed_accounts')} />
+              <ChecklistItem
+                label={t('bridge_uninstall_done_removed_accounts')}
+                warning={partialFailure}
+              />
               {showCredentialsItem && (
                 <ChecklistItem
                   label={t('bridge_uninstall_done_removed_credentials')}
                   warning={keychainPartialCount > 0}
                 />
               )}
-              <ChecklistItem label={t('bridge_uninstall_done_removed_codes')} />
+              <ChecklistItem
+                label={t('bridge_uninstall_done_removed_codes')}
+                warning={partialFailure}
+              />
             </ul>
           </section>
 
@@ -415,10 +421,13 @@ interface InstallTargetBlockProps {
 
 /**
  * Install-kind-aware uninstall target rendering. Uses the bridge-reported
- * path as the canonical truth. On Windows, the primary CTA still deep-
- * links into Windows Settings -> Installed apps because that is the
- * single-click path for installer-based installs even though the user
- * could also delete the folder directly.
+ * path as the canonical truth.
+ *
+ * The Windows "Open Windows Settings" CTA is gated on
+ * `installInfo.hasOsInstallerEntry === true`. Portable Windows installs
+ * (created by `install.ps1`) do not register a Programs and Features
+ * entry, so that CTA would be a dead end. For those installs, the
+ * copyable folder path below is the only correct action.
  */
 function InstallTargetBlock({
   installInfo,
@@ -434,9 +443,12 @@ function InstallTargetBlock({
       ? 'bridge_uninstall_target_appbundle'
       : 'bridge_uninstall_target_file'
 
+  const showWindowsSettingsCta =
+    osBucket === 'windows' && installInfo.hasOsInstallerEntry === true
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3, 12px)' }}>
-      {osBucket === 'windows' && (
+      {showWindowsSettingsCta && (
         <button
           type="button"
           className="btn btn--primary"

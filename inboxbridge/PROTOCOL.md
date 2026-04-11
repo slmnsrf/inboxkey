@@ -155,6 +155,7 @@ Healthcheck and connection validation.
 - `executablePath`: Absolute canonicalized path of the running executable.
 - `kind`: One of `"single-binary"`, `"directory"`, `"app-bundle"`. Drives the UI verb in the uninstall modal ("delete this file" vs "delete this folder" vs "drag to Trash").
 - `uninstallTarget`: The exact file or directory the user should remove to complete the uninstall. For `single-binary` this equals `executablePath`. For `directory` this is the parent directory of the executable. For `app-bundle` this is the enclosing `.app` bundle.
+- `hasOsInstallerEntry` *(optional)*: `true` if the install was performed by a system installer that exposes itself in the OS uninstaller UI (currently detected as the presence of a sibling `unins*.exe` uninstaller, the hallmark of Inno Setup on Windows). `false` for directory installs without such an entry (e.g. the portable Windows `install.ps1` layout). Omitted for kinds where the concept does not apply (`single-binary`, `app-bundle`). The extension suppresses its "Open Windows Settings" primary uninstall CTA unless this is `true`, because that CTA is a dead end for installs not registered with the OS.
 
 **Detection rules** (evaluated in order, first match wins):
 1. If any ancestor path segment of the executable ends in `.app`, treat as `app-bundle` and return the `.app` directory as `uninstallTarget`.

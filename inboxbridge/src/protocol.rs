@@ -62,6 +62,15 @@ pub struct InstallInfo {
     /// The file or directory the user should remove to complete uninstall.
     #[serde(rename = "uninstallTarget")]
     pub uninstall_target: String,
+    /// True if the install was performed by a system installer that
+    /// registered itself with the OS (currently detected as the presence
+    /// of Inno Setup's `unins000.exe` sibling on Windows). Drives whether
+    /// the uninstall modal shows the "Open Windows Settings" primary CTA
+    /// -- that CTA is a dead end for portable installs that do not
+    /// register a "Programs and Features" entry. None means "unknown or
+    /// not applicable" (macOS, Linux, unfamiliar layouts).
+    #[serde(rename = "hasOsInstallerEntry", skip_serializing_if = "Option::is_none")]
+    pub has_os_installer_entry: Option<bool>,
 }
 
 #[derive(Serialize, Debug, Clone)]
