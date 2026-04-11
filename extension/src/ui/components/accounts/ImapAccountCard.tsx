@@ -18,6 +18,7 @@ import { getAccountStatus } from './account-status'
 import { AccountSection } from './shared/AccountSection'
 import { AccountRow } from './shared/AccountRow'
 import { getNativeClient } from '@/lib/native-messaging'
+import type { PingResult } from '@/lib/native-messaging/types'
 import { BridgeInstallGuide } from './BridgeInstallGuide'
 import { UninstallBridgeModal } from './UninstallBridgeModal'
 import { checkCompatibility, getUpdateUrl, type CompatibilityStatus } from '@/lib/native-messaging/version-check'
@@ -54,6 +55,9 @@ export function ImapAccountCard({
   const [confirmingRemoveId, setConfirmingRemoveId] = useState<string | null>(null)
   const [bridgeStatus, setBridgeStatus] = useState<'checking' | 'connected' | 'disconnected'>('checking')
   const [compatibility, setCompatibility] = useState<CompatibilityStatus | null>(null)
+  // Full ping result kept alongside the derived compatibility status so the
+  // uninstall modal can read installInfo without issuing a separate ping.
+  const [bridgePing, setBridgePing] = useState<PingResult | null>(null)
   const [testingId, setTestingId] = useState<string | null>(null)
   const [testResult, setTestResult] = useState<Record<string, 'success' | 'error' | null>>({})
   const [showUninstallModal, setShowUninstallModal] = useState(false)
@@ -68,10 +72,12 @@ export function ImapAccountCard({
         if (cancelled) return
         setBridgeStatus('connected')
         setCompatibility(checkCompatibility(ping))
+        setBridgePing(ping)
       } catch {
         if (!cancelled) {
           setBridgeStatus('disconnected')
           setCompatibility(null)
+          setBridgePing(null)
         }
       }
     }
@@ -353,6 +359,7 @@ export function ImapAccountCard({
       {showUninstallModal && (
         <UninstallBridgeModal
           imapAccountIds={accounts.map(a => a.id)}
+          installInfo={bridgePing?.installInfo}
           onComplete={() => {
             setShowUninstallModal(false)
             setBridgeStatus('disconnected')

@@ -744,8 +744,17 @@ function handleRemoveMailbox(msg: any, sendResponse: (response: any) => void) {
         }
       }
 
-      // Also remove from InboxBridge native app if IMAP
-      if (isImap && mailbox?.imapAccountId) {
+      // Also remove from InboxBridge native app if IMAP.
+      //
+      // The uninstall flow (UninstallBridgeModal) sets skipBridgeCall=true
+      // *after* a successful bridge.uninstall RPC has already wiped every
+      // keychain entry and deleted accounts.json atomically. Calling
+      // account.remove per account at that point would fail (state is
+      // empty) and spam the console with warnings. When skipBridgeCall is
+      // unset or false, we fall through to the legacy per-account path --
+      // used by normal account-removal UI and by the uninstall fallback
+      // for old bridges that lack bridge.uninstall entirely.
+      if (isImap && mailbox?.imapAccountId && !msg.skipBridgeCall) {
         try {
           const { getNativeClient } = await import('@/lib/native-messaging')
           const client = getNativeClient()

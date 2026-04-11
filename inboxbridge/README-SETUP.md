@@ -404,25 +404,53 @@ nc -zv imap.gmail.com 993  # Should show "succeeded"
 
 ### Windows
 
-**PowerShell (as Administrator):**
-```powershell
-# Clean up stored passwords from OS keychain
-& "C:\Program Files\InboxBridge\inboxbridge.exe" --cleanup
+**Installer version (recommended):**
 
-# Remove registry key
+1. Open Windows Settings → Apps → Installed apps.
+2. Find InboxBridge and click Uninstall.
+
+The installer automatically runs `inboxbridge.exe --cleanup` to remove stored passwords from Windows Credential Manager, deletes the Chrome native messaging registry key, and removes the install directory. No manual steps required.
+
+**Portable version, or manual cleanup:**
+
+```powershell
+# Clean up stored passwords from Windows Credential Manager
+& "$env:LOCALAPPDATA\InboxBridge\inboxbridge.exe" --cleanup
+
+# Remove Chrome native messaging registry key
 Remove-Item "HKCU:\Software\Google\Chrome\NativeMessagingHosts\com.inboxkey.bridge" -Force
 
-# Remove files
-Remove-Item "C:\Program Files\InboxBridge" -Recurse -Force
+# Remove install directory
+Remove-Item "$env:LOCALAPPDATA\InboxBridge" -Recurse -Force
 ```
+
+All paths are per-user; no administrator privileges required.
 
 ### macOS
 
+**PKG installer:**
+
 ```bash
-# Clean up stored passwords from OS keychain
+# Clean up stored passwords from macOS Keychain
+/usr/local/bin/inboxbridge --cleanup
+
+# Remove the binary (requires sudo because /usr/local/bin is system-owned)
+sudo rm /usr/local/bin/inboxbridge
+
+# Remove Chrome native messaging manifest
+rm ~/Library/Application\ Support/Google/Chrome/NativeMessagingHosts/com.inboxkey.bridge.json
+```
+
+**Portable archive (tar.gz):**
+
+```bash
+# Clean up stored passwords from macOS Keychain
 ~/Library/Application\ Support/InboxBridge/inboxbridge --cleanup
 
+# Remove install directory (contains both the binary and stored account state)
 rm -rf ~/Library/Application\ Support/InboxBridge
+
+# Remove Chrome native messaging manifest
 rm ~/Library/Application\ Support/Google/Chrome/NativeMessagingHosts/com.inboxkey.bridge.json
 ```
 

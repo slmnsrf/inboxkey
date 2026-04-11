@@ -41,6 +41,32 @@ export interface NativeResponse<T = unknown> {
 }
 
 /**
+ * How the bridge binary is laid out on disk. Drives the verb shown in the
+ * uninstall modal ("delete this file" vs "delete this folder" vs "drag to
+ * Trash"). See PROTOCOL.md § 3.1 for detection rules.
+ */
+export type InstallKind = 'single-binary' | 'directory' | 'app-bundle'
+
+/**
+ * Where the bridge binary lives and what the user should remove to
+ * complete uninstalling it. Returned by bridge.ping in InboxBridge 1.1.0+.
+ * Older bridges omit this field and the extension falls back to static
+ * per-OS copy.
+ */
+export interface InstallInfo {
+  /** Absolute, canonicalized path to the running executable. */
+  executablePath: string
+  /** Layout shape, drives the UI verb. */
+  kind: InstallKind
+  /**
+   * The exact file or directory the user should remove. For single-binary
+   * this equals executablePath. For directory this is the parent folder.
+   * For app-bundle this is the enclosing .app path.
+   */
+  uninstallTarget: string
+}
+
+/**
  * Result of bridge.ping method
  */
 export interface PingResult {
@@ -58,6 +84,36 @@ export interface PingResult {
     tls13?: boolean
     [key: string]: unknown
   }
+  /**
+   * Install-shape metadata, added in InboxBridge 1.1.0. Optional for back-
+   * compat: extensions treat an absent value as "unknown, fall back to
+   * static per-OS copy in the uninstall modal."
+   */
+  installInfo?: InstallInfo
+}
+
+/**
+ * Per-entry keychain cleanup failure returned by bridge.uninstall.
+ */
+export interface KeychainCleanupFailure {
+  accountId: string
+  service: string
+  reason: string
+}
+
+/**
+ * Result of bridge.uninstall method (InboxBridge 1.1.0+).
+ *
+ * The bridge attempts to wipe every keychain entry, delete accounts.json,
+ * and best-effort remove accounts.lock. Partial keychain failures are data,
+ * not errors -- they appear in keychainEntriesFailed and let the UI show
+ * a warning without falling back to the legacy cleanup path.
+ */
+export interface UninstallResult {
+  keychainEntriesRemoved: number
+  keychainEntriesFailed: KeychainCleanupFailure[]
+  /** True if accounts.json was deleted or never existed. */
+  accountsFileDeleted: boolean
 }
 
 /**
@@ -111,6 +167,10 @@ export const NativeErrorCode = {
   MESSAGE_TOO_LARGE: 'MESSAGE_TOO_LARGE',
   WATCH_EXPIRED: 'WATCH_EXPIRED',
   CONNECTION_LIMIT: 'CONNECTION_LIMIT',
+
+  // Uninstall cleanup errors (bridge.uninstall, added in 1.1.0)
+  CLEANUP_SNAPSHOT_FAILED: 'CLEANUP_SNAPSHOT_FAILED',
+  CLEANUP_STATE_DELETE_FAILED: 'CLEANUP_STATE_DELETE_FAILED',
 
   // Internal errors
   UNEXPECTED: 'UNEXPECTED',

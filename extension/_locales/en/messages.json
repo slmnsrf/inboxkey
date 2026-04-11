@@ -1447,16 +1447,12 @@
     "description": "Windows install path literal; do not translate"
   },
   "bridge_uninstall_done_macos_steps": {
-    "message": "InboxBridge can be removed by dragging it from the Applications folder to the Trash.",
-    "description": "macOS uninstall instruction sentence"
+    "message": "InboxBridge is installed as a separate app on macOS. The install location depends on whether the .pkg installer or the portable archive was used.",
+    "description": "macOS uninstall instruction sentence (install-location agnostic). Used only when the bridge does not report installInfo; once installInfo ships, kind-aware rendering replaces this for macOS."
   },
   "bridge_uninstall_done_macos_manual": {
-    "message": "For manual installations, this folder can be deleted:",
-    "description": "macOS fallback manual-install instructions"
-  },
-  "bridge_uninstall_done_macos_path": {
-    "message": "~/Library/Application Support/InboxBridge",
-    "description": "macOS install path literal; do not translate"
+    "message": "See the InboxBridge uninstall guide",
+    "description": "macOS link label pointing to inboxbridge/README-SETUP.md#uninstall"
   },
   "bridge_uninstall_done_other_steps": {
     "message": "InboxBridge can be removed using the operating system's app manager, or by deleting its folder from the home directory.",
@@ -1473,6 +1469,34 @@
   "bridge_uninstall_done_path_copied": {
     "message": "Copied",
     "description": "Label shown briefly after clipboard copy succeeds"
+  },
+  "bridge_uninstall_target_file": {
+    "message": "Delete this file to finish removing InboxBridge:",
+    "description": "Label above the uninstall target for single-binary installs (macOS pkg, portable Linux). Used when installInfo.kind === 'single-binary'."
+  },
+  "bridge_uninstall_target_folder": {
+    "message": "Delete this folder to finish removing InboxBridge:",
+    "description": "Label above the uninstall target for directory installs (Windows Inno Setup, Windows portable). Used when installInfo.kind === 'directory'."
+  },
+  "bridge_uninstall_target_appbundle": {
+    "message": "Drag this app to the Trash to finish removing InboxBridge:",
+    "description": "Label above the uninstall target for macOS .app bundle installs. Used when installInfo.kind === 'app-bundle'."
+  },
+  "bridge_uninstall_bridge_unsupported": {
+    "message": "This InboxBridge version does not support automatic cleanup. Credentials may remain in the system keychain. Update InboxBridge for full cleanup.",
+    "description": "Warning shown in the done phase when bridge.uninstall returned METHOD_NOT_FOUND (old bridge)."
+  },
+  "bridge_uninstall_unknown_failure": {
+    "message": "InboxBridge cleanup did not complete. InboxKey removed your mailbox entries, but some InboxBridge data may remain.",
+    "description": "Warning shown in the done phase when bridge.uninstall failed for any reason other than METHOD_NOT_FOUND (transport error, structured cleanup error, timeout). Intentionally generic."
+  },
+  "bridge_uninstall_keychain_partial": {
+    "message": "Some credentials could not be removed from the system keychain automatically. They can be removed manually from the system's credential manager.",
+    "description": "Warning shown when bridge.uninstall returned successfully but at least one keychain entry failed to delete."
+  },
+  "bridge_uninstall_state_file_partial": {
+    "message": "Bridge state file could not be deleted. It will be cleaned up the next time InboxBridge runs.",
+    "description": "Subtle info line shown when bridge.uninstall cleared the keychain but accounts.json could not be removed."
   },
   "bridge_uninstall_done_close": {
     "message": "Close",

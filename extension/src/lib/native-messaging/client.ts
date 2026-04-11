@@ -53,6 +53,20 @@ export class NativeMessagingError extends Error {
 }
 
 /**
+ * Narrow an unknown thrown value to "the bridge responded METHOD_NOT_FOUND".
+ * Used by the uninstall flow to distinguish "old bridge, graceful fallback
+ * to per-account removal" from every other kind of failure (transport
+ * error, structured cleanup error, unexpected). Both non-METHOD_NOT_FOUND
+ * cases are treated as unknown_failure by the caller.
+ */
+export function isMethodNotFound(error: unknown): boolean {
+  return (
+    error instanceof NativeMessagingError &&
+    error.code === NativeErrorCode.METHOD_NOT_FOUND
+  )
+}
+
+/**
  * Pending request awaiting response
  */
 interface PendingRequest {
