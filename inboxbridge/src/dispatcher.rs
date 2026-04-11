@@ -2,6 +2,8 @@ use crate::protocol::{Request, Response, RpcError, PingResult};
 use crate::state::{Account, AppState};
 use crate::keychain::KeychainManager;
 use crate::imap_client::ImapClient;
+use crate::cleanup::{self, CleanupError};
+use crate::install_info;
 use serde_json::{json, Value};
 use std::sync::Arc;
 use uuid::Uuid;
@@ -15,6 +17,7 @@ pub async fn dispatch(
 
     match request.method.as_str() {
         "bridge.ping" => handle_ping(id),
+        "bridge.uninstall" => handle_bridge_uninstall(id, state, keychain),
         "installStatus.get" => handle_install_status(id),
         "account.add" => handle_account_add(id, request.params, state, keychain).await,
         "account.remove" => handle_account_remove(id, request.params, state, keychain).await,
@@ -45,6 +48,7 @@ fn handle_ping(id: String) -> Response<Value> {
             "idle": false,
             "tls13": true
         }),
+        install_info: Some(install_info::detect_install_info()),
     };
 
     match serde_json::to_value(result) {
@@ -96,6 +100,62 @@ fn error_response(id: String, code: &str, message: &str) -> Response<Value> {
             message: message.to_string(),
             details: None,
         }),
+    }
+}
+
+/// Atomic uninstall RPC. Wipes all bridge-side state in one call.
+///
+/// The extension's uninstall modal calls this once (not per account) and
+/// only falls back to the legacy per-account `account.remove` loop when
+/// this method returns METHOD_NOT_FOUND (old bridge) or any other error
+/// indicating the bridge didn't actually run the cleanup.
+///
+/// Sync dispatch: the cleanup work is filesystem + keychain calls, none
+/// of which benefit from the tokio runtime. Keeping it sync means we
+/// don't block the single-threaded dispatcher on a spawn.
+fn handle_bridge_uninstall(
+    id: String,
+    state: Arc<AppState>,
+    keychain: Arc<KeychainManager>,
+) -> Response<Value> {
+    match cleanup::run_full_cleanup(&state, &keychain) {
+        Ok(result) => {
+            let failed_json: Vec<Value> = result
+                .keychain_entries_failed
+                .iter()
+                .map(|f| {
+                    json!({
+                        "accountId": f.account_id,
+                        "service": f.service,
+                        "reason": f.reason,
+                    })
+                })
+                .collect();
+
+            Response {
+                v: 1,
+                id,
+                result: Some(json!({
+                    "keychainEntriesRemoved": result.keychain_entries_removed,
+                    "keychainEntriesFailed": failed_json,
+                    "accountsFileDeleted": result.accounts_file_deleted,
+                })),
+                error: None,
+            }
+        }
+        Err(CleanupError::SnapshotReadFailed(msg)) => error_response(
+            id,
+            "CLEANUP_SNAPSHOT_FAILED",
+            &format!("Could not read account list before cleanup: {}", msg),
+        ),
+        Err(CleanupError::AccountsFileDeleteFailed(msg)) => error_response(
+            id,
+            "CLEANUP_STATE_DELETE_FAILED",
+            &format!(
+                "Keychain cleanup completed but accounts.json could not be deleted: {}",
+                msg
+            ),
+        ),
     }
 }
 

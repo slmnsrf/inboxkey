@@ -181,6 +181,50 @@ impl AppState {
         })?;
         Ok(removed)
     }
+
+    /// Delete accounts.json under an exclusive lock. Used by the full
+    /// uninstall flow in cleanup.rs.
+    ///
+    /// Returns Ok(true) if the file existed and was deleted, Ok(false) if
+    /// it did not exist (treated as success for idempotent cleanup), and
+    /// Err only on genuine I/O failures.
+    pub fn delete_accounts_file_locked(&self) -> Result<bool, String> {
+        let data_path = self.data_path();
+
+        let lock_file = self.open_lock_file()?;
+        lock_file
+            .lock_exclusive()
+            .map_err(|e| format!("Failed to acquire exclusive lock: {}", e))?;
+
+        let result = if data_path.exists() {
+            std::fs::remove_file(&data_path)
+                .map(|_| true)
+                .map_err(|e| format!("Failed to delete accounts.json: {}", e))
+        } else {
+            Ok(false)
+        };
+
+        // Release the lock before returning. Dropping lock_file would also
+        // release, but being explicit makes intent obvious.
+        let _ = lock_file.unlock();
+        result
+    }
+
+    /// Best-effort removal of the coordination lock file. Never errors up:
+    /// on Windows the handle may still be held briefly and that is not a
+    /// user-visible concern (see Codex v3 review Finding 4).
+    pub fn delete_lock_file_best_effort(&self) {
+        let lock_path = self.lock_path();
+        if lock_path.exists() {
+            if let Err(e) = std::fs::remove_file(&lock_path) {
+                eprintln!(
+                    "InboxBridge: best-effort removal of {} failed: {} (not fatal)",
+                    lock_path.display(),
+                    e
+                );
+            }
+        }
+    }
 }
 
 #[cfg(test)]
@@ -362,6 +406,55 @@ mod tests {
         state.add_account(make_account("acc_after_repair")).unwrap();
         let retrieved = state.get_account("acc_after_repair").unwrap();
         assert!(retrieved.is_some());
+
+        // Cleanup
+        std::fs::remove_dir_all(&dir).ok();
+    }
+
+    #[test]
+    fn test_delete_accounts_file_locked_removes_existing_file() {
+        let dir = test_dir();
+        let state = AppState::new(Some(dir.clone()));
+
+        // Seed an account so accounts.json exists
+        state.add_account(make_account("acc_delete_test")).unwrap();
+        let data_path = dir.join("accounts.json");
+        assert!(data_path.exists(), "precondition: accounts.json must exist");
+
+        let deleted = state.delete_accounts_file_locked().unwrap();
+        assert!(deleted, "should report true when an existing file is removed");
+        assert!(!data_path.exists(), "accounts.json should be gone after delete");
+
+        // Cleanup
+        std::fs::remove_dir_all(&dir).ok();
+    }
+
+    #[test]
+    fn test_delete_accounts_file_locked_missing_file_is_noop() {
+        let dir = test_dir();
+        let state = AppState::new(Some(dir.clone()));
+
+        // Do NOT seed any account. accounts.json should not exist.
+        let data_path = dir.join("accounts.json");
+        assert!(!data_path.exists(), "precondition: accounts.json must not exist");
+
+        let deleted = state.delete_accounts_file_locked().unwrap();
+        assert!(!deleted, "should report false when the file never existed");
+
+        // Cleanup
+        std::fs::remove_dir_all(&dir).ok();
+    }
+
+    #[test]
+    fn test_delete_lock_file_best_effort_is_idempotent() {
+        let dir = test_dir();
+        let state = AppState::new(Some(dir.clone()));
+
+        // AppState::new created the lock file during startup corruption check.
+        // Call the best-effort delete twice: second call must not panic even
+        // though the file is already gone.
+        state.delete_lock_file_best_effort();
+        state.delete_lock_file_best_effort();
 
         // Cleanup
         std::fs::remove_dir_all(&dir).ok();
