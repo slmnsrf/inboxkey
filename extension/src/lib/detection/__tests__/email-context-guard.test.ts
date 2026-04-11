@@ -125,4 +125,58 @@ describe('hasEmailContext', () => {
     const field = document.createElement('input')
     expect(hasEmailContext(field)).toBe(true)
   })
+
+  it('walks up to role="dialog" container in deeply nested modal (Google recovery email pattern)', () => {
+    document.body.innerHTML = `
+      <div role="dialog" aria-modal="true">
+        <h2>Verify your recovery email</h2>
+        <p>Enter the 6-digit code sent to user@gmail.com</p>
+        <div>
+          <div>
+            <div>
+              <div>
+                <div>
+                  <div>
+                    <span>
+                      <span>
+                        <input id="c1" type="text" inputmode="numeric" maxlength="6" autocomplete="off" />
+                      </span>
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    `
+    const field = document.getElementById('c1') as HTMLInputElement
+    expect(hasEmailContext(field)).toBe(true)
+  })
+
+  it('walks up to <dialog> element in deeply nested modal', () => {
+    document.body.innerHTML = `
+      <dialog open>
+        <p>Code sent to user@example.com</p>
+        <div><div><div><div><div><div>
+          <input id="c2" type="text" />
+        </div></div></div></div></div></div>
+      </dialog>
+    `
+    const field = document.getElementById('c2') as HTMLInputElement
+    expect(hasEmailContext(field)).toBe(true)
+  })
+
+  it('walks up to aria-modal="true" container without role attribute', () => {
+    document.body.innerHTML = `
+      <div aria-modal="true">
+        <p>Verification code sent to user@example.com</p>
+        <div><div><div><div><div><div>
+          <input id="c3" type="text" />
+        </div></div></div></div></div></div>
+      </div>
+    `
+    const field = document.getElementById('c3') as HTMLInputElement
+    expect(hasEmailContext(field)).toBe(true)
+  })
 })

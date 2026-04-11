@@ -11,7 +11,22 @@
 import { EMAIL_PATTERNS } from './signal-classifier'
 
 /** Semantic container elements to walk up to */
-const SEMANTIC_CONTAINERS = new Set(['FORM', 'MAIN', 'SECTION', 'ARTICLE'])
+const SEMANTIC_CONTAINERS = new Set(['FORM', 'MAIN', 'SECTION', 'ARTICLE', 'DIALOG'])
+
+/** ARIA roles that mark modal/dialog containers */
+const DIALOG_ROLES = new Set(['dialog', 'alertdialog'])
+
+/**
+ * Check if an element is a modal/dialog container by ARIA semantics.
+ * Catches modals built from <div> + role/aria-modal (Google Material, Radix, etc.)
+ * which would otherwise have no recognizable semantic tag.
+ */
+function isDialogContainer(el: HTMLElement): boolean {
+  const role = el.getAttribute('role')
+  if (role && DIALOG_ROLES.has(role)) return true
+  if (el.getAttribute('aria-modal') === 'true') return true
+  return false
+}
 
 /** Elements to exclude from text scanning */
 const EXCLUDED_TAGS = new Set(['HEADER', 'FOOTER', 'NAV'])
@@ -71,14 +86,19 @@ function findScanContainer(field: HTMLInputElement): HTMLElement | null {
     }
   }
   let depth = 0
+  let fallback: HTMLElement | null = null
 
+  // Walk the full ancestor chain looking for a semantic/dialog container.
+  // Modals (Google, Material, Radix) are often deeper than FALLBACK_DEPTH,
+  // so we can't bail out early -- we record the 5-level node as a fallback
+  // and only use it if no semantic boundary is found before document.body.
   while (node && node !== document.body) {
-    if (SEMANTIC_CONTAINERS.has(node.tagName)) {
+    if (SEMANTIC_CONTAINERS.has(node.tagName) || isDialogContainer(node)) {
       return node
     }
     depth++
-    if (depth >= FALLBACK_DEPTH) {
-      return node
+    if (depth === FALLBACK_DEPTH) {
+      fallback = node
     }
     const next = node.parentElement
     if (next) {
@@ -94,7 +114,9 @@ function findScanContainer(field: HTMLInputElement): HTMLElement | null {
     }
   }
 
-  return node // document.body or null
+  // No semantic container found: use the 5-level fallback if we walked that
+  // far, otherwise the topmost reachable node (document.body or null).
+  return fallback ?? node
 }
 
 /**
