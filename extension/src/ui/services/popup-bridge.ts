@@ -118,7 +118,9 @@ export class PopupBridge {
   async triggerSync(): Promise<UnifiedPopupCache> {
     const response = await chrome.runtime.sendMessage({ type: 'TRIGGER_SYNC' })
     if (!response.success) {
-      throw new Error(response.error)
+      // Rate-limit is normal flow control, not an error.
+      // Fall back to cached data silently instead of throwing.
+      return this.getPopupData()
     }
     return response.data
   }
