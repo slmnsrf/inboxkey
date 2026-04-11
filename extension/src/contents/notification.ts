@@ -8,6 +8,7 @@ export const config = {
 }
 
 import { COLOR_SUCCESS, COLOR_ERROR, COLOR_PRIMARY } from '@/lib/design-tokens'
+import { isHTMLDocument } from '@/lib/utils/is-html-document'
 
 interface NotificationOptions {
   title: string
@@ -23,6 +24,10 @@ const ANIMATION_DURATION_MS = 300
  * Show a toast notification to the user
  */
 export function showNotification(options: NotificationOptions): void {
+  // Bail out on non-HTML documents where document.body/document.head are null.
+  // Defense-in-depth for content scripts injected into SVG/XML pages.
+  if (!isHTMLDocument()) return
+
   const { title, message, duration = 5000, type = 'success' } = options
 
   // Inject styles if not already present

@@ -66,8 +66,15 @@ pub fn run_full_cleanup(
 ) -> Result<CleanupResult, CleanupError> {
     // Step 1: snapshot. If this fails we abort -- no metadata means we
     // cannot construct the keychain handles to delete.
+    //
+    // We use list_accounts_for_cleanup (not list_accounts) because the
+    // normal read path silently repairs corrupt JSON by backing it up
+    // and returning an empty map. For uninstall that would turn
+    // "metadata unreadable" into "nothing to clean" and leak every
+    // keychain entry the bridge ever created. The cleanup variant
+    // refuses to repair and returns Err on parse failure instead.
     let accounts = state
-        .list_accounts()
+        .list_accounts_for_cleanup()
         .map_err(CleanupError::SnapshotReadFailed)?;
 
     // Step 2: keychain. Each failure is recorded, none are fatal.
@@ -115,8 +122,10 @@ mod tests {
     #[test]
     fn test_run_full_cleanup_on_empty_state_returns_ok() {
         // Fresh state dir, no accounts ever added. run_full_cleanup should
-        // return zero counts and report accounts_file_deleted=false
-        // (because the file never existed), with no errors.
+        // return zero counts and report accounts_file_deleted=true because
+        // the end state ("file is absent") is already satisfied. Empty-
+        // state runs should NOT surface a "state file stuck" warning in
+        // the UI.
         let dir = test_dir();
         let state = AppState::new(Some(dir.clone()));
         let keychain = KeychainManager::new();
@@ -124,9 +133,49 @@ mod tests {
         let result = run_full_cleanup(&state, &keychain).expect("empty state should succeed");
         assert_eq!(result.keychain_entries_removed, 0);
         assert!(result.keychain_entries_failed.is_empty());
-        assert!(!result.accounts_file_deleted);
+        assert!(
+            result.accounts_file_deleted,
+            "empty state should report success: end state 'file absent' is achieved"
+        );
 
         // Cleanup
+        std::fs::remove_dir_all(&dir).ok();
+    }
+
+    #[test]
+    fn test_run_full_cleanup_aborts_on_corrupt_state_file() {
+        // Corrupt accounts.json must abort with SnapshotReadFailed instead
+        // of silently reporting a zero-count success. The happy-path
+        // read_accounts would repair the file and return an empty map,
+        // which would orphan every keychain entry. The cleanup path must
+        // refuse.
+        let dir = test_dir();
+        let state = AppState::new(Some(dir.clone()));
+        let keychain = KeychainManager::new();
+
+        // Seed corrupt content.
+        let data_path = dir.join("accounts.json");
+        std::fs::write(&data_path, b"{not valid json").unwrap();
+
+        let err = run_full_cleanup(&state, &keychain).unwrap_err();
+        match err {
+            CleanupError::SnapshotReadFailed(msg) => {
+                assert!(
+                    msg.contains("corrupt"),
+                    "expected corruption error, got: {}",
+                    msg
+                );
+            }
+            other => panic!("expected SnapshotReadFailed, got {:?}", other),
+        }
+
+        // The corrupt file MUST still be present on disk -- aborting
+        // means no mutations at all, including the state delete.
+        assert!(
+            data_path.exists(),
+            "cleanup abort must not touch the corrupt file"
+        );
+
         std::fs::remove_dir_all(&dir).ok();
     }
 

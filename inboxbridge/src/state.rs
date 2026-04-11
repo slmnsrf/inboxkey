@@ -160,9 +160,53 @@ impl AppState {
         Ok(accounts.get(id).cloned())
     }
 
+    /// Normal account enumeration path. Silently repairs corrupt
+    /// accounts.json via `read_accounts`'s backup-and-reset fallback,
+    /// so callers never see parse failures. Use `list_accounts_for_cleanup`
+    /// instead when a corrupt file must abort the caller.
+    #[allow(dead_code)] // Retained for future RPC callers and used by unit tests.
     pub fn list_accounts(&self) -> Result<Vec<Account>, String> {
         let accounts = self.read_accounts()?;
         Ok(accounts.into_values().collect())
+    }
+
+    /// Read the account snapshot for uninstall cleanup, refusing to
+    /// silently repair corruption.
+    ///
+    /// `read_accounts()` treats a parse failure as a recoverable event
+    /// (back up corrupt file, return an empty map) because most call
+    /// sites want the bridge to keep running. The uninstall path is
+    /// different: metadata drives keychain key construction, so an
+    /// empty-or-repaired snapshot would orphan every keychain entry
+    /// the bridge ever created. This method abort-fails instead so
+    /// callers can surface the failure to the user.
+    ///
+    /// Returns:
+    /// - Ok(vec![]) if accounts.json does not exist (genuinely empty).
+    /// - Ok(accounts) on successful parse.
+    /// - Err(msg) on I/O failure OR parse failure (caller must abort).
+    pub fn list_accounts_for_cleanup(&self) -> Result<Vec<Account>, String> {
+        let lock_file = self.open_lock_file()?;
+        lock_file
+            .lock_shared()
+            .map_err(|e| format!("Failed to acquire shared lock: {}", e))?;
+
+        let data_path = self.data_path();
+        if !data_path.exists() {
+            return Ok(Vec::new());
+        }
+
+        let json = std::fs::read_to_string(&data_path)
+            .map_err(|e| format!("Failed to read accounts.json: {}", e))?;
+
+        match Self::try_parse(&json) {
+            Some(accounts) => Ok(accounts.into_values().collect()),
+            None => Err(
+                "accounts.json is corrupt and cannot be parsed; \
+                 aborting uninstall to avoid orphaning keychain entries"
+                    .to_string(),
+            ),
+        }
     }
 
     pub fn add_account(&self, account: Account) -> Result<String, String> {
@@ -185,9 +229,12 @@ impl AppState {
     /// Delete accounts.json under an exclusive lock. Used by the full
     /// uninstall flow in cleanup.rs.
     ///
-    /// Returns Ok(true) if the file existed and was deleted, Ok(false) if
-    /// it did not exist (treated as success for idempotent cleanup), and
-    /// Err only on genuine I/O failures.
+    /// The return value reflects the end state, not the action taken:
+    /// Ok(true) means "after this call, accounts.json is absent" (either
+    /// because we deleted it or because it never existed). Err only on
+    /// genuine I/O failures during deletion. This collapsing avoids a
+    /// false "state file could not be deleted" warning in the UI when
+    /// the bridge simply had no persisted state to begin with.
     pub fn delete_accounts_file_locked(&self) -> Result<bool, String> {
         let data_path = self.data_path();
 
@@ -201,7 +248,9 @@ impl AppState {
                 .map(|_| true)
                 .map_err(|e| format!("Failed to delete accounts.json: {}", e))
         } else {
-            Ok(false)
+            // File never existed. End state is "file is absent" which is
+            // what the caller wanted, so report success.
+            Ok(true)
         };
 
         // Release the lock before returning. Dropping lock_file would also
@@ -430,7 +479,7 @@ mod tests {
     }
 
     #[test]
-    fn test_delete_accounts_file_locked_missing_file_is_noop() {
+    fn test_delete_accounts_file_locked_missing_file_reports_success() {
         let dir = test_dir();
         let state = AppState::new(Some(dir.clone()));
 
@@ -438,10 +487,49 @@ mod tests {
         let data_path = dir.join("accounts.json");
         assert!(!data_path.exists(), "precondition: accounts.json must not exist");
 
+        // Return value reflects the end state, not the action. The desired
+        // end state ("accounts.json absent") is already satisfied, so the
+        // caller should see success.
         let deleted = state.delete_accounts_file_locked().unwrap();
-        assert!(!deleted, "should report false when the file never existed");
+        assert!(deleted, "should report true because end state is achieved");
 
         // Cleanup
+        std::fs::remove_dir_all(&dir).ok();
+    }
+
+    #[test]
+    fn test_list_accounts_for_cleanup_empty_state() {
+        let dir = test_dir();
+        let state = AppState::new(Some(dir.clone()));
+
+        // Fresh dir, no accounts.json. Should return empty vec without error.
+        let accounts = state.list_accounts_for_cleanup().unwrap();
+        assert!(accounts.is_empty());
+
+        std::fs::remove_dir_all(&dir).ok();
+    }
+
+    #[test]
+    fn test_list_accounts_for_cleanup_refuses_corrupt_file() {
+        let dir = test_dir();
+        let state = AppState::new(Some(dir.clone()));
+
+        // Seed a deliberately corrupt accounts.json. The happy-path
+        // read_accounts would silently repair-to-empty here; the cleanup
+        // path MUST refuse so the caller can surface the failure instead
+        // of orphaning keychain entries.
+        let data_path = dir.join("accounts.json");
+        std::fs::write(&data_path, b"{not valid json").unwrap();
+
+        let result = state.list_accounts_for_cleanup();
+        assert!(result.is_err(), "corrupt file must abort the cleanup snapshot");
+        let err = result.unwrap_err();
+        assert!(
+            err.contains("corrupt"),
+            "error should mention corruption, got: {}",
+            err
+        );
+
         std::fs::remove_dir_all(&dir).ok();
     }
 

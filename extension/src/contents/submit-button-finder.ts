@@ -349,8 +349,16 @@ function scoreButton(
     // No bonus for 200-300px (needs other signals)
   }
 
-  // Common scoring (both tiers)
-  const container = button.closest('form, div, section, main') || document.body
+  // Common scoring (both tiers).
+  // Fallback chain: prefer the nearest semantic container; then document.body
+  // for ordinary HTML pages; finally documentElement for non-HTML documents
+  // (SVG/XML) where body may be null. The outer submit-button flow only
+  // runs on real HTML pages today, but the defensive fallback keeps this
+  // helper safe to call from anywhere.
+  const container =
+    button.closest('form, div, section, main') ||
+    document.body ||
+    document.documentElement
   const allButtons = container.querySelectorAll('button, input[type="submit"], a, [role="button"]')
   if (allButtons[0] === button) {
     score += tier === 'semantic' ? 10 : 5
