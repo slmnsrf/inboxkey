@@ -221,7 +221,7 @@ export function UninstallBridgeModal({
       }
     >
       {phase === 'confirm' && (
-        <>
+        <div className="uninstall-confirm">
           <div className="danger-warning">
             <span className="danger-warning__icon">
               <AlertTriangle size={18} aria-hidden="true" />
@@ -255,7 +255,7 @@ export function UninstallBridgeModal({
               {t('bridge_uninstall_confirm_hint')}
             </span>
           </div>
-        </>
+        </div>
       )}
 
       {phase === 'cleaning' && (

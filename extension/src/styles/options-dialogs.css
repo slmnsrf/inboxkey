@@ -45,6 +45,13 @@
   opacity: 0.85;
 }
 
+/* Uninstall confirm layout wrapper */
+.uninstall-confirm {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
 /* ===========================
    CONFIRM FIELD
    Type-to-confirm input with mono font.

@@ -531,9 +531,14 @@ body {
 }
 
 .btn--danger {
-  background: var(--color-error);
-  color: white;
-  border-color: var(--color-error);
+  background: #C62828;
+  color: #FFFFFF;
+  border-color: #C62828;
+}
+
+[data-theme="dark"] .btn--danger {
+  background: #D32F2F;
+  border-color: #D32F2F;
 }
 
 .btn--danger:hover {
