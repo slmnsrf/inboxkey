@@ -1399,6 +1399,10 @@
     grid-template-columns: 1fr;
   }
 
+  .theme-grid {
+    grid-template-columns: 1fr;
+  }
+
   .auto-param {
     flex-direction: column;
     align-items: stretch;

@@ -442,6 +442,11 @@
   border-color: var(--color-text-secondary);
 }
 
+.row-btn:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring-shadow);
+}
+
 .row-btn--primary {
   background: var(--color-primary);
   color: var(--color-text-inverse);
@@ -506,6 +511,11 @@
   color: var(--color-text-primary);
 }
 
+.row-menu:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring-shadow);
+}
+
 /* ===========================
    ROW MENU DROPDOWN
    =========================== */
@@ -550,6 +560,11 @@
 
 .row-menu-option:hover {
   background: var(--surface-card-muted);
+}
+
+.row-menu-option:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring-shadow);
 }
 
 .row-menu-option--danger {
@@ -608,6 +623,11 @@
   font-weight: var(--font-weight-semibold);
   cursor: pointer;
   border: 1px solid;
+}
+
+.confirm-btn:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring-shadow);
 }
 
 .confirm-btn--cancel {
@@ -686,6 +706,11 @@
   background: var(--color-primary-hover);
 }
 
+.add-account__btn:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring-shadow);
+}
+
 .add-account__btn:disabled {
   background: var(--color-bg-tertiary);
   color: var(--color-text-tertiary);
@@ -732,6 +757,11 @@
 
 .add-account__option:hover {
   background: var(--surface-card-muted);
+}
+
+.add-account__option:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring-shadow);
 }
 
 .add-account__option--disabled {
@@ -901,6 +931,11 @@
 
 .provider-card:hover {
   border-color: var(--color-text-secondary);
+}
+
+.provider-card:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring-shadow);
 }
 
 .provider-card--primary {

@@ -263,6 +263,11 @@
   filter: brightness(0.95);
 }
 
+.coffee-cta:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring-shadow);
+}
+
 .about-support__disclaimer {
   margin: 0;
   font-size: var(--font-size-xs);

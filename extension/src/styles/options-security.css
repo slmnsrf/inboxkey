@@ -368,6 +368,11 @@
   text-decoration: none;
 }
 
+.sec-source__link:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring-shadow);
+}
+
 .sec-source__link--ghost {
   background: var(--surface-card);
   color: var(--color-text-primary);

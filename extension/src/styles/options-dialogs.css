@@ -1215,6 +1215,23 @@ a.done-next__link:hover {
 }
 
 /* ============================
+   Wizard + dialogs reduced motion
+   ============================ */
+@media (prefers-reduced-motion: reduce) {
+  .step__body,
+  .step__circle,
+  .step__title,
+  .download-btn,
+  .gm-disclosure__chev {
+    transition: none;
+  }
+
+  .download-btn:active {
+    transform: none;
+  }
+}
+
+/* ============================
    Wizard responsive
    ============================ */
 @media (max-width: 600px) {

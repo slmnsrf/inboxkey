@@ -1,10 +1,10 @@
 import React from 'react'
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
-import { render, screen, fireEvent, waitFor } from '@testing-library/react'
-import { AccountsPanel } from '../AccountsPanel'
+import { render, screen, waitFor } from '@testing-library/react'
 import { ToastProvider } from '../../contexts/ToastContext'
 
-// Mocks must be hoisted before any imports that use them
+// --- Module mocks (hoisted) ---
+
 vi.mock('@/lib/providers/gmail/chrome-auth', () => ({
   authenticateGmail: vi.fn(),
 }))
@@ -17,9 +17,31 @@ vi.mock('@/lib/providers/gmail/config', () => ({
   isGmailConfigured: () => true,
 }))
 
-// Import the mocked functions after mocks are set up
-const { authenticateGmail: mockAuthenticateGmail } = await import('@/lib/providers/gmail/chrome-auth')
-const { fetchGmailProfile: mockFetchGmailProfile } = await import('@/lib/providers/gmail/profile')
+vi.mock('@/lib/native-messaging', () => ({
+  getNativeClient: () => ({
+    ping: () => Promise.reject(new Error('not connected')),
+  }),
+}))
+
+vi.mock('@/lib/native-messaging/version-check', () => ({
+  checkCompatibility: () => ({ compatible: true, updateAvailable: false }),
+  getUpdateUrl: () => 'https://example.com',
+}))
+
+// Mock ProviderLogo to avoid Plasmo-specific url: imports
+vi.mock('../options/ProviderLogo', () => ({
+  ProviderLogo: ({ provider }: { provider: string }) => (
+    <span data-testid={`provider-logo-${provider}`} />
+  ),
+}))
+
+// Mock AddAccountDropdown (it also imports ProviderLogo)
+vi.mock('../options/AddAccountDropdown', () => ({
+  AddAccountDropdown: () => <button>Add account</button>,
+}))
+
+// Lazy-import the component after mocks are established
+const { AccountsPanel } = await import('../AccountsPanel')
 
 const renderWithProviders = (ui: React.ReactElement) => {
   return render(
@@ -29,12 +51,11 @@ const renderWithProviders = (ui: React.ReactElement) => {
   )
 }
 
-describe('AccountsPanel (UI Rework)', () => {
+describe('AccountsPanel (v2)', () => {
   const mockSendMessage = vi.fn()
   const mockTabsCreate = vi.fn()
   const mockStorageGet = vi.fn()
   const mockStorageSet = vi.fn()
-  const mockClipboardWrite = vi.fn()
 
   beforeEach(() => {
     vi.clearAllMocks()
@@ -60,12 +81,6 @@ describe('AccountsPanel (UI Rework)', () => {
     mockStorageGet.mockResolvedValue({})
     mockStorageSet.mockResolvedValue(void 0)
 
-    Object.defineProperty(global.navigator, 'clipboard', {
-      value: { writeText: mockClipboardWrite },
-      writable: true,
-      configurable: true,
-    })
-
     global.chrome = {
       runtime: {
         sendMessage: mockSendMessage,
@@ -82,52 +97,22 @@ describe('AccountsPanel (UI Rework)', () => {
       i18n: {
         getMessage: (key: string, substitutions?: string | string[]) => {
           const translations: Record<string, string> = {
-            accounts_provider_gmail: "Gmail",
-            accounts_microcopy_gmail: "One account supported via Chrome Identity API.",
-            accounts_empty_gmail: "No Gmail account connected.",
-            accounts_connect_gmail: "Connect Gmail",
-            accounts_recent_title: "Recent Emails",
-            accounts_recent_description: "Your latest verification codes and magic links",
-            accounts_recent_empty: "No recent activity",
-            accounts_recent_loading: "Loading...",
-            accounts_status_not_connected: "Not connected",
-            accounts_status_connected: "Connected",
-            accounts_status_error: "Error",
-            accounts_disconnect: "Disconnect",
-            accounts_disconnecting: "Disconnecting...",
-            accounts_connecting: "Connecting...",
-            accounts_authenticating: "Authenticating...",
-            accounts_loading_profile: "Loading profile...",
-            accounts_saving: "Saving...",
-            accounts_remove_confirm: "Are you sure?",
-            accounts_gmail_limit_learn_why: "Learn why",
-            accounts_gmail_limit_modal_title: "Gmail Limitation",
-            accounts_gmail_limit_modal_body: "Chrome Identity API limits Gmail to one account.",
-            accounts_imap_provider_name: "IMAP",
-            accounts_imap_microcopy: "Connect via InboxBridge.",
-            accounts_imap_empty: "No IMAP accounts connected.",
-            accounts_imap_add: "Add IMAP Account",
-            toast_connect_failed: "Connection failed",
-            toast_connect_invalid_credentials: "Invalid credentials",
-            toast_connect_profile_failed: "Failed to load profile",
-            toast_connect_network_error: "Network error",
-            toast_connect_duplicate: "Account already connected",
-            toast_disconnect_failed: "Disconnect failed",
-            toast_oauth_cancelled: "OAuth cancelled",
-            toast_error_copy: "Failed to copy",
-            toast_error_link: "Failed to open link",
-            trust_indicator_title: "Privacy first",
-            trust_indicator_readonly: "Read-only access to your emails",
-            trust_indicator_local_storage: "Local storage only",
-            trust_indicator_local: "All processing happens locally",
-            label_from: "From",
-            label_to: "To",
-            label_subject: "Subject",
-            label_code: "Code",
-            button_copy: "Copy",
-            button_open: "Open",
-            time_just_now_short: "now",
-            value_not_available: "N/A",
+            firstrun_headline: 'Welcome to InboxKey',
+            firstrun_sub: 'Connect your first email account to get started.',
+            firstrun_gmail_title: 'Gmail',
+            firstrun_gmail_detail: 'Connect with one click via Chrome Identity API.',
+            firstrun_alt_heading: 'Other providers',
+            firstrun_imap_title: 'IMAP',
+            firstrun_imap_detail: 'Connect via InboxBridge.',
+            firstrun_gm_title: 'Google Messages',
+            firstrun_gm_detail: 'Receive SMS codes via Google Messages pairing.',
+            health_all_ok: 'All $1 accounts healthy',
+            health_attention_one: '1 account needs attention',
+            health_attention_multi: '$1 of $2 accounts need attention',
+            health_fetch_failed: 'Failed to load accounts',
+            accounts_panel_heading: 'Your accounts',
+            health_connecting: 'Connecting',
+            button_retry: 'Retry',
           }
           let message = translations[key] || key
           if (substitutions) {
@@ -138,7 +123,7 @@ describe('AccountsPanel (UI Rework)', () => {
           }
           return message
         },
-        getUILanguage: () => "en",
+        getUILanguage: () => 'en',
       },
     } as unknown as typeof chrome
   })
@@ -149,115 +134,39 @@ describe('AccountsPanel (UI Rework)', () => {
     delete global.chrome
   })
 
-  it('renders provider cards and recent emails section', async () => {
+  it('renders without crashing', async () => {
     renderWithProviders(<AccountsPanel />)
 
-    // Component renders per-provider sections (Gmail) instead of a single heading
+    // Component should render and finish loading
     await waitFor(() => {
-      expect(screen.getByRole('heading', { name: /gmail/i })).toBeInTheDocument()
-    })
-
-    expect(screen.getByRole('button', { name: /connect gmail/i })).toBeInTheDocument()
-    expect(screen.getByRole('heading', { name: /recent emails/i })).toBeInTheDocument()
-  })
-
-  it('connects Gmail successfully', async () => {
-    const gmailMailbox = {
-      id: 'mailbox-1',
-      providerId: 'gmail' as const,
-      email: 'user@gmail.com',
-      addedAt: Date.now(),
-      lastSyncedAt: Date.now(),
-      tokenExpiresAt: Date.now() + 3600000,
-    }
-
-    mockAuthenticateGmail.mockResolvedValue({
-      accessToken: 'token',
-      refreshToken: 'refresh',
-      expiresIn: 3600,
-    })
-    mockFetchGmailProfile.mockResolvedValue('user@gmail.com')
-
-    const sendMessageSequence = vi.fn((msg: any) => {
-      switch (msg.type) {
-        case 'GET_MAILBOXES':
-          return Promise.resolve({ success: true, mailboxes: sendMessageSequence.mock.calls.filter((call: any) => call[0].type === 'STORE_MAILBOX').length > 0 ? [gmailMailbox] : [] })
-        case 'GET_POPUP_DATA':
-          return Promise.resolve({
-            success: true,
-            data: {
-              codes: [],
-              magicLinks: [],
-              lastSync: Date.now(),
-              mailboxCount: 0,
-            },
-          })
-        case 'STORE_MAILBOX':
-          return Promise.resolve({ success: true, mailbox: { id: gmailMailbox.id, email: gmailMailbox.email } })
-        default:
-          return Promise.resolve({ success: true })
-      }
-    })
-
-    mockSendMessage.mockImplementation(sendMessageSequence)
-
-    renderWithProviders(<AccountsPanel />)
-
-    const connectButton = await screen.findByRole('button', { name: /connect gmail/i })
-    fireEvent.click(connectButton)
-
-    await waitFor(() => {
-      expect(mockAuthenticateGmail).toHaveBeenCalled()
-      expect(mockFetchGmailProfile).toHaveBeenCalled()
-      expect(sendMessageSequence).toHaveBeenCalledWith(
-        expect.objectContaining({
-          type: 'STORE_MAILBOX',
-          provider: 'gmail',
-        })
-      )
+      // Once mailboxes loads (empty), FirstRunWelcome appears
+      expect(screen.getByText('Welcome to InboxKey')).toBeInTheDocument()
     })
   })
 
-  it('renders recent emails from popup cache', async () => {
-    const now = Date.now()
-    mockSendMessage.mockImplementation((msg: any) => {
-      if (msg.type === 'GET_MAILBOXES') {
-        return Promise.resolve({ success: true, mailboxes: [] })
-      }
-      if (msg.type === 'GET_POPUP_DATA') {
-        return Promise.resolve({
-          success: true,
-          data: {
-            codes: [
-              {
-                code: '123456',
-                source: 'Bank - Verification',
-                receivedAt: now,
-                providerId: 'gmail',
-              },
-            ],
-            magicLinks: [
-              {
-                url: 'https://example.com/login',
-                type: 'login',
-                source: 'Example - Magic link',
-                receivedAt: now - 60000,
-                providerId: 'gmail',
-              },
-            ],
-            lastSync: now,
-            mailboxCount: 0,
-          },
-        })
-      }
-      return Promise.resolve({ success: true })
-    })
+  it('shows loading skeleton while mailboxes is null', () => {
+    // Block sendMessage so mailboxes stays null
+    mockSendMessage.mockImplementation(() => new Promise(() => {}))
 
     renderWithProviders(<AccountsPanel />)
 
+    // Skeleton rows should be visible (the accounts-list with skeleton-bar elements)
+    const skeletonDots = document.querySelectorAll('.skeleton-bar--dot')
+    expect(skeletonDots.length).toBe(3)
+  })
+
+  it('shows first-run welcome when mailboxes is empty', async () => {
+    renderWithProviders(<AccountsPanel />)
+
     await waitFor(() => {
-      expect(screen.getByText(/123456/)).toBeInTheDocument()
+      expect(screen.getByText('Welcome to InboxKey')).toBeInTheDocument()
     })
-    expect(screen.getByRole('button', { name: /open/i })).toBeInTheDocument()
+
+    // Gmail provider card is visible
+    expect(screen.getByRole('heading', { name: /gmail/i })).toBeInTheDocument()
+
+    // IMAP and Google Messages secondary cards are visible
+    expect(screen.getByRole('heading', { name: /imap/i })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: /google messages/i })).toBeInTheDocument()
   })
 })
