@@ -22,6 +22,6 @@
   "license": "PolyForm-Noncommercial-1.0.0",
   "devDependencies": {
     "typescript": "^5.5.3",
-    "vitest": "^1.6.0"
+    "vitest": "^4.1.4"
   }
 }
