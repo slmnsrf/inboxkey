@@ -1762,6 +1762,66 @@
     "message": "Connected",
     "description": "Button text shown briefly after successful connection and account creation"
   },
+  "accounts_imap_test_and_connect": {
+    "message": "Test & Connect",
+    "description": "Button to test connection and add IMAP account"
+  },
+  "accounts_imap_advanced_settings": {
+    "message": "Advanced settings",
+    "description": "Toggle label for advanced IMAP settings"
+  },
+  "accounts_imap_tls_recommended": {
+    "message": "Use TLS (recommended)",
+    "description": "TLS checkbox label in IMAP advanced settings"
+  },
+  "accounts_imap_label_optional": {
+    "message": "(optional)",
+    "description": "Optional hint for the account label field"
+  },
+  "accounts_imap_validation_email_required": {
+    "message": "Email address is required",
+    "description": "Validation error for empty email"
+  },
+  "accounts_imap_validation_email_invalid": {
+    "message": "Enter a valid email address",
+    "description": "Validation error for invalid email format"
+  },
+  "accounts_imap_validation_password_required": {
+    "message": "$1 is required",
+    "description": "Validation error for empty password (substitution is the password label)"
+  },
+  "accounts_imap_validation_app_password_short": {
+    "message": "This looks too short for an app password",
+    "description": "Validation error for short app password"
+  },
+  "accounts_imap_validation_app_password_long": {
+    "message": "This looks too long for an app password",
+    "description": "Validation error for long app password"
+  },
+  "accounts_imap_validation_password_short": {
+    "message": "Password is too short",
+    "description": "Validation error for short regular password"
+  },
+  "accounts_imap_validation_password_long": {
+    "message": "Password is too long",
+    "description": "Validation error for long regular password"
+  },
+  "accounts_imap_validation_server_required": {
+    "message": "IMAP server is required",
+    "description": "Validation error for empty server"
+  },
+  "accounts_imap_validation_server_invalid": {
+    "message": "Enter a valid server hostname",
+    "description": "Validation error for invalid server format"
+  },
+  "accounts_imap_validation_port_required": {
+    "message": "Port is required",
+    "description": "Validation error for empty port"
+  },
+  "accounts_imap_validation_port_invalid": {
+    "message": "Port must be 1-65535",
+    "description": "Validation error for out of range port"
+  },
   "modal_cancel": {
     "message": "Cancel",
     "description": "Cancel button in modals"

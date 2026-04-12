@@ -1541,6 +1541,26 @@ a.done-next__link:hover {
   text-decoration: underline;
 }
 
+.imap-form-optional {
+  color: var(--color-text-tertiary);
+  font-weight: normal;
+}
+
+.imap-modal__submit {
+  flex: 1;
+}
+
+/* Privacy reassurance note */
+.imap-privacy-note {
+  margin: 0 0 var(--space-4);
+  padding: var(--space-3);
+  background: var(--color-success-light);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-xs);
+  color: var(--color-success-dark);
+  text-align: center;
+}
+
 /* Form fields */
 .imap-form-group {
   margin-bottom: var(--space-4);

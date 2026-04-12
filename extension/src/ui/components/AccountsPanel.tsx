@@ -138,25 +138,28 @@ function buildMetaText(mailbox: MailboxInfo): string {
 function getErrorDetail(mailbox: MailboxInfo): string {
   const err = mailbox.lastSyncError?.toLowerCase() || ''
 
-  if (mailbox.providerId === 'gmail') {
-    return t('accounts_gmail_token_expired')
-  }
-  if (mailbox.providerId === 'google-messages') {
-    return t('accounts_gm_session_expired_meta')
-  }
-
-  // IMAP error differentiation
+  // Common error patterns (apply to all providers)
   if (err.includes('network') || err.includes('timeout') || err.includes('econnrefused')) {
     return t('accounts_imap_error_network')
-  }
-  if (err.includes('auth') || err.includes('credentials') || err.includes('login')) {
-    return t('accounts_imap_error_auth')
   }
   if (err.includes('tls') || err.includes('ssl') || err.includes('certificate')) {
     return t('accounts_imap_error_tls')
   }
 
-  // Fallback: use the raw error as-is
+  // Provider-specific auth errors
+  if (mailbox.providerId === 'gmail') {
+    if (err.includes('auth') || err.includes('401') || err.includes('token') || err.includes('credentials')) {
+      return t('accounts_gmail_token_expired')
+    }
+    return mailbox.lastSyncError || t('toast_connect_failed')
+  }
+  if (mailbox.providerId === 'google-messages') {
+    return t('accounts_gm_session_expired_meta')
+  }
+  if (err.includes('auth') || err.includes('credentials') || err.includes('login')) {
+    return t('accounts_imap_error_auth')
+  }
+
   return mailbox.lastSyncError || t('toast_connect_failed')
 }
 
@@ -278,8 +281,8 @@ export function AccountsPanel() {
         const response = await chrome.runtime.sendMessage({
           type: 'GET_POPUP_DATA',
         })
-        if (response?.success !== false && response?.codes) {
-          setRecentCodes(response.codes.slice(0, 3).map(mapToRecentCode))
+        if (response?.success && response?.data?.codes) {
+          setRecentCodes(response.data.codes.slice(0, 3).map(mapToRecentCode))
         }
       } catch { /* ignore */ }
     }
@@ -340,7 +343,10 @@ export function AccountsPanel() {
   /* ---- Gmail connect ---- */
   const handleConnectGmail = useCallback(async () => {
     try {
-      if (!isGmailConfigured()) return
+      if (!isGmailConfigured()) {
+        showToast(t('toast_connect_failed'), 'error')
+        return
+      }
 
       setGmailConnecting(true)
       const tokens = await authenticateGmail()
@@ -350,7 +356,7 @@ export function AccountsPanel() {
       const existing = mailboxes?.find((m) => m.providerId === 'gmail')
       if (existing) {
         if (email !== existing.email) {
-          // Mismatch - cannot reconnect with a different account
+          showToast(t('accounts_gmail_reconnect_mismatch'), 'error')
           setGmailConnecting(false)
           return
         }
@@ -370,6 +376,8 @@ export function AccountsPanel() {
 
       if (storeResponse.success) {
         await loadMailboxes()
+      } else {
+        showToast(storeResponse.error || t('toast_connect_failed'), 'error')
       }
     } catch (error) {
       const msg = getConnectionErrorMessage(error)
@@ -584,6 +592,7 @@ export function AccountsPanel() {
           onClose={() => setShowGMPairing(false)}
           onConnected={() => { setShowGMPairing(false); void loadMailboxes() }}
           initialPhoneNumber={gmPairingPhone}
+          mailboxId={mailboxes?.find(m => m.providerId === 'google-messages')?.id}
         />
         {showBridgeGuide && (
           <BridgeInstallGuide
@@ -743,7 +752,7 @@ export function AccountsPanel() {
             setBridgeStatus('connected')
             setBridgeCompat(checkCompatibility(ping))
             // Auto-dismiss after 2s, then open IMAP modal
-            setTimeout(() => {
+            safeTimeout(() => {
               setShowBridgeGuide(false)
               setReconnectingMailboxId(null)
               setImapPrefillData(undefined)
@@ -772,6 +781,7 @@ export function AccountsPanel() {
         onClose={() => setShowGMPairing(false)}
         onConnected={() => { setShowGMPairing(false); void loadMailboxes() }}
         initialPhoneNumber={gmPairingPhone}
+        mailboxId={mailboxes?.find(m => m.providerId === 'google-messages')?.id}
       />
     </div>
   )

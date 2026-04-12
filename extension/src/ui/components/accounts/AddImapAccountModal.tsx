@@ -188,34 +188,34 @@ export function AddImapAccountModal({
   const APP_PASSWORD_PROVIDERS: ProviderId[] = ['gmail', 'yahoo', 'icloud', 'yandex']
 
   function validateEmail(val: string): string | null {
-    if (!val.trim()) return 'Email address is required'
-    if (!EMAIL_RE.test(val.trim())) return 'Enter a valid email address'
+    if (!val.trim()) return t('accounts_imap_validation_email_required')
+    if (!EMAIL_RE.test(val.trim())) return t('accounts_imap_validation_email_invalid')
     return null
   }
 
   function validatePassword(val: string): string | null {
-    if (!val) return `${preset.passwordLabel} is required`
+    if (!val) return t('accounts_imap_validation_password_required', preset.passwordLabel)
     const stripped = val.replace(/[\s\-]/g, '')
     if (APP_PASSWORD_PROVIDERS.includes(selectedProvider)) {
-      if (stripped.length < 8) return `This looks too short for an app password`
-      if (stripped.length > 64) return `This looks too long for an app password`
+      if (stripped.length < 8) return t('accounts_imap_validation_app_password_short')
+      if (stripped.length > 64) return t('accounts_imap_validation_app_password_long')
     } else {
-      if (stripped.length < 4) return 'Password is too short'
-      if (stripped.length > 256) return 'Password is too long'
+      if (stripped.length < 4) return t('accounts_imap_validation_password_short')
+      if (stripped.length > 256) return t('accounts_imap_validation_password_long')
     }
     return null
   }
 
   function validateServer(val: string): string | null {
-    if (!val.trim()) return 'IMAP server is required'
-    if (!/^[\w.\-:]+$/.test(val.trim())) return 'Enter a valid server hostname'
+    if (!val.trim()) return t('accounts_imap_validation_server_required')
+    if (!/^[\w.\-:]+$/.test(val.trim())) return t('accounts_imap_validation_server_invalid')
     return null
   }
 
   function validatePort(val: string): string | null {
     const n = parseInt(val, 10)
-    if (!val || isNaN(n)) return 'Port is required'
-    if (n < 1 || n > 65535) return 'Port must be 1-65535'
+    if (!val || isNaN(n)) return t('accounts_imap_validation_port_required')
+    if (n < 1 || n > 65535) return t('accounts_imap_validation_port_invalid')
     return null
   }
 
@@ -498,9 +498,12 @@ export function AddImapAccountModal({
                 </div>
               )}
 
+              {/* Privacy Reassurance (REQUIRED per ui-ux-principles.md DoD) */}
+              <p className="imap-privacy-note">{t('accounts_imap_privacy_reassurance')}</p>
+
               {/* Email */}
               <div className="imap-form-group">
-                <label className="imap-form-label" htmlFor="imap-email">Email address</label>
+                <label className="imap-form-label" htmlFor="imap-email">{t('accounts_imap_email_label')}</label>
                 <input
                   className={`imap-form-input${fieldError('email') ? ' imap-form-input--error' : ''}`}
                   type="email"
@@ -543,7 +546,7 @@ export function AddImapAccountModal({
               {/* Label (optional) */}
               <div className="imap-form-group">
                 <label className="imap-form-label" htmlFor="imap-label">
-                  Label <span style={{ color: 'var(--color-text-tertiary)', fontWeight: 'normal' }}>(optional)</span>
+                  {t('accounts_imap_label_label')} <span className="imap-form-optional">{t('accounts_imap_label_optional')}</span>
                 </label>
                 <input
                   className="imap-form-input"
@@ -564,14 +567,14 @@ export function AddImapAccountModal({
                 <span className={`imap-advanced-toggle__arrow${advancedOpen ? ' open' : ''}`}>
                   <ChevronRight size={12} />
                 </span>
-                Advanced settings
+                {t('accounts_imap_advanced_settings')}
               </button>
 
               {advancedOpen && (
                 <div className="imap-advanced-fields">
                   <div className="imap-advanced-row imap-form-group">
                     <div>
-                      <label className="imap-form-label" htmlFor="imap-server">IMAP Server</label>
+                      <label className="imap-form-label" htmlFor="imap-server">{t('accounts_imap_server_label')}</label>
                       <input
                         className={`imap-form-input${fieldError('server') ? ' imap-form-input--error' : ''}`}
                         type="text"
@@ -587,7 +590,7 @@ export function AddImapAccountModal({
                       )}
                     </div>
                     <div>
-                      <label className="imap-form-label" htmlFor="imap-port">Port</label>
+                      <label className="imap-form-label" htmlFor="imap-port">{t('accounts_imap_port_label')}</label>
                       <input
                         className={`imap-form-input${fieldError('port') ? ' imap-form-input--error' : ''}`}
                         type="number"
@@ -610,7 +613,7 @@ export function AddImapAccountModal({
                       checked={tlsEnabled}
                       onChange={(e) => setTlsEnabled(e.target.checked)}
                     />
-                    Use TLS (recommended)
+                    {t('accounts_imap_tls_recommended')}
                   </label>
                 </div>
               )}
@@ -629,12 +632,12 @@ export function AddImapAccountModal({
                   type="button"
                   onClick={handleTestAndAdd}
                   disabled={isBusy || testState === 'success'}
-                  style={{ flex: 1 }}
+                  className="imap-modal__submit"
                 >
-                  {testState === 'testing' && <><Loader2 size={14} className="spin" /> Testing...</>}
-                  {testState === 'adding' && <><Loader2 size={14} className="spin" /> Saving...</>}
-                  {testState === 'success' && <>Connected</>}
-                  {(testState === 'idle' || testState === 'error') && 'Test & Connect'}
+                  {testState === 'testing' && <><Loader2 size={14} className="spin" /> {t('accounts_imap_testing_connection')}</>}
+                  {testState === 'adding' && <><Loader2 size={14} className="spin" /> {t('accounts_imap_adding')}</>}
+                  {testState === 'success' && <>{t('accounts_imap_connected')}</>}
+                  {(testState === 'idle' || testState === 'error') && t('accounts_imap_test_and_connect')}
                 </button>
               </div>
             </div>

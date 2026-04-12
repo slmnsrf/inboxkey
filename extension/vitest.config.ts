@@ -1,5 +1,26 @@
-import { defineConfig } from "vitest/config"
+import { defineConfig, type Plugin } from "vitest/config"
 import path from "path"
+
+/**
+ * Vitest plugin to stub Plasmo-specific import schemes (data-base64:, url:~)
+ * that only work in the Plasmo build pipeline.
+ */
+function plasmoAssetStub(): Plugin {
+  return {
+    name: 'plasmo-asset-stub',
+    enforce: 'pre',
+    resolveId(source) {
+      if (source.startsWith('data-base64:') || source.startsWith('url:~') || source.startsWith('url:~')) {
+        return '\0plasmo-asset-stub'
+      }
+    },
+    load(id) {
+      if (id === '\0plasmo-asset-stub') {
+        return 'export default ""'
+      }
+    },
+  }
+}
 
 export default defineConfig({
   test: {
@@ -25,6 +46,7 @@ export default defineConfig({
       "src/**/__tests__/**/*.test.tsx",
     ],
   },
+  plugins: [plasmoAssetStub()],
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
