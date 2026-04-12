@@ -37,7 +37,7 @@
  */
 
 import React, { useState } from 'react'
-import { AlertTriangle, CheckCircle2, ExternalLink } from 'lucide-react'
+import { AlertTriangle, Check, ExternalLink, Trash2 } from 'lucide-react'
 import { t } from '@/lib/i18n'
 import { Modal } from '@/ui/components/Modal'
 import { detectOS } from '@/lib/utils/detect-os'
@@ -205,6 +205,7 @@ export function UninstallBridgeModal({
               onClick={handleUninstall}
               disabled={!isConfirmed}
             >
+              <Trash2 size={14} aria-hidden="true" />
               {t('bridge_uninstall_action')}
             </button>
           </>
@@ -221,32 +222,28 @@ export function UninstallBridgeModal({
     >
       {phase === 'confirm' && (
         <>
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'flex-start',
-              gap: 'var(--space-3, 12px)',
-              marginBottom: 'var(--space-4, 16px)',
-            }}
-          >
-            <AlertTriangle
-              size={20}
-              style={{ color: 'var(--color-danger)', flexShrink: 0, marginTop: '2px' }}
-              aria-hidden="true"
-            />
-            <p style={{ margin: 0, color: 'var(--color-text-primary)' }}>
-              {t('bridge_uninstall_warning')}
-            </p>
+          <div className="danger-warning">
+            <span className="danger-warning__icon">
+              <AlertTriangle size={18} aria-hidden="true" />
+            </span>
+            <div className="danger-warning__body">
+              <p className="danger-warning__title">
+                {t('bridge_uninstall_warning')}
+              </p>
+              <p className="danger-warning__detail">
+                {t('bridge_uninstall_warning_detail')}
+              </p>
+            </div>
           </div>
 
-          <div className="form-group">
-            <label className="form-label" htmlFor="uninstall-confirm-input">
+          <div className="confirm-field">
+            <label className="confirm-field__label" htmlFor="uninstall-confirm-input">
               {t('bridge_uninstall_confirm_label')}
             </label>
             <input
               id="uninstall-confirm-input"
               type="text"
-              className="form-input"
+              className="confirm-field__input"
               value={confirmText}
               onChange={(e) => setConfirmText(e.target.value)}
               placeholder={confirmWord}
@@ -254,103 +251,81 @@ export function UninstallBridgeModal({
               spellCheck={false}
               autoFocus
             />
+            <span className="confirm-field__hint">
+              {t('bridge_uninstall_confirm_hint')}
+            </span>
           </div>
         </>
       )}
 
       {phase === 'cleaning' && (
-        <div role="status" aria-live="polite">
-          <p>{t('bridge_uninstall_cleaning')}</p>
+        <div className="cleaning" role="status" aria-live="polite">
+          <div className="cleaning__spinner" />
+          <h3 className="cleaning__title">{t('bridge_uninstall_cleaning')}</h3>
+          <p className="cleaning__detail">{t('bridge_uninstall_cleaning_detail')}</p>
         </div>
       )}
 
       {phase === 'done' && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4, 16px)' }}>
+        <>
           {/* Bridge-outcome warning banner (takes precedence over per-account partial). */}
           {bridgeOutcome?.kind === 'unsupported' && (
-            <p className="alert alert--warning" role="alert" style={{ margin: 0 }}>
+            <p className="danger-warning__detail" role="alert">
               {t('bridge_uninstall_bridge_unsupported')}
             </p>
           )}
           {bridgeOutcome?.kind === 'unknown_failure' && (
-            <p className="alert alert--warning" role="alert" style={{ margin: 0 }}>
+            <p className="danger-warning__detail" role="alert">
               {t('bridge_uninstall_unknown_failure')}
             </p>
           )}
           {bridgeOutcome?.kind === 'succeeded' && keychainPartialCount > 0 && (
-            <p className="alert alert--warning" role="alert" style={{ margin: 0 }}>
+            <p className="danger-warning__detail" role="alert">
               {t('bridge_uninstall_keychain_partial')}
             </p>
           )}
           {bridgeOutcome?.kind === 'succeeded' &&
             bridgeOutcome.result.accountsFileDeleted === false && (
-              <p style={{ margin: 0, color: 'var(--color-text-secondary)', fontSize: 'var(--font-size-sm, 13px)' }}>
+              <p className="cleaning__detail">
                 {t('bridge_uninstall_state_file_partial')}
               </p>
             )}
           {partialFailure && (
-            <p className="alert alert--warning" role="alert" style={{ margin: 0 }}>
+            <p className="danger-warning__detail" role="alert">
               {t('bridge_uninstall_partial')}
             </p>
           )}
 
-          <p style={{ margin: 0, color: 'var(--color-text-secondary)' }}>
-            {t('bridge_uninstall_done_subtitle')}
-          </p>
+          <div className="done-check">
+            <Check size={24} aria-hidden="true" />
+          </div>
+          <h3 className="done-title">{t('bridge_uninstall_done_success')}</h3>
+          <p className="done-sub">{t('bridge_uninstall_done_subtitle')}</p>
 
-          <section aria-labelledby="uninstall-removed-heading">
-            <h3
-              id="uninstall-removed-heading"
-              style={{
-                margin: '0 0 var(--space-2, 8px) 0',
-                fontSize: 'var(--font-size-sm, 13px)',
-                fontWeight: 600,
-                color: 'var(--color-text-primary)',
-              }}
-            >
+          <div className="done-checklist">
+            <span className="done-checklist__label">
               {t('bridge_uninstall_done_removed_heading')}
-            </h3>
-            <ul
-              role="list"
-              style={{
-                listStyle: 'none',
-                padding: 0,
-                margin: 0,
-                display: 'flex',
-                flexDirection: 'column',
-                gap: 'var(--space-1, 4px)',
-              }}
-            >
+            </span>
+            <ChecklistItem
+              label={t('bridge_uninstall_done_removed_accounts')}
+              warning={partialFailure}
+            />
+            {showCredentialsItem && (
               <ChecklistItem
-                label={t('bridge_uninstall_done_removed_accounts')}
-                warning={partialFailure}
+                label={t('bridge_uninstall_done_removed_credentials')}
+                warning={keychainPartialCount > 0}
               />
-              {showCredentialsItem && (
-                <ChecklistItem
-                  label={t('bridge_uninstall_done_removed_credentials')}
-                  warning={keychainPartialCount > 0}
-                />
-              )}
-              <ChecklistItem
-                label={t('bridge_uninstall_done_removed_codes')}
-                warning={partialFailure}
-              />
-            </ul>
-          </section>
+            )}
+            <ChecklistItem
+              label={t('bridge_uninstall_done_removed_codes')}
+              warning={partialFailure}
+            />
+          </div>
 
-          <section aria-labelledby="uninstall-step-heading">
-            <h3
-              id="uninstall-step-heading"
-              style={{
-                margin: '0 0 var(--space-2, 8px) 0',
-                fontSize: 'var(--font-size-sm, 13px)',
-                fontWeight: 600,
-                color: 'var(--color-text-primary)',
-              }}
-            >
+          <div className="done-next">
+            <span className="done-next__label">
               {t('bridge_uninstall_done_step_heading')}
-            </h3>
-
+            </span>
             {/* Install-kind-driven rendering takes priority when the bridge
                 reported installInfo. Fallback to OS bucket for old bridges. */}
             {installInfo ? (
@@ -369,8 +344,8 @@ export function UninstallBridgeModal({
                 onOpenWindowsSettings={handleOpenWindowsSettings}
               />
             )}
-          </section>
-        </div>
+          </div>
+        </>
       )}
     </Modal>
   )
@@ -385,29 +360,16 @@ interface ChecklistItemProps {
 
 function ChecklistItem({ label, warning }: ChecklistItemProps) {
   return (
-    <li
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: 'var(--space-2, 8px)',
-        color: 'var(--color-text-secondary)',
-      }}
-    >
-      {warning ? (
-        <AlertTriangle
-          size={16}
-          style={{ color: 'var(--color-warning, #f59e0b)', flexShrink: 0 }}
-          aria-hidden="true"
-        />
-      ) : (
-        <CheckCircle2
-          size={16}
-          style={{ color: 'var(--color-success, #22c55e)', flexShrink: 0 }}
-          aria-hidden="true"
-        />
-      )}
-      <span>{label}</span>
-    </li>
+    <div className="done-checklist__item">
+      <span className={`done-checklist__icon${warning ? ' done-checklist__icon--warning' : ''}`}>
+        {warning ? (
+          <AlertTriangle size={14} aria-hidden="true" />
+        ) : (
+          <Check size={14} aria-hidden="true" />
+        )}
+      </span>
+      {label}
+    </div>
   )
 }
 
@@ -447,26 +409,23 @@ function InstallTargetBlock({
     osBucket === 'windows' && installInfo.hasOsInstallerEntry === true
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3, 12px)' }}>
+    <>
       {showWindowsSettingsCta && (
         <button
           type="button"
           className="btn btn--primary"
           onClick={onOpenWindowsSettings}
-          style={{ alignSelf: 'flex-start' }}
         >
           {t('bridge_uninstall_done_windows_cta')}
         </button>
       )}
-      <p style={{ margin: 0, color: 'var(--color-text-secondary)', fontSize: 'var(--font-size-sm, 13px)' }}>
-        {t(labelKey)}
-      </p>
+      <p className="done-next__instruction">{t(labelKey)}</p>
       <PathRow
         path={installInfo.uninstallTarget}
         copied={copiedPath}
         onCopy={onCopy}
       />
-    </div>
+    </>
   )
 }
 
@@ -491,19 +450,18 @@ function OSBucketFallback({
 }: OSBucketFallbackProps) {
   if (osBucket === 'windows') {
     return (
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3, 12px)' }}>
-        <p style={{ margin: 0, color: 'var(--color-text-secondary)' }}>
+      <>
+        <p className="done-next__instruction">
           {t('bridge_uninstall_done_windows_steps')}
         </p>
         <button
           type="button"
           className="btn btn--primary"
           onClick={onOpenWindowsSettings}
-          style={{ alignSelf: 'flex-start' }}
         >
           {t('bridge_uninstall_done_windows_cta')}
         </button>
-        <p style={{ margin: 0, color: 'var(--color-text-secondary)', fontSize: 'var(--font-size-sm, 13px)' }}>
+        <p className="done-next__instruction">
           {t('bridge_uninstall_done_windows_manual')}
         </p>
         <PathRow
@@ -511,58 +469,44 @@ function OSBucketFallback({
           copied={copiedPath}
           onCopy={onCopy}
         />
-      </div>
+      </>
     )
   }
 
   if (osBucket === 'macos') {
     return (
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3, 12px)' }}>
-        <p style={{ margin: 0, color: 'var(--color-text-secondary)' }}>
+      <>
+        <p className="done-next__instruction">
           {t('bridge_uninstall_done_macos_steps')}
         </p>
         <a
           href={UNINSTALL_GUIDE_URL}
           target="_blank"
           rel="noopener noreferrer"
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: 'var(--space-1, 4px)',
-            color: 'var(--color-accent)',
-            textDecoration: 'none',
-            alignSelf: 'flex-start',
-          }}
+          className="done-next__link"
         >
           <ExternalLink size={14} aria-hidden="true" />
           {t('bridge_uninstall_done_macos_manual')}
         </a>
-      </div>
+      </>
     )
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3, 12px)' }}>
-      <p style={{ margin: 0, color: 'var(--color-text-secondary)' }}>
+    <>
+      <p className="done-next__instruction">
         {t('bridge_uninstall_done_other_steps')}
       </p>
       <a
         href={UNINSTALL_GUIDE_URL}
         target="_blank"
         rel="noopener noreferrer"
-        style={{
-          display: 'inline-flex',
-          alignItems: 'center',
-          gap: 'var(--space-1, 4px)',
-          color: 'var(--color-accent)',
-          textDecoration: 'none',
-          alignSelf: 'flex-start',
-        }}
+        className="done-next__link"
       >
         <ExternalLink size={14} aria-hidden="true" />
         {t('bridge_uninstall_done_other_link')}
       </a>
-    </div>
+    </>
   )
 }
 
@@ -574,34 +518,11 @@ interface PathRowProps {
 
 function PathRow({ path, copied, onCopy }: PathRowProps) {
   return (
-    <div
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: 'var(--space-2, 8px)',
-        padding: 'var(--space-2, 8px) var(--space-3, 12px)',
-        background: 'var(--color-surface-elev, rgba(255,255,255,0.04))',
-        borderRadius: 'var(--radius-md, 6px)',
-        border: '1px solid var(--color-border, rgba(255,255,255,0.08))',
-      }}
-    >
-      <code
-        style={{
-          flex: 1,
-          margin: 0,
-          fontFamily: 'var(--font-mono, monospace)',
-          fontSize: 'var(--font-size-sm, 13px)',
-          color: 'var(--color-text-primary)',
-          whiteSpace: 'nowrap',
-          overflow: 'hidden',
-          textOverflow: 'ellipsis',
-        }}
-      >
-        {path}
-      </code>
+    <div className="done-next__path">
+      <span className="done-next__path-text">{path}</span>
       <button
         type="button"
-        className="btn btn--secondary btn--sm"
+        className="done-next__copy"
         onClick={() => onCopy(path)}
         aria-live="polite"
       >
