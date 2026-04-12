@@ -71,18 +71,7 @@ export function Modal({
     }
   }, isOpen)
 
-  // Prevent body scroll when modal is open
-  useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = 'hidden'
-    } else {
-      document.body.style.overflow = ''
-    }
-
-    return () => {
-      document.body.style.overflow = ''
-    }
-  }, [isOpen])
+  // Note: no body scroll lock needed - fixed overlay prevents background interaction
 
   // Don't render if not open
   if (!isOpen) return null

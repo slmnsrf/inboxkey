@@ -130,6 +130,10 @@
     "message": "Dismiss",
     "description": "Dismiss button"
   },
+  "button_retry": {
+    "message": "Retry",
+    "description": "Retry button"
+  },
 
   "aria_copy_code": {
     "message": "Copy code $CODE$ from $SOURCE$",
@@ -650,8 +654,28 @@
     "message": "Advanced",
     "description": "Advanced settings section heading"
   },
+  "settings_bridge_description": {
+    "message": "Companion app for IMAP connections",
+    "description": "Bridge status row description"
+  },
+  "settings_bridge_checking": {
+    "message": "Checking...",
+    "description": "Bridge status: checking connection"
+  },
+  "settings_bridge_connected": {
+    "message": "Connected",
+    "description": "Bridge status: connected"
+  },
+  "settings_bridge_not_installed": {
+    "message": "Not installed",
+    "description": "Bridge status: not installed"
+  },
+  "settings_bridge_uninstall": {
+    "message": "Uninstall",
+    "description": "Bridge uninstall button"
+  },
   "settings_advanced_section_title": {
-    "message": "Advanced Settings",
+    "message": "Advanced",
     "description": "Advanced settings toggle button label"
   },
   "settings_advanced_default_enabled": {
@@ -727,8 +751,8 @@
     "description": "Blacklist manage button text"
   },
   "settings_blacklist_modal_title": {
-    "message": "Ignored Sites",
-    "description": "Blacklist modal title"
+    "message": "Excluded sites",
+    "description": "Excluded sites modal title"
   },
   "error_domain_load": {
     "message": "Failed to load domain state",
@@ -895,12 +919,12 @@
     "description": "Settings category label for advanced section"
   },
   "settings_blacklist_card_title": {
-    "message": "Ignored Sites",
-    "description": "Ignored sites card title in settings"
+    "message": "Excluded sites",
+    "description": "Excluded sites card title in settings"
   },
   "settings_blacklist_card_description": {
-    "message": "InboxKey can be turned off for specific websites.",
-    "description": "Ignored sites card description in settings"
+    "message": "InboxKey will not run on these domains or URLs.",
+    "description": "Excluded sites card description in settings"
   },
   "settings_appearance_heading": {
     "message": "Theme",
@@ -1139,7 +1163,7 @@
     "description": "Settings tab label"
   },
   "accounts_panel_heading": {
-    "message": "Connected Accounts",
+    "message": "Your accounts",
     "description": "Accounts panel heading"
   },
   "accounts_panel_summary": {
@@ -1322,17 +1346,41 @@
     "message": "InboxBridge is required to connect IMAP accounts. Download and install it to continue.",
     "description": "Instructions for installing InboxBridge"
   },
+  "bridge_install_required_title": {
+    "message": "InboxBridge required",
+    "description": "Banner title shown in IMAP modal when bridge is not installed"
+  },
+  "bridge_install_required_detail": {
+    "message": "A small companion app that connects to your email server locally. Runs on your device. Nothing leaves your computer.",
+    "description": "Banner description for bridge requirement"
+  },
+  "bridge_install_setup_btn": {
+    "message": "Set up InboxBridge",
+    "description": "Button to initiate bridge install from IMAP modal"
+  },
   "bridge_install_heading": {
-    "message": "Install InboxBridge",
-    "description": "Heading for the InboxBridge install guide"
+    "message": "Set up InboxBridge",
+    "description": "Wizard heading for the InboxBridge install guide"
   },
   "bridge_install_what": {
-    "message": "InboxBridge is a small companion app that lets InboxKey connect to your email server. It runs locally on your computer -- no data leaves your device.",
-    "description": "Description of what InboxBridge is"
+    "message": "A small helper app for connecting IMAP, Outlook, and other email providers. Runs on your device. Nothing leaves your computer.",
+    "description": "Wizard subtitle describing what InboxBridge is"
   },
   "bridge_install_download": {
     "message": "Download InboxBridge",
-    "description": "Download button label"
+    "description": "Download button label (generic fallback)"
+  },
+  "bridge_install_download_windows": {
+    "message": "Download for Windows",
+    "description": "OS-specific download button label for Windows"
+  },
+  "bridge_install_download_macos": {
+    "message": "Download for macOS",
+    "description": "OS-specific download button label for macOS"
+  },
+  "bridge_install_download_linux": {
+    "message": "Download for Linux",
+    "description": "OS-specific download button label for Linux"
   },
   "bridge_install_hint_windows": {
     "message": "Look for InboxBridge-...-windows-x64.exe",
@@ -1346,6 +1394,42 @@
     "message": "Look for InboxBridge-...-linux-x64.tar.gz",
     "description": "OS-specific download filename hint for Linux"
   },
+  "bridge_install_other_platforms": {
+    "message": "Other platforms",
+    "description": "Link to see downloads for other operating systems"
+  },
+  "bridge_install_verify_checksum": {
+    "message": "Verify checksum",
+    "description": "Link to verify the SHA-256 checksum of the download"
+  },
+  "bridge_install_view_source": {
+    "message": "View source",
+    "description": "Link to the GitHub source code repository"
+  },
+  "bridge_install_step1_title": {
+    "message": "Download InboxBridge",
+    "description": "Step 1 title in the install wizard"
+  },
+  "bridge_install_step2_title": {
+    "message": "Run the installer and restart Chrome",
+    "description": "Step 2 title in the install wizard"
+  },
+  "bridge_install_step2_instr": {
+    "message": "Open the file you just downloaded and follow the installer. Then restart Chrome so the helper can register with your browser.",
+    "description": "Step 2 instruction text"
+  },
+  "bridge_install_step2_button": {
+    "message": "I've restarted Chrome",
+    "description": "Button to confirm Chrome has been restarted"
+  },
+  "bridge_install_step3_title": {
+    "message": "Connect",
+    "description": "Step 3 title in the install wizard"
+  },
+  "bridge_install_step3_instr": {
+    "message": "InboxKey will check that the helper is running on your device.",
+    "description": "Step 3 instruction text"
+  },
   "bridge_install_installed": {
     "message": "I've installed it",
     "description": "Button after user installs InboxBridge"
@@ -1356,15 +1440,19 @@
   },
   "bridge_install_check": {
     "message": "Check connection",
-    "description": "Button to retry bridge connection after restart"
+    "description": "Button to check bridge connection"
   },
   "bridge_install_checking": {
-    "message": "Checking...",
+    "message": "Looking for InboxBridge on your device...",
     "description": "Shown while pinging InboxBridge"
   },
+  "bridge_install_success": {
+    "message": "Connected. You can add an IMAP account now.",
+    "description": "Shown when bridge connection succeeds"
+  },
   "bridge_install_retry_fail": {
-    "message": "Still not detected. Make sure you've quit Chrome completely (check your system tray) and reopened it.",
-    "description": "Shown when retry fails after install"
+    "message": "Couldn't reach InboxBridge. Make sure it's installed and running, then try again.",
+    "description": "Shown when bridge connection check fails"
   },
   "bridge_install_source": {
     "message": "View source code",
@@ -1379,19 +1467,27 @@
     "description": "Modal title"
   },
   "bridge_uninstall_warning": {
-    "message": "This will remove all IMAP accounts from InboxKey and clear stored credentials from your system keychain. You will lose access to all IMAP-connected email accounts in InboxKey.",
-    "description": "Warning text in uninstall modal"
+    "message": "This will remove all IMAP accounts and stored credentials",
+    "description": "Short warning title in the danger banner of the uninstall modal"
+  },
+  "bridge_uninstall_warning_detail": {
+    "message": "InboxBridge will delete its local configuration, remove saved passwords from your operating system's keychain, and disconnect all IMAP accounts from InboxKey. This cannot be undone.",
+    "description": "Detailed warning explanation below the title in the danger banner"
   },
   "bridge_uninstall_confirm_label": {
     "message": "Type UNINSTALL to confirm",
     "description": "Label for confirmation input"
+  },
+  "bridge_uninstall_confirm_hint": {
+    "message": "This action is irreversible.",
+    "description": "Hint text below the confirmation input"
   },
   "bridge_uninstall_confirm_word": {
     "message": "UNINSTALL",
     "description": "The word the user must type to confirm"
   },
   "bridge_uninstall_action": {
-    "message": "Remove all data and uninstall",
+    "message": "Uninstall",
     "description": "Destructive action button"
   },
   "bridge_uninstall_cancel": {
@@ -1399,20 +1495,28 @@
     "description": "Cancel button"
   },
   "bridge_uninstall_cleaning": {
-    "message": "Removing data...",
-    "description": "Shown while cleanup is in progress"
+    "message": "Cleaning up",
+    "description": "Title shown while cleanup is in progress"
+  },
+  "bridge_uninstall_cleaning_detail": {
+    "message": "Removing accounts, credentials, and configuration...",
+    "description": "Detail text shown below the spinner during cleanup"
   },
   "bridge_uninstall_done_title": {
     "message": "Finish uninstalling InboxBridge",
     "description": "Title after cleanup completes"
   },
+  "bridge_uninstall_done_success": {
+    "message": "InboxBridge uninstalled",
+    "description": "Success heading shown in the done phase body with green checkmark"
+  },
   "bridge_uninstall_done_subtitle": {
-    "message": "InboxBridge is a separate app. Removing it from this device completes the uninstall.",
+    "message": "The extension side is clean. Now delete the app from your computer.",
     "description": "Subtitle in the uninstall-done phase"
   },
   "bridge_uninstall_done_removed_heading": {
-    "message": "What was removed from this device:",
-    "description": "Heading above the checklist of removed items"
+    "message": "Removed",
+    "description": "Label above the checklist of removed items"
   },
   "bridge_uninstall_done_removed_accounts": {
     "message": "IMAP account settings",
@@ -1427,8 +1531,8 @@
     "description": "Checklist item: cached codes were removed"
   },
   "bridge_uninstall_done_step_heading": {
-    "message": "One step remains",
-    "description": "Heading above the OS-specific uninstall instructions"
+    "message": "Now delete the app",
+    "description": "Label above the OS-specific uninstall instructions"
   },
   "bridge_uninstall_done_windows_steps": {
     "message": "InboxBridge can be removed from Windows Settings, under Installed apps.",
@@ -1499,8 +1603,8 @@
     "description": "Subtle info line shown when bridge.uninstall cleared the keychain but accounts.json could not be removed."
   },
   "bridge_uninstall_done_close": {
-    "message": "Close",
-    "description": "Close button after uninstall instructions"
+    "message": "Done",
+    "description": "Button to close the modal after uninstall instructions"
   },
   "bridge_uninstall_partial": {
     "message": "Some accounts could not be fully removed. You may need to reconnect and try again.",
@@ -1508,11 +1612,35 @@
   },
   "bridge_warning_windows": {
     "message": "You may see a \"Windows protected your PC\" message when running the installer. This happens because InboxBridge is not digitally signed. Code signing certificates cost $200-500 per year, and as a source-available project without funding, we can't afford one. The app is completely safe -- you can review every line of source code on GitHub. To proceed: click \"More info\", then \"Run anyway\".",
-    "description": "Unsigned software warning for Windows"
+    "description": "Unsigned software warning for Windows (legacy single-string)"
+  },
+  "bridge_warning_windows_lead": {
+    "message": "Windows will show a \"Windows protected your PC\" warning when you run the installer.",
+    "description": "Security note lead paragraph for Windows"
+  },
+  "bridge_warning_windows_cause": {
+    "message": "This happens because InboxBridge isn't digitally signed. Microsoft requires a code signing certificate for that, and certificates cost roughly $200 to $500 per year. InboxKey is a non-profit, source-available project without funding for one, so the warning is unavoidable.",
+    "description": "Security note cause paragraph for Windows"
+  },
+  "bridge_warning_windows_action": {
+    "message": "To install, click \"More info\", then \"Run anyway\". Don't take our word that it's safe. Read the source code on GitHub or compare the SHA-256 checksum of what you downloaded against the published one, if you want.",
+    "description": "Security note action paragraph for Windows"
   },
   "bridge_warning_macos": {
     "message": "You may see an \"unidentified developer\" warning when opening the installer. Apple charges $99 per year for a Developer Program membership required to sign apps, and as a source-available project without funding, we can't afford one. The app is completely safe -- you can review every line of source code on GitHub. To proceed: right-click the .pkg file, click \"Open\", then click \"Open\" again in the dialog.",
-    "description": "Unsigned software warning for macOS"
+    "description": "Unsigned software warning for macOS (legacy single-string)"
+  },
+  "bridge_warning_macos_lead": {
+    "message": "macOS will show a \"cannot verify the developer\" warning when you open the installer.",
+    "description": "Security note lead paragraph for macOS"
+  },
+  "bridge_warning_macos_cause": {
+    "message": "This happens because InboxBridge isn't notarized by Apple. An Apple Developer ID membership costs $99 per year plus the notarization workflow has its own overhead. InboxKey is a non-profit, source-available project without funding for one, so the warning is unavoidable.",
+    "description": "Security note cause paragraph for macOS"
+  },
+  "bridge_warning_macos_action": {
+    "message": "To install, right-click the downloaded .dmg and choose \"Open\". Or go to System Settings, then Privacy & Security, and click \"Open Anyway\". Don't take our word that it's safe. Read the source code on GitHub or compare the SHA-256 checksum of what you downloaded against the published one, if you want.",
+    "description": "Security note action paragraph for macOS"
   },
   "bridge_update_required": {
     "message": "InboxBridge needs to be updated to work with this version of InboxKey.",
@@ -1634,6 +1762,66 @@
     "message": "Connected",
     "description": "Button text shown briefly after successful connection and account creation"
   },
+  "accounts_imap_test_and_connect": {
+    "message": "Test & Connect",
+    "description": "Button to test connection and add IMAP account"
+  },
+  "accounts_imap_advanced_settings": {
+    "message": "Advanced settings",
+    "description": "Toggle label for advanced IMAP settings"
+  },
+  "accounts_imap_tls_recommended": {
+    "message": "Use TLS (recommended)",
+    "description": "TLS checkbox label in IMAP advanced settings"
+  },
+  "accounts_imap_label_optional": {
+    "message": "(optional)",
+    "description": "Optional hint for the account label field"
+  },
+  "accounts_imap_validation_email_required": {
+    "message": "Email address is required",
+    "description": "Validation error for empty email"
+  },
+  "accounts_imap_validation_email_invalid": {
+    "message": "Enter a valid email address",
+    "description": "Validation error for invalid email format"
+  },
+  "accounts_imap_validation_password_required": {
+    "message": "$1 is required",
+    "description": "Validation error for empty password (substitution is the password label)"
+  },
+  "accounts_imap_validation_app_password_short": {
+    "message": "This looks too short for an app password",
+    "description": "Validation error for short app password"
+  },
+  "accounts_imap_validation_app_password_long": {
+    "message": "This looks too long for an app password",
+    "description": "Validation error for long app password"
+  },
+  "accounts_imap_validation_password_short": {
+    "message": "Password is too short",
+    "description": "Validation error for short regular password"
+  },
+  "accounts_imap_validation_password_long": {
+    "message": "Password is too long",
+    "description": "Validation error for long regular password"
+  },
+  "accounts_imap_validation_server_required": {
+    "message": "IMAP server is required",
+    "description": "Validation error for empty server"
+  },
+  "accounts_imap_validation_server_invalid": {
+    "message": "Enter a valid server hostname",
+    "description": "Validation error for invalid server format"
+  },
+  "accounts_imap_validation_port_required": {
+    "message": "Port is required",
+    "description": "Validation error for empty port"
+  },
+  "accounts_imap_validation_port_invalid": {
+    "message": "Port must be 1-65535",
+    "description": "Validation error for out of range port"
+  },
   "modal_cancel": {
     "message": "Cancel",
     "description": "Cancel button in modals"
@@ -1665,6 +1853,14 @@
   "accounts_imap_error_bridge_not_running": {
     "message": "Cannot connect to InboxBridge. Is it running?",
     "description": "Error when InboxBridge app is not running"
+  },
+  "accounts_imap_error_network": {
+    "message": "Connection failed. Check the server address and network.",
+    "description": "IMAP network/connection error shown in account row"
+  },
+  "accounts_gmail_token_expired": {
+    "message": "Token expired. Sign in again to reconnect.",
+    "description": "Gmail token expiry message shown in account row"
   },
   "accounts_imap_privacy_reassurance": {
     "message": "Credentials stored in OS keychain • Local-only • No servers",
@@ -2390,8 +2586,16 @@
     "description": "Hint shown when indicator toggle is disabled due to manual automation level"
   },
   "settings_blacklist_empty": {
-    "message": "No ignored sites. InboxKey is active on all sites.",
+    "message": "No excluded sites. InboxKey is active on all sites.",
     "description": "Empty state text shown when no sites are blacklisted"
+  },
+  "settings_blacklist_add_inline": {
+    "message": "Add a domain or URL",
+    "description": "Inline add button in excluded sites section"
+  },
+  "settings_blacklist_manage_all": {
+    "message": "Manage all ($1) \u2192",
+    "description": "Link to open full excluded sites modal with count"
   },
 
   "blacklist_tab_domains": {
@@ -2641,5 +2845,408 @@
   "blacklist_tabs_aria": {
     "message": "Ignored sites management tabs",
     "description": "ARIA label for tab navigation"
+  },
+
+  "health_all_ok": {
+    "message": "$COUNT$ accounts healthy",
+    "description": "Health summary when all accounts are healthy",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "health_attention_one": {
+    "message": "1 account needs attention. See below.",
+    "description": "Health summary with exactly 1 problem"
+  },
+  "health_attention_multi": {
+    "message": "$COUNT$ of $TOTAL$ accounts need attention",
+    "description": "Health summary with multiple problems",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      },
+      "total": {
+        "content": "$2"
+      }
+    }
+  },
+  "health_connecting": {
+    "message": "Connecting a new account...",
+    "description": "Health summary during connection"
+  },
+  "health_sync_paused": {
+    "message": "Sync paused. Reconnects automatically when you are back online.",
+    "description": "Health summary when offline"
+  },
+  "health_max_accounts": {
+    "message": "$COUNT$ of $MAX$ accounts connected. Remove one to add another.",
+    "description": "Health summary at max accounts",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      },
+      "max": {
+        "content": "$2"
+      }
+    }
+  },
+  "health_fetch_failed": {
+    "message": "Could not load accounts. Check that the extension is running, then try again.",
+    "description": "Health summary when mailbox fetch fails"
+  },
+
+  "firstrun_headline": {
+    "message": "Welcome to InboxKey",
+    "description": "First-run welcome headline"
+  },
+  "firstrun_sub": {
+    "message": "Connect an email account to autofill verification codes from your inbox. All processing happens on your device.",
+    "description": "First-run welcome subtitle"
+  },
+  "firstrun_gmail_title": {
+    "message": "Get started with Gmail",
+    "description": "First-run Gmail card title"
+  },
+  "firstrun_gmail_detail": {
+    "message": "One-click setup with Google sign-in. The recommended path for most users.",
+    "description": "First-run Gmail card detail"
+  },
+  "firstrun_alt_heading": {
+    "message": "Or choose another provider",
+    "description": "First-run alternatives section heading"
+  },
+  "firstrun_imap_title": {
+    "message": "Other email providers",
+    "description": "First-run IMAP card title"
+  },
+  "firstrun_imap_detail": {
+    "message": "Yahoo, Outlook, ProtonMail, Fastmail, iCloud, or any IMAP server. Requires InboxBridge, a small helper app that runs on your device.",
+    "description": "First-run IMAP card detail"
+  },
+  "firstrun_gm_title": {
+    "message": "Phone (Android)",
+    "description": "First-run Google Messages card title"
+  },
+  "firstrun_gm_detail": {
+    "message": "SMS verification codes captured from your Android phone via Google Messages pairing. Android only.",
+    "description": "First-run Google Messages card detail"
+  },
+
+  "add_account": {
+    "message": "Add account",
+    "description": "Add account button label"
+  },
+  "add_account_gmail_detail": {
+    "message": "Read verification codes from your Gmail inbox.",
+    "description": "Add account dropdown Gmail description"
+  },
+  "add_account_imap_title": {
+    "message": "Other email providers",
+    "description": "Add account dropdown IMAP title"
+  },
+  "add_account_imap_detail": {
+    "message": "Yahoo, Outlook, ProtonMail, Fastmail, iCloud, or any IMAP server. Requires InboxBridge.",
+    "description": "Add account dropdown IMAP description"
+  },
+  "add_account_gm_title": {
+    "message": "Phone (Android)",
+    "description": "Add account dropdown Google Messages title"
+  },
+  "add_account_gm_detail": {
+    "message": "Capture SMS verification codes via Google Messages on your Android phone.",
+    "description": "Add account dropdown GM description"
+  },
+  "add_account_recommended": {
+    "message": "Recommended",
+    "description": "Recommended tag on Gmail option"
+  },
+  "add_account_connected": {
+    "message": "Connected",
+    "description": "Tag shown when provider is already at max connections"
+  },
+  "add_account_gmail_limit_hint": {
+    "message": "Limited to one account per profile.",
+    "description": "Short explanation shown on disabled Gmail option"
+  },
+  "add_account_why": {
+    "message": "Why?",
+    "description": "Link to open Gmail limitation explanation"
+  },
+  "add_account_gm_limit_hint": {
+    "message": "One phone number per browser profile.",
+    "description": "Explanation shown when GM is at capacity"
+  },
+
+  "row_menu_label": {
+    "message": "More actions",
+    "description": "Row action menu button aria-label"
+  },
+  "row_test_connection": {
+    "message": "Test connection",
+    "description": "Row menu: test connection action"
+  },
+  "row_edit": {
+    "message": "Edit",
+    "description": "Row menu: edit action"
+  },
+  "row_change_account": {
+    "message": "Change account",
+    "description": "Row menu: change account action for Gmail"
+  },
+  "row_edit_credentials": {
+    "message": "Edit credentials",
+    "description": "Row menu: edit credentials for GM/IMAP providers"
+  },
+  "row_testing": {
+    "message": "Testing connection...",
+    "description": "Meta text shown while test connection is running"
+  },
+  "row_test_ok": {
+    "message": "Connection OK",
+    "description": "Inline success shown after test passes"
+  },
+  "row_test_fail": {
+    "message": "Connection test failed",
+    "description": "Inline error shown after test fails, stays until resolved"
+  },
+  "toast_test_success": {
+    "message": "Connection OK",
+    "description": "Toast shown when test connection succeeds (legacy)"
+  },
+  "toast_test_failed": {
+    "message": "Connection test failed",
+    "description": "Toast shown when test connection fails (legacy)"
+  },
+  "row_remove": {
+    "message": "Remove account",
+    "description": "Row menu: remove action"
+  },
+  "row_remove_modal_title": {
+    "message": "Remove account",
+    "description": "Remove confirmation modal title"
+  },
+  "row_remove_modal_body": {
+    "message": "Remove $EMAIL$? All sync data for this account will be permanently deleted.",
+    "description": "Remove confirmation modal body text",
+    "placeholders": {
+      "EMAIL": { "content": "$1", "example": "user@gmail.com" }
+    }
+  },
+  "row_remove_confirm": {
+    "message": "Remove $EMAIL$? All sync data will be deleted.",
+    "description": "Remove confirmation text (legacy)",
+    "placeholders": {
+      "email": {
+        "content": "$1"
+      }
+    }
+  },
+  "row_last_code": {
+    "message": "Last code: $DOMAIN$, $TIME$",
+    "description": "Row metadata showing last captured code",
+    "placeholders": {
+      "domain": {
+        "content": "$1"
+      },
+      "time": {
+        "content": "$2"
+      }
+    }
+  },
+
+  "banner_offline": {
+    "message": "You are offline. Verification codes will not sync until your internet returns.",
+    "description": "Offline page banner"
+  },
+  "banner_oauth_cancelled": {
+    "message": "Sign-in was cancelled. No changes were made. You can connect anytime.",
+    "description": "OAuth cancelled page banner"
+  },
+  "banner_bridge_update_available": {
+    "message": "InboxBridge update available ($VERSION$). Existing accounts work normally.",
+    "description": "Bridge update available banner",
+    "placeholders": {
+      "version": {
+        "content": "$1"
+      }
+    }
+  },
+  "banner_bridge_update_required": {
+    "message": "InboxBridge update required ($VERSION$). New accounts cannot be added until you update.",
+    "description": "Bridge update required banner",
+    "placeholders": {
+      "version": {
+        "content": "$1"
+      }
+    }
+  },
+
+  "recent_activity_title": {
+    "message": "Recent activity",
+    "description": "Recent activity section heading on accounts tab"
+  },
+  "recent_activity_empty": {
+    "message": "No codes captured yet. They will appear here after the first sync.",
+    "description": "Empty state message when no recent codes exist"
+  },
+  "toast_account_removed": {
+    "message": "Account removed",
+    "description": "Toast shown after successfully removing an account"
+  },
+
+  "security_hero_headline_v2": {
+    "message": "Only verification codes. Only on your device.",
+    "description": "Security v2 hero headline"
+  },
+  "security_hero_sub_v2": {
+    "message": "InboxKey reads verification emails from your inbox, parses them locally, and talks to nothing on the internet except your email provider. This page explains exactly what it does, what it does not do, and how to verify both against the source code.",
+    "description": "Security v2 hero subtitle"
+  },
+  "security_section_read": {
+    "message": "What is read",
+    "description": "Security section 01 heading"
+  },
+  "security_section_store": {
+    "message": "What is stored",
+    "description": "Security section 02 heading"
+  },
+  "security_section_perms": {
+    "message": "Permissions",
+    "description": "Security section 03 heading"
+  },
+  "security_section_source": {
+    "message": "Source available",
+    "description": "Security section 04 heading"
+  },
+  "security_read_scan_title": {
+    "message": "Recent unread messages are scanned",
+    "description": "Security fact: messages scanned"
+  },
+  "security_read_scan_detail": {
+    "message": "The extension asks your provider for recent unread messages (Gmail uses the search query is:unread newer_than:Nd). Each message is parsed in browser memory. Only messages containing a verification code or magic link are kept in the ephemeral cache. Everything else is discarded immediately.",
+    "description": "Security fact: scan detail"
+  },
+  "security_store_tokens_title": {
+    "message": "Authentication tokens",
+    "description": "Security fact: auth tokens stored"
+  },
+  "security_store_tokens_detail": {
+    "message": "If you connect Gmail, the OAuth access and refresh tokens are saved to chrome.storage.local in plaintext, protected by Chrome's profile sandbox. Encryption at rest is planned but not yet implemented. IMAP credentials are held by InboxBridge in your operating system's keychain, not by the extension itself.",
+    "description": "Security fact: token storage detail"
+  },
+  "security_store_cache_title": {
+    "message": "Ephemeral code cache",
+    "description": "Security fact: ephemeral cache"
+  },
+  "security_store_cache_detail": {
+    "message": "Detected verification codes are held in chrome.storage.session, which Chrome wipes automatically when you close the browser. They never touch disk.",
+    "description": "Security fact: cache detail"
+  },
+  "security_perm_scripting_reason": {
+    "message": "Required to add the in-page autofill UI when a verification field is detected. Only injected on pages where a code field is found.",
+    "description": "Permission reason: scripting"
+  },
+  "security_source_body": {
+    "message": "InboxKey is licensed under the PolyForm Noncommercial License 1.0.0. The full source code is on GitHub. You can read it, audit it, build it from source, and verify any claim on this page against the actual code that runs in your browser.",
+    "description": "Source available body text"
+  },
+  "security_arch_caption": {
+    "message": "The only thing this extension talks to is your email provider. Inside your device, parsing happens in browser memory.",
+    "description": "Architecture diagram caption"
+  },
+
+  "about_what": {
+    "message": "InboxKey autofills verification codes and opens magic links from your email. Local-only. Source available.",
+    "description": "About tab one-sentence WHAT description"
+  },
+  "about_resources_source_hint": {
+    "message": "Read it, audit it, fork it. Pull requests welcome.",
+    "description": "Resources: source code hint"
+  },
+  "about_resources_issues_hint": {
+    "message": "Bugs and feature requests on GitHub.",
+    "description": "Resources: issues hint"
+  },
+  "about_resources_privacy_hint": {
+    "message": "What InboxKey does and does not do with your data.",
+    "description": "Resources: privacy hint"
+  },
+  "about_contribute": {
+    "message": "Translations and feature contributions are also welcome on GitHub.",
+    "description": "Contribute footer line"
+  },
+  "about_companion_app": {
+    "message": "Companion app: InboxBridge $VERSION$, the local helper for IMAP and Outlook accounts.",
+    "description": "Footer companion app line",
+    "placeholders": {
+      "version": {
+        "content": "$1"
+      }
+    }
+  },
+  "about_built_with": {
+    "message": "Built with Plasmo, React, TypeScript, Lucide, and other open-source tools.",
+    "description": "Footer built-with credits"
+  },
+  "about_version_pill_hint": {
+    "message": "Click to copy",
+    "description": "Version pill hover hint"
+  },
+  "about_version_copied_toast": {
+    "message": "Version copied to clipboard",
+    "description": "Toast after version copy"
+  },
+
+  "settings_session_chips_description_v2": {
+    "message": "How long the extension waits for a code after a check starts.",
+    "description": "Code check card description (v2)"
+  },
+  "settings_advanced_banking_blocklist_v2": {
+    "message": "Exclude banking sites",
+    "description": "Banking blocklist toggle label (v2)"
+  },
+  "settings_advanced_banking_blocklist_desc_v2": {
+    "message": "If you turn this on, the extension will not work on most banking and financial websites.",
+    "description": "Banking blocklist description (v2)"
+  },
+  "settings_auto_hero_headline": {
+    "message": "What should InboxKey do when it finds a code?",
+    "description": "Automation hero headline question"
+  },
+  "settings_auto_hero_sub": {
+    "message": "Pick how much you want the extension to handle for you. You can change this anytime.",
+    "description": "Automation hero subtitle"
+  },
+  "settings_auto_info": {
+    "message": "Full Automation is on. Codes will be filled and submitted for you.",
+    "description": "Full automation info banner"
+  },
+
+  "gm_connect_title": {
+    "message": "Connect Google Messages",
+    "description": "GM pairing modal title"
+  },
+  "gm_connect_intro": {
+    "message": "Pair Google Messages on your Android phone to capture SMS verification codes. The pairing uses a QR code and runs entirely on your device.",
+    "description": "GM pairing intro text"
+  },
+  "gm_connect_button": {
+    "message": "Connect Google Messages",
+    "description": "GM pairing action button"
+  },
+  "gm_phone_hint_v2": {
+    "message": "Your number is stored locally only. It is never sent anywhere.",
+    "description": "GM phone number hint (v2 trust signal)"
+  },
+  "gm_countdown_text": {
+    "message": "Opening Google Messages in your browser...",
+    "description": "GM countdown text"
+  },
+
+  "recent_activity_title": {
+    "message": "Recent activity",
+    "description": "Recent activity section title"
   }
 }

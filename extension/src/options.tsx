@@ -13,16 +13,17 @@ import { AboutSection } from './ui/components/AboutSection'
 import { AccountsPanel } from './ui/components/AccountsPanel'
 import { AppearanceSettings } from './ui/components/AppearanceSettings'
 import { AutomationSettings } from './ui/components/AutomationSettings'
-import { SessionChipSettings } from './ui/components/SessionChipSettings'
 import { AdvancedSettings } from './ui/components/AdvancedSettings'
+import { BridgeStatusRow } from './ui/components/BridgeStatusRow'
 import { BuyMeACoffeeButton } from './ui/components/BuyMeACoffeeButton'
+import { ToastContainer } from './ui/components/ToastContainer'
 import { BlacklistManageButton } from './ui/components/blacklist/BlacklistManageButton'
 import { BlacklistModal } from './ui/components/blacklist/BlacklistModal'
-import { KeyRound, ShieldCheck, EyeOff, Code2, Zap, Timer, Palette, Globe, Settings as SettingsIcon, Github } from 'lucide-react'
+import { ShieldCheck, EyeOff, Code2, Github } from 'lucide-react'
 import { t } from './lib/i18n'
 import { GITHUB_REPO_URL } from './lib/constants'
+import markWhiteBase64 from 'data-base64:~/assets/mark-white.svg'
 import './options.css'
-import './ui/components/security/SecurityInfo.css'
 
 function OptionsApp() {
   const [mailboxCount, setMailboxCount] = useState<number | null>(null)
@@ -78,7 +79,7 @@ function OptionsApp() {
               <header className="options-header" aria-labelledby="options-title">
                 <div className="options-header__identity">
                   <span className="brand__icon" aria-hidden="true">
-                    <KeyRound size={24} />
+                    <img src={markWhiteBase64} alt="" width={24} height={24} />
                   </span>
                   <div className="brand">
                     <h1 id="options-title" className="brand__title">
@@ -141,71 +142,42 @@ function OptionsApp() {
                   hidden={activeTab !== 'settings'}
                   className="tab-panel"
                 >
-                  <section className="section settings-section">
-                    {/* BEHAVIOR */}
-                    <div className="section-label">{t('settings_category_behavior')}</div>
-                    <div className="settings-card">
-                      <div className="settings-card__header">
-                        <h2 className="settings-card__title">
-                          <span className="settings-card__title-icon" aria-hidden="true"><Zap size={16} /></span>
-                          {t('automation_heading')}
-                        </h2>
-                        <p className="settings-card__description">{t('automation_description')}</p>
-                      </div>
-                      <div className="settings-card__body">
-                        <AutomationSettings />
-                      </div>
-                    </div>
+                  <div className="settings-doc">
+                    {/* Automation hero panel (full-width, dominant) */}
+                    <AutomationSettings />
 
-                    <div className="settings-card">
-                      <div className="settings-card__header">
-                        <h2 className="settings-card__title">
-                          <span className="settings-card__title-icon" aria-hidden="true"><Timer size={16} /></span>
-                          {t('settings_session_chips_heading')}
-                        </h2>
-                        <p className="settings-card__description">{t('settings_session_chips_description')}</p>
-                      </div>
-                      <div className="settings-card__body">
-                        <SessionChipSettings />
-                      </div>
-                    </div>
+                    {/* InboxBridge status (after Automation, before Appearance) */}
+                    <BridgeStatusRow />
 
-                    {/* APPEARANCE */}
-                    <div className="section-label">{t('settings_category_appearance')}</div>
-                    <div className="settings-card">
-                      <div className="settings-card__header">
-                        <h2 className="settings-card__title">
-                          <span className="settings-card__title-icon" aria-hidden="true"><Palette size={16} /></span>
+                    {/* Appearance section */}
+                    <section className="settings-section" aria-labelledby="theme-heading">
+                      <header className="settings-section__head">
+                        <h2 id="theme-heading" className="settings-section__title">
                           {t('settings_appearance_heading')}
                         </h2>
-                        <p className="settings-card__description">{t('settings_appearance_description')}</p>
-                      </div>
-                      <div className="settings-card__body">
-                        <AppearanceSettings />
-                      </div>
-                    </div>
+                        <p className="settings-section__intro">
+                          {t('settings_appearance_description')}
+                        </p>
+                      </header>
+                      <AppearanceSettings />
+                    </section>
 
-                    {/* SITES */}
-                    <div className="section-label">{t('settings_category_sites')}</div>
-                    <div className="settings-card">
-                      <div className="settings-card__header">
-                        <h2 className="settings-card__title">
-                          <span className="settings-card__title-icon" aria-hidden="true"><Globe size={16} /></span>
+                    {/* Excluded sites section */}
+                    <section className="settings-section" aria-labelledby="excluded-heading">
+                      <header className="settings-section__head">
+                        <h2 id="excluded-heading" className="settings-section__title">
                           {t('settings_blacklist_card_title')}
                         </h2>
-                        <p className="settings-card__description">{t('settings_blacklist_card_description')}</p>
-                      </div>
-                      <div className="settings-card__body">
-                        <BlacklistManageButton onClick={() => setIsBlacklistModalOpen(true)} />
-                      </div>
-                    </div>
+                        <p className="settings-section__intro">
+                          {t('settings_blacklist_card_description')}
+                        </p>
+                      </header>
+                      <BlacklistManageButton onClick={() => setIsBlacklistModalOpen(true)} />
+                    </section>
 
-                    {/* ADVANCED */}
-                    <div className="section-label">{t('settings_category_advanced')}</div>
-                    <div className="settings-card">
-                      <AdvancedSettings />
-                    </div>
-                  </section>
+                    {/* Advanced (collapsible) */}
+                    <AdvancedSettings />
+                  </div>
                 </div>
 
                 {/* Blacklist Modal */}
@@ -238,11 +210,11 @@ function OptionsApp() {
                 </p>
                 <div className="trust-banner__pillars">
                   <div className="trust-pillar">
-                    <span className="trust-pillar__icon" aria-hidden="true"><ShieldCheck size={18} /></span>
+                    <span className="trust-pillar__icon" aria-hidden="true"><ShieldCheck size={14} /></span>
                     <span className="trust-pillar__label">{t('settings_trust_local_only')}</span>
                   </div>
                   <div className="trust-pillar">
-                    <span className="trust-pillar__icon" aria-hidden="true"><EyeOff size={18} /></span>
+                    <span className="trust-pillar__icon" aria-hidden="true"><EyeOff size={14} /></span>
                     <span className="trust-pillar__label">{t('settings_trust_safe')}</span>
                   </div>
                   <a
@@ -252,13 +224,14 @@ function OptionsApp() {
                     rel="noopener noreferrer"
                     aria-label={t('settings_trust_see_source_aria')}
                   >
-                    <span className="trust-pillar__icon" aria-hidden="true"><Github size={18} /></span>
+                    <span className="trust-pillar__icon" aria-hidden="true"><Github size={14} /></span>
                     <span className="trust-pillar__label">{t('settings_trust_see_github')}</span>
                   </a>
                 </div>
               </section>
             </div>
           </div>
+          <ToastContainer />
         </ToastProvider>
     </ThemeProvider>
   )
