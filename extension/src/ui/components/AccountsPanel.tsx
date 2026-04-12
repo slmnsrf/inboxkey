@@ -471,11 +471,14 @@ export function AccountsPanel() {
       })
       if (response.success || response.ok) {
         await loadMailboxes()
+      } else {
+        showToast(t('toast_disconnect_failed'), 'error')
+        await loadMailboxes()
       }
     } catch {
-      // Best effort
+      showToast(t('toast_disconnect_failed'), 'error')
     }
-  }, [loadMailboxes])
+  }, [loadMailboxes, showToast])
 
   /* ---- Edit / Change account ---- */
   const handleEdit = useCallback(async (mailbox: MailboxInfo) => {

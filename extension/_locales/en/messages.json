@@ -2974,6 +2974,10 @@
     "message": "Why?",
     "description": "Link to open Gmail limitation explanation"
   },
+  "add_account_gm_limit_hint": {
+    "message": "One phone number per browser profile.",
+    "description": "Explanation shown when GM is at capacity"
+  },
 
   "row_menu_label": {
     "message": "More actions",

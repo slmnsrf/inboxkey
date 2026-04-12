@@ -158,27 +158,42 @@ export function AddAccountDropdown({
         </button>
 
         {/* Google Messages / Phone (Android) */}
-        <button
-          className={`add-account__option${gmConnected ? ' add-account__option--disabled' : ''}`}
-          role="menuitem"
-          onClick={() => handleSelect('google-messages')}
-          aria-disabled={gmConnected || undefined}
-        >
-          <span className="add-account__option-icon add-account__option-icon--gm">
-            <ProviderLogo provider="google-messages" size={20} />
-          </span>
-          <span className="add-account__option-text">
-            <span className="add-account__option-title">
-              {t('add_account_gm_title')}
-              {gmConnected && (
+        {gmConnected ? (
+          <div
+            className="add-account__option add-account__option--disabled"
+            role="menuitem"
+            aria-disabled="true"
+          >
+            <span className="add-account__option-icon add-account__option-icon--gm">
+              <ProviderLogo provider="google-messages" size={20} />
+            </span>
+            <span className="add-account__option-text">
+              <span className="add-account__option-title">
+                {t('add_account_gm_title')}
                 <span className="add-account__option-tag add-account__option-tag--max">
                   {t('add_account_connected')}
                 </span>
-              )}
+              </span>
+              <span className="add-account__option-detail">
+                {t('add_account_gm_limit_hint')}
+              </span>
             </span>
-            <span className="add-account__option-detail">{t('add_account_gm_detail')}</span>
-          </span>
-        </button>
+          </div>
+        ) : (
+          <button
+            className="add-account__option"
+            role="menuitem"
+            onClick={() => handleSelect('google-messages')}
+          >
+            <span className="add-account__option-icon add-account__option-icon--gm">
+              <ProviderLogo provider="google-messages" size={20} />
+            </span>
+            <span className="add-account__option-text">
+              <span className="add-account__option-title">{t('add_account_gm_title')}</span>
+              <span className="add-account__option-detail">{t('add_account_gm_detail')}</span>
+            </span>
+          </button>
+        )}
       </div>
 
       {/* Gmail limit explanation modal */}
