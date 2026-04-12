@@ -21,15 +21,19 @@ import { authenticateGmail } from '@/lib/providers/gmail/chrome-auth'
 import { fetchGmailProfile } from '@/lib/providers/gmail/profile'
 import { isGmailConfigured } from '@/lib/providers/gmail/config'
 import { getNativeClient } from '@/lib/native-messaging'
-import { checkCompatibility, type CompatibilityStatus } from '@/lib/native-messaging/version-check'
+import { checkCompatibility, getUpdateUrl, type CompatibilityStatus } from '@/lib/native-messaging/version-check'
+import { RECOMMENDED_INBOXBRIDGE_VERSION } from '@/lib/constants'
 import { getAccountStatus } from './accounts/account-status'
 import { getConnectionErrorMessage } from './accounts/shared/connection-errors'
 import { AddImapAccountModal } from './accounts/AddImapAccountModal'
+import { GoogleMessagesPairingModal } from './accounts/GoogleMessagesPairingModal'
+import { BridgeInstallGuide } from './accounts/BridgeInstallGuide'
 import { HealthSummary, type HealthMode } from './options/HealthSummary'
 import { PageBanner } from './options/PageBanner'
 import { AddAccountDropdown } from './options/AddAccountDropdown'
 import { FirstRunWelcome } from './options/FirstRunWelcome'
 import { AccountRowUnified } from './options/AccountRowUnified'
+import { ProviderLogo } from './options/ProviderLogo'
 import { RecentActivity, type RecentCode } from './options/RecentActivity'
 
 /* ---------------------------------------------------------------
@@ -118,10 +122,42 @@ function buildMetaText(mailbox: MailboxInfo): string {
     'google-messages': 'Google Messages',
   }
   const parts: string[] = [providerLabels[mailbox.providerId] || mailbox.providerId]
-  if (mailbox.lastSyncedAt) {
+
+  // Show error-specific message when there's a sync error
+  if (mailbox.lastSyncError) {
+    parts.push(getErrorDetail(mailbox))
+  } else if (mailbox.lastSyncedAt) {
     parts.push(t('accounts_last_synced', timeAgo(mailbox.lastSyncedAt)))
   }
   return parts.join(' \u00B7 ')
+}
+
+/**
+ * Map sync errors to user-friendly messages based on provider and error type.
+ */
+function getErrorDetail(mailbox: MailboxInfo): string {
+  const err = mailbox.lastSyncError?.toLowerCase() || ''
+
+  if (mailbox.providerId === 'gmail') {
+    return t('accounts_gmail_token_expired')
+  }
+  if (mailbox.providerId === 'google-messages') {
+    return t('accounts_gm_session_expired_meta')
+  }
+
+  // IMAP error differentiation
+  if (err.includes('network') || err.includes('timeout') || err.includes('econnrefused')) {
+    return t('accounts_imap_error_network')
+  }
+  if (err.includes('auth') || err.includes('credentials') || err.includes('login')) {
+    return t('accounts_imap_error_auth')
+  }
+  if (err.includes('tls') || err.includes('ssl') || err.includes('certificate')) {
+    return t('accounts_imap_error_tls')
+  }
+
+  // Fallback: use the raw error as-is
+  return mailbox.lastSyncError || t('toast_connect_failed')
 }
 
 /* ---------------------------------------------------------------
@@ -164,6 +200,16 @@ export function AccountsPanel() {
   const [imapPrefillData, setImapPrefillData] = useState<{
     email: string; server: string; port: number; label: string
   } | undefined>(undefined)
+
+  /* ---- Google Messages pairing modal state ---- */
+  const [showGMPairing, setShowGMPairing] = useState(false)
+  const [gmPairingPhone, setGmPairingPhone] = useState<string | undefined>(undefined)
+
+  /* ---- Bridge install guide state (shown as inline section) ---- */
+  const [showBridgeGuide, setShowBridgeGuide] = useState(false)
+
+  /* ---- Gmail connecting state ---- */
+  const [gmailConnecting, setGmailConnecting] = useState(false)
 
   /* ---- Bridge state (for IMAP provider) ---- */
   const [bridgeStatus, setBridgeStatus] = useState<'checking' | 'connected' | 'disconnected'>('checking')
@@ -259,38 +305,12 @@ export function AccountsPanel() {
 
   /* ==================== Provider handlers ==================== */
 
-  const handleProviderSelect = useCallback(async (provider: Provider) => {
-    if (provider === 'gmail') {
-      await handleConnectGmail()
-    } else if (provider === 'imap-bridge') {
-      if (bridgeStatus === 'disconnected') {
-        // TODO: Show bridge install guide banner or redirect
-        // For now, open the IMAP modal anyway (it will show bridge status)
-      }
-      setReconnectingMailboxId(null)
-      setImapPrefillData(undefined)
-      setShowAddImapModal(true)
-    } else if (provider === 'google-messages') {
-      // Open Google Messages settings tab with the connection flow
-      // For now, navigate to the accounts page with GM focus
-      // The GoogleMessagesCard handles its own lifecycle in the old system.
-      // TODO: Wire into unified flow in Phase 7
-      try {
-        await chrome.runtime.sendMessage({
-          type: 'CONNECT_GOOGLE_MESSAGES',
-          phoneNumber: '', // Will be handled by the GM flow
-        })
-      } catch {
-        // Best effort - GM flow is complex and handled by its own card
-      }
-    }
-  }, [bridgeStatus])
-
   /* ---- Gmail connect ---- */
   const handleConnectGmail = useCallback(async () => {
     try {
       if (!isGmailConfigured()) return
 
+      setGmailConnecting(true)
       const tokens = await authenticateGmail()
       const email = await fetchGmailProfile(tokens.accessToken)
 
@@ -299,6 +319,7 @@ export function AccountsPanel() {
       if (existing) {
         if (email !== existing.email) {
           // Mismatch - cannot reconnect with a different account
+          setGmailConnecting(false)
           return
         }
         await chrome.runtime.sendMessage({
@@ -323,8 +344,27 @@ export function AccountsPanel() {
       if (msg === t('toast_oauth_cancelled')) {
         setOauthCancelled(true)
       }
+    } finally {
+      setGmailConnecting(false)
     }
   }, [mailboxes, loadMailboxes])
+
+  const handleProviderSelect = useCallback(async (provider: Provider) => {
+    if (provider === 'gmail') {
+      await handleConnectGmail()
+    } else if (provider === 'imap-bridge') {
+      if (bridgeStatus === 'disconnected') {
+        setShowBridgeGuide(true)
+        return
+      }
+      setReconnectingMailboxId(null)
+      setImapPrefillData(undefined)
+      setShowAddImapModal(true)
+    } else if (provider === 'google-messages') {
+      setGmPairingPhone(undefined)
+      setShowGMPairing(true)
+    }
+  }, [bridgeStatus, handleConnectGmail])
 
   /* ---- Reconnect handler ---- */
   const handleReconnect = useCallback((mailbox: MailboxInfo) => {
@@ -339,8 +379,10 @@ export function AccountsPanel() {
         label: mailbox.email,
       })
       setShowAddImapModal(true)
+    } else if (mailbox.providerId === 'google-messages') {
+      setGmPairingPhone(mailbox.gmPhoneNumber)
+      setShowGMPairing(true)
     }
-    // Google Messages reconnect is handled by its own card state machine
   }, [handleConnectGmail])
 
   /* ---- Test connection ---- */
@@ -460,9 +502,31 @@ export function AccountsPanel() {
           onCancel={() => setShowAddImapModal(false)}
           prefillData={imapPrefillData}
         />
+        <GoogleMessagesPairingModal
+          isOpen={showGMPairing}
+          onClose={() => setShowGMPairing(false)}
+          onConnected={() => { setShowGMPairing(false); void loadMailboxes() }}
+          initialPhoneNumber={gmPairingPhone}
+        />
+        {showBridgeGuide && (
+          <BridgeInstallGuide
+            onConnected={(ping) => {
+              setShowBridgeGuide(false)
+              setBridgeStatus('connected')
+              setBridgeCompat(checkCompatibility(ping))
+              // After bridge is connected, open the IMAP modal
+              setReconnectingMailboxId(null)
+              setImapPrefillData(undefined)
+              setShowAddImapModal(true)
+            }}
+          />
+        )}
       </>
     )
   }
+
+  // Derived: whether IMAP accounts exist (for bridge banners)
+  const hasImapAccounts = mailboxes?.some(m => m.providerId === 'imap-bridge') ?? false
 
   // Management view (has accounts)
   return (
@@ -477,6 +541,41 @@ export function AccountsPanel() {
         {oauthCancelled && (
           <PageBanner variant="info" dismissable onDismiss={() => setOauthCancelled(false)}>
             {t('banner_oauth_cancelled')}
+          </PageBanner>
+        )}
+
+        {/* Bridge disconnected banner (only when IMAP accounts exist) */}
+        {hasImapAccounts && bridgeStatus === 'disconnected' && (
+          <PageBanner variant="required">
+            {t('accounts_imap_bridge_not_installed')}
+          </PageBanner>
+        )}
+
+        {/* Bridge update required (protocol incompatible) */}
+        {bridgeCompat !== null && !bridgeCompat.compatible && (
+          <PageBanner
+            variant="required"
+            action={{
+              label: t('bridge_update_download'),
+              onClick: () => window.open(getUpdateUrl(), '_blank'),
+            }}
+          >
+            {t('banner_bridge_update_required', [RECOMMENDED_INBOXBRIDGE_VERSION])}
+          </PageBanner>
+        )}
+
+        {/* Bridge update available (non-blocking) */}
+        {bridgeCompat !== null && bridgeCompat.compatible && bridgeCompat.updateAvailable && (
+          <PageBanner
+            variant="info"
+            dismissable
+            onDismiss={() => setBridgeCompat({ compatible: true, updateAvailable: false })}
+            action={{
+              label: t('bridge_update_download'),
+              onClick: () => window.open(getUpdateUrl(), '_blank'),
+            }}
+          >
+            {t('banner_bridge_update_available', [RECOMMENDED_INBOXBRIDGE_VERSION])}
           </PageBanner>
         )}
       </div>
@@ -498,6 +597,22 @@ export function AccountsPanel() {
 
       {/* Unified accounts list */}
       <div className="accounts-list">
+        {/* Gmail connecting row (shown during OAuth flow) */}
+        {gmailConnecting && (
+          <div className="account-row account-row--connecting">
+            <span className="account-row__dot" aria-label={t('health_connecting')} />
+            <span className="account-row__icon">
+              <ProviderLogo provider="gmail" size={18} />
+            </span>
+            <div className="account-row__info">
+              <span className="account-row__email">{t('health_connecting')}</span>
+              <span className="account-row__meta">
+                <span className="connecting-stage">Authenticating</span>
+              </span>
+            </div>
+          </div>
+        )}
+
         {sortedMailboxes.map((mailbox) => {
           const status = getAccountStatus({
             tokenExpiresAt: mailbox.tokenExpiresAt,
@@ -536,6 +651,21 @@ export function AccountsPanel() {
         })}
       </div>
 
+      {/* Bridge install guide (shown inline when bridge is disconnected and user tries to add IMAP) */}
+      {showBridgeGuide && (
+        <BridgeInstallGuide
+          onConnected={(ping) => {
+            setShowBridgeGuide(false)
+            setBridgeStatus('connected')
+            setBridgeCompat(checkCompatibility(ping))
+            // After bridge is connected, open the IMAP modal
+            setReconnectingMailboxId(null)
+            setImapPrefillData(undefined)
+            setShowAddImapModal(true)
+          }}
+        />
+      )}
+
       {/* Recent activity */}
       <RecentActivity codes={recentCodes} />
 
@@ -545,6 +675,14 @@ export function AccountsPanel() {
         onConfirm={handleImapAdded}
         onCancel={() => setShowAddImapModal(false)}
         prefillData={imapPrefillData}
+      />
+
+      {/* Google Messages pairing modal */}
+      <GoogleMessagesPairingModal
+        isOpen={showGMPairing}
+        onClose={() => setShowGMPairing(false)}
+        onConnected={() => { setShowGMPairing(false); void loadMailboxes() }}
+        initialPhoneNumber={gmPairingPhone}
       />
     </div>
   )

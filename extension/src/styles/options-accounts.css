@@ -1383,3 +1383,33 @@
     opacity: 0.7;
   }
 }
+
+/* ===========================
+   CONNECTING ROW (Gmail OAuth in progress)
+   =========================== */
+
+.account-row--connecting {
+  grid-template-columns: 12px 32px 1fr;
+}
+
+.account-row--connecting .account-row__dot {
+  width: 10px;
+  height: 10px;
+  border: 2px solid var(--color-primary);
+  border-top-color: transparent;
+  background: transparent !important;
+  animation: row-spin 800ms linear infinite;
+}
+
+.connecting-stage {
+  font-size: var(--font-size-xs);
+  color: var(--color-primary);
+  font-weight: var(--font-weight-medium);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .account-row--connecting .account-row__dot {
+    animation: none;
+    opacity: 0.5;
+  }
+}

@@ -1762,6 +1762,14 @@
     "message": "Cannot connect to InboxBridge. Is it running?",
     "description": "Error when InboxBridge app is not running"
   },
+  "accounts_imap_error_network": {
+    "message": "Connection failed. Check the server address and network.",
+    "description": "IMAP network/connection error shown in account row"
+  },
+  "accounts_gmail_token_expired": {
+    "message": "Token expired. Sign in again to reconnect.",
+    "description": "Gmail token expiry message shown in account row"
+  },
   "accounts_imap_privacy_reassurance": {
     "message": "Credentials stored in OS keychain • Local-only • No servers",
     "description": "Privacy reassurance message for IMAP account modal"
