@@ -1,24 +1,26 @@
 # Security Policy
 
-**Last Updated:** April 11, 2026
+**Last Updated:** April 12, 2026
 
-InboxKey is a privacy-first Chrome extension. This document covers how to report vulnerabilities, what the current release line does today, and which security limitations are still open.
+InboxKey is a local-only browser extension. This document covers how to report vulnerabilities, what the extension and companion app do today, and which security limitations are still open.
 
 ## Supported Versions
 
-| Version | Supported | Notes |
+| Component | Version | Supported |
 | --- | --- | --- |
-| 0.0.x | Yes | Current release line |
-| Older versions | No | Upgrade to the latest 0.0.x build |
+| InboxKey (extension) | 0.0.x | Yes |
+| InboxBridge (companion app) | 1.1.x | Yes |
 
-## Reporting A Vulnerability
+Only the latest release of each component receives security fixes. Upgrade to the latest version before reporting issues.
+
+## Reporting a Vulnerability
 
 Do not report security issues in public GitHub issues.
 
 Report through:
 
-- Email: inboxbridge.extension@gmail.com
-- GitHub Security Advisories: https://github.com/slmnsrf/inboxkey/security/advisories
+- **Email:** inboxbridge.extension@gmail.com
+- **GitHub Security Advisories:** https://github.com/slmnsrf/inboxkey/security/advisories
 
 Please include:
 
@@ -28,134 +30,97 @@ Please include:
 - logs or screenshots if they do not expose personal data
 - contact info for follow-up if you want credit
 
-Response goals:
-
-- acknowledge receipt within 72 hours
-- triage severity within 7 days
-- ship or plan remediation based on severity and release risk
-
-PGP:
-
-- No public PGP key is published yet. Use the email address above or GitHub Security Advisories.
+Response times vary based on severity. No public PGP key is available; use the email address above or GitHub Security Advisories for encrypted disclosure.
 
 ## Security Model
 
-### Local-only Processing
+### Local-only processing
 
-InboxKey does not operate a backend server. Email parsing, verification-code extraction, matching, and autofill decisions happen on the user's device.
+InboxKey does not operate a backend server. Email parsing, verification-code extraction, matching, and autofill decisions happen entirely on the device.
 
-Network traffic goes directly between the user's device and the selected mail provider or local helper app. InboxKey does not proxy email through an InboxKey-owned service.
+Network traffic goes directly between the device and the selected mail provider. InboxKey does not proxy, relay, or store email through any InboxKey-operated service.
 
-### Provider Access
+### Provider access
 
-Current provider paths:
+- **Gmail:** uses `chrome.identity.getAuthToken()` with the `gmail.readonly` scope. Read-only access. Chrome manages OAuth tokens via PKCE with no client secret stored in the extension.
+- **IMAP (via InboxBridge):** a local Native Messaging companion app connects directly to the mail server. Credentials are stored in the operating system keychain (Windows Credential Manager, macOS Keychain, or Linux Secret Service), not in the browser.
+- **Google Messages (SMS):** reads conversation list previews from the Google Messages for Web tab (`messages.google.com`) via `chrome.scripting.executeScript()`. No Google Messages API is used.
 
-- Gmail uses `chrome.identity.getAuthToken()` with the `https://www.googleapis.com/auth/gmail.readonly` scope.
-- IMAP accounts use InboxBridge, a local Native Messaging companion app. IMAP credentials are stored in the operating system keychain by InboxBridge, not in the extension.
-- Google Messages integration, when enabled, runs locally in the browser and reads message previews from the open Google Messages for Web tab.
+### Storage
 
-### Storage Model
+| Data | Location | Retention |
+| --- | --- | --- |
+| Connected mailbox state, settings, domain preferences | `chrome.storage.local` | Until disconnected or uninstalled |
+| Popup cache, recent codes and links, session state | `chrome.storage.session` | Cleared on browser close |
+| IMAP credentials | OS keychain (via InboxBridge) | Until disconnected or InboxBridge uninstalled |
 
-Current extension storage:
-
-- `chrome.storage.local` stores connected mailbox state, settings, domain preferences, and related extension metadata.
-- `chrome.storage.session` stores short-lived popup cache entries, recent verification codes and links, and session state.
-- InboxBridge stores IMAP credentials in the operating system keychain.
-
-Current limitation:
-
-- Additional application-level encryption at rest for extension storage is planned but is not shipped in the current release line.
+Application-level encryption at rest for extension storage is planned but not yet shipped. This is documented in the architecture and privacy policy.
 
 ### Permissions
 
-The current extension manifest requests:
+The extension manifest requests:
 
-- `storage`
-- `alarms`
-- `tabs`
-- `identity`
-- `notifications`
-- `nativeMessaging`
-- `scripting`
-- `https://*/*` host permissions
+| Permission | Purpose |
+| --- | --- |
+| `storage` | Local settings and cached state |
+| `alarms` | MV3 service-worker keepalive and session polling timers |
+| `tabs` | Opening Google Messages tab for SMS, opening settings pages |
+| `identity` | Chrome OAuth for Gmail authentication |
+| `notifications` | Extension state notifications (e.g., after an update) |
+| `nativeMessaging` | Communication with InboxBridge for IMAP support |
+| `scripting` | Reading Google Messages conversation previews for SMS codes |
 
-These permissions are used for:
+Host permissions: `https://*/*` and `http://*/*` (content script injection for verification field detection).
 
-- local storage and session state
-- MV3 alarms and background scheduling
-- field detection and autofill on supported pages
-- Gmail authentication
-- optional InboxBridge communication
-- optional Google Messages browser integration
-- user-facing notifications
-
-InboxKey does not request:
-
-- `history`
-- `bookmarks`
-- `cookies`
-- `webRequest`
-- `debugger`
+Not requested: `history`, `bookmarks`, `cookies`, `webRequest`, `debugger`.
 
 ### Transparency
 
-InboxKey is source-available under PolyForm Noncommercial 1.0.0.
+InboxKey is source-available under PolyForm Noncommercial 1.0.0. The repository is public at https://github.com/slmnsrf/inboxkey. Production builds embed a short Git commit hash, and the About UI links that hash back to the source tree for that build.
 
-Current transparency mechanisms:
+Builds are not byte-for-byte reproducible. The embedded Git hash helps trace a build back to source but is not the same as deterministic reproducible builds.
 
-- the repository is public: https://github.com/slmnsrf/inboxkey
-- production builds embed a short Git commit hash
-- the About UI links that hash back to the source tree for that build
+## Security Best Practices for Users
 
-Important caveat:
-
-- Builds are not currently byte-for-byte reproducible. The embedded Git hash helps users trace a build back to source, but it is not the same as deterministic reproducible builds.
-
-## Security Best Practices For Users
-
-- Keep Chrome and your operating system updated.
-- Install InboxKey only from this repository or official project release artifacts.
-- Review connected accounts regularly and remove ones you no longer use.
-- Use OS-level protections on shared devices, such as full-disk encryption, screen lock, and separate user accounts.
-- If you use InboxBridge, download it from the official release page and keep it updated.
-- Verify the build source and commit hash if you are side-loading from source.
+- Keep Chrome and the operating system updated.
+- Install InboxKey only from this repository or official release artifacts.
+- Review connected accounts regularly and remove unused ones.
+- Use OS-level protections on shared devices (full-disk encryption, screen lock, separate user accounts).
+- If using InboxBridge, download it from the [official release page](https://github.com/slmnsrf/inboxkey/releases) and keep it updated.
+- Verify the build source and commit hash when side-loading from source.
 
 ## Known Security Considerations
 
-### 1. Ongoing Hardening
+### No encryption at rest
 
-Security hardening is still ongoing, and documentation may change as the architecture settles.
+Extension state in `chrome.storage.local` is stored without additional application-level encryption. This is documented in the architecture and privacy policy and remains planned future work.
 
-### 2. No Additional Extension-level Encryption At Rest Yet
+### Device compromise is high impact
 
-Extension state in `chrome.storage.local` is currently stored without additional application-level encryption. This is already called out in the architecture and privacy docs, and it remains planned future work.
+If the local device, browser profile, or operating system account is compromised, locally stored data can be exposed. InboxKey reduces remote exposure by not operating a backend, but it cannot protect against a fully compromised device.
 
-### 3. Device Compromise Remains High Impact
+### No lock mode
 
-If the local device, browser profile, or operating system account is compromised, locally stored data can be exposed. InboxKey reduces remote exposure by avoiding a backend, but it cannot protect against a fully compromised device.
+The extension does not ship a password or lock screen feature. On shared machines, rely on OS account protections rather than assuming the extension has a separate local lock.
 
-### 4. No Lock Mode In The Current Release
+### Development builds may log more detail
 
-The current release line does not ship a password or lock screen feature. On shared machines, rely on OS account protections rather than assuming the extension has a separate local lock.
+Development builds and local debugging may log more operational detail than production builds. Do not use development builds for sensitive everyday browsing.
 
-### 5. Development Builds May Log More Detail
+### Gmail limited to one account per Chrome profile
 
-Development builds and local debugging may log more operational detail than production builds. Do not use development builds for sensitive everyday browsing without understanding that tradeoff.
-
-### 6. Gmail Account Limit Is Browser-level
-
-Gmail is currently limited to one account per Chrome profile because of the Chrome Identity API. That is a platform limitation, not an InboxKey backend decision.
+Gmail authentication uses the Chrome Identity API, which is scoped to the active Chrome profile. This is a platform limitation, not an InboxKey decision. Multiple Gmail accounts require separate Chrome profiles.
 
 ## Security Updates
 
 Security fixes are communicated through:
 
 - GitHub Security Advisories
-- release notes in the repository
-- future store release notes if and when a Web Store listing goes live
+- Release notes in the repository
+- Chrome Web Store listing, if and when published
 
 ## Contact
 
-- Security issues: inboxbridge.extension@gmail.com
-- GitHub Security Advisories: https://github.com/slmnsrf/inboxkey/security/advisories
-- Repository: https://github.com/slmnsrf/inboxkey
+- **Security issues:** inboxbridge.extension@gmail.com
+- **GitHub Security Advisories:** https://github.com/slmnsrf/inboxkey/security/advisories
+- **Repository:** https://github.com/slmnsrf/inboxkey
