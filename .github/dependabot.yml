@@ -1,0 +1,60 @@
+version: 2
+
+updates:
+  # GitHub Actions -- weekly check for newer action versions.
+  # Catches runtime deprecations (Node 20 -> 24) before they break releases.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    labels:
+      - dependencies
+      - ci
+
+  # npm -- weekly check for outdated npm packages across all workspaces.
+  # Each manifest location needs its own entry (Dependabot scopes per directory).
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    labels:
+      - dependencies
+
+  - package-ecosystem: npm
+    directory: /extension
+    schedule:
+      interval: weekly
+    labels:
+      - dependencies
+      - extension
+    ignore:
+      # Plasmo pins React to 18.x; don't bump until Plasmo supports 19
+      - dependency-name: react
+        versions: [">=19.0.0"]
+      - dependency-name: react-dom
+        versions: [">=19.0.0"]
+
+  - package-ecosystem: npm
+    directory: /packages/extraction-core
+    schedule:
+      interval: weekly
+    labels:
+      - dependencies
+      - extraction-core
+
+  - package-ecosystem: npm
+    directory: /apps/reviewer
+    schedule:
+      interval: weekly
+    labels:
+      - dependencies
+      - reviewer
+
+  # Cargo (inboxbridge) -- weekly check for outdated Rust crates.
+  - package-ecosystem: cargo
+    directory: /inboxbridge
+    schedule:
+      interval: weekly
+    labels:
+      - dependencies
+      - inboxbridge
