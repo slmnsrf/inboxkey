@@ -519,7 +519,9 @@ body {
 }
 
 .btn--danger:disabled {
-  opacity: 0.4;
+  background: var(--color-text-tertiary);
+  border-color: transparent;
+  color: var(--color-bg-primary);
   cursor: not-allowed;
 }
 

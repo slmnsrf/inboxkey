@@ -30,6 +30,7 @@ export function BridgeStatusRow() {
     } catch {
       setStatus('disconnected')
       setVersion(null)
+      setInstallInfo(undefined)
     }
   }, [])
 
@@ -49,6 +50,28 @@ export function BridgeStatusRow() {
     void checkBridge()
     void loadImapAccounts()
   }, [checkBridge, loadImapAccounts])
+
+  const handleUninstallClick = useCallback(async () => {
+    // Re-check bridge before opening modal (user may have already deleted it)
+    try {
+      const client = getNativeClient()
+      await client.ping()
+      // Bridge is alive, proceed with uninstall modal
+      await loadImapAccounts()
+      setShowUninstall(true)
+    } catch {
+      // Bridge is already gone, update state
+      setStatus('disconnected')
+      setVersion(null)
+      setInstallInfo(undefined)
+    }
+  }, [loadImapAccounts])
+
+  const handleModalClose = useCallback(() => {
+    setShowUninstall(false)
+    // Always do a real check after the modal closes (whether completed or cancelled)
+    void checkBridge()
+  }, [checkBridge])
 
   return (
     <>
@@ -75,7 +98,7 @@ export function BridgeStatusRow() {
             <button
               className="bridge-status-row__btn bridge-status-row__btn--danger"
               type="button"
-              onClick={() => setShowUninstall(true)}
+              onClick={handleUninstallClick}
             >
               {t('settings_bridge_uninstall')}
             </button>
@@ -94,12 +117,8 @@ export function BridgeStatusRow() {
         <UninstallBridgeModal
           imapAccountIds={imapAccountIds}
           installInfo={installInfo}
-          onComplete={() => {
-            setShowUninstall(false)
-            setStatus('disconnected')
-            setVersion(null)
-          }}
-          onCancel={() => setShowUninstall(false)}
+          onComplete={handleModalClose}
+          onCancel={handleModalClose}
         />
       )}
     </>
