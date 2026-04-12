@@ -55,8 +55,10 @@ export function BridgeStatusRow() {
     // Re-check bridge before opening modal (user may have already deleted it)
     try {
       const client = getNativeClient()
-      await client.ping()
-      // Bridge is alive, proceed with uninstall modal
+      const ping = await client.ping()
+      // Refresh metadata from fresh ping so modal gets current installInfo
+      setVersion(ping.version || null)
+      setInstallInfo(ping.installInfo)
       await loadImapAccounts()
       setShowUninstall(true)
     } catch {
