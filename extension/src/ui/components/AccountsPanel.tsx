@@ -15,6 +15,7 @@
  */
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react'
+import { useToast } from '@/ui/contexts/ToastContext'
 import { t, timeAgo } from '@/lib/i18n'
 import type { PopupCacheCode } from '@/shared/popup-messages'
 import { authenticateGmail } from '@/lib/providers/gmail/chrome-auth'
@@ -115,7 +116,7 @@ function sortByHealth(mailboxes: MailboxInfo[]): MailboxInfo[] {
    Helper: build secondary meta text for a mailbox row
    --------------------------------------------------------------- */
 
-function buildMetaText(mailbox: MailboxInfo): string {
+function buildMetaText(mailbox: MailboxInfo, lastCode?: RecentCode): string {
   const providerLabels: Record<string, string> = {
     gmail: 'Gmail',
     'imap-bridge': mailbox.imapServer || 'IMAP',
@@ -126,6 +127,8 @@ function buildMetaText(mailbox: MailboxInfo): string {
   // Show error-specific message when there's a sync error
   if (mailbox.lastSyncError) {
     parts.push(getErrorDetail(mailbox))
+  } else if (lastCode?.domain && lastCode?.timeAgo) {
+    parts.push(t('accounts_last_code', [lastCode.domain, lastCode.timeAgo]))
   } else if (mailbox.lastSyncedAt) {
     parts.push(t('accounts_last_synced', timeAgo(mailbox.lastSyncedAt)))
   }
@@ -161,12 +164,17 @@ function getErrorDetail(mailbox: MailboxInfo): string {
 }
 
 /* ---------------------------------------------------------------
-   Helper: format phone number for display
+   Helper: mask phone number for display (e.g. +90 538 *** **15)
    --------------------------------------------------------------- */
 
-function formatPhoneDisplay(raw?: string): string {
+function maskPhoneNumber(raw?: string): string {
   if (!raw) return ''
-  return raw.startsWith('+') ? raw : `+${raw}`
+  const clean = raw.replace(/[^\d+]/g, '')
+  if (clean.length < 7) return raw
+  const prefix = clean.slice(0, 6)
+  const suffix = clean.slice(-2)
+  const masked = '*'.repeat(Math.max(clean.length - 8, 3))
+  return `${prefix} ${masked} ${suffix}`
 }
 
 /* ---------------------------------------------------------------
@@ -188,11 +196,17 @@ function mapToRecentCode(c: PopupCacheCode): RecentCode {
    =============================================================== */
 
 export function AccountsPanel() {
+  const { showToast } = useToast()
+
   /* ---- Core state ---- */
   const [mailboxes, setMailboxes] = useState<MailboxInfo[] | null>(null)
   const [fetchError, setFetchError] = useState(false)
   const [isOnline, setIsOnline] = useState(navigator.onLine)
   const [recentCodes, setRecentCodes] = useState<RecentCode[]>([])
+
+  /* ---- Test connection state ---- */
+  const [testingId, setTestingId] = useState<string | null>(null)
+  const [testResult, setTestResult] = useState<Record<string, 'success' | 'error'>>({})
 
   /* ---- IMAP modal state ---- */
   const [showAddImapModal, setShowAddImapModal] = useState(false)
@@ -301,6 +315,8 @@ export function AccountsPanel() {
     return sortByHealth(mailboxes)
   }, [mailboxes])
 
+  const gmailConnected = mailboxes?.some(m => m.providerId === 'gmail') ?? false
+  const gmConnected = mailboxes?.some(m => m.providerId === 'google-messages') ?? false
   const imapBlocked = bridgeCompat !== null && !bridgeCompat.compatible
 
   /* ==================== Provider handlers ==================== */
@@ -387,16 +403,32 @@ export function AccountsPanel() {
 
   /* ---- Test connection ---- */
   const handleTest = useCallback(async (mailbox: MailboxInfo) => {
+    setTestingId(mailbox.id)
+    setTestResult((prev) => { const next = { ...prev }; delete next[mailbox.id]; return next })
     try {
       const response = await chrome.runtime.sendMessage({
         type: 'TEST_MAILBOX_CONNECTION',
         mailboxId: mailbox.id,
       })
-      if (!response.success) {
+      if (response.success) {
+        setTestResult((prev) => ({ ...prev, [mailbox.id]: 'success' }))
+        await loadMailboxes()
+        // Auto-dismiss success after 4 seconds
+        setTimeout(() => {
+          setTestResult((prev) => {
+            if (prev[mailbox.id] !== 'success') return prev
+            const next = { ...prev }; delete next[mailbox.id]; return next
+          })
+        }, 4000)
+      } else {
+        setTestResult((prev) => ({ ...prev, [mailbox.id]: 'error' }))
         await loadMailboxes()
       }
     } catch {
+      setTestResult((prev) => ({ ...prev, [mailbox.id]: 'error' }))
       await loadMailboxes()
+    } finally {
+      setTestingId(null)
     }
   }, [loadMailboxes])
 
@@ -416,6 +448,29 @@ export function AccountsPanel() {
       // Best effort
     }
   }, [loadMailboxes])
+
+  /* ---- Edit / Change account ---- */
+  const handleEdit = useCallback(async (mailbox: MailboxInfo) => {
+    if (mailbox.providerId === 'gmail') {
+      // Gmail: disconnect current, then re-auth to allow picking a different Google account
+      await handleRemove(mailbox)
+      await handleConnectGmail()
+    } else if (mailbox.providerId === 'google-messages') {
+      // GM: open pairing modal pre-filled with existing phone (reconnect flow, keeps entry)
+      setGmPairingPhone(mailbox.gmPhoneNumber)
+      setShowGMPairing(true)
+    } else if (mailbox.providerId === 'imap-bridge') {
+      // IMAP: open modal pre-filled with existing data
+      setReconnectingMailboxId(mailbox.id)
+      setImapPrefillData({
+        email: mailbox.email,
+        server: mailbox.imapServer || '',
+        port: mailbox.imapPort || 993,
+        label: mailbox.email,
+      })
+      setShowAddImapModal(true)
+    }
+  }, [handleConnectGmail, handleRemove])
 
   /* ---- IMAP modal confirm ---- */
   const handleImapAdded = useCallback(async (accountData: {
@@ -592,6 +647,8 @@ export function AccountsPanel() {
           onSelect={handleProviderSelect}
           imapDisabled={imapBlocked}
           imapDisabledReason={imapBlocked ? t('bridge_update_required') : undefined}
+          gmailConnected={gmailConnected}
+          gmConnected={gmConnected}
         />
       </div>
 
@@ -629,8 +686,11 @@ export function AccountsPanel() {
           ) ? t('accounts_imap_bridge_not_installed') : status.label
 
           const displayEmail = mailbox.providerId === 'google-messages'
-            ? formatPhoneDisplay(mailbox.gmPhoneNumber)
+            ? maskPhoneNumber(mailbox.gmPhoneNumber)
             : mailbox.email
+
+          // Find most recent code for this mailbox
+          const lastCode = recentCodes.find(c => c.email === mailbox.email)
 
           return (
             <AccountRowUnified
@@ -641,10 +701,14 @@ export function AccountsPanel() {
               imapHost={mailbox.imapServer}
               status={effectiveStatus}
               statusLabel={effectiveLabel}
-              metaText={buildMetaText(mailbox)}
+              metaText={buildMetaText(mailbox, lastCode)}
               showReconnect={effectiveStatus !== 'online'}
+              testing={testingId === mailbox.id}
+              testResult={testResult[mailbox.id]}
+              editLabel={mailbox.providerId === 'gmail' ? t('row_change_account') : t('row_edit_credentials')}
               onReconnect={() => handleReconnect(mailbox)}
               onTest={() => handleTest(mailbox)}
+              onEdit={mailbox.providerId !== 'google-messages' ? () => handleEdit(mailbox) : undefined}
               onRemove={() => handleRemove(mailbox)}
             />
           )

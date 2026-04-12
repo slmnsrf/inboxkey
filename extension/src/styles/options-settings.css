@@ -415,15 +415,15 @@
   position: relative;
   display: flex;
   flex-direction: column;
-  align-items: center;
   gap: var(--space-3);
-  padding: var(--space-4);
-  border: 2px solid var(--color-border);
+  padding: var(--space-3);
+  border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
-  background: var(--surface-card-muted);
+  background: var(--surface-card);
   cursor: pointer;
-  transition: border-color var(--duration-fast) ease-out,
-              box-shadow var(--duration-fast) ease-out;
+  text-align: left;
+  font-family: var(--font-system);
+  transition: border-color var(--duration-fast) ease-out;
 }
 
 .theme-card:hover {
@@ -439,83 +439,74 @@
 
 .theme-card--active {
   border-color: var(--color-primary);
-  box-shadow: 0 0 0 1px var(--color-primary);
+  background: var(--color-primary-light);
 }
 
 .theme-card__preview {
   width: 100%;
-  aspect-ratio: 16 / 10;
+  height: 64px;
   border-radius: var(--radius-md);
   overflow: hidden;
   border: 1px solid var(--color-border);
-  position: relative;
+  display: flex;
+  flex-shrink: 0;
 }
 
 .theme-card__preview--light {
-  background: #F2F2F7;
+  background: #ECEDF0;
 }
 
 .theme-card__preview--dark {
   background: #1C1C1E;
+  border-color: rgba(255, 255, 255, 0.08);
 }
 
 .theme-card__preview--system {
-  background: linear-gradient(135deg, #F2F2F7 50%, #1C1C1E 50%);
+  background: linear-gradient(to right, #ECEDF0 50%, #1C1C1E 50%);
+  border-color: rgba(0, 0, 0, 0.1);
 }
 
-/* Mini UI inside preview */
-.preview-ui {
-  padding: 6px;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
+/* Sidebar bar inside preview (28% width, full height) */
+.theme-card__preview-bar {
+  width: 28%;
+  height: 100%;
+  background: rgba(0, 122, 255, 0.22);
+  border-right: 1px solid rgba(0, 0, 0, 0.06);
 }
 
-.preview-ui__bar {
-  border-radius: 2px;
+.theme-card__preview--dark .theme-card__preview-bar {
+  background: rgba(10, 132, 255, 0.28);
+  border-right-color: rgba(255, 255, 255, 0.08);
 }
 
-.preview-ui__bar--header {
-  width: 60%;
-  height: 4px;
+/* System preview has no bar */
+.theme-card__preview--system .theme-card__preview-bar {
+  display: none;
 }
-
-.preview-ui__bar--line {
-  width: 85%;
-  height: 3px;
-}
-
-.preview-ui__bar--short {
-  width: 45%;
-  height: 3px;
-}
-
-/* Light preview bars */
-.theme-card__preview--light .preview-ui__bar--header { background: #007AFF; }
-.theme-card__preview--light .preview-ui__bar--line { background: #D1D1D6; }
-.theme-card__preview--light .preview-ui__bar--short { background: #E5E5EA; }
-
-/* Dark preview bars */
-.theme-card__preview--dark .preview-ui__bar--header { background: #0A84FF; }
-.theme-card__preview--dark .preview-ui__bar--line { background: #3A3A3C; }
-.theme-card__preview--dark .preview-ui__bar--short { background: #2C2C2E; }
 
 .theme-card__label {
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-medium);
-  color: var(--color-text-primary);
   display: flex;
   align-items: center;
   gap: var(--space-2);
 }
 
-.theme-card__check {
-  display: none;
+.theme-card__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  color: var(--color-text-secondary);
+}
+
+.theme-card--active .theme-card__icon {
   color: var(--color-primary);
 }
 
-.theme-card--active .theme-card__check {
-  display: flex;
+.theme-card__label-text {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
 }
 
 .theme-card:focus-within {
@@ -582,6 +573,17 @@
   outline-offset: -2px;
 }
 
+.advanced-settings-card__toggle-chev {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform var(--duration-fast) ease-out;
+}
+
+.advanced-settings-card__toggle[aria-expanded="true"] .advanced-settings-card__toggle-chev {
+  transform: rotate(180deg);
+}
+
 .advanced-settings-card__toggle-icon {
   display: flex;
   align-items: center;
@@ -596,8 +598,6 @@
 }
 
 .advanced-settings-card__toggle[aria-expanded="true"] .advanced-settings-card__toggle-icon {
-  transform: rotate(180deg);
-  background: var(--color-primary-light);
   color: var(--color-primary);
 }
 
@@ -1364,16 +1364,103 @@
   overflow: hidden;
 }
 
+.excluded__row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.excluded__row:last-of-type {
+  border-bottom: none;
+}
+
+.excluded__type {
+  flex-shrink: 0;
+  display: inline-block;
+  padding: 2px var(--space-2);
+  border-radius: var(--radius-sm);
+  font-size: 10px;
+  font-weight: var(--font-weight-semibold);
+  text-transform: uppercase;
+  letter-spacing: var(--letter-spacing-wider);
+  color: var(--color-text-tertiary);
+  background: var(--color-bg-secondary);
+  min-width: 56px;
+  text-align: center;
+}
+
+.excluded__value {
+  flex: 1;
+  font-family: var(--font-mono);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.excluded__remove {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  color: var(--color-text-tertiary);
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+}
+
+.excluded__remove:hover {
+  color: var(--color-error);
+  background: var(--color-error-light);
+}
+
 .excluded__footer {
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: var(--space-3) var(--space-4);
+  background: var(--surface-card-muted);
+  border-top: 1px solid var(--color-border);
 }
 
-.excluded__count {
-  font-size: var(--font-size-sm);
+.excluded__add {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  background: transparent;
+  border: 1px dashed var(--color-border-strong);
+  border-radius: var(--radius-md);
   color: var(--color-text-secondary);
+  font-family: var(--font-system);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+}
+
+.excluded__add:hover {
+  color: var(--color-text-primary);
+  border-color: var(--color-text-secondary);
+}
+
+.excluded__manage {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-link);
+  text-decoration: none;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+.excluded__manage:hover {
+  text-decoration: underline;
 }
 
 .excluded--empty {

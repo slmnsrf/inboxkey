@@ -25,14 +25,10 @@
 }
 
 .about-hero__icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
   width: 64px;
   height: 64px;
-  background: var(--color-primary);
-  color: var(--color-text-inverse);
   border-radius: var(--radius-xl);
+  object-fit: contain;
 }
 
 .about-hero__name {

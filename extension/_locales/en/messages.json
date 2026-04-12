@@ -655,7 +655,7 @@
     "description": "Advanced settings section heading"
   },
   "settings_advanced_section_title": {
-    "message": "Advanced Settings",
+    "message": "Advanced",
     "description": "Advanced settings toggle button label"
   },
   "settings_advanced_default_enabled": {
@@ -731,8 +731,8 @@
     "description": "Blacklist manage button text"
   },
   "settings_blacklist_modal_title": {
-    "message": "Ignored Sites",
-    "description": "Blacklist modal title"
+    "message": "Excluded sites",
+    "description": "Excluded sites modal title"
   },
   "error_domain_load": {
     "message": "Failed to load domain state",
@@ -899,12 +899,12 @@
     "description": "Settings category label for advanced section"
   },
   "settings_blacklist_card_title": {
-    "message": "Ignored Sites",
-    "description": "Ignored sites card title in settings"
+    "message": "Excluded sites",
+    "description": "Excluded sites card title in settings"
   },
   "settings_blacklist_card_description": {
-    "message": "InboxKey can be turned off for specific websites.",
-    "description": "Ignored sites card description in settings"
+    "message": "InboxKey will not run on these domains or URLs.",
+    "description": "Excluded sites card description in settings"
   },
   "settings_appearance_heading": {
     "message": "Theme",
@@ -1143,7 +1143,7 @@
     "description": "Settings tab label"
   },
   "accounts_panel_heading": {
-    "message": "Connected Accounts",
+    "message": "Your accounts",
     "description": "Accounts panel heading"
   },
   "accounts_panel_summary": {
@@ -1161,6 +1161,10 @@
   "accounts_last_synced": {
     "message": "Last synced: $1",
     "description": "Last synced time display"
+  },
+  "accounts_last_code": {
+    "message": "Last code: $1, $2",
+    "description": "Last code received: domain, time ago"
   },
   "accounts_imap_host": {
     "message": "Server: $1",
@@ -2494,8 +2498,16 @@
     "description": "Hint shown when indicator toggle is disabled due to manual automation level"
   },
   "settings_blacklist_empty": {
-    "message": "No ignored sites. InboxKey is active on all sites.",
+    "message": "No excluded sites. InboxKey is active on all sites.",
     "description": "Empty state text shown when no sites are blacklisted"
+  },
+  "settings_blacklist_add_inline": {
+    "message": "Add a domain or URL",
+    "description": "Inline add button in excluded sites section"
+  },
+  "settings_blacklist_manage_all": {
+    "message": "Manage all ($1) \u2192",
+    "description": "Link to open full excluded sites modal with count"
   },
 
   "blacklist_tab_domains": {
@@ -2862,7 +2874,23 @@
     "message": "Recommended",
     "description": "Recommended tag on Gmail option"
   },
+  "add_account_connected": {
+    "message": "Connected",
+    "description": "Tag shown when provider is already at max connections"
+  },
+  "add_account_gmail_limit_hint": {
+    "message": "Limited to one account per profile.",
+    "description": "Short explanation shown on disabled Gmail option"
+  },
+  "add_account_why": {
+    "message": "Why?",
+    "description": "Link to open Gmail limitation explanation"
+  },
 
+  "row_menu_label": {
+    "message": "More actions",
+    "description": "Row action menu button aria-label"
+  },
   "row_test_connection": {
     "message": "Test connection",
     "description": "Row menu: test connection action"
@@ -2871,13 +2899,52 @@
     "message": "Edit",
     "description": "Row menu: edit action"
   },
+  "row_change_account": {
+    "message": "Change account",
+    "description": "Row menu: change account action for Gmail"
+  },
+  "row_edit_credentials": {
+    "message": "Edit credentials",
+    "description": "Row menu: edit credentials for GM/IMAP providers"
+  },
+  "row_testing": {
+    "message": "Testing connection...",
+    "description": "Meta text shown while test connection is running"
+  },
+  "row_test_ok": {
+    "message": "Connection OK",
+    "description": "Inline success shown after test passes"
+  },
+  "row_test_fail": {
+    "message": "Connection test failed",
+    "description": "Inline error shown after test fails, stays until resolved"
+  },
+  "toast_test_success": {
+    "message": "Connection OK",
+    "description": "Toast shown when test connection succeeds (legacy)"
+  },
+  "toast_test_failed": {
+    "message": "Connection test failed",
+    "description": "Toast shown when test connection fails (legacy)"
+  },
   "row_remove": {
     "message": "Remove account",
     "description": "Row menu: remove action"
   },
+  "row_remove_modal_title": {
+    "message": "Remove account",
+    "description": "Remove confirmation modal title"
+  },
+  "row_remove_modal_body": {
+    "message": "Remove $EMAIL$? All sync data for this account will be permanently deleted.",
+    "description": "Remove confirmation modal body text",
+    "placeholders": {
+      "EMAIL": { "content": "$1", "example": "user@gmail.com" }
+    }
+  },
   "row_remove_confirm": {
     "message": "Remove $EMAIL$? All sync data will be deleted.",
-    "description": "Remove confirmation text",
+    "description": "Remove confirmation text (legacy)",
     "placeholders": {
       "email": {
         "content": "$1"

@@ -5,16 +5,12 @@
  * Uses styled country code BADGES instead of flag emojis (Windows
  * does not render flag emojis as colored flags).
  *
- * Features:
- * - Auto-detect country from browser locale on mount
- * - ~20 common countries (production should use country-telephone-data)
- * - Badge trigger: [US] +1 with chevron
- * - Scrollable dropdown with outside-click dismissal
- * - Keyboard accessible (Enter/Space to toggle, Escape to close)
+ * Uses country-telephone-data for complete list of 250 countries.
  */
 
-import React, { useState, useEffect, useRef, useCallback } from 'react'
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { ChevronDown } from 'lucide-react'
+import { allCountries } from 'country-telephone-data'
 
 export interface CountryEntry {
   code: string
@@ -27,28 +23,14 @@ export interface CountryPickerProps {
   onChange: (country: CountryEntry) => void
 }
 
-const COUNTRIES: CountryEntry[] = [
-  { code: 'US', dial: '+1', name: 'United States' },
-  { code: 'GB', dial: '+44', name: 'United Kingdom' },
-  { code: 'DE', dial: '+49', name: 'Germany' },
-  { code: 'FR', dial: '+33', name: 'France' },
-  { code: 'TR', dial: '+90', name: 'Turkey' },
-  { code: 'NL', dial: '+31', name: 'Netherlands' },
-  { code: 'ES', dial: '+34', name: 'Spain' },
-  { code: 'IT', dial: '+39', name: 'Italy' },
-  { code: 'JP', dial: '+81', name: 'Japan' },
-  { code: 'KR', dial: '+82', name: 'South Korea' },
-  { code: 'AU', dial: '+61', name: 'Australia' },
-  { code: 'CA', dial: '+1', name: 'Canada' },
-  { code: 'BR', dial: '+55', name: 'Brazil' },
-  { code: 'IN', dial: '+91', name: 'India' },
-  { code: 'MX', dial: '+52', name: 'Mexico' },
-  { code: 'SE', dial: '+46', name: 'Sweden' },
-  { code: 'CH', dial: '+41', name: 'Switzerland' },
-  { code: 'AT', dial: '+43', name: 'Austria' },
-  { code: 'PL', dial: '+48', name: 'Poland' },
-  { code: 'PT', dial: '+351', name: 'Portugal' },
-]
+/** Map country-telephone-data entries to our format, sorted by name. */
+const COUNTRIES: CountryEntry[] = allCountries
+  .map((c) => ({
+    code: c.iso2.toUpperCase(),
+    dial: `+${c.dialCode}`,
+    name: c.name.replace(/\s*\(.*\)\s*$/, '').trim(),
+  }))
+  .sort((a, b) => a.name.localeCompare(b.name))
 
 /** Detect country from navigator.language (e.g. "en-US" -> "US"). */
 export function detectCountryFromLocale(): CountryEntry {
@@ -56,23 +38,34 @@ export function detectCountryFromLocale(): CountryEntry {
     const locale = navigator.language || 'en-US'
     const parts = locale.split('-')
     const region = parts.length > 1 ? parts[parts.length - 1].toUpperCase() : 'US'
-    return COUNTRIES.find((c) => c.code === region) || COUNTRIES[0]
+    return COUNTRIES.find((c) => c.code === region) || COUNTRIES.find((c) => c.code === 'US') || COUNTRIES[0]
   } catch {
-    return COUNTRIES[0]
+    return COUNTRIES.find((c) => c.code === 'US') || COUNTRIES[0]
   }
 }
 
 export function CountryPicker({ value, onChange }: CountryPickerProps) {
   const [isOpen, setIsOpen] = useState(false)
+  const [search, setSearch] = useState('')
   const wrapRef = useRef<HTMLDivElement>(null)
   const menuRef = useRef<HTMLDivElement>(null)
   const triggerRef = useRef<HTMLButtonElement>(null)
+  const searchRef = useRef<HTMLInputElement>(null)
+
+  const filtered = useMemo(() => {
+    if (!search) return COUNTRIES
+    const q = search.toLowerCase()
+    return COUNTRIES.filter(
+      (c) => c.name.toLowerCase().includes(q) || c.dial.includes(q) || c.code.toLowerCase().includes(q),
+    )
+  }, [search])
 
   // Close dropdown on outside click
   const handleOutsideClick = useCallback(
     (e: MouseEvent) => {
       if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) {
         setIsOpen(false)
+        setSearch('')
       }
     },
     [],
@@ -81,6 +74,7 @@ export function CountryPicker({ value, onChange }: CountryPickerProps) {
   useEffect(() => {
     if (isOpen) {
       document.addEventListener('click', handleOutsideClick, true)
+      requestAnimationFrame(() => searchRef.current?.focus())
     }
     return () => {
       document.removeEventListener('click', handleOutsideClick, true)
@@ -102,12 +96,14 @@ export function CountryPicker({ value, onChange }: CountryPickerProps) {
   const handleSelect = (country: CountryEntry) => {
     onChange(country)
     setIsOpen(false)
+    setSearch('')
     triggerRef.current?.focus()
   }
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Escape') {
       setIsOpen(false)
+      setSearch('')
       triggerRef.current?.focus()
     }
   }
@@ -137,22 +133,38 @@ export function CountryPicker({ value, onChange }: CountryPickerProps) {
           role="listbox"
           aria-label="Select country"
         >
-          {COUNTRIES.map((country) => (
-            <button
-              key={country.code}
-              type="button"
-              role="option"
-              aria-selected={country.code === value.code}
-              className={`phone-field__country-option${
-                country.code === value.code ? ' phone-field__country-option--active' : ''
-              }`}
-              onClick={() => handleSelect(country)}
-            >
-              <span className="phone-field__country-option-badge">{country.code}</span>
-              <span className="phone-field__country-option-name">{country.name}</span>
-              <span className="phone-field__country-option-dial">{country.dial}</span>
-            </button>
-          ))}
+          <div className="phone-field__country-search">
+            <input
+              ref={searchRef}
+              type="text"
+              className="phone-field__country-search-input"
+              placeholder="Search countries..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              aria-label="Search countries"
+            />
+          </div>
+          <div className="phone-field__country-list">
+            {filtered.map((country) => (
+              <button
+                key={`${country.code}-${country.dial}`}
+                type="button"
+                role="option"
+                aria-selected={country.code === value.code}
+                className={`phone-field__country-option${
+                  country.code === value.code ? ' phone-field__country-option--active' : ''
+                }`}
+                onClick={() => handleSelect(country)}
+              >
+                <span className="phone-field__country-option-badge">{country.code}</span>
+                <span className="phone-field__country-option-name">{country.name}</span>
+                <span className="phone-field__country-option-dial">{country.dial}</span>
+              </button>
+            ))}
+            {filtered.length === 0 && (
+              <div className="phone-field__country-empty">No results</div>
+            )}
+          </div>
         </div>
       )}
     </div>

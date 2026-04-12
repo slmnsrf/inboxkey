@@ -1,7 +1,7 @@
 import React from 'react'
 import { useTheme } from '@/ui/contexts/ThemeContext'
 import { t } from '@/lib/i18n'
-import { Sun, Moon, Monitor, Check } from 'lucide-react'
+import { Sun, Moon, Monitor } from 'lucide-react'
 
 const THEME_OPTIONS = [
   {
@@ -9,47 +9,23 @@ const THEME_OPTIONS = [
     label: 'settings_theme_light' as const,
     icon: Sun,
     previewClass: 'theme-card__preview--light',
+    hasBar: true,
   },
   {
     value: 'dark' as const,
     label: 'settings_theme_dark' as const,
     icon: Moon,
     previewClass: 'theme-card__preview--dark',
+    hasBar: true,
   },
   {
     value: 'system' as const,
     label: 'settings_theme_system' as const,
     icon: Monitor,
     previewClass: 'theme-card__preview--system',
+    hasBar: false,
   },
 ]
-
-function ThemePreview({ variant }: { variant: string }) {
-  // System preview uses neutral bar colors via inline styles
-  if (variant === 'theme-card__preview--system') {
-    return (
-      <div className={`theme-card__preview ${variant}`}>
-        <div className="preview-ui">
-          <div className="preview-ui__bar preview-ui__bar--header" style={{ background: '#007AFF' }} />
-          <div className="preview-ui__bar preview-ui__bar--line" style={{ background: 'rgba(150,150,150,0.4)' }} />
-          <div className="preview-ui__bar preview-ui__bar--short" style={{ background: 'rgba(150,150,150,0.3)' }} />
-          <div className="preview-ui__bar preview-ui__bar--line" style={{ background: 'rgba(150,150,150,0.4)' }} />
-        </div>
-      </div>
-    )
-  }
-
-  return (
-    <div className={`theme-card__preview ${variant}`}>
-      <div className="preview-ui">
-        <div className="preview-ui__bar preview-ui__bar--header" />
-        <div className="preview-ui__bar preview-ui__bar--line" />
-        <div className="preview-ui__bar preview-ui__bar--short" />
-        <div className="preview-ui__bar preview-ui__bar--line" />
-      </div>
-    </div>
-  )
-}
 
 export function AppearanceSettings() {
   const { theme, resolvedTheme, setTheme } = useTheme()
@@ -76,13 +52,14 @@ export function AppearanceSettings() {
                 checked={isActive}
                 onChange={() => setTheme(option.value)}
               />
-              <ThemePreview variant={option.previewClass} />
+              <div className={`theme-card__preview ${option.previewClass}`}>
+                {option.hasBar && <span className="theme-card__preview-bar" />}
+              </div>
               <span className="theme-card__label">
-                <Icon size={14} aria-hidden="true" />
-                {t(option.label)}
-                <span className="theme-card__check" aria-hidden="true">
-                  <Check size={14} />
+                <span className="theme-card__icon">
+                  <Icon size={16} aria-hidden="true" />
                 </span>
+                <span className="theme-card__label-text">{t(option.label)}</span>
               </span>
             </label>
           )

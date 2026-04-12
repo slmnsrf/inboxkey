@@ -154,74 +154,55 @@ body,
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: var(--space-4);
-  padding: var(--space-6) var(--space-5);
-  border-radius: var(--radius-xl);
-  border: 1px solid var(--color-border);
-  background: var(--surface-card);
-  box-shadow: var(--shadow-sm);
+  gap: var(--space-3);
+  padding: var(--space-5) 0;
+  border-top: 1px solid var(--color-border);
   text-align: center;
 }
 
 .trust-banner__headline {
   margin: 0;
   font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-medium);
-  color: var(--color-text-secondary);
+  color: var(--color-text-tertiary);
   line-height: var(--line-height-normal);
-  letter-spacing: -0.01em;
-  white-space: nowrap;
 }
 
 .trust-banner__pillars {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: var(--space-3);
-  width: 100%;
+  display: flex;
+  justify-content: center;
+  gap: var(--space-5);
 }
 
 .trust-pillar {
-  display: flex;
-  flex-direction: row;
+  display: inline-flex;
   align-items: center;
   gap: var(--space-2);
-  padding: var(--space-2) var(--space-3);
-  border-radius: var(--radius-md);
-  background: var(--color-bg-primary);
-  transition: background var(--duration-fast) var(--easing-out);
   white-space: nowrap;
-}
-
-.trust-pillar:hover {
-  background: var(--color-bg-secondary);
 }
 
 .trust-pillar__icon {
   display: flex;
   align-items: center;
-  justify-content: center;
   flex-shrink: 0;
-  color: var(--color-primary);
+  color: var(--color-text-tertiary);
 }
 
 .trust-pillar__label {
   font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-medium);
-  color: var(--color-text-secondary);
-  line-height: 1;
+  color: var(--color-text-tertiary);
 }
 
 .trust-pillar--link {
   text-decoration: none;
   cursor: pointer;
-  transition: opacity var(--duration-fast) ease-out;
 }
 
-.trust-pillar--link:hover {
-  opacity: 0.8;
+.trust-pillar--link:hover .trust-pillar__label {
+  color: var(--color-text-link);
+  text-decoration: underline;
 }
 
-.trust-pillar--link .trust-pillar__label {
+.trust-pillar--link:hover .trust-pillar__icon {
   color: var(--color-text-link);
 }
 
@@ -1052,12 +1033,8 @@ textarea.input {
     justify-content: flex-start;
   }
 
-  .trust-banner {
-    padding: var(--space-4) var(--space-3);
-  }
-
   .trust-banner__pillars {
-    grid-template-columns: 1fr;
+    flex-direction: column;
     gap: var(--space-2);
   }
 

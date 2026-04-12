@@ -15,6 +15,7 @@ import { AppearanceSettings } from './ui/components/AppearanceSettings'
 import { AutomationSettings } from './ui/components/AutomationSettings'
 import { AdvancedSettings } from './ui/components/AdvancedSettings'
 import { BuyMeACoffeeButton } from './ui/components/BuyMeACoffeeButton'
+import { ToastContainer } from './ui/components/ToastContainer'
 import { BlacklistManageButton } from './ui/components/blacklist/BlacklistManageButton'
 import { BlacklistModal } from './ui/components/blacklist/BlacklistModal'
 import { ShieldCheck, EyeOff, Code2, Github } from 'lucide-react'
@@ -205,11 +206,11 @@ function OptionsApp() {
                 </p>
                 <div className="trust-banner__pillars">
                   <div className="trust-pillar">
-                    <span className="trust-pillar__icon" aria-hidden="true"><ShieldCheck size={18} /></span>
+                    <span className="trust-pillar__icon" aria-hidden="true"><ShieldCheck size={14} /></span>
                     <span className="trust-pillar__label">{t('settings_trust_local_only')}</span>
                   </div>
                   <div className="trust-pillar">
-                    <span className="trust-pillar__icon" aria-hidden="true"><EyeOff size={18} /></span>
+                    <span className="trust-pillar__icon" aria-hidden="true"><EyeOff size={14} /></span>
                     <span className="trust-pillar__label">{t('settings_trust_safe')}</span>
                   </div>
                   <a
@@ -219,13 +220,14 @@ function OptionsApp() {
                     rel="noopener noreferrer"
                     aria-label={t('settings_trust_see_source_aria')}
                   >
-                    <span className="trust-pillar__icon" aria-hidden="true"><Github size={18} /></span>
+                    <span className="trust-pillar__icon" aria-hidden="true"><Github size={14} /></span>
                     <span className="trust-pillar__label">{t('settings_trust_see_github')}</span>
                   </a>
                 </div>
               </section>
             </div>
           </div>
+          <ToastContainer />
         </ToastProvider>
     </ThemeProvider>
   )

@@ -18,8 +18,9 @@ import { t } from '@/lib/i18n'
 
 interface RowActionMenuProps {
   email: string
+  editLabel?: string
   onTest: () => void
-  onEdit: () => void
+  onEdit?: () => void
   onRemove: () => void
 }
 
@@ -32,6 +33,7 @@ interface RowActionMenuProps {
  */
 export function RowActionMenu({
   email,
+  editLabel,
   onTest,
   onEdit,
   onRemove,
@@ -135,15 +137,17 @@ export function RowActionMenu({
           {t('row_test_connection')}
         </button>
 
-        <button
-          className="row-menu-option"
-          type="button"
-          role="menuitem"
-          onClick={handleEdit}
-        >
-          <Pencil size={14} aria-hidden="true" />
-          {t('row_edit')}
-        </button>
+        {onEdit && (
+          <button
+            className="row-menu-option"
+            type="button"
+            role="menuitem"
+            onClick={handleEdit}
+          >
+            <Pencil size={14} aria-hidden="true" />
+            {editLabel || t('row_edit')}
+          </button>
+        )}
 
         <button
           className="row-menu-option row-menu-option--danger"

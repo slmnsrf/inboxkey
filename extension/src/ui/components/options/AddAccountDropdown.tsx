@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react'
-import { ChevronDown, Plus, Server } from 'lucide-react'
+import { ChevronDown, Plus, Server, X } from 'lucide-react'
 
 import { t } from '@/lib/i18n'
 import { ProviderLogo } from './ProviderLogo'
@@ -11,6 +11,8 @@ interface AddAccountDropdownProps {
   disabled?: boolean
   imapDisabled?: boolean
   imapDisabledReason?: string
+  gmailConnected?: boolean
+  gmConnected?: boolean
 }
 
 export function AddAccountDropdown({
@@ -18,8 +20,11 @@ export function AddAccountDropdown({
   disabled,
   imapDisabled,
   imapDisabledReason,
+  gmailConnected,
+  gmConnected,
 }: AddAccountDropdownProps) {
   const [open, setOpen] = useState(false)
+  const [showGmailLimitModal, setShowGmailLimitModal] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
 
   const toggle = useCallback(() => {
@@ -31,10 +36,12 @@ export function AddAccountDropdown({
   const handleSelect = useCallback(
     (provider: Provider) => {
       if (provider === 'imap-bridge' && imapDisabled) return
+      if (provider === 'gmail' && gmailConnected) return
+      if (provider === 'google-messages' && gmConnected) return
       onSelect(provider)
       close()
     },
-    [onSelect, close, imapDisabled],
+    [onSelect, close, imapDisabled, gmailConnected, gmConnected],
   )
 
   // Close on outside click
@@ -79,22 +86,53 @@ export function AddAccountDropdown({
 
       <div className={`add-account__menu${open ? ' open' : ''}`} role="menu">
         {/* Gmail */}
-        <button
-          className="add-account__option"
-          role="menuitem"
-          onClick={() => handleSelect('gmail')}
-        >
-          <span className="add-account__option-icon add-account__option-icon--gmail">
-            <ProviderLogo provider="gmail" size={20} />
-          </span>
-          <span className="add-account__option-text">
-            <span className="add-account__option-title">
-              Gmail
-              <span className="add-account__option-tag">{t('add_account_recommended')}</span>
+        {gmailConnected ? (
+          <div
+            className="add-account__option add-account__option--disabled"
+            role="menuitem"
+            aria-disabled="true"
+          >
+            <span className="add-account__option-icon add-account__option-icon--gmail">
+              <ProviderLogo provider="gmail" size={20} />
             </span>
-            <span className="add-account__option-detail">{t('add_account_gmail_detail')}</span>
-          </span>
-        </button>
+            <span className="add-account__option-text">
+              <span className="add-account__option-title">
+                Gmail
+                <span className="add-account__option-tag add-account__option-tag--max">
+                  {t('add_account_connected')}
+                </span>
+              </span>
+              <span className="add-account__option-detail">
+                {t('add_account_gmail_limit_hint')}{' '}
+                <button
+                  className="add-account__why-link"
+                  type="button"
+                  onClick={() => { setShowGmailLimitModal(true); close() }}
+                  aria-label={t('accounts_gmail_limit_learn_why_aria')}
+                >
+                  {t('add_account_why')}
+                </button>
+              </span>
+            </span>
+          </div>
+        ) : (
+          <button
+            className="add-account__option"
+            role="menuitem"
+            onClick={() => handleSelect('gmail')}
+          >
+            <span className="add-account__option-icon add-account__option-icon--gmail">
+              <ProviderLogo provider="gmail" size={20} />
+            </span>
+            <span className="add-account__option-text">
+              <span className="add-account__option-title">
+                Gmail
+                <span className="add-account__option-tag">{t('add_account_recommended')}</span>
+              </span>
+              <span className="add-account__option-detail">{t('add_account_gmail_detail')}</span>
+            </span>
+          </button>
+        )}
 
         {/* IMAP / Other email providers */}
         <button
@@ -121,19 +159,62 @@ export function AddAccountDropdown({
 
         {/* Google Messages / Phone (Android) */}
         <button
-          className="add-account__option"
+          className={`add-account__option${gmConnected ? ' add-account__option--disabled' : ''}`}
           role="menuitem"
           onClick={() => handleSelect('google-messages')}
+          aria-disabled={gmConnected || undefined}
         >
           <span className="add-account__option-icon add-account__option-icon--gm">
             <ProviderLogo provider="google-messages" size={20} />
           </span>
           <span className="add-account__option-text">
-            <span className="add-account__option-title">{t('add_account_gm_title')}</span>
+            <span className="add-account__option-title">
+              {t('add_account_gm_title')}
+              {gmConnected && (
+                <span className="add-account__option-tag add-account__option-tag--max">
+                  {t('add_account_connected')}
+                </span>
+              )}
+            </span>
             <span className="add-account__option-detail">{t('add_account_gm_detail')}</span>
           </span>
         </button>
       </div>
+
+      {/* Gmail limit explanation modal */}
+      {showGmailLimitModal && (
+        <div
+          className="gmail-limit-overlay"
+          onClick={() => setShowGmailLimitModal(false)}
+          role="presentation"
+        >
+          <div
+            className="gmail-limit-modal"
+            onClick={(e) => e.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="gmail-limit-title"
+          >
+            <div className="gmail-limit-modal__header">
+              <h3 id="gmail-limit-title" className="gmail-limit-modal__title">
+                {t('accounts_gmail_limit_modal_title')}
+              </h3>
+              <button
+                className="gmail-limit-modal__close"
+                onClick={() => setShowGmailLimitModal(false)}
+                aria-label="Close"
+              >
+                <X size={16} />
+              </button>
+            </div>
+            <div className="gmail-limit-modal__body">
+              {t('accounts_gmail_limit_modal_body').split('\n\n').map((paragraph, i) => (
+                <p key={i}>{paragraph}</p>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

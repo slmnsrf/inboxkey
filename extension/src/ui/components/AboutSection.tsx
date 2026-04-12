@@ -9,7 +9,8 @@
  */
 
 import React, { useState, useCallback } from 'react'
-import { KeyRound, Copy, ArrowRight, ChevronDown } from 'lucide-react'
+import { Copy, ArrowRight, ChevronDown } from 'lucide-react'
+import brandMark from 'url:~assets/icon.svg'
 import { t } from '@/lib/i18n'
 import { BuyMeACoffeeButton } from './BuyMeACoffeeButton'
 import {
@@ -76,9 +77,7 @@ export function AboutSection() {
     <article className="about">
       {/* Hero */}
       <header className="about-hero">
-        <div className="about-hero__icon" aria-hidden="true">
-          <KeyRound size={32} />
-        </div>
+        <img className="about-hero__icon" src={brandMark} alt="" aria-hidden="true" />
         <h2 className="about-hero__name">{t('about_hero_name')}</h2>
         <button
           className="version-pill"

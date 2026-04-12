@@ -8,7 +8,7 @@ import React, { useState, useEffect, useCallback } from 'react'
 import { StorageFactory } from '@/lib/storage/storage-factory'
 import { useToast } from '@/ui/contexts/ToastContext'
 import { t } from '@/lib/i18n'
-import { ChevronDown, RotateCcw } from 'lucide-react'
+import { SlidersHorizontal, ChevronDown, RotateCcw } from 'lucide-react'
 import { WarningIcon } from '@/ui/components/icons/StatusIcons'
 import type { AutomationLevel } from '@/lib/storage/schema'
 
@@ -130,10 +130,13 @@ export function AdvancedSettings() {
         aria-controls="advanced-settings-content"
       >
         <span className="advanced-settings-card__toggle-icon" aria-hidden="true">
-          <ChevronDown size={14} />
+          <SlidersHorizontal size={18} />
         </span>
         <span className="advanced-settings-card__toggle-label">{t('settings_advanced_section_title')}</span>
         <span className="advanced-settings-card__hint-label">{t('settings_advanced_hint')}</span>
+        <span className="advanced-settings-card__toggle-chev" aria-hidden="true">
+          <ChevronDown size={18} />
+        </span>
       </button>
 
       {isExpanded && (

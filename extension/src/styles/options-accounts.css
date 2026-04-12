@@ -309,7 +309,6 @@
   background: var(--surface-card);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-xl);
-  overflow: hidden;
 }
 
 /* ===========================
@@ -325,8 +324,17 @@
   border-bottom: 1px solid var(--color-border);
 }
 
+.account-row:first-child {
+  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+}
+
 .account-row:last-child {
   border-bottom: none;
+  border-radius: 0 0 var(--radius-xl) var(--radius-xl);
+}
+
+.account-row:only-child {
+  border-radius: var(--radius-xl);
 }
 
 .account-row--problem {
@@ -409,6 +417,26 @@
   display: flex;
   align-items: center;
   gap: var(--space-2);
+}
+
+.account-row__meta--testing {
+  color: var(--color-primary);
+  animation: pulse-opacity 1.2s ease-in-out infinite;
+}
+
+.account-row__meta--success {
+  color: var(--color-success);
+  font-weight: var(--font-weight-medium);
+}
+
+.account-row__meta--error {
+  color: var(--color-error);
+  font-weight: var(--font-weight-medium);
+}
+
+@keyframes pulse-opacity {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
 }
 
 .account-row__meta-sep {
@@ -765,8 +793,182 @@
 }
 
 .add-account__option--disabled {
-  opacity: 0.5;
-  pointer-events: none;
+  opacity: 0.6;
+  cursor: default;
+}
+
+.add-account__option--disabled:hover {
+  background: transparent;
+}
+
+.add-account__why-link {
+  display: inline;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--color-text-link);
+  cursor: pointer;
+  font: inherit;
+  font-weight: var(--font-weight-medium);
+}
+
+.add-account__why-link:hover {
+  text-decoration: underline;
+}
+
+/* Gmail limit explanation modal */
+.gmail-limit-overlay {
+  position: fixed;
+  inset: 0;
+  background: var(--color-bg-overlay);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: var(--z-modal);
+}
+
+.gmail-limit-modal {
+  background: var(--surface-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-xl);
+  width: 440px;
+  max-width: 90vw;
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+.gmail-limit-modal__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-5) var(--space-5) var(--space-3);
+}
+
+.gmail-limit-modal__title {
+  margin: 0;
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+}
+
+.gmail-limit-modal__close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: transparent;
+  color: var(--color-text-tertiary);
+  cursor: pointer;
+  border-radius: var(--radius-md);
+}
+
+.gmail-limit-modal__close:hover {
+  background: var(--color-bg-secondary);
+  color: var(--color-text-primary);
+}
+
+.gmail-limit-modal__body {
+  padding: 0 var(--space-5) var(--space-5);
+}
+
+.gmail-limit-modal__body p {
+  margin: 0 0 var(--space-3);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  line-height: var(--line-height-relaxed);
+}
+
+.gmail-limit-modal__body p:last-child {
+  margin-bottom: 0;
+}
+
+/* ===========================
+   REMOVE CONFIRMATION MODAL
+   =========================== */
+
+.confirm-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: var(--color-bg-overlay);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: var(--z-modal);
+}
+
+.confirm-modal {
+  background: var(--surface-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-xl);
+  width: 380px;
+  max-width: 90vw;
+}
+
+.confirm-modal__header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-5) var(--space-5) var(--space-2);
+}
+
+.confirm-modal__icon {
+  display: flex;
+  color: var(--color-warning);
+}
+
+.confirm-modal__title {
+  margin: 0;
+  flex: 1;
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+}
+
+.confirm-modal__close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: transparent;
+  color: var(--color-text-tertiary);
+  cursor: pointer;
+  border-radius: var(--radius-md);
+}
+
+.confirm-modal__close:hover {
+  background: var(--color-bg-secondary);
+  color: var(--color-text-primary);
+}
+
+.confirm-modal__body {
+  padding: var(--space-2) var(--space-5) var(--space-4);
+  margin: 0;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  line-height: var(--line-height-relaxed);
+}
+
+.confirm-modal__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-3);
+  padding: 0 var(--space-5) var(--space-5);
+}
+
+.btn--danger {
+  background: var(--color-error);
+  color: white;
+  border-color: var(--color-error);
+}
+
+.btn--danger:hover {
+  opacity: 0.9;
 }
 
 .add-account__option-icon {
