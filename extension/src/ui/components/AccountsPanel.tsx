@@ -366,10 +366,7 @@ export function AccountsPanel() {
     if (provider === 'gmail') {
       await handleConnectGmail()
     } else if (provider === 'imap-bridge') {
-      if (bridgeStatus === 'disconnected') {
-        setShowBridgeGuide(true)
-        return
-      }
+      // Always open IMAP modal first; it shows bridge-required banner if needed
       setReconnectingMailboxId(null)
       setImapPrefillData(undefined)
       setShowAddImapModal(true)
@@ -377,7 +374,14 @@ export function AccountsPanel() {
       setGmPairingPhone(undefined)
       setShowGMPairing(true)
     }
-  }, [bridgeStatus, handleConnectGmail])
+  }, [handleConnectGmail])
+
+  /* ---- Bridge setup from IMAP modal ---- */
+  const handleBridgeSetup = useCallback(() => {
+    // Close IMAP modal, show inline bridge wizard
+    setShowAddImapModal(false)
+    setShowBridgeGuide(true)
+  }, [])
 
   /* ---- Reconnect handler ---- */
   const handleReconnect = useCallback((mailbox: MailboxInfo) => {
@@ -553,6 +557,8 @@ export function AccountsPanel() {
           onConfirm={handleImapAdded}
           onCancel={() => setShowAddImapModal(false)}
           prefillData={imapPrefillData}
+          bridgeDisconnected={bridgeStatus === 'disconnected'}
+          onBridgeSetup={handleBridgeSetup}
         />
         <GoogleMessagesPairingModal
           isOpen={showGMPairing}
@@ -563,13 +569,15 @@ export function AccountsPanel() {
         {showBridgeGuide && (
           <BridgeInstallGuide
             onConnected={(ping) => {
-              setShowBridgeGuide(false)
               setBridgeStatus('connected')
               setBridgeCompat(checkCompatibility(ping))
-              // After bridge is connected, open the IMAP modal
-              setReconnectingMailboxId(null)
-              setImapPrefillData(undefined)
-              setShowAddImapModal(true)
+              // Auto-dismiss after 2s, then open IMAP modal
+              setTimeout(() => {
+                setShowBridgeGuide(false)
+                setReconnectingMailboxId(null)
+                setImapPrefillData(undefined)
+                setShowAddImapModal(true)
+              }, 2000)
             }}
           />
         )}
@@ -709,17 +717,19 @@ export function AccountsPanel() {
         })}
       </div>
 
-      {/* Bridge install guide (shown inline when bridge is disconnected and user tries to add IMAP) */}
+      {/* Bridge install guide (shown inline when user triggers setup from IMAP modal) */}
       {showBridgeGuide && (
         <BridgeInstallGuide
           onConnected={(ping) => {
-            setShowBridgeGuide(false)
             setBridgeStatus('connected')
             setBridgeCompat(checkCompatibility(ping))
-            // After bridge is connected, open the IMAP modal
-            setReconnectingMailboxId(null)
-            setImapPrefillData(undefined)
-            setShowAddImapModal(true)
+            // Auto-dismiss after 2s, then open IMAP modal
+            setTimeout(() => {
+              setShowBridgeGuide(false)
+              setReconnectingMailboxId(null)
+              setImapPrefillData(undefined)
+              setShowAddImapModal(true)
+            }, 2000)
           }}
         />
       )}
@@ -733,6 +743,8 @@ export function AccountsPanel() {
         onConfirm={handleImapAdded}
         onCancel={() => setShowAddImapModal(false)}
         prefillData={imapPrefillData}
+        bridgeDisconnected={bridgeStatus === 'disconnected'}
+        onBridgeSetup={handleBridgeSetup}
       />
 
       {/* Google Messages pairing modal */}

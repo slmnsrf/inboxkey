@@ -14,6 +14,7 @@ import { AccountsPanel } from './ui/components/AccountsPanel'
 import { AppearanceSettings } from './ui/components/AppearanceSettings'
 import { AutomationSettings } from './ui/components/AutomationSettings'
 import { AdvancedSettings } from './ui/components/AdvancedSettings'
+import { BridgeStatusRow } from './ui/components/BridgeStatusRow'
 import { BuyMeACoffeeButton } from './ui/components/BuyMeACoffeeButton'
 import { ToastContainer } from './ui/components/ToastContainer'
 import { BlacklistManageButton } from './ui/components/blacklist/BlacklistManageButton'
@@ -144,6 +145,9 @@ function OptionsApp() {
                   <div className="settings-doc">
                     {/* Automation hero panel (full-width, dominant) */}
                     <AutomationSettings />
+
+                    {/* InboxBridge status (after Automation, before Appearance) */}
+                    <BridgeStatusRow />
 
                     {/* Appearance section */}
                     <section className="settings-section" aria-labelledby="theme-heading">

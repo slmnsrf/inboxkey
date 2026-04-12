@@ -12,7 +12,7 @@ import React, { useEffect, useState, useCallback } from 'react'
 import { t } from '@/lib/i18n'
 import { useFocusTrap, useEscapeKey } from '@/ui/hooks/useFocusTrap'
 import { getNativeClient } from '@/lib/native-messaging'
-import { ArrowLeft, Code2, Info, Loader2, ChevronRight } from 'lucide-react'
+import { AlertTriangle, ArrowLeft, Code2, Download, Info, Loader2, ChevronRight } from 'lucide-react'
 
 import gmailIcon from 'data-base64:~/assets/providers/gmail.svg'
 import yahooIcon from 'data-base64:~/assets/providers/yahoo.svg'
@@ -41,6 +41,10 @@ interface AddImapAccountModalProps {
     port: number
     label: string
   }
+  /** When true, show bridge-required banner and disable provider selection */
+  bridgeDisconnected?: boolean
+  /** Called when user clicks "Set up InboxBridge" in the banner */
+  onBridgeSetup?: () => void
 }
 
 type ProviderId = 'gmail' | 'yahoo' | 'outlook' | 'icloud' | 'protonmail' | 'yandex' | 'custom'
@@ -150,6 +154,8 @@ export function AddImapAccountModal({
   onConfirm,
   onCancel,
   prefillData,
+  bridgeDisconnected,
+  onBridgeSetup,
 }: AddImapAccountModalProps) {
   const modalRef = useFocusTrap(isOpen)
 
@@ -392,12 +398,34 @@ export function AddImapAccountModal({
             </div>
 
             <div className="imap-modal__body">
-              <div className="imap-provider-grid">
+              {/* Bridge-required banner */}
+              {bridgeDisconnected && (
+                <div className="imap-bridge-banner">
+                  <span className="imap-bridge-banner__icon">
+                    <AlertTriangle size={16} />
+                  </span>
+                  <div className="imap-bridge-banner__content">
+                    <p className="imap-bridge-banner__title">{t('bridge_install_required_title')}</p>
+                    <p className="imap-bridge-banner__detail">{t('bridge_install_required_detail')}</p>
+                    <button
+                      className="imap-bridge-banner__action"
+                      type="button"
+                      onClick={onBridgeSetup}
+                    >
+                      <Download size={14} />
+                      {t('bridge_install_setup_btn')}
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              <div className={`imap-provider-grid${bridgeDisconnected ? ' imap-provider-grid--disabled' : ''}`}>
                 {PROVIDER_CARDS.map(({ id, hint }) => (
                   <button
                     key={id}
                     className="imap-provider-card"
                     type="button"
+                    disabled={!!bridgeDisconnected}
                     onClick={() => handleSelectProvider(id)}
                   >
                     <span className={`imap-provider-card__icon${id === 'custom' ? ' imap-provider-card__icon--custom' : ''}`}>

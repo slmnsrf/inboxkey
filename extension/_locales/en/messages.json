@@ -654,6 +654,26 @@
     "message": "Advanced",
     "description": "Advanced settings section heading"
   },
+  "settings_bridge_description": {
+    "message": "Companion app for IMAP connections",
+    "description": "Bridge status row description"
+  },
+  "settings_bridge_checking": {
+    "message": "Checking...",
+    "description": "Bridge status: checking connection"
+  },
+  "settings_bridge_connected": {
+    "message": "Connected",
+    "description": "Bridge status: connected"
+  },
+  "settings_bridge_not_installed": {
+    "message": "Not installed",
+    "description": "Bridge status: not installed"
+  },
+  "settings_bridge_uninstall": {
+    "message": "Uninstall",
+    "description": "Bridge uninstall button"
+  },
   "settings_advanced_section_title": {
     "message": "Advanced",
     "description": "Advanced settings toggle button label"
@@ -1329,6 +1349,18 @@
   "accounts_imap_bridge_install_instructions": {
     "message": "InboxBridge is required to connect IMAP accounts. Download and install it to continue.",
     "description": "Instructions for installing InboxBridge"
+  },
+  "bridge_install_required_title": {
+    "message": "InboxBridge required",
+    "description": "Banner title shown in IMAP modal when bridge is not installed"
+  },
+  "bridge_install_required_detail": {
+    "message": "A small companion app that connects to your email server locally. Runs on your device. Nothing leaves your computer.",
+    "description": "Banner description for bridge requirement"
+  },
+  "bridge_install_setup_btn": {
+    "message": "Set up InboxBridge",
+    "description": "Button to initiate bridge install from IMAP modal"
   },
   "bridge_install_heading": {
     "message": "Set up InboxBridge",
