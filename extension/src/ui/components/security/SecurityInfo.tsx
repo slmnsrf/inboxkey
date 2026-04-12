@@ -29,7 +29,7 @@ import {
 import { t } from '@/lib/i18n'
 import { GITHUB_REPO_URL } from '@/lib/constants'
 import './SecurityInfo.css'
-const SECURITY_EMAIL = 'security@inboxkey.com'
+const SECURITY_EMAIL = 'inboxbridge.extension@gmail.com'
 
 interface FactItemData {
   icon: React.ReactNode

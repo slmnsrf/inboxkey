@@ -17,7 +17,7 @@ Do not report security issues in public GitHub issues.
 
 Report through:
 
-- Email: security@inboxkey.dev
+- Email: inboxbridge.extension@gmail.com
 - GitHub Security Advisories: https://github.com/slmnsrf/inboxkey/security/advisories
 
 Please include:
@@ -156,6 +156,6 @@ Security fixes are communicated through:
 
 ## Contact
 
-- Security issues: security@inboxkey.dev
+- Security issues: inboxbridge.extension@gmail.com
 - GitHub Security Advisories: https://github.com/slmnsrf/inboxkey/security/advisories
 - Repository: https://github.com/slmnsrf/inboxkey
