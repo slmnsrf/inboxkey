@@ -69,9 +69,19 @@ export function BridgeStatusRow() {
     }
   }, [loadImapAccounts])
 
-  const handleModalClose = useCallback(() => {
+  const handleUninstallComplete = useCallback(() => {
     setShowUninstall(false)
-    // Always do a real check after the modal closes (whether completed or cancelled)
+    // Uninstall ran: trust the result, set disconnected immediately.
+    // Chrome may still cache the native host registration briefly,
+    // so a ping right now could false-positive. Force the state.
+    setStatus('disconnected')
+    setVersion(null)
+    setInstallInfo(undefined)
+  }, [])
+
+  const handleUninstallCancel = useCallback(() => {
+    setShowUninstall(false)
+    // User cancelled: do a real check (bridge may or may not still be there)
     void checkBridge()
   }, [checkBridge])
 
@@ -119,8 +129,8 @@ export function BridgeStatusRow() {
         <UninstallBridgeModal
           imapAccountIds={imapAccountIds}
           installInfo={installInfo}
-          onComplete={handleModalClose}
-          onCancel={handleModalClose}
+          onComplete={handleUninstallComplete}
+          onCancel={handleUninstallCancel}
         />
       )}
     </>
