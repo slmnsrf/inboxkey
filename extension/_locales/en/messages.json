@@ -1182,10 +1182,6 @@
     "message": "Last synced: $1",
     "description": "Last synced time display"
   },
-  "accounts_last_code": {
-    "message": "Last code: $1, $2",
-    "description": "Last code received: domain, time ago"
-  },
   "accounts_imap_host": {
     "message": "Server: $1",
     "description": "IMAP server hostname display"

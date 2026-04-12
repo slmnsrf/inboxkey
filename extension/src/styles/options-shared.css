@@ -659,7 +659,7 @@ body {
   height: 20px;
   top: 2px;
   left: 2px;
-  background: white;
+  background: var(--color-text-inverse);
   border-radius: 50%;
   box-shadow: var(--shadow-sm);
   transition: transform 150ms ease-out;
