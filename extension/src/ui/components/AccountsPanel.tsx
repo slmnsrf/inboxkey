@@ -14,7 +14,7 @@
  * unified row actions.
  */
 
-import React, { useCallback, useEffect, useMemo, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useToast } from '@/ui/contexts/ToastContext'
 import { t, timeAgo } from '@/lib/i18n'
 import type { PopupCacheCode } from '@/shared/popup-messages'
@@ -205,6 +205,16 @@ export function AccountsPanel() {
   const [testingId, setTestingId] = useState<string | null>(null)
   const [testResult, setTestResult] = useState<Record<string, 'success' | 'error'>>({})
 
+  /* ---- Timer refs (cleanup on unmount to prevent state updates after unmount) ---- */
+  const timersRef = useRef<Set<ReturnType<typeof setTimeout>>>(new Set())
+  const safeTimeout = useCallback((fn: () => void, ms: number) => {
+    const id = setTimeout(() => { timersRef.current.delete(id); fn() }, ms)
+    timersRef.current.add(id)
+  }, [])
+  useEffect(() => {
+    return () => { timersRef.current.forEach(clearTimeout) }
+  }, [])
+
   /* ---- IMAP modal state ---- */
   const [showAddImapModal, setShowAddImapModal] = useState(false)
   const [reconnectingMailboxId, setReconnectingMailboxId] = useState<string | null>(null)
@@ -247,7 +257,16 @@ export function AccountsPanel() {
   }, [])
 
   useEffect(() => {
+    // Load mailboxes, trigger a background sync to refresh token/status, then reload
     void loadMailboxes()
+    const syncAndReload = async () => {
+      try {
+        await chrome.runtime.sendMessage({ type: 'TRIGGER_SYNC' })
+        // Brief delay for sync to update mailbox state
+        safeTimeout(() => void loadMailboxes(), 3000)
+      } catch { /* sync is best-effort */ }
+    }
+    void syncAndReload()
   }, [loadMailboxes])
 
   /* ---- Fetch recent codes when mailboxes change ---- */
@@ -415,7 +434,7 @@ export function AccountsPanel() {
         setTestResult((prev) => ({ ...prev, [mailbox.id]: 'success' }))
         await loadMailboxes()
         // Auto-dismiss success after 4 seconds
-        setTimeout(() => {
+        safeTimeout(() => {
           setTestResult((prev) => {
             if (prev[mailbox.id] !== 'success') return prev
             const next = { ...prev }; delete next[mailbox.id]; return next
@@ -572,7 +591,7 @@ export function AccountsPanel() {
               setBridgeStatus('connected')
               setBridgeCompat(checkCompatibility(ping))
               // Auto-dismiss after 2s, then open IMAP modal
-              setTimeout(() => {
+              safeTimeout(() => {
                 setShowBridgeGuide(false)
                 setReconnectingMailboxId(null)
                 setImapPrefillData(undefined)

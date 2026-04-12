@@ -508,6 +508,21 @@ body {
   outline-offset: 2px;
 }
 
+.btn--danger {
+  background: var(--color-error);
+  color: white;
+  border-color: var(--color-error);
+}
+
+.btn--danger:hover {
+  opacity: 0.9;
+}
+
+.btn--danger:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
 .btn--danger-ghost {
   background: transparent;
   color: var(--color-error);

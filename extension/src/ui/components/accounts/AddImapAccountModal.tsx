@@ -402,7 +402,7 @@ export function AddImapAccountModal({
               {bridgeDisconnected && (
                 <div className="imap-bridge-banner">
                   <span className="imap-bridge-banner__icon">
-                    <AlertTriangle size={16} />
+                    <AlertTriangle size={16} aria-hidden="true" />
                   </span>
                   <div className="imap-bridge-banner__content">
                     <p className="imap-bridge-banner__title">{t('bridge_install_required_title')}</p>
@@ -410,9 +410,9 @@ export function AddImapAccountModal({
                     <button
                       className="imap-bridge-banner__action"
                       type="button"
-                      onClick={onBridgeSetup}
+                      onClick={() => onBridgeSetup?.()}
                     >
-                      <Download size={14} />
+                      <Download size={14} aria-hidden="true" />
                       {t('bridge_install_setup_btn')}
                     </button>
                   </div>

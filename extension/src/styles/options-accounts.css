@@ -961,16 +961,6 @@
   padding: 0 var(--space-5) var(--space-5);
 }
 
-.btn--danger {
-  background: var(--color-error);
-  color: white;
-  border-color: var(--color-error);
-}
-
-.btn--danger:hover {
-  opacity: 0.9;
-}
-
 .add-account__option-icon {
   display: flex;
   align-items: center;

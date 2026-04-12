@@ -444,7 +444,7 @@
 
 .theme-card__preview {
   width: 100%;
-  height: 64px;
+  height: 80px;
   border-radius: var(--radius-md);
   overflow: hidden;
   border: 1px solid var(--color-border);
@@ -626,8 +626,8 @@
   gap: var(--space-2);
   width: 100%;
   padding: var(--space-4) var(--space-5);
-  border: none;
-  background: transparent;
+  border: 1px solid var(--color-border);
+  background: var(--surface-card);
   cursor: pointer;
   font-family: var(--font-system);
   font-size: var(--font-size-lg);
