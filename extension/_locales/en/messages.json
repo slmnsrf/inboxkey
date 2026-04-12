@@ -3087,6 +3087,14 @@
     "message": "Recent activity",
     "description": "Recent activity section heading on accounts tab"
   },
+  "recent_activity_empty": {
+    "message": "No codes captured yet. They will appear here after the first sync.",
+    "description": "Empty state message when no recent codes exist"
+  },
+  "toast_account_removed": {
+    "message": "Account removed",
+    "description": "Toast shown after successfully removing an account"
+  },
 
   "security_hero_headline_v2": {
     "message": "Only verification codes. Only on your device.",

@@ -1268,6 +1268,14 @@
   color: var(--color-text-primary);
 }
 
+.recent__empty {
+  margin: 0;
+  padding: var(--space-4);
+  text-align: center;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-tertiary);
+}
+
 .recent__list {
   background: var(--surface-card);
   border: 1px solid var(--color-border);

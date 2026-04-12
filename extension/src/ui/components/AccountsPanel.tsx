@@ -470,6 +470,7 @@ export function AccountsPanel() {
         mailboxId: mailbox.id,
       })
       if (response.success || response.ok) {
+        showToast(t('toast_account_removed'), 'success')
         await loadMailboxes()
       } else {
         showToast(t('toast_disconnect_failed'), 'error')

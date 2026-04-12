@@ -21,31 +21,33 @@ const PROVIDER_DOT_CLASS: Record<string, string> = {
 }
 
 export function RecentActivity({ codes }: RecentActivityProps) {
-  if (codes.length === 0) return null
-
   return (
     <div className="recent">
       <div className="recent__head">
         <h2 className="recent__title">{t('recent_activity_title')}</h2>
       </div>
 
-      <div className="recent__list">
-        {codes.map((item, index) => (
-          <div className="recent-row" key={index}>
-            <span className="recent-row__code">{item.code}</span>
-            <div className="recent-row__info">
-              <span className="recent-row__source">{item.domain}</span>
-              <span className="recent-row__provider">
-                <span
-                  className={`recent-row__provider-dot ${PROVIDER_DOT_CLASS[item.provider] || 'recent-row__provider-dot--imap'}`}
-                />
-                {item.email}
-              </span>
+      {codes.length === 0 ? (
+        <p className="recent__empty">{t('recent_activity_empty')}</p>
+      ) : (
+        <div className="recent__list">
+          {codes.map((item, index) => (
+            <div className="recent-row" key={index}>
+              <span className="recent-row__code">{item.code}</span>
+              <div className="recent-row__info">
+                <span className="recent-row__source">{item.domain}</span>
+                <span className="recent-row__provider">
+                  <span
+                    className={`recent-row__provider-dot ${PROVIDER_DOT_CLASS[item.provider] || 'recent-row__provider-dot--imap'}`}
+                  />
+                  {item.email}
+                </span>
+              </div>
+              <span className="recent-row__time">{item.timeAgo}</span>
             </div>
-            <span className="recent-row__time">{item.timeAgo}</span>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
     </div>
   )
 }
