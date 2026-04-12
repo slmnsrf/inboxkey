@@ -16,7 +16,7 @@ anyhow = "1"
 thiserror = "1"
 async-imap = "0.9"
 async-std = "1"
-async-native-tls = "0.5"
+async-native-tls = "0.6"
 native-tls = "0.2"
 tokio-util = { version = "0.7", features = ["codec"] }
 chrono = "0.4"
