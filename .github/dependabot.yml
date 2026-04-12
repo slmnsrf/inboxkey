@@ -6,7 +6,7 @@ updates:
   - package-ecosystem: github-actions
     directory: /
     schedule:
-      interval: weekly
+      interval: monthly
     labels:
       - dependencies
       - ci
@@ -16,14 +16,14 @@ updates:
   - package-ecosystem: npm
     directory: /
     schedule:
-      interval: weekly
+      interval: monthly
     labels:
       - dependencies
 
   - package-ecosystem: npm
     directory: /extension
     schedule:
-      interval: weekly
+      interval: monthly
     labels:
       - dependencies
       - extension
@@ -37,7 +37,7 @@ updates:
   - package-ecosystem: npm
     directory: /packages/extraction-core
     schedule:
-      interval: weekly
+      interval: monthly
     labels:
       - dependencies
       - extraction-core
@@ -45,7 +45,7 @@ updates:
   - package-ecosystem: npm
     directory: /apps/reviewer
     schedule:
-      interval: weekly
+      interval: monthly
     labels:
       - dependencies
       - reviewer
@@ -54,7 +54,7 @@ updates:
   - package-ecosystem: cargo
     directory: /inboxbridge
     schedule:
-      interval: weekly
+      interval: monthly
     labels:
       - dependencies
       - inboxbridge
