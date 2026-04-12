@@ -233,6 +233,19 @@
   line-height: var(--line-height-relaxed);
 }
 
+a.done-next__link {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  color: var(--color-text-link);
+  text-decoration: none;
+  font-size: var(--font-size-sm);
+}
+
+a.done-next__link:hover {
+  text-decoration: underline;
+}
+
 .done-next__path {
   display: flex;
   align-items: center;

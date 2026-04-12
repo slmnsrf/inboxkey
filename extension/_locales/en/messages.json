@@ -1327,16 +1327,28 @@
     "description": "Instructions for installing InboxBridge"
   },
   "bridge_install_heading": {
-    "message": "Install InboxBridge",
-    "description": "Heading for the InboxBridge install guide"
+    "message": "Set up InboxBridge",
+    "description": "Wizard heading for the InboxBridge install guide"
   },
   "bridge_install_what": {
-    "message": "InboxBridge is a small companion app that lets InboxKey connect to your email server. It runs locally on your computer -- no data leaves your device.",
-    "description": "Description of what InboxBridge is"
+    "message": "A small helper app for connecting IMAP, Outlook, and other email providers. Runs on your device. Nothing leaves your computer.",
+    "description": "Wizard subtitle describing what InboxBridge is"
   },
   "bridge_install_download": {
     "message": "Download InboxBridge",
-    "description": "Download button label"
+    "description": "Download button label (generic fallback)"
+  },
+  "bridge_install_download_windows": {
+    "message": "Download for Windows",
+    "description": "OS-specific download button label for Windows"
+  },
+  "bridge_install_download_macos": {
+    "message": "Download for macOS",
+    "description": "OS-specific download button label for macOS"
+  },
+  "bridge_install_download_linux": {
+    "message": "Download for Linux",
+    "description": "OS-specific download button label for Linux"
   },
   "bridge_install_hint_windows": {
     "message": "Look for InboxBridge-...-windows-x64.exe",
@@ -1350,6 +1362,42 @@
     "message": "Look for InboxBridge-...-linux-x64.tar.gz",
     "description": "OS-specific download filename hint for Linux"
   },
+  "bridge_install_other_platforms": {
+    "message": "Other platforms",
+    "description": "Link to see downloads for other operating systems"
+  },
+  "bridge_install_verify_checksum": {
+    "message": "Verify checksum",
+    "description": "Link to verify the SHA-256 checksum of the download"
+  },
+  "bridge_install_view_source": {
+    "message": "View source",
+    "description": "Link to the GitHub source code repository"
+  },
+  "bridge_install_step1_title": {
+    "message": "Download InboxBridge",
+    "description": "Step 1 title in the install wizard"
+  },
+  "bridge_install_step2_title": {
+    "message": "Run the installer and restart Chrome",
+    "description": "Step 2 title in the install wizard"
+  },
+  "bridge_install_step2_instr": {
+    "message": "Open the file you just downloaded and follow the installer. Then restart Chrome so the helper can register with your browser.",
+    "description": "Step 2 instruction text"
+  },
+  "bridge_install_step2_button": {
+    "message": "I've restarted Chrome",
+    "description": "Button to confirm Chrome has been restarted"
+  },
+  "bridge_install_step3_title": {
+    "message": "Connect",
+    "description": "Step 3 title in the install wizard"
+  },
+  "bridge_install_step3_instr": {
+    "message": "InboxKey will check that the helper is running on your device.",
+    "description": "Step 3 instruction text"
+  },
   "bridge_install_installed": {
     "message": "I've installed it",
     "description": "Button after user installs InboxBridge"
@@ -1360,15 +1408,19 @@
   },
   "bridge_install_check": {
     "message": "Check connection",
-    "description": "Button to retry bridge connection after restart"
+    "description": "Button to check bridge connection"
   },
   "bridge_install_checking": {
-    "message": "Checking...",
+    "message": "Looking for InboxBridge on your device...",
     "description": "Shown while pinging InboxBridge"
   },
+  "bridge_install_success": {
+    "message": "Connected. You can add an IMAP account now.",
+    "description": "Shown when bridge connection succeeds"
+  },
   "bridge_install_retry_fail": {
-    "message": "Still not detected. Make sure you've quit Chrome completely (check your system tray) and reopened it.",
-    "description": "Shown when retry fails after install"
+    "message": "Couldn't reach InboxBridge. Make sure it's installed and running, then try again.",
+    "description": "Shown when bridge connection check fails"
   },
   "bridge_install_source": {
     "message": "View source code",
@@ -1383,19 +1435,27 @@
     "description": "Modal title"
   },
   "bridge_uninstall_warning": {
-    "message": "This will remove all IMAP accounts from InboxKey and clear stored credentials from your system keychain. You will lose access to all IMAP-connected email accounts in InboxKey.",
-    "description": "Warning text in uninstall modal"
+    "message": "This will remove all IMAP accounts and stored credentials",
+    "description": "Short warning title in the danger banner of the uninstall modal"
+  },
+  "bridge_uninstall_warning_detail": {
+    "message": "InboxBridge will delete its local configuration, remove saved passwords from your operating system's keychain, and disconnect all IMAP accounts from InboxKey. This cannot be undone.",
+    "description": "Detailed warning explanation below the title in the danger banner"
   },
   "bridge_uninstall_confirm_label": {
     "message": "Type UNINSTALL to confirm",
     "description": "Label for confirmation input"
+  },
+  "bridge_uninstall_confirm_hint": {
+    "message": "This action is irreversible.",
+    "description": "Hint text below the confirmation input"
   },
   "bridge_uninstall_confirm_word": {
     "message": "UNINSTALL",
     "description": "The word the user must type to confirm"
   },
   "bridge_uninstall_action": {
-    "message": "Remove all data and uninstall",
+    "message": "Uninstall",
     "description": "Destructive action button"
   },
   "bridge_uninstall_cancel": {
@@ -1403,20 +1463,28 @@
     "description": "Cancel button"
   },
   "bridge_uninstall_cleaning": {
-    "message": "Removing data...",
-    "description": "Shown while cleanup is in progress"
+    "message": "Cleaning up",
+    "description": "Title shown while cleanup is in progress"
+  },
+  "bridge_uninstall_cleaning_detail": {
+    "message": "Removing accounts, credentials, and configuration...",
+    "description": "Detail text shown below the spinner during cleanup"
   },
   "bridge_uninstall_done_title": {
     "message": "Finish uninstalling InboxBridge",
     "description": "Title after cleanup completes"
   },
+  "bridge_uninstall_done_success": {
+    "message": "InboxBridge uninstalled",
+    "description": "Success heading shown in the done phase body with green checkmark"
+  },
   "bridge_uninstall_done_subtitle": {
-    "message": "InboxBridge is a separate app. Removing it from this device completes the uninstall.",
+    "message": "The extension side is clean. Now delete the app from your computer.",
     "description": "Subtitle in the uninstall-done phase"
   },
   "bridge_uninstall_done_removed_heading": {
-    "message": "What was removed from this device:",
-    "description": "Heading above the checklist of removed items"
+    "message": "Removed",
+    "description": "Label above the checklist of removed items"
   },
   "bridge_uninstall_done_removed_accounts": {
     "message": "IMAP account settings",
@@ -1431,8 +1499,8 @@
     "description": "Checklist item: cached codes were removed"
   },
   "bridge_uninstall_done_step_heading": {
-    "message": "One step remains",
-    "description": "Heading above the OS-specific uninstall instructions"
+    "message": "Now delete the app",
+    "description": "Label above the OS-specific uninstall instructions"
   },
   "bridge_uninstall_done_windows_steps": {
     "message": "InboxBridge can be removed from Windows Settings, under Installed apps.",
@@ -1503,8 +1571,8 @@
     "description": "Subtle info line shown when bridge.uninstall cleared the keychain but accounts.json could not be removed."
   },
   "bridge_uninstall_done_close": {
-    "message": "Close",
-    "description": "Close button after uninstall instructions"
+    "message": "Done",
+    "description": "Button to close the modal after uninstall instructions"
   },
   "bridge_uninstall_partial": {
     "message": "Some accounts could not be fully removed. You may need to reconnect and try again.",
@@ -1512,11 +1580,35 @@
   },
   "bridge_warning_windows": {
     "message": "You may see a \"Windows protected your PC\" message when running the installer. This happens because InboxBridge is not digitally signed. Code signing certificates cost $200-500 per year, and as a source-available project without funding, we can't afford one. The app is completely safe -- you can review every line of source code on GitHub. To proceed: click \"More info\", then \"Run anyway\".",
-    "description": "Unsigned software warning for Windows"
+    "description": "Unsigned software warning for Windows (legacy single-string)"
+  },
+  "bridge_warning_windows_lead": {
+    "message": "Windows will show a \"Windows protected your PC\" warning when you run the installer.",
+    "description": "Security note lead paragraph for Windows"
+  },
+  "bridge_warning_windows_cause": {
+    "message": "This happens because InboxBridge isn't digitally signed. Microsoft requires a code signing certificate for that, and certificates cost roughly $200 to $500 per year. InboxKey is a non-profit, source-available project without funding for one, so the warning is unavoidable.",
+    "description": "Security note cause paragraph for Windows"
+  },
+  "bridge_warning_windows_action": {
+    "message": "To install, click \"More info\", then \"Run anyway\". Don't take our word that it's safe. Read the source code on GitHub or compare the SHA-256 checksum of what you downloaded against the published one, if you want.",
+    "description": "Security note action paragraph for Windows"
   },
   "bridge_warning_macos": {
     "message": "You may see an \"unidentified developer\" warning when opening the installer. Apple charges $99 per year for a Developer Program membership required to sign apps, and as a source-available project without funding, we can't afford one. The app is completely safe -- you can review every line of source code on GitHub. To proceed: right-click the .pkg file, click \"Open\", then click \"Open\" again in the dialog.",
-    "description": "Unsigned software warning for macOS"
+    "description": "Unsigned software warning for macOS (legacy single-string)"
+  },
+  "bridge_warning_macos_lead": {
+    "message": "macOS will show a \"cannot verify the developer\" warning when you open the installer.",
+    "description": "Security note lead paragraph for macOS"
+  },
+  "bridge_warning_macos_cause": {
+    "message": "This happens because InboxBridge isn't notarized by Apple. An Apple Developer ID membership costs $99 per year plus the notarization workflow has its own overhead. InboxKey is a non-profit, source-available project without funding for one, so the warning is unavoidable.",
+    "description": "Security note cause paragraph for macOS"
+  },
+  "bridge_warning_macos_action": {
+    "message": "To install, right-click the downloaded .dmg and choose \"Open\". Or go to System Settings, then Privacy & Security, and click \"Open Anyway\". Don't take our word that it's safe. Read the source code on GitHub or compare the SHA-256 checksum of what you downloaded against the published one, if you want.",
+    "description": "Security note action paragraph for macOS"
   },
   "bridge_update_required": {
     "message": "InboxBridge needs to be updated to work with this version of InboxKey.",
