@@ -2820,6 +2820,11 @@
     }
   },
 
+  "recent_activity_title": {
+    "message": "Recent activity",
+    "description": "Recent activity section heading on accounts tab"
+  },
+
   "security_hero_headline_v2": {
     "message": "Only verification codes. Only on your device.",
     "description": "Security v2 hero headline"
