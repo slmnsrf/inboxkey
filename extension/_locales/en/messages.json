@@ -2145,7 +2145,7 @@
     "placeholders": {
       "email": {
         "content": "$1",
-        "example": "security@inboxkey.com"
+        "example": "inboxbridge.extension@gmail.com"
       }
     }
   },

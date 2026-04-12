@@ -594,7 +594,7 @@ light -out inboxbridge-windows.msi inboxbridge.wixobj
 Package: inboxbridge
 Version: 1.0.0
 Architecture: amd64
-Maintainer: InboxKey <support@inboxkey.com>
+Maintainer: InboxKey <inboxbridge.extension@gmail.com>
 Description: InboxBridge - Local IMAP helper for InboxKey
 Depends: libsecret-1-0
 ```
@@ -957,8 +957,7 @@ cargo build --release
 
 **Support Channels:**
 - **GitHub Issues:** Bug reports and feature requests
-- **Discord/Slack:** Real-time user support
-- **Email:** security@inboxkey.com for security issues
+- **Email:** inboxbridge.extension@gmail.com for security issues
 
 **Response SLAs:**
 - Security issues: <24 hours
