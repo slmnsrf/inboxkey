@@ -12,13 +12,13 @@
   "dependencies": {
     "@inboxkey/extraction-core": "workspace:*",
     "plasmo": "^0.88.0",
-    "react": "^18.3.1",
+    "react": "^19.2.5",
     "react-dom": "^18.3.1",
     "dexie": "^3.2.4"
   },
   "devDependencies": {
     "@types/chrome": "^0.0.268",
-    "@types/react": "^18.3.3",
+    "@types/react": "^19.2.14",
     "typescript": "^5.5.3"
   },
   "manifest": {
