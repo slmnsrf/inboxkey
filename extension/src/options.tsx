@@ -18,11 +18,11 @@ import { AdvancedSettings } from './ui/components/AdvancedSettings'
 import { BuyMeACoffeeButton } from './ui/components/BuyMeACoffeeButton'
 import { BlacklistManageButton } from './ui/components/blacklist/BlacklistManageButton'
 import { BlacklistModal } from './ui/components/blacklist/BlacklistModal'
-import { KeyRound, ShieldCheck, EyeOff, Code2, Zap, Timer, Palette, Globe, Settings as SettingsIcon, Github } from 'lucide-react'
+import { ShieldCheck, EyeOff, Code2, Zap, Timer, Palette, Globe, Settings as SettingsIcon, Github } from 'lucide-react'
 import { t } from './lib/i18n'
 import { GITHUB_REPO_URL } from './lib/constants'
+import markWhiteBase64 from 'data-base64:~/assets/mark-white.svg'
 import './options.css'
-import './ui/components/security/SecurityInfo.css'
 
 function OptionsApp() {
   const [mailboxCount, setMailboxCount] = useState<number | null>(null)
@@ -78,7 +78,7 @@ function OptionsApp() {
               <header className="options-header" aria-labelledby="options-title">
                 <div className="options-header__identity">
                   <span className="brand__icon" aria-hidden="true">
-                    <KeyRound size={24} />
+                    <img src={markWhiteBase64} alt="" width={24} height={24} />
                   </span>
                   <div className="brand">
                     <h1 id="options-title" className="brand__title">
