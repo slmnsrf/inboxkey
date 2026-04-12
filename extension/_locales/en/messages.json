@@ -2641,5 +2641,336 @@
   "blacklist_tabs_aria": {
     "message": "Ignored sites management tabs",
     "description": "ARIA label for tab navigation"
+  },
+
+  "health_all_ok": {
+    "message": "$COUNT$ accounts healthy",
+    "description": "Health summary when all accounts are healthy",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "health_attention_one": {
+    "message": "1 account needs attention. See below.",
+    "description": "Health summary with exactly 1 problem"
+  },
+  "health_attention_multi": {
+    "message": "$COUNT$ of $TOTAL$ accounts need attention",
+    "description": "Health summary with multiple problems",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      },
+      "total": {
+        "content": "$2"
+      }
+    }
+  },
+  "health_connecting": {
+    "message": "Connecting a new account...",
+    "description": "Health summary during connection"
+  },
+  "health_sync_paused": {
+    "message": "Sync paused. Reconnects automatically when you are back online.",
+    "description": "Health summary when offline"
+  },
+  "health_max_accounts": {
+    "message": "$COUNT$ of $MAX$ accounts connected. Remove one to add another.",
+    "description": "Health summary at max accounts",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      },
+      "max": {
+        "content": "$2"
+      }
+    }
+  },
+  "health_fetch_failed": {
+    "message": "Could not load accounts. Check that the extension is running, then try again.",
+    "description": "Health summary when mailbox fetch fails"
+  },
+
+  "firstrun_headline": {
+    "message": "Welcome to InboxKey",
+    "description": "First-run welcome headline"
+  },
+  "firstrun_sub": {
+    "message": "Connect an email account to autofill verification codes from your inbox. All processing happens on your device.",
+    "description": "First-run welcome subtitle"
+  },
+  "firstrun_gmail_title": {
+    "message": "Get started with Gmail",
+    "description": "First-run Gmail card title"
+  },
+  "firstrun_gmail_detail": {
+    "message": "One-click setup with Google sign-in. The recommended path for most users.",
+    "description": "First-run Gmail card detail"
+  },
+  "firstrun_alt_heading": {
+    "message": "Or choose another provider",
+    "description": "First-run alternatives section heading"
+  },
+  "firstrun_imap_title": {
+    "message": "Other email providers",
+    "description": "First-run IMAP card title"
+  },
+  "firstrun_imap_detail": {
+    "message": "Yahoo, Outlook, ProtonMail, Fastmail, iCloud, or any IMAP server. Requires InboxBridge, a small helper app that runs on your device.",
+    "description": "First-run IMAP card detail"
+  },
+  "firstrun_gm_title": {
+    "message": "Phone (Android)",
+    "description": "First-run Google Messages card title"
+  },
+  "firstrun_gm_detail": {
+    "message": "SMS verification codes captured from your Android phone via Google Messages pairing. Android only.",
+    "description": "First-run Google Messages card detail"
+  },
+
+  "add_account": {
+    "message": "Add account",
+    "description": "Add account button label"
+  },
+  "add_account_gmail_detail": {
+    "message": "Read verification codes from your Gmail inbox.",
+    "description": "Add account dropdown Gmail description"
+  },
+  "add_account_imap_title": {
+    "message": "Other email providers",
+    "description": "Add account dropdown IMAP title"
+  },
+  "add_account_imap_detail": {
+    "message": "Yahoo, Outlook, ProtonMail, Fastmail, iCloud, or any IMAP server. Requires InboxBridge.",
+    "description": "Add account dropdown IMAP description"
+  },
+  "add_account_gm_title": {
+    "message": "Phone (Android)",
+    "description": "Add account dropdown Google Messages title"
+  },
+  "add_account_gm_detail": {
+    "message": "Capture SMS verification codes via Google Messages on your Android phone.",
+    "description": "Add account dropdown GM description"
+  },
+  "add_account_recommended": {
+    "message": "Recommended",
+    "description": "Recommended tag on Gmail option"
+  },
+
+  "row_test_connection": {
+    "message": "Test connection",
+    "description": "Row menu: test connection action"
+  },
+  "row_edit": {
+    "message": "Edit",
+    "description": "Row menu: edit action"
+  },
+  "row_remove": {
+    "message": "Remove account",
+    "description": "Row menu: remove action"
+  },
+  "row_remove_confirm": {
+    "message": "Remove $EMAIL$? All sync data will be deleted.",
+    "description": "Remove confirmation text",
+    "placeholders": {
+      "email": {
+        "content": "$1"
+      }
+    }
+  },
+  "row_last_code": {
+    "message": "Last code: $DOMAIN$, $TIME$",
+    "description": "Row metadata showing last captured code",
+    "placeholders": {
+      "domain": {
+        "content": "$1"
+      },
+      "time": {
+        "content": "$2"
+      }
+    }
+  },
+
+  "banner_offline": {
+    "message": "You are offline. Verification codes will not sync until your internet returns.",
+    "description": "Offline page banner"
+  },
+  "banner_oauth_cancelled": {
+    "message": "Sign-in was cancelled. No changes were made. You can connect anytime.",
+    "description": "OAuth cancelled page banner"
+  },
+  "banner_bridge_update_available": {
+    "message": "InboxBridge update available ($VERSION$). Existing accounts work normally.",
+    "description": "Bridge update available banner",
+    "placeholders": {
+      "version": {
+        "content": "$1"
+      }
+    }
+  },
+  "banner_bridge_update_required": {
+    "message": "InboxBridge update required ($VERSION$). New accounts cannot be added until you update.",
+    "description": "Bridge update required banner",
+    "placeholders": {
+      "version": {
+        "content": "$1"
+      }
+    }
+  },
+
+  "security_hero_headline_v2": {
+    "message": "Only verification codes. Only on your device.",
+    "description": "Security v2 hero headline"
+  },
+  "security_hero_sub_v2": {
+    "message": "InboxKey reads verification emails from your inbox, parses them locally, and talks to nothing on the internet except your email provider. This page explains exactly what it does, what it does not do, and how to verify both against the source code.",
+    "description": "Security v2 hero subtitle"
+  },
+  "security_section_read": {
+    "message": "What is read",
+    "description": "Security section 01 heading"
+  },
+  "security_section_store": {
+    "message": "What is stored",
+    "description": "Security section 02 heading"
+  },
+  "security_section_perms": {
+    "message": "Permissions",
+    "description": "Security section 03 heading"
+  },
+  "security_section_source": {
+    "message": "Source available",
+    "description": "Security section 04 heading"
+  },
+  "security_read_scan_title": {
+    "message": "Recent unread messages are scanned",
+    "description": "Security fact: messages scanned"
+  },
+  "security_read_scan_detail": {
+    "message": "The extension asks your provider for recent unread messages (Gmail uses the search query is:unread newer_than:Nd). Each message is parsed in browser memory. Only messages containing a verification code or magic link are kept in the ephemeral cache. Everything else is discarded immediately.",
+    "description": "Security fact: scan detail"
+  },
+  "security_store_tokens_title": {
+    "message": "Authentication tokens",
+    "description": "Security fact: auth tokens stored"
+  },
+  "security_store_tokens_detail": {
+    "message": "If you connect Gmail, the OAuth access and refresh tokens are saved to chrome.storage.local in plaintext, protected by Chrome's profile sandbox. Encryption at rest is planned but not yet implemented. IMAP credentials are held by InboxBridge in your operating system's keychain, not by the extension itself.",
+    "description": "Security fact: token storage detail"
+  },
+  "security_store_cache_title": {
+    "message": "Ephemeral code cache",
+    "description": "Security fact: ephemeral cache"
+  },
+  "security_store_cache_detail": {
+    "message": "Detected verification codes are held in chrome.storage.session, which Chrome wipes automatically when you close the browser. They never touch disk.",
+    "description": "Security fact: cache detail"
+  },
+  "security_perm_scripting_reason": {
+    "message": "Required to add the in-page autofill UI when a verification field is detected. Only injected on pages where a code field is found.",
+    "description": "Permission reason: scripting"
+  },
+  "security_source_body": {
+    "message": "InboxKey is licensed under the PolyForm Noncommercial License 1.0.0. The full source code is on GitHub. You can read it, audit it, build it from source, and verify any claim on this page against the actual code that runs in your browser.",
+    "description": "Source available body text"
+  },
+  "security_arch_caption": {
+    "message": "The only thing this extension talks to is your email provider. Inside your device, parsing happens in browser memory.",
+    "description": "Architecture diagram caption"
+  },
+
+  "about_what": {
+    "message": "InboxKey autofills verification codes and opens magic links from your email. Local-only. Source available.",
+    "description": "About tab one-sentence WHAT description"
+  },
+  "about_resources_source_hint": {
+    "message": "Read it, audit it, fork it. Pull requests welcome.",
+    "description": "Resources: source code hint"
+  },
+  "about_resources_issues_hint": {
+    "message": "Bugs and feature requests on GitHub.",
+    "description": "Resources: issues hint"
+  },
+  "about_resources_privacy_hint": {
+    "message": "What InboxKey does and does not do with your data.",
+    "description": "Resources: privacy hint"
+  },
+  "about_contribute": {
+    "message": "Translations and feature contributions are also welcome on GitHub.",
+    "description": "Contribute footer line"
+  },
+  "about_companion_app": {
+    "message": "Companion app: InboxBridge $VERSION$, the local helper for IMAP and Outlook accounts.",
+    "description": "Footer companion app line",
+    "placeholders": {
+      "version": {
+        "content": "$1"
+      }
+    }
+  },
+  "about_built_with": {
+    "message": "Built with Plasmo, React, TypeScript, Lucide, and other open-source tools.",
+    "description": "Footer built-with credits"
+  },
+  "about_version_pill_hint": {
+    "message": "Click to copy",
+    "description": "Version pill hover hint"
+  },
+  "about_version_copied_toast": {
+    "message": "Version copied to clipboard",
+    "description": "Toast after version copy"
+  },
+
+  "settings_session_chips_description_v2": {
+    "message": "How long the extension waits for a code after a check starts.",
+    "description": "Code check card description (v2)"
+  },
+  "settings_advanced_banking_blocklist_v2": {
+    "message": "Exclude banking sites",
+    "description": "Banking blocklist toggle label (v2)"
+  },
+  "settings_advanced_banking_blocklist_desc_v2": {
+    "message": "If you turn this on, the extension will not work on most banking and financial websites.",
+    "description": "Banking blocklist description (v2)"
+  },
+  "settings_auto_hero_headline": {
+    "message": "What should InboxKey do when it finds a code?",
+    "description": "Automation hero headline question"
+  },
+  "settings_auto_hero_sub": {
+    "message": "Pick how much you want the extension to handle for you. You can change this anytime.",
+    "description": "Automation hero subtitle"
+  },
+  "settings_auto_info": {
+    "message": "Full Automation is on. Codes will be filled and submitted for you.",
+    "description": "Full automation info banner"
+  },
+
+  "gm_connect_title": {
+    "message": "Connect Google Messages",
+    "description": "GM pairing modal title"
+  },
+  "gm_connect_intro": {
+    "message": "Pair Google Messages on your Android phone to capture SMS verification codes. The pairing uses a QR code and runs entirely on your device.",
+    "description": "GM pairing intro text"
+  },
+  "gm_connect_button": {
+    "message": "Connect Google Messages",
+    "description": "GM pairing action button"
+  },
+  "gm_phone_hint_v2": {
+    "message": "Your number is stored locally only. It is never sent anywhere.",
+    "description": "GM phone number hint (v2 trust signal)"
+  },
+  "gm_countdown_text": {
+    "message": "Opening Google Messages in your browser...",
+    "description": "GM countdown text"
+  },
+
+  "recent_activity_title": {
+    "message": "Recent activity",
+    "description": "Recent activity section title"
   }
 }
