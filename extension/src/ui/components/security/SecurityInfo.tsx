@@ -1,339 +1,340 @@
+/**
+ * SecurityInfo Component (v2)
+ *
+ * Magazine-style single-document security page with hero headline,
+ * architecture diagram, numbered sections, and source-available footer.
+ * All text via i18n. No actions, purely informational.
+ */
+
 import React from 'react'
 import {
-  FileText,
-  Eye,
-  MailSearch,
-  BookOpen,
-  Cpu,
-  Database,
-  Plug,
-  SlidersHorizontal,
-  Clock,
-  ShieldOff,
-  BarChart2,
-  WifiOff,
-  Send,
-  Key,
-  User,
-  AppWindow,
-  HardDrive,
-  Cable,
-  Github,
-  BookOpenCheck,
-  PackageCheck,
-  ArrowRight,
-  Mail,
-  Bell,
+  Cloud,
   Globe,
+  TextCursorInput,
+  ArrowRight,
+  Github,
+  FileText,
 } from 'lucide-react'
 import { t } from '@/lib/i18n'
 import { GITHUB_REPO_URL } from '@/lib/constants'
-import './SecurityInfo.css'
-const SECURITY_EMAIL = 'inboxbridge.extension@gmail.com'
 
-interface FactItemData {
-  icon: React.ReactNode
+const LICENSE_URL = 'https://polyformproject.org/licenses/noncommercial/1.0.0/'
+
+/* ------------------------------------------------------------------ */
+/*  Section 01: What is read                                          */
+/* ------------------------------------------------------------------ */
+interface ListItem {
+  num: string
   titleKey: string
   detailKey: string
 }
 
-interface PermissionData {
-  icon: React.ReactNode
-  code: string
+const READ_ITEMS: ListItem[] = [
+  {
+    num: '1.1',
+    titleKey: 'security_read_scan_title',
+    detailKey: 'security_read_scan_detail',
+  },
+  {
+    num: '1.2',
+    titleKey: 'security_accessed_readonly_title',
+    detailKey: 'security_accessed_readonly_detail',
+  },
+  {
+    num: '1.3',
+    titleKey: 'security_accessed_local_title',
+    detailKey: 'security_accessed_local_detail',
+  },
+]
+
+/* ------------------------------------------------------------------ */
+/*  Section 02: What is stored                                        */
+/* ------------------------------------------------------------------ */
+const STORE_ITEMS: ListItem[] = [
+  {
+    num: '2.1',
+    titleKey: 'security_stored_connection_title',
+    detailKey: 'security_stored_connection_detail',
+  },
+  {
+    num: '2.2',
+    titleKey: 'security_store_tokens_title',
+    detailKey: 'security_store_tokens_detail',
+  },
+  {
+    num: '2.3',
+    titleKey: 'security_stored_preferences_title',
+    detailKey: 'security_stored_preferences_detail',
+  },
+  {
+    num: '2.4',
+    titleKey: 'security_store_cache_title',
+    detailKey: 'security_store_cache_detail',
+  },
+]
+
+/* ------------------------------------------------------------------ */
+/*  Section 03: Permissions (ordered by impact, descending)           */
+/* ------------------------------------------------------------------ */
+interface PermItem {
+  num: string
+  title: string
   reasonKey: string
+  api: string
+  optional?: boolean
 }
 
-interface SectionData {
-  id: string
-  icon: React.ReactNode
-  titleKey: string
-  descriptionKey: string
-  items: FactItemData[]
-}
-
-const SECTIONS: SectionData[] = [
+const PERM_ITEMS: PermItem[] = [
   {
-    id: 'accessed',
-    icon: <Eye size={18} />,
-    titleKey: 'security_accessed_title',
-    descriptionKey: 'security_accessed_description',
-    items: [
-      {
-        icon: <MailSearch size={14} />,
-        titleKey: 'security_accessed_verification_title',
-        detailKey: 'security_accessed_verification_detail',
-      },
-      {
-        icon: <BookOpen size={14} />,
-        titleKey: 'security_accessed_readonly_title',
-        detailKey: 'security_accessed_readonly_detail',
-      },
-      {
-        icon: <Cpu size={14} />,
-        titleKey: 'security_accessed_local_title',
-        detailKey: 'security_accessed_local_detail',
-      },
-    ],
-  },
-  {
-    id: 'stored',
-    icon: <Database size={18} />,
-    titleKey: 'security_stored_title',
-    descriptionKey: 'security_stored_description',
-    items: [
-      {
-        icon: <Plug size={14} />,
-        titleKey: 'security_stored_connection_title',
-        detailKey: 'security_stored_connection_detail',
-      },
-      {
-        icon: <SlidersHorizontal size={14} />,
-        titleKey: 'security_stored_preferences_title',
-        detailKey: 'security_stored_preferences_detail',
-      },
-      {
-        icon: <Clock size={14} />,
-        titleKey: 'security_stored_cache_title',
-        detailKey: 'security_stored_cache_detail',
-      },
-    ],
-  },
-  {
-    id: 'not-done',
-    icon: <ShieldOff size={18} />,
-    titleKey: 'security_notdone_title',
-    descriptionKey: 'security_notdone_description',
-    items: [
-      {
-        icon: <BarChart2 size={14} />,
-        titleKey: 'security_notdone_analytics_title',
-        detailKey: 'security_notdone_analytics_detail',
-      },
-      {
-        icon: <WifiOff size={14} />,
-        titleKey: 'security_notdone_connections_title',
-        detailKey: 'security_notdone_connections_detail',
-      },
-      {
-        icon: <Send size={14} />,
-        titleKey: 'security_notdone_data_title',
-        detailKey: 'security_notdone_data_detail',
-      },
-    ],
-  },
-  {
-    id: 'opensource',
-    icon: <Github size={18} />,
-    titleKey: 'security_opensource_title',
-    descriptionKey: 'security_opensource_description',
-    items: [
-      {
-        icon: <BookOpenCheck size={14} />,
-        titleKey: 'security_opensource_available_title',
-        detailKey: 'security_opensource_available_detail',
-      },
-      {
-        icon: <PackageCheck size={14} />,
-        titleKey: 'security_opensource_builds_title',
-        detailKey: 'security_opensource_builds_detail',
-      },
-    ],
-  },
-]
-
-const PERMISSIONS: PermissionData[] = [
-  {
-    icon: <HardDrive size={16} />,
-    code: 'storage',
-    reasonKey: 'security_perm_storage_reason',
-  },
-  {
-    icon: <Clock size={16} />,
-    code: 'alarms',
-    reasonKey: 'security_perm_alarms_reason',
-  },
-  {
-    icon: <AppWindow size={16} />,
-    code: 'tabs',
-    reasonKey: 'security_perm_tabs_reason',
-  },
-  {
-    icon: <User size={16} />,
-    code: 'identity',
-    reasonKey: 'security_perm_identity_reason',
-  },
-  {
-    icon: <Bell size={16} />,
-    code: 'notifications',
-    reasonKey: 'security_perm_notifications_reason',
-  },
-  {
-    icon: <Cable size={16} />,
-    code: 'nativeMessaging',
-    reasonKey: 'security_perm_nativemessaging_reason',
-  },
-  {
-    icon: <Globe size={16} />,
-    code: 'host_permissions (https://*/*)',
+    num: '3.1',
+    title: 'Show the autofill chip on any website where a verification field appears',
     reasonKey: 'security_perm_hostpermissions_reason',
+    api: 'host_permissions: https://*/*',
+  },
+  {
+    num: '3.2',
+    title: 'Inject the autofill chip into login pages',
+    reasonKey: 'security_perm_scripting_reason',
+    api: 'scripting',
+  },
+  {
+    num: '3.3',
+    title: 'Sign in with your Google account',
+    reasonKey: 'security_perm_identity_reason',
+    api: 'identity',
+  },
+  {
+    num: '3.4',
+    title: 'Talk to the local InboxBridge helper',
+    reasonKey: 'security_perm_nativemessaging_reason',
+    api: 'nativeMessaging',
+  },
+  {
+    num: '3.5',
+    title: 'Detect login and verification pages',
+    reasonKey: 'security_perm_tabs_reason',
+    api: 'tabs',
+  },
+  {
+    num: '3.6',
+    title: 'Save preferences locally',
+    reasonKey: 'security_perm_storage_reason',
+    api: 'storage',
+  },
+  {
+    num: '3.7',
+    title: 'Schedule background email checks',
+    reasonKey: 'security_perm_alarms_reason',
+    api: 'alarms',
+  },
+  {
+    num: '3.8',
+    title: 'Show system notifications when a code is found',
+    reasonKey: 'security_perm_notifications_reason',
+    api: 'notifications',
+    optional: true,
   },
 ]
 
-function FactItem({ icon, titleKey, detailKey }: FactItemData) {
-  return (
-    <div className="fact-item">
-      <div className="fact-item__icon" aria-hidden="true">
-        {icon}
-      </div>
-      <div className="fact-item__content">
-        <p className="fact-item__title">{t(titleKey)}</p>
-        <p className="fact-item__detail">{t(detailKey)}</p>
-      </div>
-    </div>
-  )
-}
+/* ------------------------------------------------------------------ */
+/*  Sub-components                                                    */
+/* ------------------------------------------------------------------ */
 
-function TransparencySection({ id, icon, titleKey, descriptionKey, items }: SectionData) {
-  const headingId = `${id}-heading`
-
+function ArchitectureDiagram() {
   return (
-    <div className="transparency-section" aria-labelledby={headingId}>
-      <div className="transparency-section__header">
-        <div className="transparency-section__icon" aria-hidden="true">
-          {icon}
-        </div>
-        <div>
-          <h3 id={headingId} className="transparency-section__title">
-            {t(titleKey)}
-          </h3>
-          <p className="transparency-section__description">{t(descriptionKey)}</p>
-        </div>
-      </div>
-      <div className="fact-list">
-        {items.map((item) => (
-          <FactItem key={item.titleKey} {...item} />
-        ))}
-      </div>
-    </div>
-  )
-}
-
-function PermissionRow({ icon, code, reasonKey }: PermissionData) {
-  return (
-    <div className="permission-row">
-      <div className="permission-row__icon" aria-hidden="true">
-        {icon}
-      </div>
-      <div className="permission-row__name">
-        <code>{code}</code>
-      </div>
-      <div className="permission-row__reason">{t(reasonKey)}</div>
-    </div>
-  )
-}
-
-function PermissionsSection() {
-  return (
-    <div className="transparency-section" aria-labelledby="permissions-heading">
-      <div className="transparency-section__header">
-        <div className="transparency-section__icon" aria-hidden="true">
-          <Key size={18} />
-        </div>
-        <div>
-          <h3 id="permissions-heading" className="transparency-section__title">
-            {t('security_permissions_title')}
-          </h3>
-          <p className="transparency-section__description">
-            {t('security_permissions_description')}
-          </p>
-        </div>
-      </div>
-      <div className="permissions-grid">
-        {PERMISSIONS.map((perm) => (
-          <PermissionRow key={perm.code} {...perm} />
-        ))}
-      </div>
-    </div>
-  )
-}
-
-function SourceCTA() {
-  return (
-    <div className="source-cta">
-      <div className="source-cta__icon" aria-hidden="true">
-        <Github size={20} />
-      </div>
-      <div className="source-cta__content">
-        <p className="source-cta__title">{t('security_source_cta_title')}</p>
-        <p className="source-cta__detail">{t('security_source_cta_detail')}</p>
-      </div>
-      <a
-        href={GITHUB_REPO_URL}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="source-cta__link"
-        aria-label={t('security_source_cta_link')}
+    <section className="sec-arch" aria-labelledby="arch-heading">
+      <h2 id="arch-heading" className="sr-only">
+        How data flows
+      </h2>
+      <div
+        className="sec-arch__diagram"
+        role="img"
+        aria-label="Diagram: your email provider sends verification codes to your browser. Inside your device, the browser passes them to the autofill chip. Nothing else leaves the device."
       >
-        {t('security_source_cta_link')} <ArrowRight size={14} />
-      </a>
+        {/* External: The internet */}
+        <div className="sec-arch__container sec-arch__container--external">
+          <span className="sec-arch__container-label">The internet</span>
+          <div className="sec-arch__node">
+            <span className="sec-arch__node-icon sec-arch__node-icon--external" aria-hidden="true">
+              <Cloud size={18} />
+            </span>
+            <span className="sec-arch__node-label">Your email provider</span>
+          </div>
+        </div>
+
+        <div className="sec-arch__arrow" aria-hidden="true">
+          <ArrowRight size={18} />
+        </div>
+
+        {/* Device: Your device */}
+        <div className="sec-arch__container sec-arch__container--device">
+          <span className="sec-arch__container-label">Your device</span>
+          <div className="sec-arch__nodes">
+            <div className="sec-arch__node">
+              <span className="sec-arch__node-icon" aria-hidden="true">
+                <Globe size={18} />
+              </span>
+              <span className="sec-arch__node-label">Your browser</span>
+            </div>
+            <div className="sec-arch__arrow" aria-hidden="true">
+              <ArrowRight size={18} />
+            </div>
+            <div className="sec-arch__node">
+              <span className="sec-arch__node-icon" aria-hidden="true">
+                <TextCursorInput size={18} />
+              </span>
+              <span className="sec-arch__node-label">Autofill chip</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <p className="sec-arch__caption">{t('security_arch_caption')}</p>
+    </section>
+  )
+}
+
+function SectionList({ items }: { items: ListItem[] }) {
+  return (
+    <ul className="sec-list">
+      {items.map((item) => (
+        <li key={item.num} className="sec-list__item">
+          <span className="sec-list__num">{item.num}</span>
+          <p className="sec-list__item-title">{t(item.titleKey)}</p>
+          <p className="sec-list__item-detail">{t(item.detailKey)}</p>
+        </li>
+      ))}
+    </ul>
+  )
+}
+
+function PermissionsList() {
+  return (
+    <div className="sec-perms">
+      {PERM_ITEMS.map((perm) => (
+        <div key={perm.num} className="sec-perm">
+          <span className="sec-perm__num">{perm.num}</span>
+          <div className="sec-perm__head">
+            <p className="sec-perm__title">{perm.title}</p>
+            {perm.optional && <span className="sec-perm__tag">Optional</span>}
+          </div>
+          <p className="sec-perm__reason">{t(perm.reasonKey)}</p>
+          <span className="sec-perm__api">{perm.api}</span>
+        </div>
+      ))}
     </div>
   )
 }
 
-function SecurityContact() {
+function SourceMeta() {
+  const version = chrome.runtime.getManifest().version
+  const buildHash = (process.env.PLASMO_PUBLIC_GIT_HASH || 'dev').substring(0, 7)
+
   return (
-    <div className="security-contact">
-      <div className="security-contact__icon" aria-hidden="true">
-        <Mail size={18} />
-      </div>
-      <div className="security-contact__content">
-        <p className="security-contact__title">{t('security_contact_title')}</p>
-        <p className="security-contact__detail">
-          {t('security_contact_detail', SECURITY_EMAIL).split(SECURITY_EMAIL)[0]}
-          <a
-            href={`mailto:${SECURITY_EMAIL}`}
-            aria-label={`Email security team at ${SECURITY_EMAIL}`}
-          >
-            {SECURITY_EMAIL}
-          </a>
-          {t('security_contact_detail', SECURITY_EMAIL).split(SECURITY_EMAIL)[1]}
-        </p>
-      </div>
+    <div className="sec-source__meta">
+      <span>
+        <strong>Version</strong>
+        {version}
+      </span>
+      <span>
+        <strong>Build</strong>
+        {buildHash}
+      </span>
+      <span>
+        <strong>License</strong>
+        PolyForm-Noncommercial-1.0.0
+      </span>
     </div>
   )
 }
+
+/* ------------------------------------------------------------------ */
+/*  Main component                                                    */
+/* ------------------------------------------------------------------ */
 
 export function SecurityInfo() {
   return (
-    <div className="security-info">
+    <article className="sec-doc">
       {/* Hero */}
-      <div className="transparency-hero">
-        <div className="transparency-hero__icon" aria-hidden="true">
-          <FileText size={24} />
+      <section className="sec-hero" aria-labelledby="hero-heading">
+        <h1 id="hero-heading" className="sec-hero__headline">
+          {t('security_hero_headline_v2')}
+        </h1>
+        <p className="sec-hero__sub">{t('security_hero_sub_v2')}</p>
+      </section>
+
+      {/* Architecture diagram */}
+      <ArchitectureDiagram />
+
+      {/* 01 What is read */}
+      <section className="sec-block" aria-labelledby="read-heading">
+        <h2 id="read-heading" className="sec-block__heading">
+          <span className="sec-block__num">01</span>
+          {t('security_section_read')}
+        </h2>
+        <p className="sec-block__intro">
+          The only data the extension reads from your email account.
+        </p>
+        <SectionList items={READ_ITEMS} />
+      </section>
+
+      {/* 02 What is stored */}
+      <section className="sec-block" aria-labelledby="store-heading">
+        <h2 id="store-heading" className="sec-block__heading">
+          <span className="sec-block__num">02</span>
+          {t('security_section_store')}
+        </h2>
+        <p className="sec-block__intro">
+          Everything saved locally, and nothing else.
+        </p>
+        <SectionList items={STORE_ITEMS} />
+      </section>
+
+      {/* 03 Permissions */}
+      <section className="sec-block" aria-labelledby="perm-heading">
+        <h2 id="perm-heading" className="sec-block__heading">
+          <span className="sec-block__num">03</span>
+          {t('security_section_perms')}
+        </h2>
+        <p className="sec-block__intro">
+          Each Chrome permission is listed by what it actually enables. The
+          technical name is shown in muted mono next to it for verification
+          against the manifest. Permissions are ordered by impact, highest first.
+        </p>
+        <PermissionsList />
+      </section>
+
+      {/* 04 Source available */}
+      <section
+        className="sec-block sec-source"
+        aria-labelledby="source-heading"
+      >
+        <h2 id="source-heading" className="sec-block__heading">
+          <span className="sec-block__num">04</span>
+          {t('security_section_source')}
+        </h2>
+        <p className="sec-block__intro">{t('security_source_body')}</p>
+        <SourceMeta />
+        <div className="sec-source__links">
+          <a
+            href={GITHUB_REPO_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="sec-source__link"
+          >
+            <Github size={14} aria-hidden="true" />
+            View source on GitHub
+          </a>
+          <a
+            href={LICENSE_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="sec-source__link sec-source__link--ghost"
+          >
+            <FileText size={14} aria-hidden="true" />
+            Read the license
+          </a>
         </div>
-        <h2 className="transparency-hero__title">{t('security_hero_title')}</h2>
-        <p className="transparency-hero__subtitle">{t('security_hero_subtitle')}</p>
-      </div>
-
-      <hr className="section-divider" />
-
-      {/* Data handling sections */}
-      {SECTIONS.map((section, index) => (
-        <React.Fragment key={section.id}>
-          <TransparencySection {...section} />
-          {index < SECTIONS.length - 1 && <hr className="section-divider" />}
-        </React.Fragment>
-      ))}
-
-      {/* Permissions */}
-      <hr className="section-divider" />
-      <PermissionsSection />
-
-      {/* Source CTA */}
-      <SourceCTA />
-
-      {/* Security contact */}
-      <SecurityContact />
-    </div>
+      </section>
+    </article>
   )
 }
