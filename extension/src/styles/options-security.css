@@ -1,0 +1,526 @@
+/**
+ * InboxKey Options Page -- Security Tab
+ *
+ * Security settings panel, password setup/change flows, encryption cards,
+ * danger zone, password input components, and strength meter.
+ * These styles will be replaced during the v2 overhaul but must exist
+ * as a standalone module now.
+ */
+
+/* ===========================
+   PASSWORD SETUP WARNINGS / SECURITY SETTINGS
+   =========================== */
+
+.security-settings {
+  display: grid;
+  gap: var(--space-6);
+  max-width: 760px;
+  margin: 0 auto;
+}
+
+.security-settings__header {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.security-settings__title {
+  margin: 0;
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+}
+
+.security-settings__description {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+/* ===========================
+   SECURITY CARD
+   =========================== */
+
+.security-card {
+  background: var(--surface-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-6);
+  box-shadow: var(--shadow-sm);
+  display: grid;
+  gap: var(--space-5);
+}
+
+.security-card__header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+.security-card__summary {
+  display: grid;
+  gap: var(--space-1);
+  max-width: 520px;
+}
+
+.security-card__title {
+  margin: 0;
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+}
+
+.security-card__subtitle {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  line-height: var(--line-height-normal);
+}
+
+.security-card__section {
+  border-top: 1px solid var(--color-border);
+  padding-top: var(--space-4);
+  margin-top: var(--space-4);
+  display: grid;
+  gap: var(--space-4);
+}
+
+.security-benefits {
+  margin: 0;
+  padding-left: var(--space-5);
+  display: grid;
+  gap: var(--space-2);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+.security-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+
+.security-actions--end {
+  justify-content: flex-end;
+}
+
+/* ===========================
+   SECURITY BUTTON
+   =========================== */
+
+.security-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  height: var(--min-tap-target);
+  padding: 0 var(--space-5);
+  border-radius: var(--radius-md);
+  border: 1px solid transparent;
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  transition: background var(--duration-normal) var(--easing-default),
+              border var(--duration-normal) var(--easing-default),
+              color var(--duration-normal) var(--easing-default),
+              transform var(--duration-fast) var(--easing-default);
+}
+
+.security-button--primary {
+  background: var(--color-primary);
+  color: var(--color-text-inverse);
+}
+
+.security-button--primary:hover:not(:disabled) {
+  background: var(--color-primary-hover);
+}
+
+.security-button--secondary {
+  background: transparent;
+  color: var(--color-text-primary);
+  border-color: var(--color-border);
+}
+
+.security-button--secondary:hover:not(:disabled) {
+  background: var(--surface-card-muted);
+}
+
+.security-button--danger {
+  background: var(--color-error);
+  color: var(--color-text-inverse);
+}
+
+.security-button--danger:hover:not(:disabled) {
+  background: var(--color-error-hover);
+}
+
+.security-button:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+.security-button:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+}
+
+.security-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.security-button__spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.35);
+  border-top-color: currentColor;
+  border-radius: 50%;
+  animation: security-spinner 0.6s linear infinite;
+}
+
+@keyframes security-spinner {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* ===========================
+   SECURITY PILL
+   =========================== */
+
+.security-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 4px 12px;
+  border-radius: var(--radius-full);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+}
+
+.security-pill--success {
+  background: var(--color-success-light);
+  color: var(--color-success-dark);
+}
+
+/* ===========================
+   SECURITY BANNER
+   =========================== */
+
+.security-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border);
+  background: var(--surface-card-muted);
+  color: var(--color-text-secondary);
+}
+
+.security-banner--critical {
+  background: var(--color-error-light);
+  border-color: var(--color-error);
+  color: var(--color-error);
+}
+
+.security-banner--warning {
+  background: var(--color-warning-light);
+  border-color: var(--color-warning);
+  color: var(--color-warning);
+}
+
+.security-banner--info {
+  background: color-mix(in srgb, var(--color-primary-light) 55%, transparent);
+  border-color: color-mix(in srgb, var(--color-primary) 35%, transparent);
+  color: var(--color-text-primary);
+}
+
+.security-banner__icon {
+  font-size: var(--font-size-lg);
+  line-height: 1;
+  color: inherit;
+}
+
+.security-banner--info .security-banner__icon {
+  color: var(--color-primary);
+}
+
+.security-banner__content {
+  flex: 1;
+  display: grid;
+  gap: var(--space-1);
+}
+
+/* ===========================
+   SECURITY HELPERS
+   =========================== */
+
+.security-stack {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.security-form {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.security-inline-success {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--font-size-sm);
+  color: var(--color-success-dark);
+}
+
+.security-error {
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+  background: var(--color-error-light);
+  border: 1px solid var(--color-error);
+  color: var(--color-error-darker);
+  font-size: var(--font-size-sm);
+}
+
+.security-feedback {
+  display: grid;
+  gap: var(--space-2);
+  justify-items: center;
+  text-align: center;
+  padding: var(--space-6);
+  background: var(--surface-card-muted);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+}
+
+.security-feedback--success {
+  background: var(--color-success-light);
+  border-color: var(--color-success);
+  color: var(--color-success-dark);
+}
+
+.security-feedback__icon {
+  font-size: var(--font-size-3xl);
+}
+
+.security-flow {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.security-flow__header {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.security-flow__title {
+  margin: 0;
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+}
+
+.security-flow__subtitle {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+.security-strength-meter {
+  margin-top: calc(-1 * var(--space-2));
+}
+
+.security-list {
+  margin: 0;
+  padding-left: var(--space-5);
+  display: grid;
+  gap: var(--space-2);
+  font-size: var(--font-size-sm);
+  color: inherit;
+}
+
+/* ===========================
+   PASSWORD INPUT COMPONENT
+   =========================== */
+
+.password-input {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.password-input__label {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-primary);
+}
+
+.password-input__container {
+  position: relative;
+}
+
+.password-input__field {
+  width: 100%;
+  box-sizing: border-box;
+  height: var(--min-tap-target);
+  padding: 0 calc(var(--space-5) + 24px) 0 var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--surface-card);
+  font-size: var(--font-size-base);
+  color: var(--color-text-primary);
+  transition: border var(--duration-normal) var(--easing-default),
+              box-shadow var(--duration-normal) var(--easing-default);
+}
+
+.password-input__field:hover:not(:disabled) {
+  border-color: var(--color-border-hover);
+}
+
+.password-input__field:focus {
+  border-color: var(--color-border-focus);
+  box-shadow: 0 0 0 var(--focus-ring-width) rgba(0, 122, 255, 0.15);
+}
+
+.password-input__field:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+}
+
+.password-input__field:disabled {
+  background: var(--surface-card-muted);
+  color: var(--color-text-tertiary);
+}
+
+.password-input__field--error {
+  border-color: var(--color-error);
+}
+
+.password-input__toggle {
+  position: absolute;
+  top: 50%;
+  right: var(--space-2);
+  transform: translateY(-50%);
+  border: none;
+  background: transparent;
+  padding: var(--space-1);
+  border-radius: var(--radius-sm);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition: color var(--duration-normal) var(--easing-default);
+}
+
+.password-input__toggle:hover:not(:disabled) {
+  color: var(--color-text-primary);
+}
+
+.password-input__toggle:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.password-input__error {
+  font-size: var(--font-size-sm);
+  color: var(--color-error-dark);
+}
+
+/* ===========================
+   DANGER ZONE
+   =========================== */
+
+.security-card--danger {
+  border-color: var(--color-error);
+  background: color-mix(in srgb, var(--color-error-light) 55%, var(--surface-card) 45%);
+}
+
+.security-danger__body {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.security-danger__intro {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-primary);
+}
+
+.security-danger__list {
+  margin: 0;
+  padding-left: var(--space-4);
+  list-style: disc;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  line-height: var(--line-height-normal);
+}
+
+.security-danger__list li {
+  margin-bottom: var(--space-2);
+}
+
+.security-danger__list li:last-child {
+  margin-bottom: 0;
+}
+
+.security-danger__disclaimer {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-error);
+}
+
+/* ===========================
+   PASSWORD STRENGTH METER (detailed)
+   =========================== */
+
+.password-strength-meter {
+  margin-top: var(--space-3);
+  margin-bottom: var(--space-4);
+}
+
+.password-strength-meter__bar-container {
+  width: 100%;
+  height: 6px;
+  background: var(--color-gray-200);
+  border-radius: 3px;
+  overflow: hidden;
+  margin-bottom: var(--space-2);
+}
+
+.password-strength-meter__bar {
+  height: 100%;
+  width: 0%;
+  background: var(--color-error);
+  transition: width 200ms ease, background-color 200ms ease;
+  border-radius: 3px;
+}
+
+.password-strength-meter__label {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  margin-bottom: var(--space-2);
+  color: var(--color-text-primary);
+}
+
+.password-strength-meter__issues {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+}
+
+.password-strength-meter__issue {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  line-height: var(--line-height-normal);
+}
+
+.password-strength-meter__issue-icon {
+  flex-shrink: 0;
+  font-size: var(--font-size-base);
+}
+
+.password-strength-meter__issue-text {
+  flex: 1;
+}

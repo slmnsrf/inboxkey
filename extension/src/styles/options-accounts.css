@@ -1,0 +1,302 @@
+/**
+ * InboxKey Options Page -- Accounts Tab
+ *
+ * Accounts panel, account cards (provider sections, connected accounts,
+ * connect buttons, error states, empty states), trust indicator, and
+ * legacy accounts section styles.
+ */
+
+/* ===========================
+   ACCOUNTS PANEL
+   =========================== */
+
+.accounts-panel {
+  display: grid;
+  gap: var(--space-6);
+}
+
+.accounts-panel__heading {
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-semibold);
+  margin: 0;
+  color: var(--color-text-primary);
+}
+
+/* Mailbox List */
+.accounts-panel__header {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.accounts-panel__description {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+.accounts-panel__cards {
+  display: grid;
+  gap: var(--space-4);
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 900px) {
+  .accounts-panel__cards {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* ===========================
+   ACCOUNT CARD
+   =========================== */
+
+.account-card {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-4);
+  background: var(--surface-card);
+  box-shadow: var(--shadow-sm);
+  display: grid;
+  gap: var(--space-4);
+}
+
+.account-card__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+.account-card__provider {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+}
+
+.account-card__status {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  padding: 4px 10px;
+  border-radius: var(--radius-full);
+  background: var(--color-gray-200);
+  color: var(--color-text-secondary);
+  line-height: 1;
+}
+
+.account-card__status--active {
+  background: var(--color-success-light);
+  color: var(--color-success-darker);
+}
+
+.account-card__status--inactive {
+  background: var(--color-gray-200);
+  color: var(--color-text-secondary);
+}
+
+.account-card__status > span[aria-hidden="true"] {
+  font-weight: var(--font-weight-semibold);
+}
+
+.account-card__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--space-3);
+}
+
+.account-card__list-item {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--color-border);
+}
+
+.account-card__list-item:first-child {
+  border-top: none;
+  padding-top: 0;
+}
+
+.account-card__identity {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.account-card__email {
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-primary);
+}
+
+.account-card__meta {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-tertiary);
+}
+
+.account-card__disconnect {
+  padding: var(--space-2) var(--space-4);
+  font-size: var(--font-size-sm);
+  background: transparent;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition: all 150ms ease;
+}
+
+.account-card__disconnect:hover {
+  background: var(--color-error);
+  border-color: var(--color-error);
+  color: white;
+}
+
+.account-card__disconnect:focus-visible {
+  outline: 2px solid var(--color-error);
+  outline-offset: 2px;
+}
+
+.account-card__empty {
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-3);
+  background: var(--color-bg-secondary);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  text-align: center;
+  display: grid;
+  place-items: center;
+  min-height: 80px;
+}
+
+.account-card__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+
+.account-card__connect {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-height: var(--min-tap-target);
+  padding: 0 var(--space-4);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-medium);
+  transition: background 150ms ease-out, transform 100ms ease-out;
+}
+
+.account-card__connect:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+
+.account-card__connect:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.account-card__error {
+  display: flex;
+  gap: var(--space-3);
+  align-items: flex-start;
+  padding: var(--space-3);
+  background: var(--color-error-light);
+  border: 1px solid var(--color-error-light);
+  border-radius: var(--radius-md);
+  color: var(--color-error-darker);
+  font-size: var(--font-size-sm);
+}
+
+.account-card__error-icon {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  color: var(--color-error-hover);
+}
+
+/* ===========================
+   TRUST INDICATOR (accounts)
+   =========================== */
+
+.trust-indicator {
+  display: flex;
+  gap: var(--space-3);
+  align-items: flex-start;
+  padding: var(--space-4);
+  background: var(--color-success-light);
+  border: 1px solid var(--color-success);
+  border-radius: var(--radius-lg);
+  text-align: left;
+  margin: 0;
+}
+
+.trust-indicator__icon {
+  width: 24px;
+  height: 24px;
+  color: var(--color-success-hover);
+  flex-shrink: 0;
+}
+
+.trust-indicator__content {
+  flex: 1;
+}
+
+.trust-indicator__title {
+  display: block;
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-success-darker);
+  margin-bottom: 6px;
+}
+
+.trust-indicator__list {
+  margin: 0;
+  padding-left: var(--space-5);
+  font-size: var(--font-size-sm);
+  color: var(--color-success-darker);
+  line-height: var(--line-height-normal);
+}
+
+.trust-indicator__list li {
+  margin: 2px 0;
+}
+
+/* Legacy trust message (kept for backwards compatibility) */
+.accounts-panel__trust {
+  text-align: center;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-tertiary);
+  margin-top: var(--space-4);
+}
+
+/* ===========================
+   ACCOUNTS SECTION (legacy)
+   =========================== */
+
+.accounts .card {
+  margin-bottom: var(--space-3);
+}
+
+.accounts .card:last-child {
+  margin-bottom: 0;
+}
+
+.accounts strong {
+  display: block;
+  margin-bottom: var(--space-1);
+}
+
+/* ===========================
+   REDUCED MOTION (accounts)
+   =========================== */
+
+@media (prefers-reduced-motion: reduce) {
+  .account-card__connect:hover:not(:disabled) {
+    transform: none;
+  }
+}
