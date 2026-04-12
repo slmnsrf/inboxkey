@@ -68,9 +68,8 @@ InboxKey requests the following Chrome permissions:
 | `notifications` | Informing the user about extension state (e.g., after an update) |
 | `nativeMessaging` | Communication with InboxBridge for IMAP support |
 | `scripting` | Reading Google Messages conversation previews for SMS codes |
-| `activeTab` | Detecting verification fields on the current page |
 
-No host permissions beyond `https://*/*` and `http://*/*` are requested.
+Host permissions: `https://*/*` and `http://*/*` (required for content script injection on web pages where verification fields appear).
 
 ## Removing data
 
