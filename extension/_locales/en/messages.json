@@ -130,6 +130,10 @@
     "message": "Dismiss",
     "description": "Dismiss button"
   },
+  "button_retry": {
+    "message": "Retry",
+    "description": "Retry button"
+  },
 
   "aria_copy_code": {
     "message": "Copy code $CODE$ from $SOURCE$",
