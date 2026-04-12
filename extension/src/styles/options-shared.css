@@ -539,6 +539,7 @@ body {
 [data-theme="dark"] .btn--danger {
   background: #B71C1C;
   border-color: #B71C1C;
+  color: #FFFFFF;
 }
 
 .btn--danger:hover {
