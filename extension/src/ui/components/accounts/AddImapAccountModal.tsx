@@ -628,11 +628,10 @@ export function AddImapAccountModal({
               {/* Actions */}
               <div className="imap-modal__actions">
                 <button
-                  className="btn btn--primary"
+                  className="btn btn--primary imap-modal__submit"
                   type="button"
                   onClick={handleTestAndAdd}
                   disabled={isBusy || testState === 'success'}
-                  className="imap-modal__submit"
                 >
                   {testState === 'testing' && <><Loader2 size={14} className="spin" /> {t('accounts_imap_testing_connection')}</>}
                   {testState === 'adding' && <><Loader2 size={14} className="spin" /> {t('accounts_imap_adding')}</>}

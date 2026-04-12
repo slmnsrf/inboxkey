@@ -1,4 +1,5 @@
-import { defineConfig, type Plugin } from "vitest/config"
+import { defineConfig } from "vitest/config"
+import type { Plugin } from "vite"
 import path from "path"
 
 /**
