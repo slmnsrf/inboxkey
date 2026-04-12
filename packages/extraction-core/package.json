@@ -21,7 +21,7 @@
   "author": "InboxKey Team",
   "license": "PolyForm-Noncommercial-1.0.0",
   "devDependencies": {
-    "typescript": "^5.5.3",
+    "typescript": "^6.0.2",
     "vitest": "^1.6.0"
   }
 }
