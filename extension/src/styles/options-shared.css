@@ -38,6 +38,17 @@ body,
    BASE & LAYOUT
    =========================== */
 
+/*
+ * Force body scrollable via CSS. No JS should ever set body overflow.
+ * Modal overlays use position:fixed which naturally covers the viewport
+ * without needing a scroll lock. This rule exists as a safety net:
+ * if any legacy code or third-party script sets overflow:hidden on
+ * body, the !important here overrides it so users never get stuck.
+ */
+body {
+  overflow: auto !important;
+}
+
 /* Main container */
 .options-container {
   min-height: 100vh;

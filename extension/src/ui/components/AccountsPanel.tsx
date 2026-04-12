@@ -116,19 +116,16 @@ function sortByHealth(mailboxes: MailboxInfo[]): MailboxInfo[] {
    Helper: build secondary meta text for a mailbox row
    --------------------------------------------------------------- */
 
-function buildMetaText(mailbox: MailboxInfo, lastCode?: RecentCode): string {
-  const providerLabels: Record<string, string> = {
-    gmail: 'Gmail',
-    'imap-bridge': mailbox.imapServer || 'IMAP',
-    'google-messages': 'Google Messages',
-  }
-  const parts: string[] = [providerLabels[mailbox.providerId] || mailbox.providerId]
+function buildMetaText(mailbox: MailboxInfo): string {
+  const providerLabel =
+    mailbox.providerId === 'gmail' ? 'Gmail' :
+    mailbox.providerId === 'google-messages' ? 'Google Messages' :
+    mailbox.providerId === 'imap-bridge' ? `${mailbox.imapServer || 'IMAP'} (IMAP)` :
+    mailbox.providerId
+  const parts: string[] = [providerLabel]
 
-  // Show error-specific message when there's a sync error
   if (mailbox.lastSyncError) {
     parts.push(getErrorDetail(mailbox))
-  } else if (lastCode?.domain && lastCode?.timeAgo) {
-    parts.push(t('accounts_last_code', [lastCode.domain, lastCode.timeAgo]))
   } else if (mailbox.lastSyncedAt) {
     parts.push(t('accounts_last_synced', timeAgo(mailbox.lastSyncedAt)))
   }
@@ -689,9 +686,6 @@ export function AccountsPanel() {
             ? maskPhoneNumber(mailbox.gmPhoneNumber)
             : mailbox.email
 
-          // Find most recent code for this mailbox
-          const lastCode = recentCodes.find(c => c.email === mailbox.email)
-
           return (
             <AccountRowUnified
               key={mailbox.id}
@@ -701,7 +695,7 @@ export function AccountsPanel() {
               imapHost={mailbox.imapServer}
               status={effectiveStatus}
               statusLabel={effectiveLabel}
-              metaText={buildMetaText(mailbox, lastCode)}
+              metaText={buildMetaText(mailbox)}
               showReconnect={effectiveStatus !== 'online'}
               testing={testingId === mailbox.id}
               testResult={testResult[mailbox.id]}
