@@ -141,10 +141,10 @@ export function AdvancedSettings() {
           <div className="setting-row">
             <div className="setting-row__info">
               <label htmlFor="disable-on-banking-sites" className="setting-row__label">
-                {t('settings_advanced_banking_blocklist')}
+                {t('settings_advanced_banking_blocklist_v2')}
               </label>
               <p className="setting-row__description">
-                {t('settings_advanced_banking_blocklist_desc')}
+                {t('settings_advanced_banking_blocklist_desc_v2')}
               </p>
             </div>
             <div className="setting-row__control">

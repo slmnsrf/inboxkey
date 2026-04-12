@@ -13,12 +13,11 @@ import { AboutSection } from './ui/components/AboutSection'
 import { AccountsPanel } from './ui/components/AccountsPanel'
 import { AppearanceSettings } from './ui/components/AppearanceSettings'
 import { AutomationSettings } from './ui/components/AutomationSettings'
-import { SessionChipSettings } from './ui/components/SessionChipSettings'
 import { AdvancedSettings } from './ui/components/AdvancedSettings'
 import { BuyMeACoffeeButton } from './ui/components/BuyMeACoffeeButton'
 import { BlacklistManageButton } from './ui/components/blacklist/BlacklistManageButton'
 import { BlacklistModal } from './ui/components/blacklist/BlacklistModal'
-import { ShieldCheck, EyeOff, Code2, Zap, Timer, Palette, Globe, Settings as SettingsIcon, Github } from 'lucide-react'
+import { ShieldCheck, EyeOff, Code2, Github } from 'lucide-react'
 import { t } from './lib/i18n'
 import { GITHUB_REPO_URL } from './lib/constants'
 import markWhiteBase64 from 'data-base64:~/assets/mark-white.svg'
@@ -141,71 +140,39 @@ function OptionsApp() {
                   hidden={activeTab !== 'settings'}
                   className="tab-panel"
                 >
-                  <section className="section settings-section">
-                    {/* BEHAVIOR */}
-                    <div className="section-label">{t('settings_category_behavior')}</div>
-                    <div className="settings-card">
-                      <div className="settings-card__header">
-                        <h2 className="settings-card__title">
-                          <span className="settings-card__title-icon" aria-hidden="true"><Zap size={16} /></span>
-                          {t('automation_heading')}
-                        </h2>
-                        <p className="settings-card__description">{t('automation_description')}</p>
-                      </div>
-                      <div className="settings-card__body">
-                        <AutomationSettings />
-                      </div>
-                    </div>
+                  <div className="settings-doc">
+                    {/* Automation hero panel (full-width, dominant) */}
+                    <AutomationSettings />
 
-                    <div className="settings-card">
-                      <div className="settings-card__header">
-                        <h2 className="settings-card__title">
-                          <span className="settings-card__title-icon" aria-hidden="true"><Timer size={16} /></span>
-                          {t('settings_session_chips_heading')}
-                        </h2>
-                        <p className="settings-card__description">{t('settings_session_chips_description')}</p>
-                      </div>
-                      <div className="settings-card__body">
-                        <SessionChipSettings />
-                      </div>
-                    </div>
-
-                    {/* APPEARANCE */}
-                    <div className="section-label">{t('settings_category_appearance')}</div>
-                    <div className="settings-card">
-                      <div className="settings-card__header">
-                        <h2 className="settings-card__title">
-                          <span className="settings-card__title-icon" aria-hidden="true"><Palette size={16} /></span>
+                    {/* Appearance section */}
+                    <section className="settings-section" aria-labelledby="theme-heading">
+                      <header className="settings-section__head">
+                        <h2 id="theme-heading" className="settings-section__title">
                           {t('settings_appearance_heading')}
                         </h2>
-                        <p className="settings-card__description">{t('settings_appearance_description')}</p>
-                      </div>
-                      <div className="settings-card__body">
-                        <AppearanceSettings />
-                      </div>
-                    </div>
+                        <p className="settings-section__intro">
+                          {t('settings_appearance_description')}
+                        </p>
+                      </header>
+                      <AppearanceSettings />
+                    </section>
 
-                    {/* SITES */}
-                    <div className="section-label">{t('settings_category_sites')}</div>
-                    <div className="settings-card">
-                      <div className="settings-card__header">
-                        <h2 className="settings-card__title">
-                          <span className="settings-card__title-icon" aria-hidden="true"><Globe size={16} /></span>
+                    {/* Excluded sites section */}
+                    <section className="settings-section" aria-labelledby="excluded-heading">
+                      <header className="settings-section__head">
+                        <h2 id="excluded-heading" className="settings-section__title">
                           {t('settings_blacklist_card_title')}
                         </h2>
-                        <p className="settings-card__description">{t('settings_blacklist_card_description')}</p>
-                      </div>
-                      <div className="settings-card__body">
-                        <BlacklistManageButton onClick={() => setIsBlacklistModalOpen(true)} />
-                      </div>
-                    </div>
+                        <p className="settings-section__intro">
+                          {t('settings_blacklist_card_description')}
+                        </p>
+                      </header>
+                      <BlacklistManageButton onClick={() => setIsBlacklistModalOpen(true)} />
+                    </section>
 
-                    {/* ADVANCED */}
-                    <div className="section-label">{t('settings_category_advanced')}</div>
-                    <div className="settings-card">
-                      <AdvancedSettings />
-                    </div>
-                  </section>
+                    {/* Advanced (collapsible) */}
+                    <AdvancedSettings />
+                  </div>
                 </div>
 
                 {/* Blacklist Modal */}

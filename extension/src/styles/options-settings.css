@@ -1041,3 +1041,370 @@
   color: var(--color-text-tertiary);
   font-style: italic;
 }
+
+/* ===========================
+   SETTINGS DOC LAYOUT (v2)
+   Single column. Sections separated by generous whitespace.
+   No category labels; ordering carries the structure.
+   =========================== */
+
+.settings-doc {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-12);
+  padding: var(--space-6) 0 var(--space-12);
+}
+
+/* Generic settings section header (v2) */
+.settings-section__head {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.settings-section__title {
+  margin: 0;
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: -0.02em;
+  color: var(--color-text-primary);
+}
+
+.settings-section__intro {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-relaxed);
+  color: var(--color-text-secondary);
+}
+
+/* ===========================
+   AUTOMATION HERO (v2)
+   Full-width framed panel. The single most important
+   decision on the page; visually dominant.
+   =========================== */
+
+.auto-hero {
+  padding: var(--space-7) var(--space-7);
+  background: var(--surface-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+
+.auto-hero__head {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.auto-hero__eyebrow {
+  font-size: 11px;
+  font-weight: var(--font-weight-semibold);
+  text-transform: uppercase;
+  letter-spacing: var(--letter-spacing-wider);
+  color: var(--color-text-tertiary);
+}
+
+.auto-hero__headline {
+  margin: 0;
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: -0.025em;
+  line-height: 1.25;
+  color: var(--color-text-primary);
+}
+
+.auto-hero__sub {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-relaxed);
+  color: var(--color-text-secondary);
+}
+
+/* Automation level cards (v2 radio group) */
+.auto-options {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-3);
+}
+
+.auto-option {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-4);
+  background: var(--surface-card-muted);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  cursor: pointer;
+  text-align: left;
+  font-family: var(--font-system);
+  transition: border-color var(--duration-fast) ease-out, background var(--duration-fast) ease-out;
+}
+
+.auto-option:hover {
+  border-color: var(--color-border-hover);
+  background: var(--surface-card);
+}
+
+.auto-option--active {
+  border-color: var(--color-primary);
+  background: var(--color-primary-light);
+}
+
+.auto-option input[type="radio"] {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.auto-option:focus-within {
+  outline: var(--focus-ring-width) solid var(--color-primary);
+  outline-offset: var(--focus-ring-offset);
+}
+
+.auto-option__top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.auto-option__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-md);
+  background: var(--color-primary-light);
+  color: var(--color-primary);
+}
+
+.auto-option--active .auto-option__icon {
+  background: var(--color-primary);
+  color: var(--color-text-inverse);
+}
+
+.auto-option__dots {
+  display: inline-flex;
+  gap: 3px;
+}
+
+.auto-option__dots span {
+  width: 6px;
+  height: 6px;
+  border-radius: var(--radius-full);
+  background: var(--color-border-strong);
+  opacity: 0.4;
+}
+
+.auto-option__dots span.on {
+  background: var(--color-primary);
+  opacity: 1;
+}
+
+.auto-option__title {
+  margin: 0;
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+}
+
+.auto-option__detail {
+  margin: 0;
+  font-size: var(--font-size-xs);
+  line-height: var(--line-height-normal);
+  color: var(--color-text-secondary);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .auto-option {
+    transition: none;
+  }
+}
+
+/* Inline parameter row inside hero (v2 -- formerly Code Check card) */
+.auto-param {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-5);
+  padding: var(--space-4) 0 0 0;
+  border-top: 1px solid var(--color-border);
+}
+
+.auto-param__info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.auto-param__label {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+}
+
+.auto-param__detail {
+  margin: 0;
+  font-size: var(--font-size-xs);
+  line-height: var(--line-height-normal);
+  color: var(--color-text-tertiary);
+}
+
+.auto-param__control {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-width: 200px;
+}
+
+.auto-param__slider {
+  flex: 1;
+  -webkit-appearance: none;
+  appearance: none;
+  height: 4px;
+  background: var(--color-bg-tertiary);
+  border-radius: var(--radius-full);
+  outline: none;
+}
+
+.auto-param__slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: var(--radius-full);
+  background: var(--color-primary);
+  cursor: pointer;
+  border: 2px solid var(--surface-card);
+  box-shadow: 0 0 0 1px var(--color-border);
+}
+
+.auto-param__slider::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border-radius: var(--radius-full);
+  background: var(--color-primary);
+  cursor: pointer;
+  border: 2px solid var(--surface-card);
+}
+
+.auto-param__slider:focus-visible {
+  outline: var(--focus-ring-width) solid var(--color-primary);
+  outline-offset: var(--focus-ring-offset);
+}
+
+.auto-param__slider:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.auto-param__value {
+  font-family: var(--font-mono);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-primary);
+  font-variant-numeric: tabular-nums;
+  min-width: 32px;
+  text-align: right;
+}
+
+/* Info banner when Full Automation is selected (v2). Auto-dismisses after 7s. */
+.auto-info {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  background: var(--color-primary-light);
+  border-radius: var(--radius-md);
+  transition: opacity var(--duration-normal) var(--easing-default);
+}
+
+.auto-info--fading {
+  opacity: 0;
+}
+
+.auto-info__icon {
+  display: flex;
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-primary);
+}
+
+.auto-info__text {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-normal);
+  color: var(--color-text-primary);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .auto-info {
+    transition: none;
+  }
+}
+
+/* ===========================
+   EXCLUDED SITES (v2 inline layout)
+   =========================== */
+
+.excluded {
+  background: var(--surface-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+.excluded__footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-3) var(--space-4);
+}
+
+.excluded__count {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+.excluded--empty {
+  padding: var(--space-7) var(--space-5);
+  text-align: center;
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-sm);
+  border-style: dashed;
+  background: transparent;
+}
+
+.excluded__empty-text {
+  margin: 0;
+  font-style: italic;
+}
+
+/* ===========================
+   RESPONSIVE (v2)
+   =========================== */
+
+@media (max-width: 600px) {
+  .auto-options {
+    grid-template-columns: 1fr;
+  }
+
+  .auto-param {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .auto-param__control {
+    min-width: 0;
+  }
+}

@@ -1,14 +1,13 @@
 /**
  * BlacklistManageButton Component
  *
- * Styled card in settings that shows ignored site count and opens the
- * blacklist management modal. Shows dashed empty state when no sites are ignored.
+ * Inline display showing the count of excluded sites with a "Manage" button
+ * that opens the blacklist management modal.
  */
 
 import React, { useState, useEffect } from 'react'
 import { StorageFactory } from '@/lib/storage/storage-factory'
 import { t } from '@/lib/i18n'
-import { Ban } from 'lucide-react'
 
 export interface BlacklistManageButtonProps {
   onClick: () => void
@@ -35,41 +34,26 @@ export function BlacklistManageButton({ onClick }: BlacklistManageButtonProps) {
   const isEmpty = ignoredCount === 0
 
   return (
-    <div className={`blacklist-card${isEmpty ? ' blacklist-card--empty' : ''}`}>
-      <div className="blacklist-card__row">
-        <div className="blacklist-card__icon">
-          <Ban size={18} />
-        </div>
-        <div className="blacklist-card__info">
-          <div className="blacklist-card__label-row">
-            <span className="blacklist-card__label">
-              {t('settings_blacklist_label')}
-            </span>
-            {!isEmpty && (
-              <span className="blacklist-card__count">{ignoredCount}</span>
-            )}
-          </div>
-          {isEmpty ? (
-            <p className="blacklist-card__empty-text">
-              {t('settings_blacklist_empty')}
-            </p>
-          ) : (
-            <p className="blacklist-card__description">
-              {t('settings_blacklist_description')}
-            </p>
-          )}
-        </div>
-        <div className="blacklist-card__action">
+    <div className={`excluded${isEmpty ? ' excluded--empty' : ''}`}>
+      {isEmpty ? (
+        <p className="excluded__empty-text">
+          {t('settings_blacklist_empty')}
+        </p>
+      ) : (
+        <div className="excluded__footer">
+          <span className="excluded__count">
+            {t('settings_blacklist_description')}
+          </span>
           <button
             type="button"
-            className="btn btn--secondary"
+            className="btn btn--secondary btn--sm"
             onClick={onClick}
             data-testid="blacklist-manage-button"
           >
-            {t('settings_blacklist_manage_button')}
+            {t('settings_blacklist_manage_button')} ({ignoredCount})
           </button>
         </div>
-      </div>
+      )}
     </div>
   )
 }
