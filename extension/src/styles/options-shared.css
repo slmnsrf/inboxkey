@@ -532,7 +532,7 @@ body {
 
 .btn--danger {
   background: #C62828;
-  color: #FFFFFF;
+  color: #FFFFFF !important;
   border-color: #C62828;
 }
 
