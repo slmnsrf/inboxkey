@@ -5,7 +5,7 @@
  * and Uninstall action. Placed after Automation, before Appearance.
  */
 
-import React, { useEffect, useState, useCallback } from 'react'
+import React, { useEffect, useRef, useState, useCallback } from 'react'
 import { t } from '@/lib/i18n'
 import { getNativeClient } from '@/lib/native-messaging'
 import { UninstallBridgeModal } from './accounts/UninstallBridgeModal'
@@ -50,6 +50,25 @@ export function BridgeStatusRow() {
     void checkBridge()
     void loadImapAccounts()
   }, [checkBridge, loadImapAccounts])
+
+  // Re-check bridge status when page becomes visible again.
+  // Throttled to at most once per 2 minutes to prevent spam.
+  const lastCheckAtRef = useRef<number>(Date.now())
+  useEffect(() => {
+    const THROTTLE_MS = 2 * 60 * 1000 // 2 minutes
+
+    const handleVisibilityChange = () => {
+      if (document.hidden) return
+      const now = Date.now()
+      if (now - lastCheckAtRef.current >= THROTTLE_MS) {
+        lastCheckAtRef.current = now
+        void checkBridge()
+      }
+    }
+
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange)
+  }, [checkBridge])
 
   const handleUninstallClick = useCallback(async () => {
     // Re-check bridge before opening modal (user may have already deleted it)
