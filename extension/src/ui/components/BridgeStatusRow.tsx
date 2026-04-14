@@ -71,13 +71,16 @@ export function BridgeStatusRow() {
 
   const handleUninstallComplete = useCallback(() => {
     setShowUninstall(false)
-    // Uninstall ran: trust the result, set disconnected immediately.
-    // Chrome may still cache the native host registration briefly,
-    // so a ping right now could false-positive. Force the state.
+    // Optimistically show disconnected (the uninstall flow just ran)
     setStatus('disconnected')
     setVersion(null)
     setInstallInfo(undefined)
-  }, [])
+    // After a brief delay (Chrome native-host cache settles), verify.
+    // If the user did not actually delete the app, this will restore
+    // the connected state. If they did delete it, the ping fails
+    // and disconnected stays.
+    setTimeout(() => { void checkBridge() }, 1500)
+  }, [checkBridge])
 
   const handleUninstallCancel = useCallback(() => {
     setShowUninstall(false)
