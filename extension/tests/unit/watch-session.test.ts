@@ -23,8 +23,15 @@ vi.mock("../../src/lib/storage/storage-factory", () => ({
       getSettings: vi.fn().mockResolvedValue({
         sessionTimeoutSeconds: 20,
       }),
+      getMailboxes: vi.fn().mockResolvedValue([
+        { id: 'mb-default', providerId: 'gmail', email: 'test@example.com' },
+      ]),
     }),
   },
+}))
+
+vi.mock("../../src/lib/detection/email-context-guard", () => ({
+  hasEmailContext: vi.fn().mockReturnValue(true),
 }))
 
 vi.mock("../../src/contents/notification", () => ({
@@ -56,6 +63,9 @@ import {
 } from "../../src/contents/watch-session"
 import type { DetectionResult } from "../../src/lib/types"
 import { detectSplitInputGroup } from "../../src/lib/detection/split-input-detector"
+import { hasEmailContext } from "../../src/lib/detection/email-context-guard"
+import { StorageFactory } from "../../src/lib/storage/storage-factory"
+import * as smsCache from "../../src/lib/detection/sms-feature-cache"
 
 interface MockPort {
   name: string
@@ -137,6 +147,11 @@ describe("WatchSession", () => {
       port
     )
     ;(chrome.runtime.sendMessage as unknown as ReturnType<typeof vi.fn>).mockResolvedValue(undefined)
+
+    // Restore defaults that previous tests may have overridden.
+    // vi.clearAllMocks() clears call history but not implementations.
+    vi.mocked(hasEmailContext).mockReturnValue(true)
+    smsCache._resetSmsCacheForTest()
   })
 
   afterEach(() => {
@@ -182,6 +197,50 @@ describe("WatchSession", () => {
         type: "START_SESSION",
       })
     )
+  })
+
+  it("bypasses email-context veto and adds 'sms' to START_SESSION when GM is paired", async () => {
+    // StorageFactory.create() is called twice: once by hydrateSmsCache(),
+    // once by the guardrail + settings load inside WatchSession.start().
+    const gmStorage = {
+      getSettings: vi.fn().mockResolvedValue({ sessionTimeoutSeconds: 20 }),
+      getMailboxes: vi.fn().mockResolvedValue([
+        { id: "mb-gm", providerId: "google-messages", email: "sms@google-messages.local" },
+      ]),
+    }
+    vi.mocked(StorageFactory.create)
+      .mockResolvedValueOnce(gmStorage as never)
+      .mockResolvedValueOnce(gmStorage as never)
+      .mockResolvedValueOnce(gmStorage as never)
+
+    // Hydrate the real cache so smsFeatureEnabledCache flips to true
+    await smsCache.hydrateSmsCache()
+    expect(smsCache.smsFeatureEnabledCache).toBe(true)
+
+    // Force the email-context veto path
+    vi.mocked(hasEmailContext).mockReturnValue(false)
+
+    const field = documentRef.createElement("input")
+    documentRef.body.appendChild(field)
+
+    const detection = createDetectionResult(field)  // no detectedChannels
+    const onVetoed = vi.fn()
+    const onCodeFound = vi.fn()
+
+    const session = new WatchSession(field, detection, { onCodeFound, onVetoed })
+    await session.start()
+
+    expect(onVetoed).not.toHaveBeenCalled()
+    expect(chrome.runtime.connect).toHaveBeenCalledWith({ name: "watch-session" })
+    expect(port.postMessage).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: "START_SESSION",
+        detectedChannels: expect.arrayContaining(["sms"]),
+      })
+    )
+
+    // Reset cache so cache state doesn't leak into subsequent tests
+    smsCache._resetSmsCacheForTest()
   })
 
   it("should invoke callback when SESSION_CODE_FOUND arrives", async () => {

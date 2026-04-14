@@ -45,6 +45,13 @@
   opacity: 0.85;
 }
 
+/* Uninstall confirm layout wrapper */
+.uninstall-confirm {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
 /* ===========================
    CONFIRM FIELD
    Type-to-confirm input with mono font.
@@ -77,6 +84,11 @@
 
 .confirm-field__input:focus {
   border-color: var(--color-error);
+}
+
+.confirm-field__input:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
 }
 
 .confirm-field__hint {
@@ -267,7 +279,8 @@ a.done-next__link:hover {
 }
 
 .done-next__copy {
-  padding: var(--space-1) var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  min-height: var(--min-tap-target);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-sm);
   background: var(--surface-card);
@@ -277,11 +290,18 @@ a.done-next__link:hover {
   font-weight: var(--font-weight-medium);
   cursor: pointer;
   white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
 }
 
 .done-next__copy:hover {
   border-color: var(--color-text-secondary);
   color: var(--color-text-primary);
+}
+
+.done-next__copy:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
 }
 
 /* ===========================

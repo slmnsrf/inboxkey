@@ -508,10 +508,35 @@ body {
   outline-offset: 2px;
 }
 
-.btn--danger {
-  background: var(--color-error);
+/* BEM double-dash variants (used by v2 components) */
+.btn--primary {
+  background: var(--color-primary);
   color: white;
-  border-color: var(--color-error);
+  border-color: var(--color-primary);
+}
+
+.btn--primary:hover {
+  background: var(--color-primary-hover);
+}
+
+.btn--secondary {
+  background: var(--surface-card);
+  color: var(--color-text-primary);
+  border: 1px solid var(--color-border-strong);
+}
+
+.btn--secondary:hover {
+  background: var(--color-bg-secondary);
+  border-color: var(--color-border-hover);
+}
+
+.btn--danger {
+  background: var(--color-danger-button-bg);
+  /* !important: overrides .btn base color when both classes are applied; the
+     base .btn rule has the same specificity but lives earlier in the cascade,
+     so without !important the white-on-red text becomes invisible. */
+  color: #FFFFFF !important;
+  border-color: var(--color-danger-button-bg);
 }
 
 .btn--danger:hover {
@@ -519,7 +544,9 @@ body {
 }
 
 .btn--danger:disabled {
-  opacity: 0.4;
+  background: var(--color-text-tertiary);
+  border-color: transparent;
+  color: var(--color-bg-primary);
   cursor: not-allowed;
 }
 
