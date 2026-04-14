@@ -531,15 +531,12 @@ body {
 }
 
 .btn--danger {
-  background: #C62828;
+  background: var(--color-danger-button-bg);
+  /* !important: overrides .btn base color when both classes are applied; the
+     base .btn rule has the same specificity but lives earlier in the cascade,
+     so without !important the white-on-red text becomes invisible. */
   color: #FFFFFF !important;
-  border-color: #C62828;
-}
-
-[data-theme="dark"] .btn--danger {
-  background: #B71C1C;
-  border-color: #B71C1C;
-  color: #FFFFFF;
+  border-color: var(--color-danger-button-bg);
 }
 
 .btn--danger:hover {

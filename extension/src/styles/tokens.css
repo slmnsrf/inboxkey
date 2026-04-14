@@ -120,6 +120,7 @@
   --color-success-darker: #1B7A30;  /* Even darker for high emphasis */
   --color-error-dark: #C62828;  /* Darker red for text/icons */
   --color-error-darker: #B71C1C;  /* Even darker for high emphasis */
+  --color-danger-button-bg: #C62828;  /* Danger button background (light theme) */
   --color-warning-dark: #B45309;  /* Darker amber for text/icons on light backgrounds */
   --color-warning-darker: #92400E;  /* Even darker for high emphasis */
 
@@ -317,6 +318,7 @@
   --color-success-darker: #25A744;
   --color-error-dark: #FF453A;
   --color-error-darker: #FF6961;
+  --color-danger-button-bg: #B71C1C;  /* Muted dark red for buttons (avoids bright #FF453A) */
   --color-warning-dark: #FFD60A;
   --color-warning-darker: #FFD426;
 

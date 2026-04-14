@@ -117,11 +117,22 @@ export class WatchSession {
     // 2-Step Verification "idvPin" field). Mirrors the GM bypass in
     // tier1-fast.ts and tier2-deep.ts so the guardrail stays consistent.
     const gmPaired = smsFeatureEnabledCache
+    // Track whether the GM bypass actually saved this session (no email context,
+    // allowed only because GM is paired). This narrower flag determines whether
+    // we should inject 'sms' into the session below - if email context exists,
+    // we should NOT broaden the session to hybrid email+SMS for normal pages.
+    let gmBypassFired = false
     if (!isOtpAutocomplete && !isSplitInput && !isSmsChannel && !gmPaired) {
       if (!hasEmailContext(this.field)) {
         console.log("[WatchSession] No email context near field, skipping watch session")
         this.callbacks.onVetoed?.()
         return
+      }
+    } else if (!isOtpAutocomplete && !isSplitInput && !isSmsChannel && gmPaired) {
+      // GM is paired and SMS wasn't classified - only treat as SMS source if
+      // the email-context guardrail would have rejected this field.
+      if (!hasEmailContext(this.field)) {
+        gmBypassFired = true
       }
     }
 
@@ -156,11 +167,11 @@ export class WatchSession {
     // Filter out 'authenticator' -- background only accepts 'email' | 'sms'
     const actionableChannels = (this.detectionResult.detectedChannels ?? ['email'])
       .filter((ch): ch is 'email' | 'sms' => ch === 'email' || ch === 'sms')
-    // When GM is paired but the classifier didn't label 'sms', inject it so
-    // session-controller includes the google-messages adapter in polling.
-    // Without this, removing the veto above would start an email-only session
-    // and the code would never arrive from SMS.
-    if (gmPaired && !actionableChannels.includes('sms')) {
+    // When the GM bypass fired (no email context, allowed only because GM is
+    // paired), inject 'sms' so session-controller includes the google-messages
+    // adapter. Scoped to gmBypassFired so normal email-only pages don't become
+    // hybrid email+SMS sessions for users with GM paired.
+    if (gmBypassFired && !actionableChannels.includes('sms')) {
       actionableChannels.push('sms')
     }
 

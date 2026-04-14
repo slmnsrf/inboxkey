@@ -51,6 +51,18 @@ export function BridgeStatusRow() {
     void loadImapAccounts()
   }, [checkBridge, loadImapAccounts])
 
+  // Tracked timer ID for the post-uninstall recheck. Stored in a ref so we can
+  // clear it on unmount and prevent state updates after the component is gone.
+  const recheckTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  useEffect(() => {
+    return () => {
+      if (recheckTimerRef.current !== null) {
+        clearTimeout(recheckTimerRef.current)
+        recheckTimerRef.current = null
+      }
+    }
+  }, [])
+
   // Re-check bridge status when page becomes visible again.
   // Throttled to at most once per 2 minutes to prevent spam.
   const lastCheckAtRef = useRef<number>(Date.now())
@@ -75,7 +87,9 @@ export function BridgeStatusRow() {
     try {
       const client = getNativeClient()
       const ping = await client.ping()
-      // Refresh metadata from fresh ping so modal gets current installInfo
+      // Refresh metadata from fresh ping so modal gets current installInfo,
+      // and ensure status reflects the verified connection.
+      setStatus('connected')
       setVersion(ping.version || null)
       setInstallInfo(ping.installInfo)
       await loadImapAccounts()
@@ -91,13 +105,20 @@ export function BridgeStatusRow() {
   const handleUninstallComplete = useCallback(() => {
     setShowUninstall(false)
     // Show "Checking..." while we verify the uninstall.
-    // The Done button was clicked, but the user may not have
-    // actually deleted the native app - so we re-ping after
-    // Chrome's native-host cache settles.
+    // The Done button was clicked, but the user may not have actually deleted
+    // the native app. Wait 1500ms for Chrome's native-host registration cache
+    // to clear (empirical; ping() can return stale success for ~1s after
+    // uninstall on Windows), then re-check. If the bridge is really gone, the
+    // ping fails and disconnected state stays. Tracked in recheckTimerRef so
+    // we can clear it on unmount.
     setStatus('checking')
     setVersion(null)
     setInstallInfo(undefined)
-    setTimeout(() => { void checkBridge() }, 1500)
+    if (recheckTimerRef.current !== null) clearTimeout(recheckTimerRef.current)
+    recheckTimerRef.current = setTimeout(() => {
+      recheckTimerRef.current = null
+      void checkBridge()
+    }, 1500)
   }, [checkBridge])
 
   const handleUninstallCancel = useCallback(() => {
