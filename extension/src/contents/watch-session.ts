@@ -20,6 +20,7 @@ import { findAndClickSubmitButton } from './autofill'
 import { isBlacklisted, addBlacklistedUrl } from "@/lib/utils/blacklist"
 import { detectSplitInputGroup } from "@/lib/detection/split-input-detector"
 import { hasEmailContext } from '@/lib/detection/email-context-guard'
+import { smsFeatureEnabledCache } from '@/lib/detection/sms-feature-cache'
 import { AUTOCOMPLETE_VALUES } from '@/lib/detection/patterns'
 
 interface SessionCodeResult {
@@ -111,7 +112,12 @@ export class WatchSession {
     const isSplitInput = detectSplitInputGroup(this.field) !== null
 
     const isSmsChannel = this.detectionResult.detectedChannels?.includes('sms')
-    if (!isOtpAutocomplete && !isSplitInput && !isSmsChannel) {
+    // When a google-messages mailbox is paired, SMS is a valid source even if
+    // the classifier's narrow nearbyText missed the channel label (e.g. Google
+    // 2-Step Verification "idvPin" field). Mirrors the GM bypass in
+    // tier1-fast.ts and tier2-deep.ts so the guardrail stays consistent.
+    const gmPaired = smsFeatureEnabledCache
+    if (!isOtpAutocomplete && !isSplitInput && !isSmsChannel && !gmPaired) {
       if (!hasEmailContext(this.field)) {
         console.log("[WatchSession] No email context near field, skipping watch session")
         this.callbacks.onVetoed?.()
@@ -150,6 +156,13 @@ export class WatchSession {
     // Filter out 'authenticator' -- background only accepts 'email' | 'sms'
     const actionableChannels = (this.detectionResult.detectedChannels ?? ['email'])
       .filter((ch): ch is 'email' | 'sms' => ch === 'email' || ch === 'sms')
+    // When GM is paired but the classifier didn't label 'sms', inject it so
+    // session-controller includes the google-messages adapter in polling.
+    // Without this, removing the veto above would start an email-only session
+    // and the code would never arrive from SMS.
+    if (gmPaired && !actionableChannels.includes('sms')) {
+      actionableChannels.push('sms')
+    }
 
     try {
       this.port.postMessage({
