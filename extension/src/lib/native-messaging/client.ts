@@ -232,7 +232,16 @@ export class NativeMessagingClient {
     const error = chrome.runtime.lastError
     const errorMessage = error?.message || 'Unknown reason'
 
-    console.warn('[NativeMessagingClient] Port disconnected:', errorMessage)
+    // "Specified native messaging host not found" is the expected disconnect
+    // message when InboxBridge is not installed. This is normal - downgrade
+    // to debug so it does not surface as a warning in the console. Other
+    // disconnects (crashes, protocol errors) are still logged as warnings.
+    const isHostNotFound = errorMessage.toLowerCase().includes('not found')
+    if (isHostNotFound) {
+      console.debug('[NativeMessagingClient] Native host not installed (expected when bridge is not set up)')
+    } else {
+      console.warn('[NativeMessagingClient] Port disconnected:', errorMessage)
+    }
 
     // Reject all pending requests
     for (const [_id, pending] of this.pendingRequests.entries()) {
