@@ -301,6 +301,62 @@
     "message": "About",
     "description": "About tab"
   },
+  "settings_tab_faqs": {
+    "message": "FAQs",
+    "description": "FAQs tab label"
+  },
+  "faqs_heading": {
+    "message": "Questions we hear often",
+    "description": "FAQ tab page heading"
+  },
+  "faqs_intro": {
+    "message": "Short answers to the things people ask most.",
+    "description": "FAQ tab page intro line under heading"
+  },
+  "faqs_q1": {
+    "message": "Why can I only add one Gmail account?",
+    "description": "FAQ question about Gmail single-account limit"
+  },
+  "faqs_q2": {
+    "message": "Why don't Google's own 2FA codes auto-fill from SMS?",
+    "description": "FAQ question about Google sign-in SMS limitation"
+  },
+  "faqs_a2": {
+    "message": "Google hides its own SMS codes from messages.google.com for security. Even when you have Google Messages paired with InboxKey, verification codes sent by Google for signing into Google accounts will only appear on your phone.\n\nThis is a deliberate Google design choice. It prevents someone with remote access to your browser from reading codes meant to protect your Google account.\n\nFor Google sign-ins, use your phone, Google Authenticator, passkeys, or backup codes. InboxKey will auto-fill codes from every other sender just fine.",
+    "description": "FAQ answer about Google sign-in SMS limitation"
+  },
+  "faqs_q3": {
+    "message": "Why do I need InboxBridge for Outlook, iCloud, Yahoo, or ProtonMail?",
+    "description": "FAQ question about InboxBridge requirement"
+  },
+  "faqs_a3": {
+    "message": "Chrome's built-in sign-in API only supports Google accounts. Every other email provider needs IMAP, which browsers cannot speak directly for security reasons.\n\nInboxBridge is a small companion app that runs on your device and handles the IMAP connection locally. Your credentials stay in your operating system's keychain, and no email data leaves your computer.\n\nIf you only use Gmail, you never need InboxBridge.",
+    "description": "FAQ answer about InboxBridge requirement"
+  },
+  "faqs_q4": {
+    "message": "Is my email or SMS data sent anywhere?",
+    "description": "FAQ question about privacy"
+  },
+  "faqs_a4": {
+    "message": "No. Everything parses on your device. There are no InboxKey servers, no analytics, no telemetry.\n\nEmails are fetched directly from your provider (Gmail API or IMAP), SMS messages are read from Google Messages for web, and code detection happens entirely in your browser.\n\nThe Security tab has a full architecture breakdown if you want to verify this yourself.",
+    "description": "FAQ answer about privacy"
+  },
+  "faqs_q5": {
+    "message": "Why does Windows or macOS show a warning when installing InboxBridge?",
+    "description": "FAQ question about unsigned installer warning"
+  },
+  "faqs_a5": {
+    "message": "InboxBridge is not digitally signed. Microsoft and Apple both show a warning for unsigned software.\n\nSigning requires a code certificate that costs roughly $200 to $500 per year (Windows) or $99 per year (macOS Developer ID). InboxKey is a source-available project without funding for one, so the warning is unavoidable.\n\nTo proceed: on Windows, click More info then Run anyway. On macOS, right-click the .pkg file and click Open, then click Open again in the dialog.\n\nDon't take our word that it's safe. Read the source on GitHub or compare the SHA-256 checksum of what you downloaded against the published one.",
+    "description": "FAQ answer about unsigned installer warnings"
+  },
+  "faqs_q6": {
+    "message": "Why can I only pair one phone number for Google Messages?",
+    "description": "FAQ question about GM single-phone limit"
+  },
+  "faqs_a6": {
+    "message": "Google Messages for web uses a device-paired session, tied to one phone number and one browser profile. Google's web interface does not support pairing more than one phone at a time.\n\nIf you need a second phone, create a separate Chrome profile and pair it there.",
+    "description": "FAQ answer about GM single-phone limit"
+  },
 
   "security_setup_title": {
     "message": "Set up password protection",
