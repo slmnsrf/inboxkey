@@ -31,11 +31,12 @@ import { AUTOCOMPLETE_VALUES } from '@/lib/detection/patterns'
  *
  * Narrow list by design: mail.google.com, youtube.com, workspace.google.com,
  * and Drive/Docs flows all redirect to accounts.google.com/signin for the
- * actual credential step, so three hostnames cover the full sign-in surface.
+ * actual credential step. myaccount.google.com is intentionally excluded
+ * because it is the post-auth account-management dashboard, not a sign-in
+ * surface, and may contain third-party OTP fields that should still autofill.
  */
 const GOOGLE_SIGNIN_HOSTNAMES = new Set<string>([
   'accounts.google.com',
-  'myaccount.google.com',
   'signin.google.com',
 ])
 

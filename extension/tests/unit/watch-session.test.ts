@@ -344,6 +344,69 @@ describe("WatchSession", () => {
     )
   })
 
+  it("should also skip on signin.google.com when only Google Messages is paired", async () => {
+    // Confirms the skip covers all hostnames in GOOGLE_SIGNIN_HOSTNAMES, not just accounts.google.com
+    Object.defineProperty(window, "location", {
+      value: { href: "https://signin.google.com/some/path" },
+      writable: true,
+      configurable: true,
+    })
+
+    const gmOnlyStorage = {
+      getSettings: vi.fn().mockResolvedValue({ sessionTimeoutSeconds: 20 }),
+      getMailboxes: vi.fn().mockResolvedValue([
+        { id: "mb-gm", providerId: "google-messages", email: "sms@google-messages.local" },
+      ]),
+    }
+    vi.mocked(StorageFactory.create).mockResolvedValue(gmOnlyStorage as never)
+
+    const field = documentRef.createElement("input")
+    documentRef.body.appendChild(field)
+
+    const detection = createDetectionResult(field)
+    const onVetoed = vi.fn()
+    const onCodeFound = vi.fn()
+
+    const session = new WatchSession(field, detection, { onCodeFound, onVetoed })
+    await session.start()
+
+    expect(onVetoed).toHaveBeenCalledTimes(1)
+    expect(chrome.runtime.connect).not.toHaveBeenCalled()
+    expect(port.postMessage).not.toHaveBeenCalled()
+  })
+
+  it("should NOT skip on myaccount.google.com (post-auth dashboard, not sign-in)", async () => {
+    // Regression test: myaccount.google.com is the account management dashboard,
+    // not a sign-in page. SMS-only users should still get sessions there because
+    // third-party OTP fields may legitimately appear.
+    Object.defineProperty(window, "location", {
+      value: { href: "https://myaccount.google.com/security" },
+      writable: true,
+      configurable: true,
+    })
+
+    const gmOnlyStorage = {
+      getSettings: vi.fn().mockResolvedValue({ sessionTimeoutSeconds: 20 }),
+      getMailboxes: vi.fn().mockResolvedValue([
+        { id: "mb-gm", providerId: "google-messages", email: "sms@google-messages.local" },
+      ]),
+    }
+    vi.mocked(StorageFactory.create).mockResolvedValue(gmOnlyStorage as never)
+
+    const field = documentRef.createElement("input")
+    documentRef.body.appendChild(field)
+
+    const detection = createDetectionResult(field)
+    const onVetoed = vi.fn()
+    const onCodeFound = vi.fn()
+
+    const session = new WatchSession(field, detection, { onCodeFound, onVetoed })
+    await session.start()
+
+    expect(onVetoed).not.toHaveBeenCalled()
+    expect(chrome.runtime.connect).toHaveBeenCalledWith({ name: "watch-session" })
+  })
+
   it("should invoke callback when SESSION_CODE_FOUND arrives", async () => {
     const field = documentRef.createElement("input")
     documentRef.body.appendChild(field)

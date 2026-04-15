@@ -232,11 +232,13 @@ export class NativeMessagingClient {
     const error = chrome.runtime.lastError
     const errorMessage = error?.message || 'Unknown reason'
 
-    // "Specified native messaging host not found" is the expected disconnect
-    // message when InboxBridge is not installed. This is normal - downgrade
-    // to debug so it does not surface as a warning in the console. Other
-    // disconnects (crashes, protocol errors) are still logged as warnings.
-    const isHostNotFound = errorMessage.toLowerCase().includes('not found')
+    // Chrome's exact disconnect message when the native host is not registered
+    // is "Specified native messaging host not found". This is the expected
+    // signal when InboxBridge is not installed - downgrade to debug so it
+    // does not surface as a warning. Match the full Chrome phrase (not just
+    // "not found") so legitimate bridge crashes with messages like
+    // "Account not found" or "Config file not found" still log as warnings.
+    const isHostNotFound = errorMessage.toLowerCase().includes('native messaging host not found')
     if (isHostNotFound) {
       console.debug('[NativeMessagingClient] Native host not installed (expected when bridge is not set up)')
     } else {
