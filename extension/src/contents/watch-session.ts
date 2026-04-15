@@ -23,6 +23,30 @@ import { hasEmailContext } from '@/lib/detection/email-context-guard'
 import { smsFeatureEnabledCache } from '@/lib/detection/sms-feature-cache'
 import { AUTOCOMPLETE_VALUES } from '@/lib/detection/patterns'
 
+/**
+ * Google sign-in hostnames where Google deliberately hides its own SMS codes
+ * from messages.google.com web. For users with only Google Messages paired,
+ * starting a session on these pages is guaranteed to fail - Google's own
+ * verification codes will only show up on the phone, not in the web interface.
+ *
+ * Narrow list by design: mail.google.com, youtube.com, workspace.google.com,
+ * and Drive/Docs flows all redirect to accounts.google.com/signin for the
+ * actual credential step, so three hostnames cover the full sign-in surface.
+ */
+const GOOGLE_SIGNIN_HOSTNAMES = new Set<string>([
+  'accounts.google.com',
+  'myaccount.google.com',
+  'signin.google.com',
+])
+
+function isGoogleSignInUrl(url: string): boolean {
+  try {
+    return GOOGLE_SIGNIN_HOSTNAMES.has(new URL(url).hostname.toLowerCase())
+  } catch {
+    return false
+  }
+}
+
 interface SessionCodeResult {
   code: string
   source: string
@@ -90,13 +114,22 @@ export class WatchSession {
       }
     }
 
-    // GUARDRAIL 1: No-mailbox check
-    // Skip silently if no mailboxes are connected (failure-open on error)
+    // GUARDRAIL 1: No-mailbox check + Google-signin SMS-only skip
+    // Skip silently if no mailboxes are connected (failure-open on error).
+    // Also skip when the user has ONLY Google Messages paired and the current
+    // page is a Google sign-in hostname: Google hides its own SMS codes from
+    // messages.google.com for security, so the session would never succeed.
     try {
       const guardStorage = await StorageFactory.create()
       const mailboxes = await guardStorage.getMailboxes()
       if (mailboxes.length === 0) {
         console.log("[WatchSession] No mailboxes connected, skipping watch session")
+        this.callbacks.onVetoed?.()
+        return
+      }
+      if (isGoogleSignInUrl(currentUrl) &&
+          mailboxes.every(m => m.providerId === 'google-messages')) {
+        console.log("[WatchSession] Google sign-in + SMS-only: session skipped (Google hides its own SMS codes from web)")
         this.callbacks.onVetoed?.()
         return
       }

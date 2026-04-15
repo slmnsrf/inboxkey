@@ -222,6 +222,11 @@ export function AddAccountDropdown({
                 <X size={16} />
               </button>
             </div>
+            {/*
+              i18n key `accounts_gmail_limit_modal_body` is also used as the
+              answer for FAQ #1 in FAQsSection.tsx. Keep the string context-
+              neutral if you edit it (no "close this modal" / "dismiss" etc).
+            */}
             <div className="gmail-limit-modal__body">
               {t('accounts_gmail_limit_modal_body').split('\n\n').map((paragraph, i) => (
                 <p key={i}>{paragraph}</p>

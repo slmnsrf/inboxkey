@@ -243,6 +243,107 @@ describe("WatchSession", () => {
     smsCache._resetSmsCacheForTest()
   })
 
+  it("should skip watch session on Google sign-in when only Google Messages is paired", async () => {
+    // Simulate a Google sign-in page
+    Object.defineProperty(window, "location", {
+      value: { href: "https://accounts.google.com/signin/v2/identifier" },
+      writable: true,
+      configurable: true,
+    })
+
+    // User has ONLY google-messages (no Gmail, no IMAP)
+    const gmOnlyStorage = {
+      getSettings: vi.fn().mockResolvedValue({ sessionTimeoutSeconds: 20 }),
+      getMailboxes: vi.fn().mockResolvedValue([
+        { id: "mb-gm", providerId: "google-messages", email: "sms@google-messages.local" },
+      ]),
+    }
+    vi.mocked(StorageFactory.create).mockResolvedValue(gmOnlyStorage as never)
+
+    const field = documentRef.createElement("input")
+    documentRef.body.appendChild(field)
+
+    const detection = createDetectionResult(field)
+    const onVetoed = vi.fn()
+    const onCodeFound = vi.fn()
+
+    const session = new WatchSession(field, detection, { onCodeFound, onVetoed })
+    await session.start()
+
+    expect(onVetoed).toHaveBeenCalledTimes(1)
+    expect(chrome.runtime.connect).not.toHaveBeenCalled()
+    expect(port.postMessage).not.toHaveBeenCalled()
+  })
+
+  it("should proceed on Google sign-in when Gmail is also paired alongside GM", async () => {
+    // Simulate a Google sign-in page
+    Object.defineProperty(window, "location", {
+      value: { href: "https://accounts.google.com/signin/v2/identifier" },
+      writable: true,
+      configurable: true,
+    })
+
+    // Mixed: user has both Gmail AND google-messages
+    const mixedStorage = {
+      getSettings: vi.fn().mockResolvedValue({ sessionTimeoutSeconds: 20 }),
+      getMailboxes: vi.fn().mockResolvedValue([
+        { id: "mb-gmail", providerId: "gmail", email: "test@example.com" },
+        { id: "mb-gm", providerId: "google-messages", email: "sms@google-messages.local" },
+      ]),
+    }
+    vi.mocked(StorageFactory.create).mockResolvedValue(mixedStorage as never)
+
+    const field = documentRef.createElement("input")
+    documentRef.body.appendChild(field)
+
+    const detection = createDetectionResult(field)
+    const onVetoed = vi.fn()
+    const onCodeFound = vi.fn()
+
+    const session = new WatchSession(field, detection, { onCodeFound, onVetoed })
+    await session.start()
+
+    expect(onVetoed).not.toHaveBeenCalled()
+    expect(chrome.runtime.connect).toHaveBeenCalledWith({ name: "watch-session" })
+    expect(port.postMessage).toHaveBeenCalledWith(
+      expect.objectContaining({ type: "START_SESSION" })
+    )
+  })
+
+  it("should proceed on Google sign-in when only Gmail is paired (no GM)", async () => {
+    // Confirms the skip check doesn't over-trigger based on URL alone
+    Object.defineProperty(window, "location", {
+      value: { href: "https://accounts.google.com/signin/v2/identifier" },
+      writable: true,
+      configurable: true,
+    })
+
+    // Only Gmail, no GM
+    const gmailOnlyStorage = {
+      getSettings: vi.fn().mockResolvedValue({ sessionTimeoutSeconds: 20 }),
+      getMailboxes: vi.fn().mockResolvedValue([
+        { id: "mb-gmail", providerId: "gmail", email: "test@example.com" },
+      ]),
+    }
+    vi.mocked(StorageFactory.create).mockResolvedValue(gmailOnlyStorage as never)
+
+    const field = documentRef.createElement("input")
+    documentRef.body.appendChild(field)
+
+    const detection = createDetectionResult(field)
+    const onVetoed = vi.fn()
+    const onCodeFound = vi.fn()
+
+    const session = new WatchSession(field, detection, { onCodeFound, onVetoed })
+    await session.start()
+
+    expect(onVetoed).not.toHaveBeenCalled()
+    expect(chrome.runtime.connect).toHaveBeenCalledWith({ name: "watch-session" })
+    expect(port.postMessage).toHaveBeenCalledWith(
+      expect.objectContaining({ type: "START_SESSION" })
+    )
+  })
+
   it("should invoke callback when SESSION_CODE_FOUND arrives", async () => {
     const field = documentRef.createElement("input")
     documentRef.body.appendChild(field)

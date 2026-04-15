@@ -10,6 +10,7 @@ import { ThemeProvider } from './ui/contexts/ThemeContext'
 import { SecurityInfo } from './ui/components/security/SecurityInfo'
 import { TabNavigation, type Tab } from './ui/components/TabNavigation'
 import { AboutSection } from './ui/components/AboutSection'
+import { FAQsSection } from './ui/components/FAQsSection'
 import { AccountsPanel } from './ui/components/AccountsPanel'
 import { AppearanceSettings } from './ui/components/AppearanceSettings'
 import { AutomationSettings } from './ui/components/AutomationSettings'
@@ -50,7 +51,7 @@ function OptionsApp() {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
     const tabParam = params.get('tab') as Tab | null
-    if (tabParam && ['accounts', 'security', 'settings', 'about'].includes(tabParam)) {
+    if (tabParam && ['accounts', 'security', 'settings', 'faqs', 'about'].includes(tabParam)) {
       setActiveTab(tabParam)
     } else if (mailboxCount !== null) {
       // Always default to accounts tab
@@ -186,6 +187,18 @@ function OptionsApp() {
                   onClose={() => setIsBlacklistModalOpen(false)}
                   initialTab={blacklistInitialTab}
                 />
+
+                <div
+                  id="faqs-panel"
+                  role="tabpanel"
+                  aria-labelledby="faqs-tab"
+                  hidden={activeTab !== 'faqs'}
+                  className="tab-panel"
+                >
+                  <section className="section">
+                    <FAQsSection />
+                  </section>
+                </div>
 
                 <div
                   id="about-panel"

@@ -1,13 +1,14 @@
 import React from 'react'
-import { Users, Shield, Settings, Info } from 'lucide-react'
+import { Users, Shield, Settings, Info, HelpCircle } from 'lucide-react'
 import { t } from '@/lib/i18n'
 
-export type Tab = 'accounts' | 'security' | 'settings' | 'about'
+export type Tab = 'accounts' | 'security' | 'settings' | 'faqs' | 'about'
 
 const TAB_ICONS: Record<Tab, React.ReactNode> = {
   accounts: <Users size={16} />,
   security: <Shield size={16} />,
   settings: <Settings size={16} />,
+  faqs: <HelpCircle size={16} />,
   about: <Info size={16} />,
 }
 
@@ -16,7 +17,7 @@ interface TabNavigationProps {
   onTabChange: (tab: Tab) => void
 }
 
-const TABS: Tab[] = ['accounts', 'settings', 'security', 'about']
+const TABS: Tab[] = ['accounts', 'settings', 'faqs', 'security', 'about']
 
 export function TabNavigation({ activeTab, onTabChange }: TabNavigationProps) {
   /**
