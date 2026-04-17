@@ -161,6 +161,13 @@ function buildChromeMock() {
       setBadgeText: vi.fn(),
       setBadgeBackgroundColor: vi.fn(),
     },
+    notifications: {
+      create: vi.fn(),
+      clear: vi.fn(),
+      update: vi.fn(),
+      onClicked: { addListener: vi.fn(), removeListener: vi.fn() },
+      onClosed: { addListener: vi.fn(), removeListener: vi.fn() },
+    },
   }
 }
 

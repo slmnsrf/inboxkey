@@ -71,12 +71,22 @@ vi.mock("../../src/lib/storage/storage-factory", () => ({
   StorageFactory: {
     create: vi.fn(() => Promise.resolve({
       getSettings: vi.fn(() => Promise.resolve({ sessionTimeoutSeconds: 20 })),
+      getMailboxes: vi.fn(() => Promise.resolve([{ id: "test", email: "test@example.com", provider: "gmail" }])),
     })),
   },
 }))
 
 vi.mock("../../src/contents/autofill", () => ({
   findAndClickSubmitButton: vi.fn(() => Promise.resolve(false)),
+}))
+
+vi.mock("../../src/lib/detection/email-context-guard", () => ({
+  hasEmailContext: vi.fn(() => true),
+}))
+
+vi.mock("../../src/lib/detection/sms-feature-cache", () => ({
+  smsFeatureEnabledCache: false,
+  initSmsFeatureCache: vi.fn(() => Promise.resolve(false)),
 }))
 
 import { WatchSession } from "../../src/contents/watch-session"
