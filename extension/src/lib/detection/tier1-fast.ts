@@ -318,7 +318,7 @@ export function detectTier1(
     'contraseña|contrasena|clave|' +        // Spanish
     'senha|' +                               // Portuguese
     'passwort|kennwort|' +                   // German
-    'motdepasse|mot|passe|' +                // French
+    'motdepasse|mot.?de.?passe|' +           // French (require full phrase; bare "mot"/"passe" false-matched "motif", "remote")
     'wachtwoord|' +                          // Dutch
     'lösenord|losenord|' +                   // Swedish
     'salasana|' +                            // Finnish
