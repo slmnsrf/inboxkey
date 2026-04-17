@@ -18,6 +18,7 @@ import type {
   DomainPreferences,
 } from "./schema"
 import {
+  DEFAULT_SETTINGS,
   isMailbox,
   isSessionState,
   isSettings,
@@ -290,12 +291,10 @@ export class PlaintextStorage {
   }
 
   private getDefaultSettings(): Settings {
-    return {
-      autoFillEnabled: true,
-      allowedDomains: [],
-      deniedDomains: [],
-      notificationsEnabled: true,
-    }
+    // Single source of truth - avoids drift from the exported
+    // DEFAULT_SETTINGS (which has a dozen more optional fields that
+    // were previously missing from this local stub).
+    return { ...DEFAULT_SETTINGS }
   }
 
   // ============================================================================
