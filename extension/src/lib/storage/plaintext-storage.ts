@@ -43,7 +43,7 @@ const PLAINTEXT_STORAGE_KEYS = {
 /**
  * Mutex for preventing concurrent storage operations
  */
-class AsyncMutex {
+export class AsyncMutex {
   private locked = false
   private queue: Array<() => void> = []
 

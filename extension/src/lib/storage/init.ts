@@ -147,21 +147,29 @@ export async function migrateStorage(
  * Run a specific migration
  */
 async function runMigration(fromVersion: number, toVersion: number): Promise<void> {
-  // Currently only v1 exists, but this structure allows for future migrations
-  switch (fromVersion) {
-    case 1:
-      if (toVersion === 2) {
-        await migrateV1ToV2()
-      }
-      break
-    // Add more migrations here as schema evolves
-    default:
-      throw new MigrationError(
-        `No migration path from v${fromVersion} to v${toVersion}`,
-        fromVersion,
-        toVersion
-      )
+  // Pre-versioning install (version key was never written). No schema
+  // changes are needed to reach v1 - the shape of v1 storage is a
+  // strict superset of any pre-versioning layout that could exist in
+  // a shipped build, because version-tracking was added alongside v1
+  // itself. Treat this as a no-op and let migrateStorage() stamp the
+  // version. If a future v0 -> v1 migration ever becomes necessary
+  // (e.g. a pre-launch profile we want to transform), plug it in here.
+  if (fromVersion === 0 && toVersion === 1) {
+    return
   }
+
+  if (fromVersion === 1 && toVersion === 2) {
+    await migrateV1ToV2()
+    return
+  }
+
+  // Add more migrations here as schema evolves.
+
+  throw new MigrationError(
+    `No migration path from v${fromVersion} to v${toVersion}`,
+    fromVersion,
+    toVersion
+  )
 }
 
 /**

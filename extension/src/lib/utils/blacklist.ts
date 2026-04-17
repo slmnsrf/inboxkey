@@ -8,7 +8,28 @@
 import { STORAGE_KEYS, DEFAULT_SETTINGS } from '@/lib/storage/schema'
 import type { Settings } from '@/lib/storage/schema'
 import { StorageFactory } from '@/lib/storage/storage-factory'
+import {
+  isServiceWorkerContext,
+  sendSettingsMutation,
+  settingsMutationToTransform,
+  type SettingsMutation,
+} from '@/lib/storage/settings-rpc'
 import { normalizeUrl, isValidDomain, isValidUrl, extractDomainFromUrl } from './url'
+
+/**
+ * Route a blacklist mutation through the service worker so it
+ * serializes against every other settings writer (telemetry, popup,
+ * options). Inside the SW we can apply the transform locally - the
+ * singleton mutex is owned here.
+ */
+async function dispatchBlacklistMutation(mutation: SettingsMutation): Promise<void> {
+  if (isServiceWorkerContext()) {
+    const storage = await StorageFactory.create()
+    await storage.mutateSettings(settingsMutationToTransform(mutation))
+    return
+  }
+  await sendSettingsMutation(mutation)
+}
 
 /**
  * Maximum number of entries allowed per blacklist type
@@ -117,17 +138,14 @@ export async function addBlacklistedDomain(domain: string): Promise<BlacklistRes
       }
     }
 
-    // Normalize domain (lowercase)
     const normalizedDomain = domain.toLowerCase()
 
-    // Atomic RMW: a concurrent settings update racing with this add
-    // must either both writes serialize or this add must no-op with a
-    // duplicate-check failure. mutateSettings provides the former.
-    const storage = await StorageFactory.create()
-
     // Pre-check duplicates/limits outside the lock for a cleaner user-
-    // facing error code. The real duplicate and limit guard is the
-    // check inside mutateSettings below, which runs under the lock.
+    // facing error code. The authoritative guard is inside the mutation
+    // transform (see settings-rpc.ts), which re-checks under the SW's
+    // singleton mutex so a concurrent writer cannot push the list past
+    // MAX_BLACKLIST_ENTRIES or introduce a duplicate.
+    const storage = await StorageFactory.create()
     const preview = await storage.getSettings()
     const preList = preview.blacklistedDomains || []
     if (preList.includes(normalizedDomain)) {
@@ -137,17 +155,10 @@ export async function addBlacklistedDomain(domain: string): Promise<BlacklistRes
       return { success: false, error: 'MAX_ENTRIES_REACHED', errorMessage: `Maximum ${MAX_BLACKLIST_ENTRIES} domains allowed` }
     }
 
-    await storage.mutateSettings(current => {
-      const blacklistedDomains = current.blacklistedDomains || []
-      // Re-check under the lock - a concurrent writer may have added
-      // this same domain between the preview and here.
-      if (blacklistedDomains.includes(normalizedDomain)) {
-        return {}
-      }
-      if (blacklistedDomains.length >= MAX_BLACKLIST_ENTRIES) {
-        return {}
-      }
-      return { blacklistedDomains: [...blacklistedDomains, normalizedDomain] }
+    await dispatchBlacklistMutation({
+      kind: 'blacklist.addDomain',
+      domain: normalizedDomain,
+      maxEntries: MAX_BLACKLIST_ENTRIES,
     })
 
     return { success: true }
@@ -194,7 +205,6 @@ export async function addBlacklistedUrl(url: string): Promise<BlacklistResult> {
     }
 
     const storage = await StorageFactory.create()
-
     const preview = await storage.getSettings()
     const preList = preview.blacklistedUrls || []
     if (preList.includes(normalizedUrl)) {
@@ -204,11 +214,10 @@ export async function addBlacklistedUrl(url: string): Promise<BlacklistResult> {
       return { success: false, error: 'MAX_ENTRIES_REACHED', errorMessage: `Maximum ${MAX_BLACKLIST_ENTRIES} URLs allowed` }
     }
 
-    await storage.mutateSettings(current => {
-      const blacklistedUrls = current.blacklistedUrls || []
-      if (blacklistedUrls.includes(normalizedUrl)) return {}
-      if (blacklistedUrls.length >= MAX_BLACKLIST_ENTRIES) return {}
-      return { blacklistedUrls: [...blacklistedUrls, normalizedUrl] }
+    await dispatchBlacklistMutation({
+      kind: 'blacklist.addUrl',
+      url: normalizedUrl,
+      maxEntries: MAX_BLACKLIST_ENTRIES,
     })
 
     return { success: true }
@@ -232,10 +241,7 @@ export async function removeBlacklistedDomain(domain: string): Promise<Blacklist
   try {
     const normalizedDomain = domain.toLowerCase()
 
-    const storage = await StorageFactory.create()
-    await storage.mutateSettings(current => ({
-      blacklistedDomains: (current.blacklistedDomains || []).filter(d => d !== normalizedDomain),
-    }))
+    await dispatchBlacklistMutation({ kind: 'blacklist.removeDomain', domain: normalizedDomain })
 
     return { success: true }
   } catch (error) {
@@ -265,10 +271,7 @@ export async function removeBlacklistedUrl(url: string): Promise<BlacklistResult
       }
     }
 
-    const storage = await StorageFactory.create()
-    await storage.mutateSettings(current => ({
-      blacklistedUrls: (current.blacklistedUrls || []).filter(u => u !== normalizedUrl),
-    }))
+    await dispatchBlacklistMutation({ kind: 'blacklist.removeUrl', url: normalizedUrl })
 
     return { success: true }
   } catch (error) {
@@ -288,8 +291,7 @@ export async function removeBlacklistedUrl(url: string): Promise<BlacklistResult
  */
 export async function clearBlacklistedDomains(): Promise<BlacklistResult> {
   try {
-    const storage = await StorageFactory.create()
-    await storage.updateSettings({ blacklistedDomains: [] })
+    await dispatchBlacklistMutation({ kind: 'blacklist.clearDomains' })
 
     return { success: true }
   } catch (error) {
@@ -309,8 +311,7 @@ export async function clearBlacklistedDomains(): Promise<BlacklistResult> {
  */
 export async function clearBlacklistedUrls(): Promise<BlacklistResult> {
   try {
-    const storage = await StorageFactory.create()
-    await storage.updateSettings({ blacklistedUrls: [] })
+    await dispatchBlacklistMutation({ kind: 'blacklist.clearUrls' })
 
     return { success: true }
   } catch (error) {

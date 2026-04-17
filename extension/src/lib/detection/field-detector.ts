@@ -280,18 +280,6 @@ export function detectVerificationField(options?: {
     return null
   }
 
-  // Definitive Tier-1 rejection layers: password attribute, context
-  // negative keywords, signal classifier (SMS/authenticator), and URL
-  // setup-page match. Fields flagged by any of these must not be
-  // re-evaluated by Tier 2, which has its own narrower password check
-  // and would otherwise contradict the broader multilingual guard.
-  const definitiveRejection = new Set<string>([
-    'attribute',
-    'context',
-    'signal-classifier-tier1',
-    'url-pattern',
-  ])
-
   // Try Tier 1 first (fast) on each input, remembering which inputs
   // Tier 1 definitively rejected so Tier 2 can skip them.
   const tier1Rejected = new Set<HTMLInputElement>()
@@ -304,7 +292,7 @@ export function detectVerificationField(options?: {
       return tier1ToDetectionResult(input, tier1Result, executionTime)
     }
 
-    if (tier1Result.metadata?.layer && definitiveRejection.has(tier1Result.metadata.layer)) {
+    if (tier1Result.metadata?.layer && TIER1_DEFINITIVE_REJECTIONS.has(tier1Result.metadata.layer)) {
       tier1Rejected.add(input)
     }
   }
@@ -349,7 +337,10 @@ export function detectAllFields(options?: {
   // Get all visible input fields
   const inputs = getInputFields(strictVisibility)
 
-  // Try Tier 1 on all inputs
+  // Tier 1 + record definitive rejections so Tier 2 doesn't reconsider
+  // them. Layers: password attribute, context negative keywords, signal
+  // classifier (SMS/authenticator), URL setup-page match.
+  const tier1Rejected = new Set<HTMLInputElement>()
   for (const input of inputs) {
     const startTime = performance.now()
     const tier1Result = detectTier1(input, cooldown)
@@ -357,12 +348,22 @@ export function detectAllFields(options?: {
     if (tier1Result.detected) {
       const executionTime = performance.now() - startTime
       results.push(tier1ToDetectionResult(input, tier1Result, executionTime))
+      continue
+    }
+
+    if (
+      tier1Result.metadata?.layer &&
+      TIER1_DEFINITIVE_REJECTIONS.has(tier1Result.metadata.layer)
+    ) {
+      tier1Rejected.add(input)
     }
   }
 
-  // Try Tier 2 on remaining inputs (not yet detected)
+  // Try Tier 2 on remaining inputs (not yet detected, not definitively rejected)
   const detectedFields = new Set(results.map(r => r.field))
-  const tier2Inputs = inputs.filter(input => !detectedFields.has(input))
+  const tier2Inputs = inputs.filter(
+    input => !detectedFields.has(input) && !tier1Rejected.has(input)
+  )
 
   for (const input of tier2Inputs) {
     const startTime = performance.now()
@@ -379,6 +380,20 @@ export function detectAllFields(options?: {
 
   return results
 }
+
+/**
+ * Layers returned by Tier-1 detection that indicate a DEFINITIVE
+ * rejection - these inputs must not be reconsidered by Tier 2. Shared
+ * across detectVerificationField, detectAllFields, and
+ * FieldDetector.detectExisting so a Tier-2-only false positive cannot
+ * slip through a production entry point.
+ */
+const TIER1_DEFINITIVE_REJECTIONS = new Set<string>([
+  'attribute',
+  'context',
+  'signal-classifier-tier1',
+  'url-pattern',
+])
 
 // ═══════════════════════════════════════════════════════════════
 // Production-Ready Field Detector Class (Public - Backward Compatible)
@@ -440,6 +455,14 @@ export class FieldDetector {
     // but allows re-detection across multiple detectExisting() calls
     const scanCooldown = createCooldownRegistry()
 
+    // Track Tier-1 DEFINITIVE rejections (password attr, context neg,
+    // signal classifier, url-pattern) so Tier 2 doesn't reconsider
+    // them - matches the guarantee in detectVerificationField and
+    // detectAllFields. Without this, the production page-load path
+    // could still Tier-2 re-evaluate a field a stricter Tier-1 check
+    // already ruled out.
+    const tier1Rejected = new Set<HTMLInputElement>()
+
     // Try Tier 1 first
     for (const input of inputs) {
       const startTime = performance.now()
@@ -450,14 +473,22 @@ export class FieldDetector {
         const result = tier1ToDetectionResult(input, tier1Result, executionTime)
         results.push(result)
         this.detectedFields.add(input)
+        continue
+      }
+
+      if (
+        tier1Result.metadata?.layer &&
+        TIER1_DEFINITIVE_REJECTIONS.has(tier1Result.metadata.layer)
+      ) {
+        tier1Rejected.add(input)
       }
     }
 
-    // Run Tier 2 on inputs NOT matched by Tier 1
-    // (matches detectAllFields behavior -- don't suppress Tier 2 just because Tier 1 found something)
+    // Run Tier 2 on inputs NOT matched by Tier 1 and NOT definitively rejected
     const tier1MatchedFields = new Set(results.map(r => r.field))
     for (const input of inputs) {
       if (tier1MatchedFields.has(input)) continue
+      if (tier1Rejected.has(input)) continue
 
       const startTime = performance.now()
       const tier2Result = detectTier2(input, scanCooldown)

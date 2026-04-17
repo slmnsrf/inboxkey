@@ -3,11 +3,22 @@
  *
  * Privacy-preserving failure tracking for auto-submit button detection.
  * Stores last 10 failures only, auto-prunes older entries.
+ *
+ * All writes funnel through the service-worker RPC in settings-rpc.ts
+ * so concurrent telemetry events from different extension contexts
+ * (content scripts on different tabs) serialize through the SW's
+ * singleton PlaintextStorage mutex. A plain StorageFactory.create()
+ * path would only serialize within a single JS context.
  */
 
 import { extractDomain } from '@/lib/utils/domain'
 import type { BetaFeatureUsage } from './schema'
 import { StorageFactory } from './storage-factory'
+import {
+  isServiceWorkerContext,
+  sendSettingsMutation,
+  settingsMutationToTransform,
+} from './settings-rpc'
 
 export interface AutoSubmitFailure {
   timestamp: number
@@ -47,19 +58,10 @@ export async function logAutoSubmitFailure(
       topScore: details.topScore
     }
 
-    // Atomic read-modify-write: mutateSettings runs the getter, our
-    // transform, and the write inside a single mutex block. A bare
-    // getSettings + updateSettings pair leaks the read across the lock
-    // boundary and two concurrent telemetry writers can drop each
-    // other's entries.
-    const storage = await StorageFactory.create()
-    await storage.mutateSettings(current => {
-      const failures: AutoSubmitFailure[] = [...(current.autoSubmitFailures ?? [])]
-      failures.unshift(failure)
-      if (failures.length > MAX_FAILURES) {
-        failures.splice(MAX_FAILURES)
-      }
-      return { autoSubmitFailures: failures }
+    await dispatchMutation({
+      kind: 'telemetry.addAutoSubmitFailure',
+      failure,
+      maxEntries: MAX_FAILURES,
     })
 
     console.log(`[Telemetry] Logged auto-submit failure: ${reason} on ${urlDomain}`)
@@ -88,8 +90,7 @@ export async function getRecentFailures(limit: number = MAX_FAILURES): Promise<A
  */
 export async function clearTelemetry(): Promise<void> {
   try {
-    const storage = await StorageFactory.create()
-    await storage.updateSettings({ autoSubmitFailures: [] })
+    await dispatchMutation({ kind: 'telemetry.clearAutoSubmitFailures' })
     console.log('[Telemetry] Cleared all auto-submit telemetry')
   } catch (error) {
     console.warn('[Telemetry] Failed to clear telemetry:', error)
@@ -126,19 +127,30 @@ export async function logBetaFeatureUsage(
       metadata
     }
 
-    // Same atomic-RMW rationale as logAutoSubmitFailure above.
-    const storage = await StorageFactory.create()
-    await storage.mutateSettings(current => {
-      const usageLog: BetaFeatureUsage[] = [...(current.betaFeatureUsage ?? [])]
-      usageLog.unshift(usage)
-      if (usageLog.length > MAX_BETA_USAGE) {
-        usageLog.splice(MAX_BETA_USAGE)
-      }
-      return { betaFeatureUsage: usageLog }
+    await dispatchMutation({
+      kind: 'telemetry.addBetaFeatureUsage',
+      usage,
+      maxEntries: MAX_BETA_USAGE,
     })
 
     console.log(`[Telemetry] Beta feature usage logged: ${feature} on ${urlDomain}`)
   } catch (error) {
     console.warn('[Telemetry] Failed to log beta feature usage:', error)
   }
+}
+
+/**
+ * Dispatch a settings mutation through the canonical path:
+ *  - In the service worker: apply locally (SW already owns the singleton mutex).
+ *  - Anywhere else: send a message to the SW so serialization is real.
+ */
+async function dispatchMutation(
+  mutation: Parameters<typeof settingsMutationToTransform>[0]
+): Promise<void> {
+  if (isServiceWorkerContext()) {
+    const storage = await StorageFactory.create()
+    await storage.mutateSettings(settingsMutationToTransform(mutation))
+    return
+  }
+  await sendSettingsMutation(mutation)
 }
