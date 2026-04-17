@@ -24,12 +24,18 @@ import {
 
 
 /**
- * P2: High-confidence keywords for nearby text boosting (21 languages, 99.4% coverage)
+ * P2: High-confidence keywords for nearby text boosting (21 languages).
  *
- * When nearby text contains these keywords, boost score from 10 to 20 points.
- * Helps detect OTP fields with poor semantic HTML (like Steam login page).
+ * Split into two regexes because JS regex \b only operates on the \w
+ * character class, which is ASCII-plus-Cyrillic-adjacent. Wrapping CJK,
+ * Arabic, Hindi, Japanese, Korean, and Chinese alternatives in \b...\b
+ * silently made them unreachable most of the time. Two separate
+ * patterns - one with boundaries (Latin + Cyrillic where \b works
+ * usefully), one without (CJK/RTL/Devanagari) - keeps boundary-based
+ * precision for European languages and restores any-position matching
+ * for scripts where \b is meaningless.
  */
-const HIGH_CONFIDENCE_KEYWORDS = new RegExp(
+const HIGH_CONFIDENCE_KEYWORDS_LATIN = new RegExp(
   '\\b(' +
   // English
   'verification|code|otp|one.?time|security.?code|auth|authenticate|' +
@@ -40,7 +46,16 @@ const HIGH_CONFIDENCE_KEYWORDS = new RegExp(
   // Turkish
   'doğrulama|kod|kimlik|' +
   // Russian/Ukrainian
-  'код|верификация|подтверждение|' +
+  'код|верификация|подтверждение' +
+  ')\\b',
+  'i'
+)
+
+// Non-Latin scripts: \b is meaningless (CJK/Arabic/Devanagari chars are
+// not \w), so match anywhere within nearby text. These alphabets have
+// their own natural separation via punctuation/whitespace and don't
+// collide with unrelated keywords the way Latin substrings do.
+const HIGH_CONFIDENCE_KEYWORDS_NONLATIN = new RegExp(
   // Arabic
   'رمز|التحقق|' +
   // Hindi
@@ -50,9 +65,7 @@ const HIGH_CONFIDENCE_KEYWORDS = new RegExp(
   // Korean
   '코드|인증|확인|' +
   // Chinese
-  '验证码|驗證碼|代码|代碼|确认|確認' +
-  ')\\b',
-  'i'
+  '验证码|驗證碼|代码|代碼|确认|確認'
 )
 
 /**
@@ -533,7 +546,9 @@ export function detectTier2(
   if (nearbyText) {
     // Primary check: Multilingual high-confidence keywords (21 languages)
     // This fixes Turkish/Spanish/German/etc text scoring that was blocked by English-only filter
-    const hasHighConfidence = HIGH_CONFIDENCE_KEYWORDS.test(nearbyText)
+    const hasHighConfidence =
+      HIGH_CONFIDENCE_KEYWORDS_LATIN.test(nearbyText) ||
+      HIGH_CONFIDENCE_KEYWORDS_NONLATIN.test(nearbyText)
     const hasNegativeSignal = NEGATIVE_SIGNALS.test(nearbyText)
 
     if (hasNegativeSignal) {
