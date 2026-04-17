@@ -96,16 +96,21 @@ export class GmailProvider implements IChromeIdentityProvider {
   private buildSearchQuery(options: FetchOptions): string {
     const queryParts: string[] = []
 
-    // Default to unread messages
-    queryParts.push('is:unread')
+    // Note: 'is:unread' was previously prepended here. It caused codes
+    // to be missed whenever the user had Gmail open in another tab, a
+    // filter auto-marked the message, or a mark-all-as-read extension
+    // touched the inbox before we polled. The time window below plus
+    // maxResults is enough to keep the query tight.
 
-    // Add date filter
+    // Add date filter. Use minute granularity (Gmail supports Nm);
+    // rounding up to whole days meant a 10-minute window fetched the
+    // entire last 24 hours of mail every poll.
     if (options.newerThan) {
-      const daysAgo = Math.ceil(
-        (Date.now() - options.newerThan.getTime()) / (1000 * 60 * 60 * 24)
+      const minutesAgo = Math.ceil(
+        (Date.now() - options.newerThan.getTime()) / (1000 * 60)
       )
-      if (daysAgo > 0) {
-        queryParts.push(`newer_than:${daysAgo}d`)
+      if (minutesAgo > 0) {
+        queryParts.push(`newer_than:${minutesAgo}m`)
       }
     }
 

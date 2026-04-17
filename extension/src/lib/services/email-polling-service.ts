@@ -162,7 +162,7 @@ export class EmailPollingService {
    */
   async pollOnce(ctx: ExtractContext = {}, cfg: PollConfig = {}): Promise<PollResult> {
     const now = Date.now()
-    const since = now - 1000 * 60 * (cfg.timeWindowMin ?? 10)
+    const since = now - 1000 * 60 * (cfg.timeWindowMin ?? 20)
     const perProviderMax = clampInt(cfg.perProviderMax ?? 8, 1, 50)
     const globalMax = clampInt(cfg.globalMax ?? 20, 1, 100)
     const minScore = clamp01(cfg.minScore ?? SCORE_POPUP)

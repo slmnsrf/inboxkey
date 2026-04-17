@@ -31,8 +31,10 @@ describe('GmailProvider', () => {
   })
 
   describe('buildSearchQuery', () => {
-    it('should build query with default unread filter', async () => {
-      // Mock the api.listMessages to capture the query
+    it('should build empty query when no options provided', async () => {
+      // is:unread was removed - see bug #11 (auto-read emails were being
+      // missed). Time window + maxResults is sufficient to keep the
+      // query tight.
       let capturedQuery = ''
       vi.spyOn(provider['api'], 'listMessages').mockImplementation(
         async (token, options) => {
@@ -43,10 +45,10 @@ describe('GmailProvider', () => {
 
       await provider.fetchEmails('token123')
 
-      expect(capturedQuery).toBe('is:unread')
+      expect(capturedQuery).toBe('')
     })
 
-    it('should build query with newerThan filter', async () => {
+    it('should build query with newerThan filter in minute granularity', async () => {
       let capturedQuery = ''
       vi.spyOn(provider['api'], 'listMessages').mockImplementation(
         async (token, options) => {
@@ -55,11 +57,12 @@ describe('GmailProvider', () => {
         }
       )
 
-      const twoDaysAgo = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000)
-      await provider.fetchEmails('token123', { newerThan: twoDaysAgo })
+      const twentyMinAgo = new Date(Date.now() - 20 * 60 * 1000)
+      await provider.fetchEmails('token123', { newerThan: twentyMinAgo })
 
-      expect(capturedQuery).toContain('is:unread')
-      expect(capturedQuery).toContain('newer_than:2d')
+      // Minute granularity: previously rounded to days (a 20-minute
+      // window became newer_than:1d - full 24h fetch per poll).
+      expect(capturedQuery).toMatch(/^newer_than:(20|21)m$/)
     })
 
     it('should build query with custom search term', async () => {
@@ -73,7 +76,7 @@ describe('GmailProvider', () => {
 
       await provider.fetchEmails('token123', { query: 'from:sender@example.com' })
 
-      expect(capturedQuery).toBe('is:unread from:sender@example.com')
+      expect(capturedQuery).toBe('from:sender@example.com')
     })
 
     it('should build query with all filters', async () => {
@@ -85,14 +88,13 @@ describe('GmailProvider', () => {
         }
       )
 
-      const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000)
+      const tenMinAgo = new Date(Date.now() - 10 * 60 * 1000)
       await provider.fetchEmails('token123', {
-        newerThan: threeDaysAgo,
+        newerThan: tenMinAgo,
         query: 'subject:urgent',
       })
 
-      expect(capturedQuery).toContain('is:unread')
-      expect(capturedQuery).toContain('newer_than:3d')
+      expect(capturedQuery).toMatch(/newer_than:(10|11)m/)
       expect(capturedQuery).toContain('subject:urgent')
     })
   })
