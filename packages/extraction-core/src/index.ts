@@ -42,4 +42,6 @@ export {
 
 // Matching utilities (for advanced use)
 export { shapeScore, type ExpectedShape } from './matching/shape-matcher.js'
-export { domainAffinity, extractETLD } from './matching/domain-affinity.js'
+export { domainAffinity, extractETLD, isAliasMatch, tokenOverlap } from './matching/domain-affinity.js'
+export { recencyBoost, sessionBoost } from './matching/recency-scorer.js'
+export { DOMAIN_ALIASES, WATCH_SESSION_SCORING, CONFIDENCE_THRESHOLDS } from './matching/scoring-config.js'

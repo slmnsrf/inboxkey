@@ -51,10 +51,22 @@ export const DOMAIN_ALIASES: Record<string, string> = {
  */
 export const WATCH_SESSION_SCORING = {
   /**
-   * Polling intervals for checking new emails (in milliseconds).
-   * The matcher will poll at these intervals: immediately, after 5s, and after 10s.
+   * Fixed polling schedule optimized for email delivery patterns (in milliseconds).
+   *
+   * Strategy:
+   * - First 20s: Dense 5s intervals → catches fast providers (Gmail)
+   * - After 20s: Sparse 10s intervals → catches slow providers (IMAP)
+   *
+   * Full schedule: [0, 5, 10, 15, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120]s
+   * Total: 15 polls over 120 seconds maximum
+   *
+   * User timeout setting filters which polls execute:
+   * - 10s → [0, 5, 10] = 3 polls
+   * - 30s → [0, 5, 10, 15, 20, 30] = 6 polls (default)
+   * - 60s → [0, 5, 10, 15, 20, 30, 40, 50, 60] = 9 polls
+   * - 120s → all 15 polls
    */
-  pollTimesMs: [0, 5000, 10000] as const,
+  pollTimesMs: [0, 5000, 10000, 15000, 20000, 30000, 40000, 50000, 60000, 70000, 80000, 90000, 100000, 110000, 120000] as const,
 
   /**
    * Time window (in minutes) to consider emails as "recent".
