@@ -566,12 +566,6 @@ function deliverSessionCompletion(
   session: SessionState,
   result: SessionCompletion
 ): void {
-  const context = sessionContexts.get(session.id)
-
-  if (!context) {
-    return
-  }
-
   const message =
     result.status === "filled"
       ? {
@@ -586,6 +580,17 @@ function deliverSessionCompletion(
               : "SESSION_CANCELED",
           sessionId: session.id,
         }
+
+  const context = sessionContexts.get(session.id)
+
+  // Post-SW-restart path: sessionContexts is in-memory only and empty
+  // after Chrome wakes the worker. The session's persisted tabId still
+  // lets us reach the content script, so fall through instead of
+  // dropping the code on the floor.
+  if (!context) {
+    sendTabMessage(session.tabId, message)
+    return
+  }
 
   if (context.port) {
     try {
