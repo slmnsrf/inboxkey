@@ -82,7 +82,10 @@ async function ensureDefaults(): Promise<void> {
  */
 async function getStorageVersion(): Promise<number> {
   const result = await chrome.storage.local.get(STORAGE_KEYS.VERSION)
-  return result[STORAGE_KEYS.VERSION] || 1
+  // 0 means "pre-versioning install" - forces migrations to run from
+  // the start. Using || 1 previously masked those installs as already-
+  // on-current, so any future v1 -> v2 migration would silently skip.
+  return result[STORAGE_KEYS.VERSION] ?? 0
 }
 
 /**
