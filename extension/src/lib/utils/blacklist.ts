@@ -7,6 +7,7 @@
 
 import { STORAGE_KEYS, DEFAULT_SETTINGS } from '@/lib/storage/schema'
 import type { Settings } from '@/lib/storage/schema'
+import { StorageFactory } from '@/lib/storage/storage-factory'
 import { normalizeUrl, isValidDomain, isValidUrl, extractDomainFromUrl } from './url'
 
 /**
@@ -119,9 +120,11 @@ export async function addBlacklistedDomain(domain: string): Promise<BlacklistRes
     // Normalize domain (lowercase)
     const normalizedDomain = domain.toLowerCase()
 
-    // Get current settings
-    const result = await chrome.storage.local.get(STORAGE_KEYS.SETTINGS)
-    const settings: Settings = result[STORAGE_KEYS.SETTINGS] || DEFAULT_SETTINGS
+    // Route reads/writes through PlaintextStorage so we acquire the
+    // settings mutex and don't clobber concurrent updates elsewhere
+    // (telemetry, popup settings changes, etc.).
+    const storage = await StorageFactory.create()
+    const settings = await storage.getSettings()
 
     const blacklistedDomains = settings.blacklistedDomains || []
 
@@ -143,13 +146,8 @@ export async function addBlacklistedDomain(domain: string): Promise<BlacklistRes
       }
     }
 
-    // Add domain
-    const updatedDomains = [...blacklistedDomains, normalizedDomain]
-    await chrome.storage.local.set({
-      [STORAGE_KEYS.SETTINGS]: {
-        ...settings,
-        blacklistedDomains: updatedDomains,
-      },
+    await storage.updateSettings({
+      blacklistedDomains: [...blacklistedDomains, normalizedDomain],
     })
 
     return { success: true }
@@ -195,9 +193,8 @@ export async function addBlacklistedUrl(url: string): Promise<BlacklistResult> {
       }
     }
 
-    // Get current settings
-    const result = await chrome.storage.local.get(STORAGE_KEYS.SETTINGS)
-    const settings: Settings = result[STORAGE_KEYS.SETTINGS] || DEFAULT_SETTINGS
+    const storage = await StorageFactory.create()
+    const settings = await storage.getSettings()
 
     const blacklistedUrls = settings.blacklistedUrls || []
 
@@ -219,13 +216,8 @@ export async function addBlacklistedUrl(url: string): Promise<BlacklistResult> {
       }
     }
 
-    // Add URL
-    const updatedUrls = [...blacklistedUrls, normalizedUrl]
-    await chrome.storage.local.set({
-      [STORAGE_KEYS.SETTINGS]: {
-        ...settings,
-        blacklistedUrls: updatedUrls,
-      },
+    await storage.updateSettings({
+      blacklistedUrls: [...blacklistedUrls, normalizedUrl],
     })
 
     return { success: true }
@@ -249,18 +241,13 @@ export async function removeBlacklistedDomain(domain: string): Promise<Blacklist
   try {
     const normalizedDomain = domain.toLowerCase()
 
-    const result = await chrome.storage.local.get(STORAGE_KEYS.SETTINGS)
-    const settings: Settings = result[STORAGE_KEYS.SETTINGS] || DEFAULT_SETTINGS
+    const storage = await StorageFactory.create()
+    const settings = await storage.getSettings()
 
     const blacklistedDomains = settings.blacklistedDomains || []
     const updatedDomains = blacklistedDomains.filter((d) => d !== normalizedDomain)
 
-    await chrome.storage.local.set({
-      [STORAGE_KEYS.SETTINGS]: {
-        ...settings,
-        blacklistedDomains: updatedDomains,
-      },
-    })
+    await storage.updateSettings({ blacklistedDomains: updatedDomains })
 
     return { success: true }
   } catch (error) {
@@ -290,18 +277,13 @@ export async function removeBlacklistedUrl(url: string): Promise<BlacklistResult
       }
     }
 
-    const result = await chrome.storage.local.get(STORAGE_KEYS.SETTINGS)
-    const settings: Settings = result[STORAGE_KEYS.SETTINGS] || DEFAULT_SETTINGS
+    const storage = await StorageFactory.create()
+    const settings = await storage.getSettings()
 
     const blacklistedUrls = settings.blacklistedUrls || []
     const updatedUrls = blacklistedUrls.filter((u) => u !== normalizedUrl)
 
-    await chrome.storage.local.set({
-      [STORAGE_KEYS.SETTINGS]: {
-        ...settings,
-        blacklistedUrls: updatedUrls,
-      },
-    })
+    await storage.updateSettings({ blacklistedUrls: updatedUrls })
 
     return { success: true }
   } catch (error) {
@@ -321,15 +303,8 @@ export async function removeBlacklistedUrl(url: string): Promise<BlacklistResult
  */
 export async function clearBlacklistedDomains(): Promise<BlacklistResult> {
   try {
-    const result = await chrome.storage.local.get(STORAGE_KEYS.SETTINGS)
-    const settings: Settings = result[STORAGE_KEYS.SETTINGS] || DEFAULT_SETTINGS
-
-    await chrome.storage.local.set({
-      [STORAGE_KEYS.SETTINGS]: {
-        ...settings,
-        blacklistedDomains: [],
-      },
-    })
+    const storage = await StorageFactory.create()
+    await storage.updateSettings({ blacklistedDomains: [] })
 
     return { success: true }
   } catch (error) {
@@ -349,15 +324,8 @@ export async function clearBlacklistedDomains(): Promise<BlacklistResult> {
  */
 export async function clearBlacklistedUrls(): Promise<BlacklistResult> {
   try {
-    const result = await chrome.storage.local.get(STORAGE_KEYS.SETTINGS)
-    const settings: Settings = result[STORAGE_KEYS.SETTINGS] || DEFAULT_SETTINGS
-
-    await chrome.storage.local.set({
-      [STORAGE_KEYS.SETTINGS]: {
-        ...settings,
-        blacklistedUrls: [],
-      },
-    })
+    const storage = await StorageFactory.create()
+    await storage.updateSettings({ blacklistedUrls: [] })
 
     return { success: true }
   } catch (error) {
