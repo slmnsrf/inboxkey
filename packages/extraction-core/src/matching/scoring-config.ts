@@ -21,8 +21,6 @@
  */
 export const DOMAIN_ALIASES: Record<string, string> = {
   "dropboxmail.com": "dropbox.com",
-  "github.com": "github.com",
-  "battlestategames.com": "battlestategames.com",
 };
 
 /**

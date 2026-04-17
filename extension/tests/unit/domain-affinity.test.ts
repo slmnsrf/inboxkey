@@ -86,10 +86,12 @@ describe('Domain Affinity', () => {
       expect(result).toBe(false)
     })
 
-    it('should handle canonical domain matching itself', () => {
+    it('should return false when isAliasMatch is called with identical domains not in aliases', () => {
+      // Self-map entries were removed from DOMAIN_ALIASES as dead weight.
+      // Exact-match short-circuits in domainAffinity before isAliasMatch
+      // is ever called, so this lookup returning false is correct.
       const result = isAliasMatch('github.com', 'github.com')
-      // Same domain that maps to itself in DOMAIN_ALIASES returns true (canonical match)
-      expect(result).toBe(true)
+      expect(result).toBe(false)
     })
   })
 
@@ -315,12 +317,14 @@ describe('Domain Affinity', () => {
       expect(DOMAIN_ALIASES['dropboxmail.com']).toBe('dropbox.com')
     })
 
-    it('should include github.com self-reference', () => {
-      expect(DOMAIN_ALIASES['github.com']).toBe('github.com')
-    })
-
-    it('should include battlestategames.com self-reference', () => {
-      expect(DOMAIN_ALIASES['battlestategames.com']).toBe('battlestategames.com')
+    it('should not contain dead self-reference entries', () => {
+      // Self-maps (e.g. "github.com": "github.com") add no routing
+      // value since domainAffinity short-circuits exact matches
+      // before isAliasMatch runs. Keeping them invites future bugs
+      // where two unrelated domains are added with the same canonical.
+      for (const [source, canonical] of Object.entries(DOMAIN_ALIASES)) {
+        expect(source).not.toBe(canonical)
+      }
     })
 
     it('should be a readonly configuration', () => {
