@@ -484,10 +484,14 @@ function distancePointToRange(p: number, a: number, b: number): number {
 
 /** Penalize codes inside obvious footers/signatures/unsubscribe blocks */
 function footerPenalty(text: string, c: InternalCandidate): { applies: boolean } {
-  const around = text.slice(Math.max(0, c.start - 120), Math.min(text.length, c.end + 160)).toLowerCase()
+  // Only scan text AFTER the code. Real footers sit below the content;
+  // scanning before the code produced false penalties when a preamble
+  // contained neutral terms like "support" or "help" in a sentence
+  // like "Need help? Your code is 123456."
+  const after = text.slice(c.end, Math.min(text.length, c.end + 160)).toLowerCase()
   const footerHints =
     /(unsubscribe|preferences|support|help|customer\s+service|do\s+not\s+reply|please\s+do\s+not\s+reply|sent\s+from|regards|kind\s+regards|signature)/i
-  return { applies: footerHints.test(around) }
+  return { applies: footerHints.test(after) }
 }
 
 /** Heuristic filter: looks like a phone number? */
