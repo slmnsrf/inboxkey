@@ -126,13 +126,18 @@ export class EmailPollingService {
   }
 
   addAdapter(adapter: ProviderAdapter) {
-    if (!this.adapters.find(a => a.id === adapter.id)) {
+    // Dedupe on mailboxId (per-account), not provider type. Keying on
+    // adapter.id meant a second IMAP / Gmail account was silently
+    // dropped because they share the same provider type string.
+    if (!this.adapters.find(a => a.mailboxId === adapter.mailboxId)) {
       this.adapters.push(adapter)
     }
   }
 
-  removeAdapter(providerId: ProviderId) {
-    this.adapters = this.adapters.filter(a => a.id !== providerId)
+  removeAdapter(mailboxId: string) {
+    // Remove a single account's adapter by mailboxId. Keying on
+    // provider type would wipe every adapter of that type in one call.
+    this.adapters = this.adapters.filter(a => a.mailboxId !== mailboxId)
   }
 
   clear() {
@@ -149,7 +154,8 @@ export class EmailPollingService {
    * meeting minScore. Keeps a small, recent cache for the popup.
    *
    * Behavior:
-   *  • Queries only "recent" emails (default 10 minutes).
+   *  • Queries only "recent" emails (default 20 minutes; widened from
+   *    10m to accommodate Gmail's delivery latency on spam-filter checks).
    *  • Caps per-provider fetches (default 8) and a global processed cap (default 20).
    *  • Uses seenMessageIds to avoid re-processing the same items.
    *  • Extracts OTPs and magic links via extractFromEmail().
@@ -157,7 +163,7 @@ export class EmailPollingService {
    */
   async pollOnce(ctx: ExtractContext = {}, cfg: PollConfig = {}): Promise<PollResult> {
     const now = Date.now()
-    const since = now - 1000 * 60 * (cfg.timeWindowMin ?? 10)
+    const since = now - 1000 * 60 * (cfg.timeWindowMin ?? 20)
     const perProviderMax = clampInt(cfg.perProviderMax ?? 8, 1, 50)
     const globalMax = clampInt(cfg.globalMax ?? 20, 1, 100)
     const minScore = clamp01(cfg.minScore ?? SCORE_POPUP)

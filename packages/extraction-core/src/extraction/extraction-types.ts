@@ -536,8 +536,8 @@ export const THRESHOLDS: Readonly<Thresholds> = Object.freeze({
 export const EXTRACTION_DEFAULTS: Readonly<ExtractionDefaults> = Object.freeze({
   /** +/- 60 chars = 120 total scanning window around matched keywords */
   windowChars: 120,
-  /** Poll recent emails within the last 10 minutes for matches */
-  recentWindowMinutes: 10,
+  /** Poll recent emails within the last 20 minutes for matches */
+  recentWindowMinutes: 20,
   /** Numeric code sanity bounds */
   codeMin: 4,
   codeMax: 8,

@@ -27,6 +27,7 @@ import { isHTMLDocument } from '@/lib/utils/is-html-document'
 import { detectSplitInputGroup } from '@/lib/detection/split-input-detector'
 import { hasEmailContext } from '@/lib/detection/email-context-guard'
 import { hydrateSmsCache } from '@/lib/detection/sms-feature-cache'
+import { cancelPendingNotifications } from './notification'
 
 /**
  * Global Set to track processed representative fields across all batches
@@ -385,6 +386,7 @@ export function clearProcessedFields(): void {
     }
 
     detector.stopObserving()
+    cancelPendingNotifications()
     const activeWatch = getActiveWatch()
     if (activeWatch) {
       activeWatch.stop()

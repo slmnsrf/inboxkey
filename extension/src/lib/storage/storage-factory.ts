@@ -17,30 +17,25 @@ import { PlaintextStorage } from './plaintext-storage'
 
 export class StorageFactory {
   /**
-   * Create a storage instance
-   *
-   * Returns PlaintextStorage (the only storage implementation).
-   *
-   * @returns Promise resolving to PlaintextStorage instance
-   *
-   * @example
-   * const storage = await StorageFactory.create()
-   * await storage.addMailbox(mailbox)
+   * Singleton PlaintextStorage instance. Every caller (popup, service
+   * worker, content script, telemetry writes, blacklist mutators) must
+   * share the same instance for the PlaintextStorage mutex to provide
+   * real cross-caller serialization. Returning `new PlaintextStorage()`
+   * per call gave every caller its own mutex - no serialization at all.
    */
+  private static instance: IStorage | null = null
+
   static async create(): Promise<IStorage> {
-    return new PlaintextStorage()
+    if (!this.instance) {
+      this.instance = new PlaintextStorage()
+    }
+    return this.instance
   }
 
-  /**
-   * Create storage instance synchronously
-   *
-   * @returns PlaintextStorage instance
-   *
-   * @example
-   * const storage = StorageFactory.createSync()
-   * await storage.addMailbox(mailbox)
-   */
   static createSync(): IStorage {
-    return new PlaintextStorage()
+    if (!this.instance) {
+      this.instance = new PlaintextStorage()
+    }
+    return this.instance
   }
 }

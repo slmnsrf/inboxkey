@@ -9,8 +9,6 @@ export { StorageFactory } from "./storage-factory"
 export {
   initializeStorage,
   resetStorage,
-  exportStorage,
-  importStorage,
   migrateStorage,
   getDefaultSettings,
   getDefaultSessionState,

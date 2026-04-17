@@ -489,7 +489,8 @@ describe('Code Fetcher', () => {
       const codes: StoredCode[] = [
         {
           code: '123456',
-          timestamp: now - 6 * 60 * 1000, // 6 minutes ago (low recency)
+          // 8 minutes old: 250 * e^(-480/120) ≈ 4.6 pts, below acceptMin.
+          timestamp: now - 8 * 60 * 1000,
           source: 'noreply@totally-different.com',
           siteMatch: 'totally-different.com',
           used: false,
@@ -629,11 +630,12 @@ describe('Code Fetcher', () => {
 
       const result = findBestMatchingCode(codes, 'https://example.com', now)
 
-      // V2 scoring:
-      // 111111: domain=100 + recency~50 + used=-50 = ~100
-      // 222222: domain=0 + recency~50 + used=0 = ~50
-      // Domain match still wins despite used penalty
-      expect(result?.code).toBe('111111')
+      // V2 scoring under corrected recency scale:
+      // 111111: domain=100 + recency~250 + used=-250 = ~100
+      // 222222: domain=0 + recency~250 + used=0 = ~250
+      // Unused fresh code wins; stale codes shouldn't auto-suggest
+      // even with a domain match when a fresh alternative exists.
+      expect(result?.code).toBe('222222')
     })
 
     it('should require minimum score of 10', () => {
@@ -641,7 +643,8 @@ describe('Code Fetcher', () => {
       const codes: StoredCode[] = [
         {
           code: '123456',
-          timestamp: now - 6 * 60 * 1000, // 0 points (too old)
+          // 8 minutes old: recency ~4.6 pts, well below acceptMin.
+          timestamp: now - 8 * 60 * 1000,
           siteMatch: 'other.com', // 0 points (wrong domain)
           used: false,
         },

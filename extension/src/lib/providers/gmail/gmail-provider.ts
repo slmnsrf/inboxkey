@@ -45,12 +45,10 @@ export class GmailProvider implements IChromeIdentityProvider {
     // Build Gmail search query
     const query = this.buildSearchQuery(options)
 
-    // DEBUG: Log the query being used
     console.log('[GmailProvider] fetchEmails called:', {
       query,
       maxResults: options.maxResults || 10,
       newerThan: options.newerThan,
-      accessTokenPrefix: accessToken.substring(0, 20) + '...'
     })
 
     // List message IDs
@@ -98,17 +96,29 @@ export class GmailProvider implements IChromeIdentityProvider {
   private buildSearchQuery(options: FetchOptions): string {
     const queryParts: string[] = []
 
-    // Default to unread messages
-    queryParts.push('is:unread')
+    // Note: 'is:unread' was previously prepended here. It caused codes
+    // to be missed whenever the user had Gmail open in another tab, a
+    // filter auto-marked the message, or a mark-all-as-read extension
+    // touched the inbox before we polled. The time window below plus
+    // maxResults is enough to keep the query tight.
 
-    // Add date filter
+    // Add date filter. Gmail's `newer_than:` operator accepts only
+    // `d` (days), `m` (months), and `y` (years) - there is NO minute
+    // suffix. Emitting `Nm` was silently fetching the last N months
+    // of mail and relying on the service-side receivedEpochMs filter
+    // to drop stale results, which worked for correctness but wasted
+    // huge amounts of Gmail API quota per poll.
+    //
+    // Sub-day precision must be enforced client-side by the caller
+    // (EmailPollingService.pollOnce filters `msg.receivedEpochMs <
+    // since`). Server-side we can only narrow to whole days, so emit
+    // a 1-day floor and let the client filter do the minute-level cut.
     if (options.newerThan) {
-      const daysAgo = Math.ceil(
-        (Date.now() - options.newerThan.getTime()) / (1000 * 60 * 60 * 24)
+      const daysAgo = Math.max(
+        1,
+        Math.ceil((Date.now() - options.newerThan.getTime()) / (1000 * 60 * 60 * 24))
       )
-      if (daysAgo > 0) {
-        queryParts.push(`newer_than:${daysAgo}d`)
-      }
+      queryParts.push(`newer_than:${daysAgo}d`)
     }
 
     // Add custom query

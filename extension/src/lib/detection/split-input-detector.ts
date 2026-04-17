@@ -161,6 +161,35 @@ function isCoherentGroup(inputs: HTMLInputElement[]): boolean {
     return false
   }
 
+  // Accept one of two shapes for a real split-input OTP widget:
+  //
+  // (a) sharedMaxLen in [1, 6]: explicit per-cell limit. Typical for
+  //     React OTP libraries and hand-rolled 6-digit code widgets.
+  //
+  // (b) sharedMaxLen === -1 AND inputs live in *different* immediate
+  //     parents: Microsoft login's codeEntry-0..5 pattern (input ->
+  //     span -> div), where each cell has its own wrapper. Generic
+  //     flat form fields (street/city/state/zipcode/country all as
+  //     direct <form> children) must not pass because they also show
+  //     maxLength === -1 in happy-dom but clearly aren't an OTP.
+  //
+  // Anything else (big positive maxLength like 10+, or -1 with all
+  // inputs sharing one parent) is rejected.
+  const sharedMaxLen = inputs[0].maxLength
+  if (sharedMaxLen >= 1 && sharedMaxLen <= 6) {
+    // shape (a): OK
+  } else if (sharedMaxLen === -1) {
+    // shape (b): require per-cell wrapping.
+    const immediateParents = new Set(inputs.map(i => i.parentElement))
+    if (immediateParents.size < inputs.length) {
+      // Two or more inputs share an immediate parent - flat form, not
+      // a wrapped OTP widget.
+      return false
+    }
+  } else {
+    return false
+  }
+
   // All inputs must have same type
   const types = new Set(inputs.map(input => input.type))
   if (types.size > 1) {
@@ -173,14 +202,53 @@ function isCoherentGroup(inputs: HTMLInputElement[]): boolean {
     return false
   }
 
-  // Check if inputs are reasonably adjacent in DOM
-  // They should all be within same parent or grandparent
-  const parents = new Set(inputs.map(input => input.parentElement))
-  if (parents.size > 2) {
-    // Too scattered, probably not a group
+  // Check if inputs share a common ancestor within a few DOM levels.
+  // The old heuristic rejected groups with more than 2 distinct
+  // immediate parents, which killed the common React OTP pattern of
+  // wrapping each digit cell in its own <div class="digit-wrapper">
+  // (6 inputs -> 6 parents -> rejected). Walking up 3 levels lets us
+  // accept those while still rejecting inputs scattered across
+  // unrelated form sections.
+  if (!hasCommonAncestorWithin(inputs, 3)) {
     return false
   }
 
+  return true
+}
+
+/**
+ * Returns true if every input in the set shares an ancestor within
+ * `levels` DOM hops (i.e. the set of ancestors up to depth N for the
+ * first input has a non-empty intersection with the same set for
+ * every other input).
+ */
+function hasCommonAncestorWithin(inputs: HTMLInputElement[], levels: number): boolean {
+  if (inputs.length === 0) return false
+
+  const ancestorsOf = (el: HTMLElement): Set<Element> => {
+    const chain = new Set<Element>()
+    let node: Element | null = el
+    let depth = 0
+    while (node && depth <= levels) {
+      chain.add(node)
+      node = node.parentElement
+      depth += 1
+    }
+    return chain
+  }
+
+  const firstChain = ancestorsOf(inputs[0])
+  for (let i = 1; i < inputs.length; i += 1) {
+    const chain = ancestorsOf(inputs[i])
+    let shares = false
+    for (const ancestor of chain) {
+      if (firstChain.has(ancestor)) {
+        shares = true
+        break
+      }
+    }
+    if (!shares) return false
+  }
   return true
 }
 

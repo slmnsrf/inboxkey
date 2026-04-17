@@ -50,23 +50,29 @@ describe('url-pattern-validator', () => {
         expect(result.isSetupPage).toBe(true)
       })
 
-      it('detects /enable/ path', () => {
-        const result = isSetupPage('https://example.com/security/enable')
-        expect(result.isSetupPage).toBe(true)
+      // Bare /enable/, /add/, /register/ no longer flagged as setup —
+      // they false-positived on legitimate pages (/user/add-payee,
+      // /settings/enable-notifications, /account/register). Real 2FA
+      // setup flows are still caught by the qualified patterns below
+      // (/2fa/setup, /authenticator/setup, etc.) and by body-level
+      // SETUP_PAGE_PATTERNS in context-validator.
+      it('does NOT flag bare /enable/ path (too generic)', () => {
+        const result = isSetupPage('https://example.com/settings/enable-notifications')
+        expect(result.isSetupPage).toBe(false)
       })
 
-      it('detects /add/ path', () => {
-        const result = isSetupPage('https://example.com/authenticator/add')
-        expect(result.isSetupPage).toBe(true)
+      it('does NOT flag bare /add/ path (too generic)', () => {
+        const result = isSetupPage('https://bank.example.com/user/add-payee')
+        expect(result.isSetupPage).toBe(false)
+      })
+
+      it('does NOT flag bare /register/ path (too generic)', () => {
+        const result = isSetupPage('https://example.com/account/register')
+        expect(result.isSetupPage).toBe(false)
       })
 
       it('detects /enroll/ path', () => {
         const result = isSetupPage('https://example.com/mfa/enroll')
-        expect(result.isSetupPage).toBe(true)
-      })
-
-      it('detects /register/ path', () => {
-        const result = isSetupPage('https://example.com/2fa/register')
         expect(result.isSetupPage).toBe(true)
       })
 
@@ -164,7 +170,7 @@ describe('url-pattern-validator', () => {
 
   describe('Pattern Coverage', () => {
     it('exports SETUP_URL_PATTERNS with expected count', () => {
-      expect(SETUP_URL_PATTERNS).toHaveLength(13)
+      expect(SETUP_URL_PATTERNS).toHaveLength(10)
     })
 
     it('exports SETUP_URL_ALLOWLIST with expected count', () => {

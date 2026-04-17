@@ -92,6 +92,32 @@ global.chrome = {
       removeListener: vi.fn(),
     },
   },
+  notifications: {
+    create: vi.fn(),
+    clear: vi.fn(),
+    update: vi.fn(),
+    onClicked: {
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+    },
+    onClosed: {
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+    },
+    onButtonClicked: {
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+    },
+  },
+  identity: {
+    getAuthToken: vi.fn(),
+    removeCachedAuthToken: vi.fn(),
+    getRedirectURL: vi.fn((path?: string) => `https://test-extension-id.chromiumapp.org/${path ?? ''}`),
+    launchWebAuthFlow: vi.fn(),
+  },
+  scripting: {
+    executeScript: vi.fn(async () => [{ result: null }]),
+  },
   i18n: {
     getMessage: vi.fn((key: string, substitutions?: string | string[]) => {
       // Return the key itself if no translation (for testing)

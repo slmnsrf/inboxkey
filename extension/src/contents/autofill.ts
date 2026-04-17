@@ -56,10 +56,20 @@ export async function autofillCode(options: AutofillOptions): Promise<boolean> {
     return false
   }
 
-  // Check if field is visible
+  // Check if field is visible. Some React OTP libraries render a
+  // styled div overlay on top of a real input with opacity:0 and/or
+  // pointer-events:none so keyboard focus still works; the visible
+  // overlay is what the user sees and the framework's synthetic-event
+  // system is driven by. Filling the hidden input in that layout sets
+  // the DOM value but leaves the visible boxes blank.
   const style = window.getComputedStyle(field)
-  if (style.display === 'none' || style.visibility === 'hidden') {
-    console.warn('[Autofill] Field is not visible, cannot autofill')
+  if (
+    style.display === 'none' ||
+    style.visibility === 'hidden' ||
+    style.opacity === '0' ||
+    style.pointerEvents === 'none'
+  ) {
+    console.warn('[Autofill] Field is not visible/interactive, cannot autofill')
     return false
   }
 

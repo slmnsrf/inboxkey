@@ -20,6 +20,9 @@
   "keywords": ["otp", "extraction", "magic-link"],
   "author": "InboxKey Team",
   "license": "PolyForm-Noncommercial-1.0.0",
+  "dependencies": {
+    "tldts": "^7.0.25"
+  },
   "devDependencies": {
     "typescript": "^5.5.3",
     "vitest": "^1.6.0"

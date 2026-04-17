@@ -34,12 +34,14 @@ describe('Domain Affinity', () => {
       expect(result).toBe('example.com')
     })
 
-    it('should handle short domain with limitations', () => {
-      // Simplified implementation limitation: multi-part TLDs like .co.uk
-      // will extract as "example.co" instead of "example.co.uk"
-      const result = extractETLD('example.co.uk')
-      expect(result).toBe('co.uk')
-      // This is acceptable as documented in the function's limitations
+    it('should correctly extract eTLD+1 for compound country TLDs', () => {
+      // tldts-backed: PSL handles .co.uk, .co.jp, .com.tr, etc.
+      // Previously the naive slice(-2) returned "co.uk" for every UK
+      // domain, causing cross-service false matches.
+      expect(extractETLD('example.co.uk')).toBe('example.co.uk')
+      expect(extractETLD('login.amazon.co.uk')).toBe('amazon.co.uk')
+      expect(extractETLD('shop.example.com.tr')).toBe('example.com.tr')
+      expect(extractETLD('www.rakuten.co.jp')).toBe('rakuten.co.jp')
     })
 
     it('should handle empty string edge case', () => {
@@ -84,10 +86,12 @@ describe('Domain Affinity', () => {
       expect(result).toBe(false)
     })
 
-    it('should handle canonical domain matching itself', () => {
+    it('should return false when isAliasMatch is called with identical domains not in aliases', () => {
+      // Self-map entries were removed from DOMAIN_ALIASES as dead weight.
+      // Exact-match short-circuits in domainAffinity before isAliasMatch
+      // is ever called, so this lookup returning false is correct.
       const result = isAliasMatch('github.com', 'github.com')
-      // Same domain that maps to itself in DOMAIN_ALIASES returns true (canonical match)
-      expect(result).toBe(true)
+      expect(result).toBe(false)
     })
   })
 
@@ -313,12 +317,14 @@ describe('Domain Affinity', () => {
       expect(DOMAIN_ALIASES['dropboxmail.com']).toBe('dropbox.com')
     })
 
-    it('should include github.com self-reference', () => {
-      expect(DOMAIN_ALIASES['github.com']).toBe('github.com')
-    })
-
-    it('should include battlestategames.com self-reference', () => {
-      expect(DOMAIN_ALIASES['battlestategames.com']).toBe('battlestategames.com')
+    it('should not contain dead self-reference entries', () => {
+      // Self-maps (e.g. "github.com": "github.com") add no routing
+      // value since domainAffinity short-circuits exact matches
+      // before isAliasMatch runs. Keeping them invites future bugs
+      // where two unrelated domains are added with the same canonical.
+      for (const [source, canonical] of Object.entries(DOMAIN_ALIASES)) {
+        expect(source).not.toBe(canonical)
+      }
     })
 
     it('should be a readonly configuration', () => {

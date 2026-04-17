@@ -40,14 +40,13 @@ describe('MagicLinkSection', () => {
     expect(screen.getByText('No magic links')).toBeInTheDocument()
   })
 
-  it('renders metadata rows for each link', () => {
+  it('renders metadata for each link', () => {
     render(<MagicLinkSection links={[baseLink]} onOpen={mockOnOpen} />)
 
-    expect(screen.getByText('From')).toBeInTheDocument()
+    // LinkCard no longer renders "From/To/Subject" label rows - it
+    // shows the sender, subject, and link-domain inline. Verify the
+    // values are present; the old label-based layout was removed.
     expect(screen.getByText(baseLink.from!)).toBeInTheDocument()
-    expect(screen.getByText('To')).toBeInTheDocument()
-    expect(screen.getByText(baseLink.to!)).toBeInTheDocument()
-    expect(screen.getByText('Subject')).toBeInTheDocument()
     expect(screen.getByText(baseLink.subject!)).toBeInTheDocument()
   })
 
@@ -90,8 +89,10 @@ describe('MagicLinkSection', () => {
 
     render(<MagicLinkSection links={[link]} onOpen={mockOnOpen} />)
 
+    // Current LinkCard shows a single "N/A" when subject is missing.
+    // "To" is no longer rendered at all.
     const fallbackValues = screen.getAllByText('N/A')
-    expect(fallbackValues.length).toBeGreaterThanOrEqual(2)
+    expect(fallbackValues.length).toBeGreaterThanOrEqual(1)
   })
 
   it('provides descriptive aria-label on open button', () => {

@@ -18,6 +18,7 @@ import type {
   DomainPreferences,
 } from "./schema"
 import {
+  DEFAULT_SETTINGS,
   isMailbox,
   isSessionState,
   isSettings,
@@ -42,7 +43,7 @@ const PLAINTEXT_STORAGE_KEYS = {
 /**
  * Mutex for preventing concurrent storage operations
  */
-class AsyncMutex {
+export class AsyncMutex {
   private locked = false
   private queue: Array<() => void> = []
 
@@ -289,13 +290,48 @@ export class PlaintextStorage {
     })
   }
 
+  /**
+   * Atomic read-modify-write on settings.
+   *
+   * `updateSettings` merges a static partial - it's racy for callers
+   * that need to compute their update from the CURRENT persisted value
+   * (e.g. appending to an array of telemetry entries or blacklist
+   * domains). A naive `const current = await storage.getSettings();
+   * await storage.updateSettings({ array: [...current.array, item] })`
+   * pattern straddles the lock boundary, so concurrent writers can
+   * clobber each other.
+   *
+   * `mutateSettings` runs the getter AND the transform AND the write
+   * inside a single runExclusive block.
+   *
+   * @param transform Function that receives the current settings and
+   *                  returns the partial update to apply. Must be pure
+   *                  (no side effects that can race).
+   */
+  async mutateSettings(
+    transform: (current: Settings) => Partial<Settings>
+  ): Promise<void> {
+    await this.mutex.runExclusive(async () => {
+      const current = await this.getSettings()
+      const updates = transform(current)
+      const updated = { ...current, ...updates }
+
+      if (!isSettings(updated)) {
+        throw new ValidationError("Invalid settings structure")
+      }
+
+      await chrome.storage.local.set({
+        [PLAINTEXT_STORAGE_KEYS.SETTINGS]: updated,
+      })
+      await this.notifyChange("settings")
+    })
+  }
+
   private getDefaultSettings(): Settings {
-    return {
-      autoFillEnabled: true,
-      allowedDomains: [],
-      deniedDomains: [],
-      notificationsEnabled: true,
-    }
+    // Single source of truth - avoids drift from the exported
+    // DEFAULT_SETTINGS (which has a dozen more optional fields that
+    // were previously missing from this local stub).
+    return { ...DEFAULT_SETTINGS }
   }
 
   // ============================================================================

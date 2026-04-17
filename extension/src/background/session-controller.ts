@@ -116,8 +116,8 @@ export class SessionController {
     private readonly popupCacheManager?: PopupCacheManager
   ) {
     // V2: Initialize SessionPoller with callback to handlePoll
-    this.poller = new SessionPoller(async (sessionId) => {
-      await this.handlePoll(sessionId)
+    this.poller = new SessionPoller(async (sessionId, pollIndex) => {
+      await this.handlePoll(sessionId, pollIndex)
     })
   }
 
@@ -273,16 +273,17 @@ export class SessionController {
    * Handle a poll callback from SessionPoller.
    * V2: This replaces the old executePoll() method, simplified by SessionPoller.
    */
-  private async handlePoll(sessionId: string): Promise<void> {
+  private async handlePoll(sessionId: string, pollIndex: number): Promise<void> {
     const session = this.sessions.get(sessionId)
     if (!session || session.status !== "active") {
       return
     }
 
-    // Determine which poll index this is
-    const pollIndex = session.pollsCompleted.length
-
-    // Guard: already completed this poll
+    // Persisted idempotency: if this specific poll already ran (e.g., it
+    // completed before a service-worker restart and the persisted alarm
+    // re-fires after resume), skip it. session.pollsCompleted survives
+    // restart via persistSessions(); SessionPoller's in-memory Set does
+    // not, so this is the authoritative guard.
     if (session.pollsCompleted.includes(pollIndex)) {
       return
     }

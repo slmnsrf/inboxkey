@@ -25,21 +25,37 @@ import {
  */
 export async function initializeStorage(): Promise<void> {
   try {
-    // Ensure default values exist
+    // Read the stored schema version FIRST - before ensureDefaults
+    // seeds anything. ensureDefaults used to write the version key if
+    // missing, which masked pre-versioning installs as already-on-
+    // current and caused getStorageVersion's "?? 0" fallback to be
+    // unreachable. Now version stamping is deferred until after any
+    // migrations run.
+    const currentVersion = await getStorageVersion()
+
     await ensureDefaults()
 
-    // Check and run migrations if needed
-    const currentVersion = await getStorageVersion()
     if (currentVersion < CURRENT_SCHEMA_VERSION) {
       await migrateStorage(currentVersion, CURRENT_SCHEMA_VERSION)
     }
+
+    // Stamp the current version after migrations succeed (or if we
+    // were already current). This is the only place VERSION is written
+    // for fresh installs - the migration path does its own writes.
+    await chrome.storage.local.set({
+      [STORAGE_KEYS.VERSION]: CURRENT_SCHEMA_VERSION,
+    })
   } catch (error) {
     throw new StorageError("Failed to initialize storage", error)
   }
 }
 
 /**
- * Ensure default settings and session state exist
+ * Ensure default settings and session state exist.
+ *
+ * Note: does NOT seed STORAGE_KEYS.VERSION - initializeStorage() reads
+ * the version before calling this function so the "pre-versioning" case
+ * (0) is observable, then stamps the version after migrations.
  */
 async function ensureDefaults(): Promise<void> {
   // Check if settings exist
@@ -47,14 +63,6 @@ async function ensureDefaults(): Promise<void> {
   if (!settingsResult[STORAGE_KEYS.SETTINGS]) {
     await chrome.storage.local.set({
       [STORAGE_KEYS.SETTINGS]: getDefaultSettings(),
-    })
-  }
-
-  // Check if version exists
-  const versionResult = await chrome.storage.local.get(STORAGE_KEYS.VERSION)
-  if (!versionResult[STORAGE_KEYS.VERSION]) {
-    await chrome.storage.local.set({
-      [STORAGE_KEYS.VERSION]: CURRENT_SCHEMA_VERSION,
     })
   }
 
@@ -82,7 +90,10 @@ async function ensureDefaults(): Promise<void> {
  */
 async function getStorageVersion(): Promise<number> {
   const result = await chrome.storage.local.get(STORAGE_KEYS.VERSION)
-  return result[STORAGE_KEYS.VERSION] || 1
+  // 0 means "pre-versioning install" - forces migrations to run from
+  // the start. Using || 1 previously masked those installs as already-
+  // on-current, so any future v1 -> v2 migration would silently skip.
+  return result[STORAGE_KEYS.VERSION] ?? 0
 }
 
 /**
@@ -136,21 +147,29 @@ export async function migrateStorage(
  * Run a specific migration
  */
 async function runMigration(fromVersion: number, toVersion: number): Promise<void> {
-  // Currently only v1 exists, but this structure allows for future migrations
-  switch (fromVersion) {
-    case 1:
-      if (toVersion === 2) {
-        await migrateV1ToV2()
-      }
-      break
-    // Add more migrations here as schema evolves
-    default:
-      throw new MigrationError(
-        `No migration path from v${fromVersion} to v${toVersion}`,
-        fromVersion,
-        toVersion
-      )
+  // Pre-versioning install (version key was never written). No schema
+  // changes are needed to reach v1 - the shape of v1 storage is a
+  // strict superset of any pre-versioning layout that could exist in
+  // a shipped build, because version-tracking was added alongside v1
+  // itself. Treat this as a no-op and let migrateStorage() stamp the
+  // version. If a future v0 -> v1 migration ever becomes necessary
+  // (e.g. a pre-launch profile we want to transform), plug it in here.
+  if (fromVersion === 0 && toVersion === 1) {
+    return
   }
+
+  if (fromVersion === 1 && toVersion === 2) {
+    await migrateV1ToV2()
+    return
+  }
+
+  // Add more migrations here as schema evolves.
+
+  throw new MigrationError(
+    `No migration path from v${fromVersion} to v${toVersion}`,
+    fromVersion,
+    toVersion
+  )
 }
 
 /**
@@ -192,46 +211,3 @@ export async function resetStorage(): Promise<void> {
   await ensureDefaults()
 }
 
-/**
- * Export all storage data (for backup purposes)
- * NOTE: This exports encrypted data, not plaintext
- */
-export async function exportStorage(): Promise<StorageSchema> {
-  const result = await chrome.storage.local.get([
-    STORAGE_KEYS.VERSION,
-    STORAGE_KEYS.MAILBOXES,
-    STORAGE_KEYS.SETTINGS,
-  ])
-
-  return {
-    version: result[STORAGE_KEYS.VERSION] || CURRENT_SCHEMA_VERSION,
-    mailboxes: result[STORAGE_KEYS.MAILBOXES] || [],
-    settings: result[STORAGE_KEYS.SETTINGS] || getDefaultSettings(),
-    domainPreferences: result[STORAGE_KEYS.DOMAIN_PREFERENCES] || { domains: {} },
-  }
-}
-
-/**
- * Import storage data (for restore purposes)
- * NOTE: This expects encrypted data in the correct format
- */
-export async function importStorage(data: StorageSchema): Promise<void> {
-  // Validate schema version
-  if (data.version > CURRENT_SCHEMA_VERSION) {
-    throw new StorageError(
-      `Cannot import data from newer schema version (v${data.version})`
-    )
-  }
-
-  // Import data
-  await chrome.storage.local.set({
-    [STORAGE_KEYS.VERSION]: data.version,
-    [STORAGE_KEYS.MAILBOXES]: data.mailboxes,
-    [STORAGE_KEYS.SETTINGS]: data.settings,
-  })
-
-  // Run migrations if needed
-  if (data.version < CURRENT_SCHEMA_VERSION) {
-    await migrateStorage(data.version, CURRENT_SCHEMA_VERSION)
-  }
-}

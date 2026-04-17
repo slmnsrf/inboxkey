@@ -17,6 +17,13 @@ import { PopupCacheManager } from "./popup-cache"
 import { PopupMessageHandler } from "./popup-handler"
 import { ErrorStateManager } from "./error-state-manager"
 import { StorageFactory } from "@/lib/storage/storage-factory"
+import { AsyncMutex } from "@/lib/storage/plaintext-storage"
+import {
+  SETTINGS_MUTATE_MESSAGE_TYPE,
+  settingsMutationToTransform,
+  type SettingsMutateMessage,
+  type SettingsMutateResponse,
+} from "@/lib/storage/settings-rpc"
 import type { Mailbox } from "@/lib/storage/schema"
 import {
   setBadgeListening,
@@ -190,19 +197,58 @@ chrome.runtime.onStartup.addListener(async () => {
 // V2: SessionPoller handles alarms internally via its own listener
 // No need to register chrome.alarms.onAlarm listener here
 
-// Click-to-copy for code notifications
-let lastNotificationCode: Record<string, string> = {}
-chrome.notifications.onClicked.addListener((notifId) => {
-  const code = lastNotificationCode[notifId]
-  if (code) {
-    // Copy code to clipboard (service worker can use Clipboard API in recent Chrome)
-    try {
-      // @ts-ignore -- navigator.clipboard available in SW in Chrome 105+
-      navigator.clipboard.writeText(code).catch(() => {})
-    } catch { /* fallback: user can still open popup */ }
-    delete lastNotificationCode[notifId]
+// Click-to-copy for code notifications.
+//
+// The notifId -> code mapping lives in chrome.storage.session so it
+// survives a service-worker restart. Without persistence, Chrome
+// suspending the worker between notification creation and the user's
+// click silently dropped the clipboard copy.
+//
+// Read-modify-write on the map is serialized through `notificationMapMutex`
+// so that two concurrent SHOW_CODE_NOTIFICATION events (or a click firing
+// between another event's get and set) can't drop an entry.
+const NOTIFICATION_CODE_KEY = 'inboxkey.notificationCodes'
+const notificationMapMutex = new AsyncMutex()
+
+async function rememberNotificationCode(notifId: string, code: string): Promise<void> {
+  try {
+    await notificationMapMutex.runExclusive(async () => {
+      const existing = await chrome.storage.session.get(NOTIFICATION_CODE_KEY)
+      const map: Record<string, string> = existing[NOTIFICATION_CODE_KEY] ?? {}
+      map[notifId] = code
+      await chrome.storage.session.set({ [NOTIFICATION_CODE_KEY]: map })
+    })
+  } catch { /* best-effort */ }
+}
+
+async function consumeNotificationCode(notifId: string): Promise<string | undefined> {
+  try {
+    return await notificationMapMutex.runExclusive(async () => {
+      const existing = await chrome.storage.session.get(NOTIFICATION_CODE_KEY)
+      const map: Record<string, string> = existing[NOTIFICATION_CODE_KEY] ?? {}
+      const code = map[notifId]
+      if (code !== undefined) {
+        delete map[notifId]
+        await chrome.storage.session.set({ [NOTIFICATION_CODE_KEY]: map })
+      }
+      return code
+    })
+  } catch {
+    return undefined
   }
-  chrome.notifications.clear(notifId)
+}
+
+chrome.notifications.onClicked.addListener((notifId) => {
+  void (async () => {
+    const code = await consumeNotificationCode(notifId)
+    if (code) {
+      try {
+        // @ts-ignore -- navigator.clipboard available in SW in Chrome 105+
+        navigator.clipboard.writeText(code).catch(() => {})
+      } catch { /* fallback: user can still open popup */ }
+    }
+    chrome.notifications.clear(notifId)
+  })()
 })
 
 chrome.runtime.onConnect.addListener((port) => {
@@ -250,23 +296,54 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     return false
   }
 
+  // Cross-context settings mutation funnel. Callers anywhere in the
+  // extension route through here so the SW's singleton PlaintextStorage
+  // + mutex is the one serializer for every settings write.
+  if (msg.type === SETTINGS_MUTATE_MESSAGE_TYPE) {
+    const typed = msg as SettingsMutateMessage
+    ;(async () => {
+      try {
+        const storage = await StorageFactory.create()
+        await storage.mutateSettings(settingsMutationToTransform(typed.mutation))
+        const resp: SettingsMutateResponse = { ok: true }
+        sendResponse(resp)
+      } catch (error) {
+        const resp: SettingsMutateResponse = {
+          ok: false,
+          error: error instanceof Error ? error.message : String(error),
+        }
+        sendResponse(resp)
+      }
+    })()
+    return true // keep the port open for the async sendResponse
+  }
+
   // Silent notification when code found but autofill failed
   if (msg.type === "SHOW_CODE_NOTIFICATION") {
-    const notifId = `inboxkey-code-${Date.now()}`
-    lastNotificationCode[notifId] = msg.code
-    chrome.notifications.create(notifId, {
-      type: 'basic',
-      iconUrl: chrome.runtime.getURL('icon128.plasmo.png'),
-      title: 'Verification code found',
-      message: `${msg.code} -- click to copy.`,
-      silent: true,
-      priority: 1,
-    })
-    // Auto-dismiss after 7 seconds
-    setTimeout(() => {
-      chrome.notifications.clear(notifId)
-      delete lastNotificationCode[notifId]
-    }, 7000)
+    void (async () => {
+      const notifId = `inboxkey-code-${Date.now()}`
+      // Persist BEFORE the notification is visible so an immediate
+      // click can always find the code. A fire-and-forget write would
+      // leave a narrow window where the user can click a notification
+      // whose code hasn't landed in chrome.storage.session yet.
+      await rememberNotificationCode(notifId, msg.code)
+      chrome.notifications.create(notifId, {
+        type: 'basic',
+        iconUrl: chrome.runtime.getURL('icon128.plasmo.png'),
+        title: 'Verification code found',
+        message: `${msg.code} -- click to copy.`,
+        silent: true,
+        priority: 1,
+      })
+      // Auto-dismiss after 7 seconds. Consume the persisted mapping
+      // even though the user didn't click, otherwise
+      // chrome.storage.session accumulates orphan entries for
+      // notifications that timed out.
+      setTimeout(() => {
+        chrome.notifications.clear(notifId)
+        void consumeNotificationCode(notifId)
+      }, 7000)
+    })()
     return false
   }
 
@@ -566,12 +643,6 @@ function deliverSessionCompletion(
   session: SessionState,
   result: SessionCompletion
 ): void {
-  const context = sessionContexts.get(session.id)
-
-  if (!context) {
-    return
-  }
-
   const message =
     result.status === "filled"
       ? {
@@ -586,6 +657,17 @@ function deliverSessionCompletion(
               : "SESSION_CANCELED",
           sessionId: session.id,
         }
+
+  const context = sessionContexts.get(session.id)
+
+  // Post-SW-restart path: sessionContexts is in-memory only and empty
+  // after Chrome wakes the worker. The session's persisted tabId still
+  // lets us reach the content script, so fall through instead of
+  // dropping the code on the floor.
+  if (!context) {
+    sendTabMessage(session.tabId, message)
+    return
+  }
 
   if (context.port) {
     try {

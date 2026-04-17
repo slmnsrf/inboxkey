@@ -21,8 +21,6 @@
  */
 export const DOMAIN_ALIASES: Record<string, string> = {
   "dropboxmail.com": "dropbox.com",
-  "github.com": "github.com",
-  "battlestategames.com": "battlestategames.com",
 };
 
 /**
@@ -51,10 +49,22 @@ export const DOMAIN_ALIASES: Record<string, string> = {
  */
 export const WATCH_SESSION_SCORING = {
   /**
-   * Polling intervals for checking new emails (in milliseconds).
-   * The matcher will poll at these intervals: immediately, after 5s, and after 10s.
+   * Fixed polling schedule optimized for email delivery patterns (in milliseconds).
+   *
+   * Strategy:
+   * - First 20s: Dense 5s intervals → catches fast providers (Gmail)
+   * - After 20s: Sparse 10s intervals → catches slow providers (IMAP)
+   *
+   * Full schedule: [0, 5, 10, 15, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120]s
+   * Total: 15 polls over 120 seconds maximum
+   *
+   * User timeout setting filters which polls execute:
+   * - 10s → [0, 5, 10] = 3 polls
+   * - 30s → [0, 5, 10, 15, 20, 30] = 6 polls (default)
+   * - 60s → [0, 5, 10, 15, 20, 30, 40, 50, 60] = 9 polls
+   * - 120s → all 15 polls
    */
-  pollTimesMs: [0, 5000, 10000] as const,
+  pollTimesMs: [0, 5000, 10000, 15000, 20000, 30000, 40000, 50000, 60000, 70000, 80000, 90000, 100000, 110000, 120000] as const,
 
   /**
    * Time window (in minutes) to consider emails as "recent".
@@ -89,9 +99,13 @@ export const WATCH_SESSION_SCORING = {
 
   /**
    * Penalty points applied to sessions that have already been used.
-   * Prevents reusing the same session for multiple emails.
+   * Prevents reusing the same session for multiple emails. Scaled to
+   * -250 so it outweighs the full recency range (also 0..250) -- an
+   * already-used code should never beat an unused alternative purely
+   * on freshness. Prior value of -50 was calibrated against the
+   * previously-broken recency scale capped at 50 points.
    */
-  usedPenalty: -50,
+  usedPenalty: -250,
 
   /**
    * Minimum score threshold to accept a match.
@@ -110,52 +124,4 @@ export const WATCH_SESSION_SCORING = {
    * Sessions with activity within this window receive the sessionToPoints boost.
    */
   sessionBoostWindow: 15000,
-} as const;
-
-/**
- * Confidence level thresholds for match quality assessment.
- *
- * These thresholds categorize match scores into confidence levels, allowing
- * the system to make decisions about auto-matching vs. requiring user confirmation.
- *
- * Confidence Levels:
- * - HIGH (≥150): Very confident match, safe for auto-action
- * - MEDIUM (≥100): Reasonably confident, may auto-match with caution
- * - LOW (≥50): Uncertain match, should prompt user
- * - MIN (≥10): Bare minimum, likely requires manual review
- *
- * @example
- * if (score >= CONFIDENCE_THRESHOLDS.HIGH) {
- *   // Auto-match with high confidence
- * } else if (score >= CONFIDENCE_THRESHOLDS.MEDIUM) {
- *   // Auto-match with medium confidence
- * } else {
- *   // Require user confirmation
- * }
- */
-export const CONFIDENCE_THRESHOLDS = {
-  /**
-   * High confidence threshold (≥150 points).
-   * Matches at this level are highly reliable and safe for automatic processing.
-   */
-  HIGH: 150,
-
-  /**
-   * Medium confidence threshold (≥100 points).
-   * Matches at this level are reasonably reliable for auto-matching.
-   */
-  MEDIUM: 100,
-
-  /**
-   * Low confidence threshold (≥50 points).
-   * Matches at this level should be presented to the user for confirmation.
-   */
-  LOW: 50,
-
-  /**
-   * Minimum acceptance threshold (≥10 points).
-   * This is the bare minimum score required to consider a match valid.
-   * Matches below this are rejected outright.
-   */
-  MIN: 10,
 } as const;

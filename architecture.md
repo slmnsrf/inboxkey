@@ -91,7 +91,7 @@ InboxKey is a Manifest V3 Chrome/Chromium extension that keeps verification-code
 - Both main extension and Reviewer import from `@inboxkey/extraction-core` via npm workspace protocol
 - This ensures algorithm improvements benefit both tools with zero code drift
 - Extraction core has NO Chrome API dependencies (pure TypeScript) and can be used in any context
-- Note: `/extension/src/lib/matching/` remains in place as it contains extension-specific code (code-matcher.ts) still used by session-controller and popup-cache
+- Note: `/extension/src/lib/matching/` contains `code-matcher.ts` (extension-specific scoring orchestrator) plus thin re-export shims for `domain-affinity`, `recency-scorer`, `scoring-config`, and `shape-matcher` that forward to `@inboxkey/extraction-core`. Shims preserve the `@/lib/matching/*` import paths while keeping the single source of truth in the shared package.
 - Reviewer dev tool enables manual labeling of email batches to improve extraction accuracy
 
 ## Architecture Principles

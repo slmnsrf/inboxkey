@@ -45,54 +45,44 @@
  * @module lib/matching/domain-affinity
  */
 
+import { getDomain } from "tldts";
 import { DOMAIN_ALIASES } from "./scoring-config.js";
 
 /**
- * Extracts the effective top-level domain plus one label (eTLD+1) from a full domain.
+ * Extracts the effective top-level domain plus one label (eTLD+1)
+ * from a full domain using the Mozilla Public Suffix List (via tldts).
  *
- * This function strips subdomains to get the registrable domain portion. For example:
- * - "mail.google.com" → "google.com"
- * - "www.github.com" → "github.com"
- * - "google.com" → "google.com"
- * - "localhost" → "localhost"
- *
- * Note: This is a simplified implementation that assumes domains follow standard
- * two-part TLD structure (.com, .org, etc.). For more complex TLDs like .co.uk,
- * this would need enhancement using a public suffix list.
+ * Correctly handles compound TLDs that a naive `slice(-2)` misses,
+ * including `.co.uk`, `.co.jp`, `.com.au`, `.com.br`, `.com.tr`, etc.
+ * Previously, every UK / Japanese / Turkish / Brazilian site collapsed
+ * to its bare 2-label suffix (e.g. `amazon.co.uk` -> `co.uk`),
+ * allowing any email from that country to match any site from that
+ * country at full 1.0 affinity.
  *
  * @param domain - The full domain name to extract from
- * @returns The eTLD+1 portion of the domain
+ * @returns The eTLD+1 portion, or the original (lowercased, trimmed)
+ *          input when tldts cannot parse it (single-label hosts like
+ *          "localhost", IP addresses, malformed inputs).
  *
  * @example
- * extractETLD("mail.google.com") // returns "google.com"
- * extractETLD("github.com") // returns "github.com"
- * extractETLD("localhost") // returns "localhost"
+ * extractETLD("mail.google.com")      // "google.com"
+ * extractETLD("login.amazon.co.uk")   // "amazon.co.uk"
+ * extractETLD("www.rakuten.co.jp")    // "rakuten.co.jp"
+ * extractETLD("shop.example.com.tr")  // "example.com.tr"
+ * extractETLD("localhost")            // "localhost"
  */
 export function extractETLD(domain: string): string {
   if (!domain) {
     return "";
   }
 
-  // Normalize: lowercase and trim
   const normalized = domain.toLowerCase().trim();
 
-  // Split into parts
-  const parts = normalized.split(".");
-
-  // Handle single-part domains (e.g., "localhost")
-  if (parts.length <= 1) {
-    return normalized;
-  }
-
-  // Handle two-part domains (e.g., "google.com")
-  if (parts.length === 2) {
-    return normalized;
-  }
-
-  // For multi-part domains, take the last two parts (eTLD+1)
-  // This is a simplified approach that works for most common TLDs
-  // e.g., "mail.google.com" → "google.com"
-  return parts.slice(-2).join(".");
+  // tldts returns null for single-label hosts, IPs, and malformed
+  // inputs - fall back to the normalized string so callers still get
+  // a comparable value (e.g. "localhost" === "localhost").
+  const registrable = getDomain(normalized);
+  return registrable ?? normalized;
 }
 
 /**
@@ -166,11 +156,15 @@ function tokenize(text: string): string[] {
     return [];
   }
 
+  // Minimum token length 3: 2-char tokens like "io", "co", "ai" are
+  // TLD fragments / connectors that create noise matches across
+  // unrelated domains (e.g. any two sites under a .co TLD would share
+  // a "co" token). Real service names are longer.
   return text
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, " ")
     .split(" ")
-    .filter(Boolean);
+    .filter(t => t.length >= 3);
 }
 
 /**

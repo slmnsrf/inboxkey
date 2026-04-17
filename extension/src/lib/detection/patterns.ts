@@ -11,9 +11,12 @@ export const ATTRIBUTE_PATTERNS = {
   // Exact matches (highest priority)
   exact: /^(code|otp|token|pin|mfa|2fa|twofa|verify|verification)$/i,
 
-  // Contains matches (still high confidence)
-  // NOTE: "token" removed from contains - too broad, catches developer dashboard
-  // fields like "tokenName", "token_description". Kept in exact match above.
+  // Contains matches (still high confidence).
+  // Substring match - word boundaries break camelCase identifiers
+  // (e.g. verificationCode, authCode), which are very common. The
+  // false-positive risk on substrings like "barcode" / "oauth_state"
+  // is accepted; Tier 2 label/context validation catches most of
+  // those cases. "token" stays excluded - too broad.
   contains: /(?:code|otp|verify|pin|mfa|2fa|twofa|auth|sms)/i,
 } as const
 

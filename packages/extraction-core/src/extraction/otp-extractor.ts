@@ -308,7 +308,7 @@ function findCandidatesInRanges(
       let m: RegExpExecArray | null
       while ((m = re.exec(slice))) {
         const raw = m[1] ?? m[0]
-        const norm = normalizeCode(raw)
+        const norm = normalizeCode(raw, { allowAlnum: cfg.allowAlnum })
         if (!norm) continue
         const charset: OtpCharset = /^[0-9]+$/.test(norm) ? 'digits' : 'alnum'
         const len = norm.length
@@ -344,8 +344,19 @@ function findCandidatesInRanges(
   return out
 }
 
-/** Normalize matched token: strip separators, uppercase letters */
-function normalizeCode(raw: string): string | null {
+/**
+ * Normalize a matched token: strip separators, uppercase letters, and
+ * apply structural filters.
+ *
+ * When `allowAlnum` is false (numeric-only mode), any letter-containing
+ * token is rejected. When `allowAlnum` is true, letter-only tokens are
+ * accepted only at length >= 6 to avoid matching common English words;
+ * shorter letter-only tokens are almost certainly not OTPs.
+ */
+function normalizeCode(
+  raw: string,
+  opts: { allowAlnum: boolean } = { allowAlnum: false }
+): string | null {
   // Remove spaces/hyphens/underscores/non-breaking space and zero-width spaces
   const cleaned = raw
     .replace(/[\s\u00A0\u200B\u200C\u200D_-]+/g, '')
@@ -354,8 +365,14 @@ function normalizeCode(raw: string): string | null {
   // Reject if nothing meaningful remains
   if (!cleaned) return null
 
-  // Reject if all letters (no digits) and not meant to be alnum
-  if (!/\d/.test(cleaned)) return null
+  const hasDigit = /\d/.test(cleaned)
+  if (!hasDigit) {
+    // Numeric-only mode: never allow letter-only tokens.
+    if (!opts.allowAlnum) return null
+    // Alnum mode: accept all-letter tokens only at length >= 6 so
+    // short English words don't slip through.
+    if (cleaned.length < 6) return null
+  }
 
   return cleaned
 }
@@ -467,10 +484,14 @@ function distancePointToRange(p: number, a: number, b: number): number {
 
 /** Penalize codes inside obvious footers/signatures/unsubscribe blocks */
 function footerPenalty(text: string, c: InternalCandidate): { applies: boolean } {
-  const around = text.slice(Math.max(0, c.start - 120), Math.min(text.length, c.end + 160)).toLowerCase()
+  // Only scan text AFTER the code. Real footers sit below the content;
+  // scanning before the code produced false penalties when a preamble
+  // contained neutral terms like "support" or "help" in a sentence
+  // like "Need help? Your code is 123456."
+  const after = text.slice(c.end, Math.min(text.length, c.end + 160)).toLowerCase()
   const footerHints =
     /(unsubscribe|preferences|support|help|customer\s+service|do\s+not\s+reply|please\s+do\s+not\s+reply|sent\s+from|regards|kind\s+regards|signature)/i
-  return { applies: footerHints.test(around) }
+  return { applies: footerHints.test(after) }
 }
 
 /** Heuristic filter: looks like a phone number? */

@@ -25,7 +25,7 @@ describe("SessionPoller", () => {
     });
 
     // Create poller with mock callback - returns Promise<void>
-    onPollMock = vi.fn<[string], Promise<void>>().mockResolvedValue(undefined);
+    onPollMock = vi.fn<[string, number], Promise<void>>().mockResolvedValue(undefined);
     poller = new SessionPoller(onPollMock);
   });
 
@@ -124,9 +124,9 @@ describe("SessionPoller", () => {
       const alarmListener = alarmListeners[0];
       await alarmListener(mockAlarm);
 
-      // Verify onPoll callback was invoked with correct sessionId
+      // Verify onPoll callback was invoked with correct sessionId and pollIndex
       expect(onPollMock).toHaveBeenCalledTimes(1);
-      expect(onPollMock).toHaveBeenCalledWith(sessionId);
+      expect(onPollMock).toHaveBeenCalledWith(sessionId, 0);
     });
 
     it("should prevent duplicate execution", async () => {
@@ -153,7 +153,7 @@ describe("SessionPoller", () => {
 
       // Verify onPoll called once from alarm (for first poll)
       expect(onPollMock).toHaveBeenCalledTimes(1);
-      expect(onPollMock).toHaveBeenCalledWith(sessionId);
+      expect(onPollMock).toHaveBeenCalledWith(sessionId, 0);
 
       // Now advance timers to trigger all setTimeout calls
       vi.runAllTimers();
@@ -298,8 +298,8 @@ describe("SessionPoller", () => {
 
       // Run timers - should still execute session2 polls
       vi.runAllTimers();
-      expect(onPollMock).toHaveBeenCalledWith(sessionId2);
-      expect(onPollMock).not.toHaveBeenCalledWith(sessionId1);
+      expect(onPollMock).toHaveBeenCalledWith(sessionId2, expect.any(Number));
+      expect(onPollMock).not.toHaveBeenCalledWith(sessionId1, expect.any(Number));
 
       vi.useRealTimers();
     });
@@ -333,7 +333,7 @@ describe("SessionPoller", () => {
       vi.runAllTimers();
 
       // Verify polls executed
-      expect(onPollMock).toHaveBeenCalledWith(sessionId);
+      expect(onPollMock).toHaveBeenCalledWith(sessionId, expect.any(Number));
 
       vi.useRealTimers();
     });
@@ -343,8 +343,9 @@ describe("SessionPoller", () => {
     it("should handle onPoll errors without crashing", async () => {
       vi.useFakeTimers();
 
-      // Mock console.error to suppress error output
-      const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+      // Mock console.warn to suppress error output (SessionPoller logs
+      // callback errors via console.warn, not console.error).
+      const consoleErrorSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
 
       // Create poller with failing callback
       const failingCallback = vi.fn().mockRejectedValue(new Error("Poll failed"));
@@ -368,7 +369,7 @@ describe("SessionPoller", () => {
       // Verify callback was called multiple times (once per poll time)
       const pollCount = WATCH_SESSION_SCORING.pollTimesMs.length;
       expect(failingCallback).toHaveBeenCalledTimes(pollCount);
-      expect(failingCallback).toHaveBeenCalledWith(sessionId);
+      expect(failingCallback).toHaveBeenCalledWith(sessionId, expect.any(Number));
 
       // Verify error was logged for each failed poll
       expect(consoleErrorSpy).toHaveBeenCalledTimes(pollCount);

@@ -139,6 +139,19 @@ function setupChromeMock(): void {
     identity: {
       getRedirectURL: vi.fn(() => 'https://test.chromiumapp.org/oauth2'),
     },
+    notifications: {
+      create: vi.fn(),
+      clear: vi.fn(),
+      update: vi.fn(),
+      onClicked: {
+        addListener: vi.fn(),
+        removeListener: vi.fn(),
+      },
+      onClosed: {
+        addListener: vi.fn(),
+        removeListener: vi.fn(),
+      },
+    },
   } as any
 }
 

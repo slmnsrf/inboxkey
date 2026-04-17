@@ -568,8 +568,10 @@ describe('Tier 1 Fast Detection', () => {
       const result = detectTier1(input, cooldown)
 
       expect(result.detected).toBe(false)
-      expect(result.reason).toContain('Excluded pattern')
-      expect(result.reason).toContain('zip-code')
+      // Compound zip-code match fires before the generic exclusion path
+      // now, so the specific "Zip/postal code detected" reason wins
+      // regardless of maxLength.
+      expect(result.reason).toBe('Zip/postal code detected')
     })
 
     it('should reject zip code fields with underscore separator (Salesforce)', () => {
@@ -578,8 +580,7 @@ describe('Tier 1 Fast Detection', () => {
       const result = detectTier1(input, cooldown)
 
       expect(result.detected).toBe(false)
-      expect(result.reason).toContain('Excluded pattern')
-      expect(result.reason).toContain('zip_code__c')
+      expect(result.reason).toBe('Zip/postal code detected')
     })
 
     it('should reject zip code fields with space separator', () => {
@@ -588,7 +589,7 @@ describe('Tier 1 Fast Detection', () => {
       const result = detectTier1(input, cooldown)
 
       expect(result.detected).toBe(false)
-      expect(result.reason).toContain('Excluded pattern')
+      expect(result.reason).toBe('Zip/postal code detected')
     })
 
     it('should reject postal code fields', () => {

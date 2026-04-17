@@ -3,10 +3,22 @@
  *
  * Privacy-preserving failure tracking for auto-submit button detection.
  * Stores last 10 failures only, auto-prunes older entries.
+ *
+ * All writes funnel through the service-worker RPC in settings-rpc.ts
+ * so concurrent telemetry events from different extension contexts
+ * (content scripts on different tabs) serialize through the SW's
+ * singleton PlaintextStorage mutex. A plain StorageFactory.create()
+ * path would only serialize within a single JS context.
  */
 
 import { extractDomain } from '@/lib/utils/domain'
 import type { BetaFeatureUsage } from './schema'
+import { StorageFactory } from './storage-factory'
+import {
+  isServiceWorkerContext,
+  sendSettingsMutation,
+  settingsMutationToTransform,
+} from './settings-rpc'
 
 export interface AutoSubmitFailure {
   timestamp: number
@@ -19,7 +31,6 @@ export interface AutoSubmitFailure {
 
 const MAX_FAILURES = 10
 const MAX_BETA_USAGE = 20
-const STORAGE_KEY = 'settings'
 
 /**
  * Log an auto-submit failure
@@ -47,24 +58,11 @@ export async function logAutoSubmitFailure(
       topScore: details.topScore
     }
 
-    // Get current settings
-    const result = await chrome.storage.local.get(STORAGE_KEY)
-    const settings = result.settings || {}
-
-    // Get existing failures
-    const failures: AutoSubmitFailure[] = settings.autoSubmitFailures || []
-
-    // Add new failure
-    failures.unshift(failure)
-
-    // Prune to last 10
-    if (failures.length > MAX_FAILURES) {
-      failures.splice(MAX_FAILURES)
-    }
-
-    // Save back
-    settings.autoSubmitFailures = failures
-    await chrome.storage.local.set({ settings })
+    await dispatchMutation({
+      kind: 'telemetry.addAutoSubmitFailure',
+      failure,
+      maxEntries: MAX_FAILURES,
+    })
 
     console.log(`[Telemetry] Logged auto-submit failure: ${reason} on ${urlDomain}`)
   } catch (error) {
@@ -77,9 +75,9 @@ export async function logAutoSubmitFailure(
  */
 export async function getRecentFailures(limit: number = MAX_FAILURES): Promise<AutoSubmitFailure[]> {
   try {
-    const result = await chrome.storage.local.get(STORAGE_KEY)
-    const settings = result.settings || {}
-    const failures: AutoSubmitFailure[] = settings.autoSubmitFailures || []
+    const storage = await StorageFactory.create()
+    const settings = await storage.getSettings()
+    const failures: AutoSubmitFailure[] = settings.autoSubmitFailures ?? []
     return failures.slice(0, limit)
   } catch (error) {
     console.warn('[Telemetry] Failed to get recent failures:', error)
@@ -92,10 +90,7 @@ export async function getRecentFailures(limit: number = MAX_FAILURES): Promise<A
  */
 export async function clearTelemetry(): Promise<void> {
   try {
-    const result = await chrome.storage.local.get(STORAGE_KEY)
-    const settings = result.settings || {}
-    settings.autoSubmitFailures = []
-    await chrome.storage.local.set({ settings })
+    await dispatchMutation({ kind: 'telemetry.clearAutoSubmitFailures' })
     console.log('[Telemetry] Cleared all auto-submit telemetry')
   } catch (error) {
     console.warn('[Telemetry] Failed to clear telemetry:', error)
@@ -132,27 +127,30 @@ export async function logBetaFeatureUsage(
       metadata
     }
 
-    // Get current settings
-    const result = await chrome.storage.local.get(STORAGE_KEY)
-    const settings = result.settings || {}
-
-    // Get existing usage log
-    const usageLog: BetaFeatureUsage[] = settings.betaFeatureUsage || []
-
-    // Add new usage
-    usageLog.unshift(usage)
-
-    // Prune to last 20
-    if (usageLog.length > MAX_BETA_USAGE) {
-      usageLog.splice(MAX_BETA_USAGE)
-    }
-
-    // Save back
-    settings.betaFeatureUsage = usageLog
-    await chrome.storage.local.set({ settings })
+    await dispatchMutation({
+      kind: 'telemetry.addBetaFeatureUsage',
+      usage,
+      maxEntries: MAX_BETA_USAGE,
+    })
 
     console.log(`[Telemetry] Beta feature usage logged: ${feature} on ${urlDomain}`)
   } catch (error) {
     console.warn('[Telemetry] Failed to log beta feature usage:', error)
   }
+}
+
+/**
+ * Dispatch a settings mutation through the canonical path:
+ *  - In the service worker: apply locally (SW already owns the singleton mutex).
+ *  - Anywhere else: send a message to the SW so serialization is real.
+ */
+async function dispatchMutation(
+  mutation: Parameters<typeof settingsMutationToTransform>[0]
+): Promise<void> {
+  if (isServiceWorkerContext()) {
+    const storage = await StorageFactory.create()
+    await storage.mutateSettings(settingsMutationToTransform(mutation))
+    return
+  }
+  await sendSettingsMutation(mutation)
 }

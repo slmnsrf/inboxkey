@@ -43,8 +43,8 @@ export interface PollingSchedule {
  * - Schedules stored in Map for restart recovery
  *
  * @example
- * const poller = new SessionPoller(async (sessionId) => {
- *   console.log(`Polling session ${sessionId}`);
+ * const poller = new SessionPoller(async (sessionId, pollIndex) => {
+ *   console.log(`Polling session ${sessionId} (poll #${pollIndex})`);
  * });
  * await poller.initialize();
  * poller.schedulePolls("session-123", Date.now());
@@ -72,10 +72,13 @@ export class SessionPoller {
    * Creates a new SessionPoller instance.
    *
    * @param {function} onPoll - Callback invoked when a poll fires.
-   *                            Receives the session ID to poll.
+   *                            Receives the session ID and the poll's
+   *                            index within its schedule. The pollIndex
+   *                            lets the handler idempotency-check against
+   *                            persisted state (survives SW restart).
    *                            Should be async and handle its own errors.
    */
-  constructor(private onPoll: (sessionId: string) => Promise<void>) {}
+  constructor(private onPoll: (sessionId: string, pollIndex: number) => Promise<void>) {}
 
   /**
    * Initializes the poller by registering the chrome.alarms listener.
@@ -129,7 +132,7 @@ export class SessionPoller {
 
       // Schedule setTimeout (fast, but lost on service worker restart)
       const timeoutId = setTimeout(() => {
-        void this.executePoll(sessionId, alarmName);
+        void this.executePoll(sessionId, alarmName, index);
       }, delayMs);
 
       this.timeoutIds.set(alarmName, timeoutId);
@@ -196,13 +199,13 @@ export class SessionPoller {
       return;
     }
 
-    const sessionId = this.extractSessionId(alarm.name);
-    if (!sessionId) {
+    const parsed = this.parseAlarmName(alarm.name);
+    if (!parsed) {
       console.warn(`[SessionPoller] Invalid alarm name: ${alarm.name}`);
       return;
     }
 
-    await this.executePoll(sessionId, alarm.name);
+    await this.executePoll(parsed.sessionId, alarm.name, parsed.pollIndex);
   }
 
   /**
@@ -218,9 +221,12 @@ export class SessionPoller {
    */
   private async executePoll(
     sessionId: string,
-    alarmName: string
+    alarmName: string,
+    pollIndex: number
   ): Promise<void> {
-    // Guard: prevent duplicate execution
+    // Intra-process guard: stops setTimeout and chrome.alarm from both
+    // firing for the same poll within a single SW lifetime. Post-restart
+    // idempotency is the controller's job (session.pollsCompleted).
     if (this.executedPolls.has(alarmName)) {
       return;
     }
@@ -236,7 +242,7 @@ export class SessionPoller {
 
     // Execute the poll callback
     try {
-      await this.onPoll(sessionId);
+      await this.onPoll(sessionId, pollIndex);
     } catch (error) {
       console.warn(`[SessionPoller] Error polling session ${sessionId}:`, error);
     }
@@ -255,14 +261,26 @@ export class SessionPoller {
   }
 
   /**
-   * Extracts session ID from an alarm name.
+   * Parses session ID and poll index from an alarm name.
+   *
+   * Alarm-name format: session-poll-{sessionId}-{pollIndex}
+   * Uses a non-greedy capture for sessionId plus a trailing numeric
+   * group so ambiguous session IDs (e.g., ones ending in -\d+) still
+   * resolve to the correct poll index.
    *
    * @param {string} alarmName - Alarm name to parse
-   * @returns {string | null} Session ID if valid alarm name, null otherwise
+   * @returns Parsed parts, or null if the name is malformed.
    * @private
    */
-  private extractSessionId(alarmName: string): string | null {
-    const match = alarmName.match(/^session-poll-(.+)-\d+$/);
-    return match ? match[1] : null;
+  private parseAlarmName(alarmName: string): { sessionId: string; pollIndex: number } | null {
+    const match = alarmName.match(/^session-poll-(.+?)-(\d+)$/);
+    if (!match) {
+      return null;
+    }
+    const pollIndex = Number.parseInt(match[2], 10);
+    if (!Number.isFinite(pollIndex) || pollIndex < 0) {
+      return null;
+    }
+    return { sessionId: match[1], pollIndex };
   }
 }

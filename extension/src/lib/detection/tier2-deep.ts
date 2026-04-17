@@ -24,12 +24,25 @@ import {
 
 
 /**
- * P2: High-confidence keywords for nearby text boosting (21 languages, 99.4% coverage)
+ * P2: High-confidence keywords for nearby text boosting (21 languages).
  *
- * When nearby text contains these keywords, boost score from 10 to 20 points.
- * Helps detect OTP fields with poor semantic HTML (like Steam login page).
+ * Split into two regexes because JS regex \b operates against the
+ * ASCII-only \w class ([A-Za-z0-9_]) regardless of the /i or /u flags.
+ * Cyrillic, CJK, Arabic, Hindi, Japanese, Korean, and Chinese characters
+ * are all non-\w, so wrapping their keywords in \b...\b silently made
+ * them unreachable in natural-language text (where the chars on both
+ * sides of the keyword are also non-\w -> no boundary).
+ *
+ * Split strategy:
+ *  - _LATIN (with \b): Latin-alphabet keywords only. Real Latin words
+ *    surrounded by spaces/punctuation have proper \w/\W transitions, so
+ *    \b works and prevents substring false positives ("code" inside
+ *    "barcode").
+ *  - _NONLATIN (no \b): everything else. Natural whitespace/punctuation
+ *    separation is enough to prevent spurious matches, and skipping \b
+ *    makes the keywords actually match.
  */
-const HIGH_CONFIDENCE_KEYWORDS = new RegExp(
+const HIGH_CONFIDENCE_KEYWORDS_LATIN = new RegExp(
   '\\b(' +
   // English
   'verification|code|otp|one.?time|security.?code|auth|authenticate|' +
@@ -38,8 +51,17 @@ const HIGH_CONFIDENCE_KEYWORDS = new RegExp(
   // German/French
   'bestätigung|vérification|authentification|' +
   // Turkish
-  'doğrulama|kod|kimlik|' +
-  // Russian/Ukrainian
+  'doğrulama|kod|kimlik' +
+  ')\\b',
+  'i'
+)
+
+// Non-Latin scripts: \b is meaningless here (these characters are not
+// \w), so match anywhere within nearby text. Includes Cyrillic, which
+// the previous split kept in the Latin arm - rendering Russian/Ukrainian
+// keywords unreachable for any natural Cyrillic-surrounded context.
+const HIGH_CONFIDENCE_KEYWORDS_NONLATIN = new RegExp(
+  // Cyrillic (Russian/Ukrainian)
   'код|верификация|подтверждение|' +
   // Arabic
   'رمز|التحقق|' +
@@ -50,9 +72,7 @@ const HIGH_CONFIDENCE_KEYWORDS = new RegExp(
   // Korean
   '코드|인증|확인|' +
   // Chinese
-  '验证码|驗證碼|代码|代碼|确认|確認' +
-  ')\\b',
-  'i'
+  '验证码|驗證碼|代码|代碼|确认|確認'
 )
 
 /**
@@ -533,7 +553,9 @@ export function detectTier2(
   if (nearbyText) {
     // Primary check: Multilingual high-confidence keywords (21 languages)
     // This fixes Turkish/Spanish/German/etc text scoring that was blocked by English-only filter
-    const hasHighConfidence = HIGH_CONFIDENCE_KEYWORDS.test(nearbyText)
+    const hasHighConfidence =
+      HIGH_CONFIDENCE_KEYWORDS_LATIN.test(nearbyText) ||
+      HIGH_CONFIDENCE_KEYWORDS_NONLATIN.test(nearbyText)
     const hasNegativeSignal = NEGATIVE_SIGNALS.test(nearbyText)
 
     if (hasNegativeSignal) {

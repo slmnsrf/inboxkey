@@ -10,7 +10,7 @@ InboxKey accesses email and SMS data solely to detect verification codes and mag
 
 ### Gmail (read-only)
 
-When a Gmail account is connected, InboxKey uses Chrome's built-in OAuth system (`chrome.identity.getAuthToken()`) to request read-only access under the `gmail.readonly` scope. Only recent messages (approximately the last 10 minutes) are queried. InboxKey cannot send, delete, or modify emails, and does not access contacts, calendar, or files.
+When a Gmail account is connected, InboxKey uses Chrome's built-in OAuth system (`chrome.identity.getAuthToken()`) to request read-only access under the `gmail.readonly` scope. Only recent messages (approximately the last 20 minutes) are queried. InboxKey cannot send, delete, or modify emails, and does not access contacts, calendar, or files.
 
 Authentication is handled entirely by Chrome via the Identity API with PKCE. No client secrets are stored in the extension. Token caching and refresh are managed by Chrome automatically.
 
