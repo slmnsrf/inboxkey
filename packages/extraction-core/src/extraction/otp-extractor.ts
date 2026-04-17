@@ -308,7 +308,7 @@ function findCandidatesInRanges(
       let m: RegExpExecArray | null
       while ((m = re.exec(slice))) {
         const raw = m[1] ?? m[0]
-        const norm = normalizeCode(raw)
+        const norm = normalizeCode(raw, { allowAlnum: cfg.allowAlnum })
         if (!norm) continue
         const charset: OtpCharset = /^[0-9]+$/.test(norm) ? 'digits' : 'alnum'
         const len = norm.length
@@ -344,8 +344,19 @@ function findCandidatesInRanges(
   return out
 }
 
-/** Normalize matched token: strip separators, uppercase letters */
-function normalizeCode(raw: string): string | null {
+/**
+ * Normalize a matched token: strip separators, uppercase letters, and
+ * apply structural filters.
+ *
+ * When `allowAlnum` is false (numeric-only mode), any letter-containing
+ * token is rejected. When `allowAlnum` is true, letter-only tokens are
+ * accepted only at length >= 6 to avoid matching common English words;
+ * shorter letter-only tokens are almost certainly not OTPs.
+ */
+function normalizeCode(
+  raw: string,
+  opts: { allowAlnum: boolean } = { allowAlnum: false }
+): string | null {
   // Remove spaces/hyphens/underscores/non-breaking space and zero-width spaces
   const cleaned = raw
     .replace(/[\s\u00A0\u200B\u200C\u200D_-]+/g, '')
@@ -354,8 +365,14 @@ function normalizeCode(raw: string): string | null {
   // Reject if nothing meaningful remains
   if (!cleaned) return null
 
-  // Reject if all letters (no digits) and not meant to be alnum
-  if (!/\d/.test(cleaned)) return null
+  const hasDigit = /\d/.test(cleaned)
+  if (!hasDigit) {
+    // Numeric-only mode: never allow letter-only tokens.
+    if (!opts.allowAlnum) return null
+    // Alnum mode: accept all-letter tokens only at length >= 6 so
+    // short English words don't slip through.
+    if (cleaned.length < 6) return null
+  }
 
   return cleaned
 }
