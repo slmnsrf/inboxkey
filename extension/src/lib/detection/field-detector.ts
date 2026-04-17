@@ -280,7 +280,22 @@ export function detectVerificationField(options?: {
     return null
   }
 
-  // Try Tier 1 first (fast) on each input
+  // Definitive Tier-1 rejection layers: password attribute, context
+  // negative keywords, signal classifier (SMS/authenticator), and URL
+  // setup-page match. Fields flagged by any of these must not be
+  // re-evaluated by Tier 2, which has its own narrower password check
+  // and would otherwise contradict the broader multilingual guard.
+  const definitiveRejection = new Set<string>([
+    'attribute',
+    'context',
+    'signal-classifier-tier1',
+    'url-pattern',
+  ])
+
+  // Try Tier 1 first (fast) on each input, remembering which inputs
+  // Tier 1 definitively rejected so Tier 2 can skip them.
+  const tier1Rejected = new Set<HTMLInputElement>()
+
   for (const input of inputs) {
     const tier1Result = detectTier1(input, cooldown)
 
@@ -289,19 +304,14 @@ export function detectVerificationField(options?: {
       return tier1ToDetectionResult(input, tier1Result, executionTime)
     }
 
-    // Skip Tier 2 if Tier 1 made a DEFINITIVE REJECTION (not just "no match")
-    // - layer='attribute': rejected due to password type, excluded patterns, custom attributes
-    // - layer='context': rejected due to negative keywords (21 languages)
-    // - NO metadata: Tier1 found nothing → defer to Tier2 for deep scan
-    if (tier1Result.metadata?.layer === 'attribute' ||
-        tier1Result.metadata?.layer === 'context' ||
-        tier1Result.metadata?.layer === 'signal-classifier-tier1') {
-      continue
+    if (tier1Result.metadata?.layer && definitiveRejection.has(tier1Result.metadata.layer)) {
+      tier1Rejected.add(input)
     }
   }
 
-  // Fall back to Tier 2 (deep scan) on remaining inputs
+  // Fall back to Tier 2 (deep scan) on inputs Tier 1 couldn't classify.
   for (const input of inputs) {
+    if (tier1Rejected.has(input)) continue
     const tier2Result = detectTier2(input, cooldown)
 
     if (tier2Result.detected) {
