@@ -126,13 +126,18 @@ export class EmailPollingService {
   }
 
   addAdapter(adapter: ProviderAdapter) {
-    if (!this.adapters.find(a => a.id === adapter.id)) {
+    // Dedupe on mailboxId (per-account), not provider type. Keying on
+    // adapter.id meant a second IMAP / Gmail account was silently
+    // dropped because they share the same provider type string.
+    if (!this.adapters.find(a => a.mailboxId === adapter.mailboxId)) {
       this.adapters.push(adapter)
     }
   }
 
-  removeAdapter(providerId: ProviderId) {
-    this.adapters = this.adapters.filter(a => a.id !== providerId)
+  removeAdapter(mailboxId: string) {
+    // Remove a single account's adapter by mailboxId. Keying on
+    // provider type would wipe every adapter of that type in one call.
+    this.adapters = this.adapters.filter(a => a.mailboxId !== mailboxId)
   }
 
   clear() {
