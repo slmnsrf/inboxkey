@@ -156,11 +156,15 @@ function tokenize(text: string): string[] {
     return [];
   }
 
+  // Minimum token length 3: 2-char tokens like "io", "co", "ai" are
+  // TLD fragments / connectors that create noise matches across
+  // unrelated domains (e.g. any two sites under a .co TLD would share
+  // a "co" token). Real service names are longer.
   return text
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, " ")
     .split(" ")
-    .filter(Boolean);
+    .filter(t => t.length >= 3);
 }
 
 /**
