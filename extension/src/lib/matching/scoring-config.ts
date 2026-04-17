@@ -9,5 +9,4 @@
 export {
   DOMAIN_ALIASES,
   WATCH_SESSION_SCORING,
-  CONFIDENCE_THRESHOLDS,
 } from '@inboxkey/extraction-core'

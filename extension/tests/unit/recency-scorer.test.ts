@@ -1,41 +1,40 @@
 /**
  * Recency Scorer Unit Tests
  *
- * Comprehensive tests for recency boost and session boost scoring functions.
- * Tests cover exponential decay behavior, session timing windows, and edge cases.
+ * Tests for recency boost and session boost scoring functions.
+ * recencyBoost returns a [0, 1.0] raw score; callers weight it.
  */
 
 import { describe, it, expect } from 'vitest'
 import { recencyBoost, sessionBoost } from '@/lib/matching/recency-scorer'
 
 describe('recencyBoost', () => {
-  it('should return 0.20 for age 0 seconds (brand new email)', () => {
+  it('should return 1.0 for age 0 seconds (brand new email)', () => {
     const boost = recencyBoost(0)
-    expect(boost).toBeCloseTo(0.20, 2)
+    expect(boost).toBeCloseTo(1.0, 4)
   })
 
-  it('should return ~0.12 for age 60 seconds (1 minute old)', () => {
+  it('should return ~0.607 for age 60 seconds (1 minute old)', () => {
     const boost = recencyBoost(60)
-    // Expected: 0.20 * e^(-60/120) = 0.20 * e^(-0.5) ≈ 0.1213
-    expect(boost).toBeCloseTo(0.12, 2)
+    // e^(-60/120) = e^(-0.5) ≈ 0.6065
+    expect(boost).toBeCloseTo(0.6065, 3)
   })
 
-  it('should return ~0.074 for age 120 seconds (2 minutes old)', () => {
+  it('should return ~0.368 for age 120 seconds (2 minutes old)', () => {
     const boost = recencyBoost(120)
-    // Expected: 0.20 * e^(-120/120) = 0.20 * e^(-1) ≈ 0.0736
-    expect(boost).toBeCloseTo(0.074, 2)
+    // e^(-1) ≈ 0.3679
+    expect(boost).toBeCloseTo(0.3679, 3)
   })
 
-  it('should return ~0.012 for age 300 seconds (5 minutes old)', () => {
+  it('should return ~0.082 for age 300 seconds (5 minutes old)', () => {
     const boost = recencyBoost(300)
-    // Expected: 0.20 * e^(-300/120) = 0.20 * e^(-2.5) ≈ 0.0164
-    expect(boost).toBeCloseTo(0.012, 1)
+    // e^(-2.5) ≈ 0.0821
+    expect(boost).toBeCloseTo(0.082, 2)
   })
 
-  it('should return 0.20 for negative age (clock skew safety)', () => {
+  it('should return 1.0 for negative age (clock skew safety)', () => {
     const boost = recencyBoost(-10)
-    // Negative ages should be treated as 0 for safety
-    expect(boost).toBeCloseTo(0.20, 2)
+    expect(boost).toBeCloseTo(1.0, 4)
   })
 })
 
@@ -59,9 +58,15 @@ describe('sessionBoost', () => {
     expect(boost).toBe(0.0)
   })
 
-  it('should return 0.15 when received 100s after session start (unbounded after)', () => {
+  it('should return 0.15 when received 100s after session start (inside 120s post-window)', () => {
     const receivedAt = sessionStart + 100000 // 100 seconds after
     const boost = sessionBoost(receivedAt, sessionStart)
     expect(boost).toBe(0.15)
+  })
+
+  it('should return 0.0 when received 130s after session start (past 120s post-window)', () => {
+    const receivedAt = sessionStart + 130000
+    const boost = sessionBoost(receivedAt, sessionStart)
+    expect(boost).toBe(0.0)
   })
 })

@@ -410,10 +410,12 @@ describe("Code Matcher", () => {
       ]
 
       const result = findBestMatchingCode(codes, "https://example.com", now)
-      // Used + domain match = 100 + 50 - 50 = 100
-      // Unused + no match = 50
-      // Used matched should still win
-      expect(result?.code).toBe("USED_MATCHED")
+      // usedPenalty (-250) fully negates the fresh-recency contribution,
+      // so a used matched code only retains its 100 domain points.
+      // A brand-new unused unrelated code gets the full 250 recency
+      // bonus and wins. Intent: stale codes shouldn't be auto-suggested
+      // even when the domain matches if a fresh alternative exists.
+      expect(result?.code).toBe("UNUSED_UNMATCHED")
     })
 
     it("should handle codes at threshold boundary", () => {
@@ -438,7 +440,9 @@ describe("Code Matcher", () => {
       const codes = [
         createCode({
           code: "BELOW",
-          timestamp: now - 4.9 * 60 * 1000, // ~9 points
+          // ~7 minutes old, no domain match -> recency contributes
+          // 250 * e^(-420/120) = 250 * 0.030 ≈ 7.5 pts, below acceptMin.
+          timestamp: now - 7 * 60 * 1000,
           siteMatch: undefined,
           used: false,
         }),
