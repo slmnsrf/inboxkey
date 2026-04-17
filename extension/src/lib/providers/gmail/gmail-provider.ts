@@ -45,12 +45,10 @@ export class GmailProvider implements IChromeIdentityProvider {
     // Build Gmail search query
     const query = this.buildSearchQuery(options)
 
-    // DEBUG: Log the query being used
     console.log('[GmailProvider] fetchEmails called:', {
       query,
       maxResults: options.maxResults || 10,
       newerThan: options.newerThan,
-      accessTokenPrefix: accessToken.substring(0, 20) + '...'
     })
 
     // List message IDs
