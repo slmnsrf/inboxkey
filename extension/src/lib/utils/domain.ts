@@ -2,69 +2,47 @@
  * Domain utilities for per-domain feature toggling
  */
 
+import { getDomain } from 'tldts'
 import type { DomainPreferences } from '@/lib/storage/schema'
 import { STORAGE_KEYS } from '@/lib/storage/schema'
 import { isBankingDomain } from '@/lib/data/banking-blocklist'
 import { isBlacklisted } from './blacklist'
 
 /**
- * Extract eTLD+1 (effective top-level domain + 1) from a URL
+ * Extract eTLD+1 (effective top-level domain + 1) from a URL or hostname
+ * using the Mozilla Public Suffix List (via tldts).
  *
  * Examples:
- * - https://www.example.com/path → example.com
- * - https://subdomain.example.com → example.com
- * - https://localhost:3000 → localhost
- * - https://192.168.1.1 → 192.168.1.1
+ * - https://www.example.com/path  → example.com
+ * - https://login.amazon.co.uk    → amazon.co.uk
+ * - https://shop.example.com.tr   → example.com.tr
+ * - https://localhost:3000        → localhost
+ * - https://192.168.1.1           → 192.168.1.1
  *
- * @param url - Full URL or hostname
- * @returns eTLD+1 domain, or empty string if invalid
+ * @param url - Full URL or bare hostname
+ * @returns eTLD+1 domain, or empty string on invalid URL input.
+ *          Returns the bare hostname for single-label hosts, IPs, and
+ *          anything tldts cannot parse to a registrable domain.
  */
 export function extractDomain(url: string): string {
   try {
     let hostname: string
 
-    // If it's a full URL, parse it
     if (url.includes('://')) {
       const urlObj = new URL(url)
       hostname = urlObj.hostname
     } else {
-      // Treat as hostname directly
       hostname = url
     }
 
-    // Handle localhost and IPs (return as-is)
+    // localhost / IPs: return as-is so per-domain preferences keyed
+    // on them still work.
     if (hostname === 'localhost' || /^\d+\.\d+\.\d+\.\d+$/.test(hostname)) {
       return hostname
     }
 
-    // Extract eTLD+1 (basic implementation)
-    // For production, you might want to use a library like tldts
-    const parts = hostname.split('.')
-
-    // If only one part (e.g., "localhost"), return it
-    if (parts.length === 1) {
-      return parts[0]
-    }
-
-    // Handle common TLDs and multi-part TLDs
-    // For simplicity, we'll take the last 2 parts for most cases
-    // This covers .com, .org, .net, etc.
-    const lastTwo = parts.slice(-2).join('.')
-
-    // Handle special cases like .co.uk, .com.au, etc.
-    if (parts.length >= 3) {
-      const lastPart = parts[parts.length - 1]
-      const secondLastPart = parts[parts.length - 2]
-
-      // Common two-part TLDs
-      const twoPartTlds = ['co', 'com', 'org', 'net', 'gov', 'edu', 'ac']
-      if (twoPartTlds.includes(secondLastPart) && lastPart.length === 2) {
-        // This is likely a two-part TLD like .co.uk
-        return parts.slice(-3).join('.')
-      }
-    }
-
-    return lastTwo
+    const registrable = getDomain(hostname)
+    return registrable ?? hostname
   } catch (error) {
     console.warn('[Domain] Failed to extract domain from:', url, error)
     return ''

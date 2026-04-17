@@ -34,12 +34,14 @@ describe('Domain Affinity', () => {
       expect(result).toBe('example.com')
     })
 
-    it('should handle short domain with limitations', () => {
-      // Simplified implementation limitation: multi-part TLDs like .co.uk
-      // will extract as "example.co" instead of "example.co.uk"
-      const result = extractETLD('example.co.uk')
-      expect(result).toBe('co.uk')
-      // This is acceptable as documented in the function's limitations
+    it('should correctly extract eTLD+1 for compound country TLDs', () => {
+      // tldts-backed: PSL handles .co.uk, .co.jp, .com.tr, etc.
+      // Previously the naive slice(-2) returned "co.uk" for every UK
+      // domain, causing cross-service false matches.
+      expect(extractETLD('example.co.uk')).toBe('example.co.uk')
+      expect(extractETLD('login.amazon.co.uk')).toBe('amazon.co.uk')
+      expect(extractETLD('shop.example.com.tr')).toBe('example.com.tr')
+      expect(extractETLD('www.rakuten.co.jp')).toBe('rakuten.co.jp')
     })
 
     it('should handle empty string edge case', () => {

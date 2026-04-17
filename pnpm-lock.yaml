@@ -139,6 +139,10 @@ importers:
         version: 1.6.1(@types/node@20.19.22)(@vitest/ui@1.6.1)(happy-dom@14.12.3)(less@4.4.2)(lightningcss@1.30.2)(sass@1.93.2)
 
   packages/extraction-core:
+    dependencies:
+      tldts:
+        specifier: ^7.0.25
+        version: 7.0.25
     devDependencies:
       typescript:
         specifier: ^5.5.3
