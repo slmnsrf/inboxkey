@@ -549,7 +549,12 @@ export class WatchSession {
 
     if (this.port) {
       try {
+        // Remove both listeners before the explicit disconnect() call.
+        // Otherwise handlePortDisconnect fires again from our own
+        // disconnect and re-enters cleanup() - harmless today but
+        // latent source of duplicate log lines and reentrancy bugs.
         this.port.onMessage.removeListener(this.handlePortMessage)
+        this.port.onDisconnect.removeListener(this.handlePortDisconnect)
         this.port.disconnect()
       } catch {
         // Ignore disconnect errors (port may already be closed)

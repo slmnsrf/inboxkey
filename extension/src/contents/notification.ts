@@ -21,6 +21,25 @@ const STYLE_ID = 'inboxkey-notification-styles'
 const ANIMATION_DURATION_MS = 300
 
 /**
+ * Pending dismiss/fade timers, so cancelPendingNotifications() can
+ * clear them on page unload / SPA route change instead of leaking
+ * callbacks that fire against a stale document.
+ */
+const pendingTimers = new Set<ReturnType<typeof setTimeout>>()
+
+function trackTimer(id: ReturnType<typeof setTimeout>): ReturnType<typeof setTimeout> {
+  pendingTimers.add(id)
+  return id
+}
+
+export function cancelPendingNotifications(): void {
+  for (const id of pendingTimers) {
+    clearTimeout(id)
+  }
+  pendingTimers.clear()
+}
+
+/**
  * Show a toast notification to the user
  */
 export function showNotification(options: NotificationOptions): void {
@@ -40,9 +59,10 @@ export function showNotification(options: NotificationOptions): void {
   document.body.appendChild(notification)
 
   // Auto-dismiss after duration
-  setTimeout(() => {
+  const dismissId = trackTimer(setTimeout(() => {
+    pendingTimers.delete(dismissId)
     dismissNotification(notification)
-  }, duration)
+  }, duration))
 }
 
 /**
@@ -80,11 +100,12 @@ function createNotificationElement(
 function dismissNotification(notification: HTMLDivElement): void {
   notification.style.animation = `inboxkeySlideIn ${ANIMATION_DURATION_MS}ms ease-out reverse`
 
-  setTimeout(() => {
+  const fadeId = trackTimer(setTimeout(() => {
+    pendingTimers.delete(fadeId)
     if (notification.parentNode) {
       notification.parentNode.removeChild(notification)
     }
-  }, ANIMATION_DURATION_MS)
+  }, ANIMATION_DURATION_MS))
 }
 
 /**
