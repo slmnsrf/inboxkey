@@ -95,31 +95,34 @@ export function recencyBoost(ageSeconds: number): number {
  *
  * **Algorithm:**
  * ```
- * boost = (receivedAt >= sessionStart - 15000) ? 0.15 : 0
+ * boost = (receivedAt within [sessionStart - 15s, sessionStart + 120s]) ? 0.15 : 0
  * ```
  *
  * **Design rationale:**
  * - 15-second pre-session window accounts for email delivery latency
+ * - 120-second post-session window matches the watch session poll horizon
+ *   (WATCH_SESSION_SCORING.recencyDecaySeconds); emails arriving after
+ *   the watch ends are almost certainly unrelated to the session trigger.
  * - Fixed boost (not decay) treats all in-window emails equally
  * - Binary threshold avoids complex time-distance calculations
- * - 0.15 magnitude balances with recency boost (max 0.20)
  *
  * **Window behavior:**
  * ```
- * Email Timing          | Boost | Rationale
- * ----------------------|-------|------------------------------------------
- * 30s before session    |  0.0  | Too early - likely unrelated
- * 10s before session    |  0.15 | Within window - probably triggered session
- * At session start      |  0.15 | Exact timing - high relevance
- * 5s after session      |  0.15 | Just arrived - session triggered email
- * Unbounded future      |  0.15 | All future emails get boost (until stale)
+ * Email Timing            | Boost | Rationale
+ * ------------------------|-------|------------------------------------------
+ * 30s before session      |  0.0  | Too early - likely unrelated
+ * 10s before session      |  0.15 | Within pre-window - probably triggered session
+ * At session start        |  0.15 | Exact timing - high relevance
+ * 5s after session        |  0.15 | Just arrived - session-triggered email
+ * 100s after session      |  0.15 | Still within active watch window
+ * 130s after session      |  0.0  | Past watch horizon - unrelated arrival
  * ```
  *
  * **Implementation note:**
- * The asymmetric window (15s before, unlimited after) reflects that:
- * 1. Users often react to emails they just received (future-bounded by recency)
- * 2. Email delivery can precede user's browser action by a few seconds
- * 3. Recency boost handles time-based decay for emails arriving after session
+ * Bounded symmetrical window keeps the boost tied to the actual session
+ * lifetime. Before the fix, an email arriving hours later still got the
+ * full boost because there was no upper bound, which could surface an
+ * unrelated promotional email above a correct (but slightly older) one.
  *
  * @param receivedAt - Email received timestamp (milliseconds since epoch)
  * @param sessionStart - Session start timestamp (milliseconds since epoch)
@@ -147,13 +150,13 @@ export function recencyBoost(ageSeconds: number): number {
  * ```
  */
 export function sessionBoost(receivedAt: number, sessionStart: number): number {
-  // 15-second pre-session window (15000 milliseconds)
-  // Accounts for email delivery latency and user reaction time
-  const WINDOW_MS = 15000;
+  // 15-second pre-session window: email delivery latency slack.
+  const PRE_WINDOW_MS = 15000;
+  // 120-second post-session window: matches the active watch horizon.
+  const POST_WINDOW_MS = 120000;
 
-  // Email must arrive no earlier than 15s before session start
-  // No upper bound - recency scorer handles time-based decay
-  const withinWindow = receivedAt >= (sessionStart - WINDOW_MS);
+  const lowerBound = sessionStart - PRE_WINDOW_MS;
+  const upperBound = sessionStart + POST_WINDOW_MS;
 
-  return withinWindow ? 0.15 : 0;
+  return (receivedAt >= lowerBound && receivedAt <= upperBound) ? 0.15 : 0;
 }
