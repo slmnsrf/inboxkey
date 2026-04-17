@@ -47,7 +47,7 @@ export class StorageProviderAdapter implements ProviderAdapter {
     let accessToken = this.mailbox.accessToken
 
     if (now >= this.mailbox.tokenExpiresAt - REFRESH_BUFFER_MS) {
-      console.log(`[StorageProviderAdapter] Token expiring soon for ${this.mailbox.email}, refreshing...`)
+      console.log(`[StorageProviderAdapter] Token expiring soon for ${this.mailbox.id}, refreshing...`)
       try {
         accessToken = await this.refreshToken()
       } catch (error) {
@@ -58,7 +58,7 @@ export class StorageProviderAdapter implements ProviderAdapter {
     }
 
     // Fetch emails using v1 provider interface
-    console.log(`[StorageProviderAdapter] Fetching emails for ${this.mailbox.email}`)
+    console.log(`[StorageProviderAdapter] Fetching emails for ${this.mailbox.id}`)
 
     let emails
     try {
@@ -70,7 +70,7 @@ export class StorageProviderAdapter implements ProviderAdapter {
       // Check for 401 authentication error and retry with refreshed token
       const errorMessage = error instanceof Error ? error.message : String(error)
       if (errorMessage.includes('401') || errorMessage.includes('UNAUTHENTICATED')) {
-        console.log(`[StorageProviderAdapter] Got 401 error, forcing token refresh for ${this.mailbox.email}`)
+        console.log(`[StorageProviderAdapter] Got 401 error, forcing token refresh for ${this.mailbox.id}`)
         accessToken = await this.refreshToken()
 
         // Retry with new token
@@ -121,7 +121,7 @@ export class StorageProviderAdapter implements ProviderAdapter {
       tokenExpiresAt: expiresAt,
     }
 
-    console.log(`[StorageProviderAdapter] Token refreshed for ${this.mailbox.email}`)
+    console.log(`[StorageProviderAdapter] Token refreshed for ${this.mailbox.id}`)
     return tokens.accessToken
   }
 }
