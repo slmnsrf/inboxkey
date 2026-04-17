@@ -590,7 +590,7 @@ describe("SessionController", () => {
             startedAt: now,
             status: "active",
             pollSchedule: [now, now + 5000, now + 10000],  // Matches pollTimesMs
-            pollsCompleted: [0],  // First poll already done
+            pollsCompleted: [],  // No polls completed yet
             lastUpdated: now,
           },
         },
@@ -601,9 +601,8 @@ describe("SessionController", () => {
       const controller = createController({ onSessionCompleted: onCompleted })
       await controller.initialize()
 
-      // SessionPoller will re-schedule all polls from startedAt
-      // Even though pollsCompleted shows first poll done, SessionPoller reschedules all
-      // This is acceptable as polls are idempotent and the first poll will execute immediately
+      // SessionPoller reschedules all polls; with empty pollsCompleted
+      // the first poll (index 0) runs immediately and calls getCache.
       await vi.advanceTimersByTimeAsync(0)
       await vi.advanceTimersByTimeAsync(1)
       expect(mockPopupCacheManager.getCache).toHaveBeenCalled()
