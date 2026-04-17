@@ -190,19 +190,49 @@ chrome.runtime.onStartup.addListener(async () => {
 // V2: SessionPoller handles alarms internally via its own listener
 // No need to register chrome.alarms.onAlarm listener here
 
-// Click-to-copy for code notifications
-let lastNotificationCode: Record<string, string> = {}
-chrome.notifications.onClicked.addListener((notifId) => {
-  const code = lastNotificationCode[notifId]
-  if (code) {
-    // Copy code to clipboard (service worker can use Clipboard API in recent Chrome)
-    try {
-      // @ts-ignore -- navigator.clipboard available in SW in Chrome 105+
-      navigator.clipboard.writeText(code).catch(() => {})
-    } catch { /* fallback: user can still open popup */ }
-    delete lastNotificationCode[notifId]
+// Click-to-copy for code notifications.
+//
+// The notifId -> code mapping lives in chrome.storage.session so it
+// survives a service-worker restart. Without persistence, Chrome
+// suspending the worker between notification creation and the user's
+// click silently dropped the clipboard copy.
+const NOTIFICATION_CODE_KEY = 'inboxkey.notificationCodes'
+
+async function rememberNotificationCode(notifId: string, code: string): Promise<void> {
+  try {
+    const existing = await chrome.storage.session.get(NOTIFICATION_CODE_KEY)
+    const map: Record<string, string> = existing[NOTIFICATION_CODE_KEY] ?? {}
+    map[notifId] = code
+    await chrome.storage.session.set({ [NOTIFICATION_CODE_KEY]: map })
+  } catch { /* best-effort */ }
+}
+
+async function consumeNotificationCode(notifId: string): Promise<string | undefined> {
+  try {
+    const existing = await chrome.storage.session.get(NOTIFICATION_CODE_KEY)
+    const map: Record<string, string> = existing[NOTIFICATION_CODE_KEY] ?? {}
+    const code = map[notifId]
+    if (code !== undefined) {
+      delete map[notifId]
+      await chrome.storage.session.set({ [NOTIFICATION_CODE_KEY]: map })
+    }
+    return code
+  } catch {
+    return undefined
   }
-  chrome.notifications.clear(notifId)
+}
+
+chrome.notifications.onClicked.addListener((notifId) => {
+  void (async () => {
+    const code = await consumeNotificationCode(notifId)
+    if (code) {
+      try {
+        // @ts-ignore -- navigator.clipboard available in SW in Chrome 105+
+        navigator.clipboard.writeText(code).catch(() => {})
+      } catch { /* fallback: user can still open popup */ }
+    }
+    chrome.notifications.clear(notifId)
+  })()
 })
 
 chrome.runtime.onConnect.addListener((port) => {
@@ -253,7 +283,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   // Silent notification when code found but autofill failed
   if (msg.type === "SHOW_CODE_NOTIFICATION") {
     const notifId = `inboxkey-code-${Date.now()}`
-    lastNotificationCode[notifId] = msg.code
+    void rememberNotificationCode(notifId, msg.code)
     chrome.notifications.create(notifId, {
       type: 'basic',
       iconUrl: chrome.runtime.getURL('icon128.plasmo.png'),
