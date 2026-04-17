@@ -161,6 +161,17 @@ function isCoherentGroup(inputs: HTMLInputElement[]): boolean {
     return false
   }
 
+  // Real split-input OTP widgets have a tiny maxLength per cell
+  // (typically 1, sometimes 2-4 for chunked layouts). Generic form
+  // fields without maxlength default to the browser's per-control
+  // limit (524288 in Chrome/Chromium, or -1 unset in happy-dom),
+  // which is how 5 unrelated address-form <input>s used to get
+  // treated as a 5-digit OTP widget. Require maxLength in [1, 6].
+  const sharedMaxLen = inputs[0].maxLength
+  if (sharedMaxLen < 1 || sharedMaxLen > 6) {
+    return false
+  }
+
   // All inputs must have same type
   const types = new Set(inputs.map(input => input.type))
   if (types.size > 1) {

@@ -61,6 +61,7 @@ vi.mock('../../background/popup-cache', () => ({
 vi.mock('../../background/error-state-manager', () => ({
   ErrorStateManager: vi.fn().mockImplementation(() => ({
     shouldShowBadge: vi.fn(async () => false),
+    removeMailboxErrors: vi.fn(async () => {}),
   })),
 }))
 
@@ -229,6 +230,7 @@ beforeEach(async () => {
   vi.doMock('../../background/error-state-manager', () => ({
     ErrorStateManager: vi.fn().mockImplementation(() => ({
       shouldShowBadge: vi.fn(async () => false),
+      removeMailboxErrors: vi.fn(async () => {}),
     })),
   }))
   vi.doMock('../../background/popup-handler', () => ({
@@ -394,7 +396,11 @@ describe('Google Messages background handlers', () => {
       expect(saved.gmPhoneNumber).toBe('+905551234455')
 
       expect(mockTabManager.clearPendingSetup).toHaveBeenCalledOnce()
-      expect(mockTabManager.closeIfOwned).toHaveBeenCalledOnce()
+      // On pairing success the handler intentionally leaves the
+      // Messages tab open (settings tab gets focus, user keeps
+      // Messages for SMS scraping). closeIfOwned is only called on
+      // the one-account-limit rejection path and on cancel.
+      expect(mockTabManager.closeIfOwned).not.toHaveBeenCalled()
     })
 
     it('enforces one-account limit when checking pairing', async () => {

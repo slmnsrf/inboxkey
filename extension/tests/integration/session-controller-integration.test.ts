@@ -43,10 +43,12 @@ vi.mock("../../src/lib/storage/storage-factory", () => {
 })
 
 // V2: Mock EmailPollingService
+// pollOnce returns { candidates, adapterResults } per the current API
+// (not a raw array - that was the pre-refactor shape that drifted).
 vi.mock("../../src/lib/services/email-polling-service", () => {
   return {
     EmailPollingService: vi.fn(() => ({
-      pollOnce: vi.fn(() => Promise.resolve([])),
+      pollOnce: vi.fn(() => Promise.resolve({ candidates: [], adapterResults: [] })),
     })),
   }
 })

@@ -367,9 +367,15 @@ export function detectTier1(
   const identifier = name || id
   const maxLength = input.maxLength
 
-  // Skip zip codes explicitly FIRST (before general exclusion patterns)
-  // This ensures specific rejection message for zip/postal codes
-  if (maxLength > 0 && maxLength <= 5 && /zip|postal/i.test(identifier)) {
+  // Skip zip/postal codes explicitly FIRST (before general exclusion
+  // patterns). Two matching modes:
+  //   - Identifier clearly says "zipcode" / "postalcode" / "zip-code"
+  //     etc. (compound match) -> always reject.
+  //   - Short maxLength + name contains "zip" / "postal" -> reject
+  //     (belt-and-braces for fields named just "zip" or "postal").
+  const isZipCompound = /zip[\s\-_]?code|postal[\s\-_]?code/i.test(identifier)
+  const isZipShort = maxLength > 0 && maxLength <= 5 && /zip|postal/i.test(identifier)
+  if (isZipCompound || isZipShort) {
     cooldown.markRejected(input)
     return {
       detected: false,
