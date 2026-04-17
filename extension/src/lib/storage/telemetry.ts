@@ -47,17 +47,20 @@ export async function logAutoSubmitFailure(
       topScore: details.topScore
     }
 
-    // Read-modify-write the failures array through PlaintextStorage's
-    // locked updateSettings so concurrent user-initiated saves don't
-    // silently clobber our write (or ours clobber theirs).
+    // Atomic read-modify-write: mutateSettings runs the getter, our
+    // transform, and the write inside a single mutex block. A bare
+    // getSettings + updateSettings pair leaks the read across the lock
+    // boundary and two concurrent telemetry writers can drop each
+    // other's entries.
     const storage = await StorageFactory.create()
-    const current = await storage.getSettings()
-    const failures: AutoSubmitFailure[] = [...(current.autoSubmitFailures ?? [])]
-    failures.unshift(failure)
-    if (failures.length > MAX_FAILURES) {
-      failures.splice(MAX_FAILURES)
-    }
-    await storage.updateSettings({ autoSubmitFailures: failures })
+    await storage.mutateSettings(current => {
+      const failures: AutoSubmitFailure[] = [...(current.autoSubmitFailures ?? [])]
+      failures.unshift(failure)
+      if (failures.length > MAX_FAILURES) {
+        failures.splice(MAX_FAILURES)
+      }
+      return { autoSubmitFailures: failures }
+    })
 
     console.log(`[Telemetry] Logged auto-submit failure: ${reason} on ${urlDomain}`)
   } catch (error) {
@@ -123,15 +126,16 @@ export async function logBetaFeatureUsage(
       metadata
     }
 
-    // Same mutex rationale as logAutoSubmitFailure above.
+    // Same atomic-RMW rationale as logAutoSubmitFailure above.
     const storage = await StorageFactory.create()
-    const current = await storage.getSettings()
-    const usageLog: BetaFeatureUsage[] = [...(current.betaFeatureUsage ?? [])]
-    usageLog.unshift(usage)
-    if (usageLog.length > MAX_BETA_USAGE) {
-      usageLog.splice(MAX_BETA_USAGE)
-    }
-    await storage.updateSettings({ betaFeatureUsage: usageLog })
+    await storage.mutateSettings(current => {
+      const usageLog: BetaFeatureUsage[] = [...(current.betaFeatureUsage ?? [])]
+      usageLog.unshift(usage)
+      if (usageLog.length > MAX_BETA_USAGE) {
+        usageLog.splice(MAX_BETA_USAGE)
+      }
+      return { betaFeatureUsage: usageLog }
+    })
 
     console.log(`[Telemetry] Beta feature usage logged: ${feature} on ${urlDomain}`)
   } catch (error) {

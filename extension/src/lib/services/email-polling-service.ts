@@ -154,7 +154,8 @@ export class EmailPollingService {
    * meeting minScore. Keeps a small, recent cache for the popup.
    *
    * Behavior:
-   *  • Queries only "recent" emails (default 10 minutes).
+   *  • Queries only "recent" emails (default 20 minutes; widened from
+   *    10m to accommodate Gmail's delivery latency on spam-filter checks).
    *  • Caps per-provider fetches (default 8) and a global processed cap (default 20).
    *  • Uses seenMessageIds to avoid re-processing the same items.
    *  • Extracts OTPs and magic links via extractFromEmail().

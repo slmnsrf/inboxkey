@@ -292,10 +292,12 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       silent: true,
       priority: 1,
     })
-    // Auto-dismiss after 7 seconds
+    // Auto-dismiss after 7 seconds. Consume the persisted mapping
+    // even though the user didn't click, otherwise chrome.storage.session
+    // accumulates orphan entries for notifications that timed out.
     setTimeout(() => {
       chrome.notifications.clear(notifId)
-      delete lastNotificationCode[notifId]
+      void consumeNotificationCode(notifId)
     }, 7000)
     return false
   }

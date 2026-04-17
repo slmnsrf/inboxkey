@@ -102,16 +102,23 @@ export class GmailProvider implements IChromeIdentityProvider {
     // touched the inbox before we polled. The time window below plus
     // maxResults is enough to keep the query tight.
 
-    // Add date filter. Use minute granularity (Gmail supports Nm);
-    // rounding up to whole days meant a 10-minute window fetched the
-    // entire last 24 hours of mail every poll.
+    // Add date filter. Gmail's `newer_than:` operator accepts only
+    // `d` (days), `m` (months), and `y` (years) - there is NO minute
+    // suffix. Emitting `Nm` was silently fetching the last N months
+    // of mail and relying on the service-side receivedEpochMs filter
+    // to drop stale results, which worked for correctness but wasted
+    // huge amounts of Gmail API quota per poll.
+    //
+    // Sub-day precision must be enforced client-side by the caller
+    // (EmailPollingService.pollOnce filters `msg.receivedEpochMs <
+    // since`). Server-side we can only narrow to whole days, so emit
+    // a 1-day floor and let the client filter do the minute-level cut.
     if (options.newerThan) {
-      const minutesAgo = Math.ceil(
-        (Date.now() - options.newerThan.getTime()) / (1000 * 60)
+      const daysAgo = Math.max(
+        1,
+        Math.ceil((Date.now() - options.newerThan.getTime()) / (1000 * 60 * 60 * 24))
       )
-      if (minutesAgo > 0) {
-        queryParts.push(`newer_than:${minutesAgo}m`)
-      }
+      queryParts.push(`newer_than:${daysAgo}d`)
     }
 
     // Add custom query

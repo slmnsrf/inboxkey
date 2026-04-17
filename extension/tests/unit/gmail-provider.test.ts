@@ -48,7 +48,7 @@ describe('GmailProvider', () => {
       expect(capturedQuery).toBe('')
     })
 
-    it('should build query with newerThan filter in minute granularity', async () => {
+    it('should build query with newerThan filter at 1-day floor', async () => {
       let capturedQuery = ''
       vi.spyOn(provider['api'], 'listMessages').mockImplementation(
         async (token, options) => {
@@ -57,12 +57,31 @@ describe('GmailProvider', () => {
         }
       )
 
+      // Gmail's newer_than: only supports d/m/y (m = MONTHS, not
+      // minutes). Any sub-day window rounds up to `newer_than:1d`
+      // and the service-side `receivedEpochMs < since` filter
+      // handles minute-level precision.
       const twentyMinAgo = new Date(Date.now() - 20 * 60 * 1000)
       await provider.fetchEmails('token123', { newerThan: twentyMinAgo })
 
-      // Minute granularity: previously rounded to days (a 20-minute
-      // window became newer_than:1d - full 24h fetch per poll).
-      expect(capturedQuery).toMatch(/^newer_than:(20|21)m$/)
+      expect(capturedQuery).toBe('newer_than:1d')
+    })
+
+    it('should emit multi-day newer_than when window exceeds a day', async () => {
+      let capturedQuery = ''
+      vi.spyOn(provider['api'], 'listMessages').mockImplementation(
+        async (token, options) => {
+          capturedQuery = options.query || ''
+          return []
+        }
+      )
+
+      const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000)
+      await provider.fetchEmails('token123', { newerThan: threeDaysAgo })
+
+      // Math.ceil may bump 3.0 to 4 due to sub-ms timing drift between
+      // test setup and the query builder - accept either.
+      expect(capturedQuery).toMatch(/^newer_than:[34]d$/)
     })
 
     it('should build query with custom search term', async () => {
@@ -94,7 +113,7 @@ describe('GmailProvider', () => {
         query: 'subject:urgent',
       })
 
-      expect(capturedQuery).toMatch(/newer_than:(10|11)m/)
+      expect(capturedQuery).toContain('newer_than:1d')
       expect(capturedQuery).toContain('subject:urgent')
     })
   })

@@ -26,14 +26,21 @@ import {
 /**
  * P2: High-confidence keywords for nearby text boosting (21 languages).
  *
- * Split into two regexes because JS regex \b only operates on the \w
- * character class, which is ASCII-plus-Cyrillic-adjacent. Wrapping CJK,
- * Arabic, Hindi, Japanese, Korean, and Chinese alternatives in \b...\b
- * silently made them unreachable most of the time. Two separate
- * patterns - one with boundaries (Latin + Cyrillic where \b works
- * usefully), one without (CJK/RTL/Devanagari) - keeps boundary-based
- * precision for European languages and restores any-position matching
- * for scripts where \b is meaningless.
+ * Split into two regexes because JS regex \b operates against the
+ * ASCII-only \w class ([A-Za-z0-9_]) regardless of the /i or /u flags.
+ * Cyrillic, CJK, Arabic, Hindi, Japanese, Korean, and Chinese characters
+ * are all non-\w, so wrapping their keywords in \b...\b silently made
+ * them unreachable in natural-language text (where the chars on both
+ * sides of the keyword are also non-\w -> no boundary).
+ *
+ * Split strategy:
+ *  - _LATIN (with \b): Latin-alphabet keywords only. Real Latin words
+ *    surrounded by spaces/punctuation have proper \w/\W transitions, so
+ *    \b works and prevents substring false positives ("code" inside
+ *    "barcode").
+ *  - _NONLATIN (no \b): everything else. Natural whitespace/punctuation
+ *    separation is enough to prevent spurious matches, and skipping \b
+ *    makes the keywords actually match.
  */
 const HIGH_CONFIDENCE_KEYWORDS_LATIN = new RegExp(
   '\\b(' +
@@ -44,18 +51,18 @@ const HIGH_CONFIDENCE_KEYWORDS_LATIN = new RegExp(
   // German/French
   'bestätigung|vérification|authentification|' +
   // Turkish
-  'doğrulama|kod|kimlik|' +
-  // Russian/Ukrainian
-  'код|верификация|подтверждение' +
+  'doğrulama|kod|kimlik' +
   ')\\b',
   'i'
 )
 
-// Non-Latin scripts: \b is meaningless (CJK/Arabic/Devanagari chars are
-// not \w), so match anywhere within nearby text. These alphabets have
-// their own natural separation via punctuation/whitespace and don't
-// collide with unrelated keywords the way Latin substrings do.
+// Non-Latin scripts: \b is meaningless here (these characters are not
+// \w), so match anywhere within nearby text. Includes Cyrillic, which
+// the previous split kept in the Latin arm - rendering Russian/Ukrainian
+// keywords unreachable for any natural Cyrillic-surrounded context.
 const HIGH_CONFIDENCE_KEYWORDS_NONLATIN = new RegExp(
+  // Cyrillic (Russian/Ukrainian)
+  'код|верификация|подтверждение|' +
   // Arabic
   'رمز|التحقق|' +
   // Hindi

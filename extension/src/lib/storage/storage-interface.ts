@@ -68,6 +68,14 @@ export interface IStorage {
    */
   updateSettings(updates: Partial<Settings>): Promise<void>
 
+  /**
+   * Atomic read-modify-write on settings. Use when the update depends
+   * on the current persisted value (e.g. appending to telemetry /
+   * blacklist arrays) to avoid lost-write races that straddle the
+   * lock boundary of a bare getSettings + updateSettings pair.
+   */
+  mutateSettings(transform: (current: Settings) => Partial<Settings>): Promise<void>
+
   // ============================================================================
   // Session State Operations
   // ============================================================================

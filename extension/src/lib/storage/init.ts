@@ -25,21 +25,37 @@ import {
  */
 export async function initializeStorage(): Promise<void> {
   try {
-    // Ensure default values exist
+    // Read the stored schema version FIRST - before ensureDefaults
+    // seeds anything. ensureDefaults used to write the version key if
+    // missing, which masked pre-versioning installs as already-on-
+    // current and caused getStorageVersion's "?? 0" fallback to be
+    // unreachable. Now version stamping is deferred until after any
+    // migrations run.
+    const currentVersion = await getStorageVersion()
+
     await ensureDefaults()
 
-    // Check and run migrations if needed
-    const currentVersion = await getStorageVersion()
     if (currentVersion < CURRENT_SCHEMA_VERSION) {
       await migrateStorage(currentVersion, CURRENT_SCHEMA_VERSION)
     }
+
+    // Stamp the current version after migrations succeed (or if we
+    // were already current). This is the only place VERSION is written
+    // for fresh installs - the migration path does its own writes.
+    await chrome.storage.local.set({
+      [STORAGE_KEYS.VERSION]: CURRENT_SCHEMA_VERSION,
+    })
   } catch (error) {
     throw new StorageError("Failed to initialize storage", error)
   }
 }
 
 /**
- * Ensure default settings and session state exist
+ * Ensure default settings and session state exist.
+ *
+ * Note: does NOT seed STORAGE_KEYS.VERSION - initializeStorage() reads
+ * the version before calling this function so the "pre-versioning" case
+ * (0) is observable, then stamps the version after migrations.
  */
 async function ensureDefaults(): Promise<void> {
   // Check if settings exist
@@ -47,14 +63,6 @@ async function ensureDefaults(): Promise<void> {
   if (!settingsResult[STORAGE_KEYS.SETTINGS]) {
     await chrome.storage.local.set({
       [STORAGE_KEYS.SETTINGS]: getDefaultSettings(),
-    })
-  }
-
-  // Check if version exists
-  const versionResult = await chrome.storage.local.get(STORAGE_KEYS.VERSION)
-  if (!versionResult[STORAGE_KEYS.VERSION]) {
-    await chrome.storage.local.set({
-      [STORAGE_KEYS.VERSION]: CURRENT_SCHEMA_VERSION,
     })
   }
 

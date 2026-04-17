@@ -161,14 +161,32 @@ function isCoherentGroup(inputs: HTMLInputElement[]): boolean {
     return false
   }
 
-  // Real split-input OTP widgets have a tiny maxLength per cell
-  // (typically 1, sometimes 2-4 for chunked layouts). Generic form
-  // fields without maxlength default to the browser's per-control
-  // limit (524288 in Chrome/Chromium, or -1 unset in happy-dom),
-  // which is how 5 unrelated address-form <input>s used to get
-  // treated as a 5-digit OTP widget. Require maxLength in [1, 6].
+  // Accept one of two shapes for a real split-input OTP widget:
+  //
+  // (a) sharedMaxLen in [1, 6]: explicit per-cell limit. Typical for
+  //     React OTP libraries and hand-rolled 6-digit code widgets.
+  //
+  // (b) sharedMaxLen === -1 AND inputs live in *different* immediate
+  //     parents: Microsoft login's codeEntry-0..5 pattern (input ->
+  //     span -> div), where each cell has its own wrapper. Generic
+  //     flat form fields (street/city/state/zipcode/country all as
+  //     direct <form> children) must not pass because they also show
+  //     maxLength === -1 in happy-dom but clearly aren't an OTP.
+  //
+  // Anything else (big positive maxLength like 10+, or -1 with all
+  // inputs sharing one parent) is rejected.
   const sharedMaxLen = inputs[0].maxLength
-  if (sharedMaxLen < 1 || sharedMaxLen > 6) {
+  if (sharedMaxLen >= 1 && sharedMaxLen <= 6) {
+    // shape (a): OK
+  } else if (sharedMaxLen === -1) {
+    // shape (b): require per-cell wrapping.
+    const immediateParents = new Set(inputs.map(i => i.parentElement))
+    if (immediateParents.size < inputs.length) {
+      // Two or more inputs share an immediate parent - flat form, not
+      // a wrapped OTP widget.
+      return false
+    }
+  } else {
     return false
   }
 
