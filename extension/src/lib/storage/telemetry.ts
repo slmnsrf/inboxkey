@@ -7,6 +7,7 @@
 
 import { extractDomain } from '@/lib/utils/domain'
 import type { BetaFeatureUsage } from './schema'
+import { StorageFactory } from './storage-factory'
 
 export interface AutoSubmitFailure {
   timestamp: number
@@ -19,7 +20,6 @@ export interface AutoSubmitFailure {
 
 const MAX_FAILURES = 10
 const MAX_BETA_USAGE = 20
-const STORAGE_KEY = 'settings'
 
 /**
  * Log an auto-submit failure
@@ -47,24 +47,17 @@ export async function logAutoSubmitFailure(
       topScore: details.topScore
     }
 
-    // Get current settings
-    const result = await chrome.storage.local.get(STORAGE_KEY)
-    const settings = result.settings || {}
-
-    // Get existing failures
-    const failures: AutoSubmitFailure[] = settings.autoSubmitFailures || []
-
-    // Add new failure
+    // Read-modify-write the failures array through PlaintextStorage's
+    // locked updateSettings so concurrent user-initiated saves don't
+    // silently clobber our write (or ours clobber theirs).
+    const storage = await StorageFactory.create()
+    const current = await storage.getSettings()
+    const failures: AutoSubmitFailure[] = [...(current.autoSubmitFailures ?? [])]
     failures.unshift(failure)
-
-    // Prune to last 10
     if (failures.length > MAX_FAILURES) {
       failures.splice(MAX_FAILURES)
     }
-
-    // Save back
-    settings.autoSubmitFailures = failures
-    await chrome.storage.local.set({ settings })
+    await storage.updateSettings({ autoSubmitFailures: failures })
 
     console.log(`[Telemetry] Logged auto-submit failure: ${reason} on ${urlDomain}`)
   } catch (error) {
@@ -77,9 +70,9 @@ export async function logAutoSubmitFailure(
  */
 export async function getRecentFailures(limit: number = MAX_FAILURES): Promise<AutoSubmitFailure[]> {
   try {
-    const result = await chrome.storage.local.get(STORAGE_KEY)
-    const settings = result.settings || {}
-    const failures: AutoSubmitFailure[] = settings.autoSubmitFailures || []
+    const storage = await StorageFactory.create()
+    const settings = await storage.getSettings()
+    const failures: AutoSubmitFailure[] = settings.autoSubmitFailures ?? []
     return failures.slice(0, limit)
   } catch (error) {
     console.warn('[Telemetry] Failed to get recent failures:', error)
@@ -92,10 +85,8 @@ export async function getRecentFailures(limit: number = MAX_FAILURES): Promise<A
  */
 export async function clearTelemetry(): Promise<void> {
   try {
-    const result = await chrome.storage.local.get(STORAGE_KEY)
-    const settings = result.settings || {}
-    settings.autoSubmitFailures = []
-    await chrome.storage.local.set({ settings })
+    const storage = await StorageFactory.create()
+    await storage.updateSettings({ autoSubmitFailures: [] })
     console.log('[Telemetry] Cleared all auto-submit telemetry')
   } catch (error) {
     console.warn('[Telemetry] Failed to clear telemetry:', error)
@@ -132,24 +123,15 @@ export async function logBetaFeatureUsage(
       metadata
     }
 
-    // Get current settings
-    const result = await chrome.storage.local.get(STORAGE_KEY)
-    const settings = result.settings || {}
-
-    // Get existing usage log
-    const usageLog: BetaFeatureUsage[] = settings.betaFeatureUsage || []
-
-    // Add new usage
+    // Same mutex rationale as logAutoSubmitFailure above.
+    const storage = await StorageFactory.create()
+    const current = await storage.getSettings()
+    const usageLog: BetaFeatureUsage[] = [...(current.betaFeatureUsage ?? [])]
     usageLog.unshift(usage)
-
-    // Prune to last 20
     if (usageLog.length > MAX_BETA_USAGE) {
       usageLog.splice(MAX_BETA_USAGE)
     }
-
-    // Save back
-    settings.betaFeatureUsage = usageLog
-    await chrome.storage.local.set({ settings })
+    await storage.updateSettings({ betaFeatureUsage: usageLog })
 
     console.log(`[Telemetry] Beta feature usage logged: ${feature} on ${urlDomain}`)
   } catch (error) {
