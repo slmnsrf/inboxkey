@@ -7,14 +7,17 @@
  * Performance: ~0.01ms (single regex test per field detection)
  */
 
-// Setup/configuration URL patterns
+// Setup/configuration URL patterns.
+//
+// Bare `/enable`, `/add`, `/register` were removed because they match
+// a huge swath of legitimate pages (e.g. `/user/add-payee`,
+// `/account/register`, `/settings/enable-notifications`) and the body-
+// level SETUP_PAGE_PATTERNS (which co-require an authenticator/MFA
+// keyword) is the more reliable defense against real 2FA-setup flows.
 export const SETUP_URL_PATTERNS = [
   /\/setup(?:\/|$)/i,
   /\/configure(?:\/|$)/i,
-  /\/enable(?:\/|$)/i,
-  /\/add(?:\/|$)/i,
   /\/enroll(?:\/|$)/i,
-  /\/register(?:\/|$)/i,
   /\/2fa\/setup/i,
   /\/two.factor.*setup/i,
   /\/mfa\/setup/i,
