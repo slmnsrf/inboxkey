@@ -94,6 +94,13 @@ export class NativeMessagingClient {
   private port: chrome.runtime.Port | null = null
   private pendingRequests = new Map<string, PendingRequest>()
   private isConnecting = false
+  /**
+   * Timestamp (ms) of the most recent port disconnect. Used to throttle
+   * reconnect attempts so that a crashed/missing native host doesn't
+   * produce a connectNative storm on every poll interval.
+   */
+  private lastDisconnectAtMs = 0
+  private static readonly RECONNECT_COOLDOWN_MS = 5000
 
   /**
    * Native host ID from manifest (com.inboxkey.bridge)
@@ -153,6 +160,19 @@ export class NativeMessagingClient {
     // Prevent concurrent connection attempts
     if (this.isConnecting) {
       return
+    }
+
+    // Reconnect cooldown: if the bridge disconnected recently (bridge
+    // crash, host-not-found, etc.) short-circuit instead of retrying
+    // every poll interval. Without this, a persistent native-host
+    // failure produces a connectNative storm at the polling frequency.
+    const sinceDisconnectMs = Date.now() - this.lastDisconnectAtMs
+    if (this.lastDisconnectAtMs > 0 && sinceDisconnectMs < NativeMessagingClient.RECONNECT_COOLDOWN_MS) {
+      throw new NativeMessagingError(
+        'Bridge disconnected recently; reconnect throttled.',
+        NativeErrorCode.PORT_DISCONNECTED,
+        { cooldownRemainingMs: NativeMessagingClient.RECONNECT_COOLDOWN_MS - sinceDisconnectMs }
+      )
     }
 
     this.isConnecting = true
@@ -261,6 +281,7 @@ export class NativeMessagingClient {
     this.pendingRequests.clear()
     this.port = null
     this.isConnecting = false
+    this.lastDisconnectAtMs = Date.now()
   }
 
   /**
