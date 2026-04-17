@@ -173,14 +173,53 @@ function isCoherentGroup(inputs: HTMLInputElement[]): boolean {
     return false
   }
 
-  // Check if inputs are reasonably adjacent in DOM
-  // They should all be within same parent or grandparent
-  const parents = new Set(inputs.map(input => input.parentElement))
-  if (parents.size > 2) {
-    // Too scattered, probably not a group
+  // Check if inputs share a common ancestor within a few DOM levels.
+  // The old heuristic rejected groups with more than 2 distinct
+  // immediate parents, which killed the common React OTP pattern of
+  // wrapping each digit cell in its own <div class="digit-wrapper">
+  // (6 inputs -> 6 parents -> rejected). Walking up 3 levels lets us
+  // accept those while still rejecting inputs scattered across
+  // unrelated form sections.
+  if (!hasCommonAncestorWithin(inputs, 3)) {
     return false
   }
 
+  return true
+}
+
+/**
+ * Returns true if every input in the set shares an ancestor within
+ * `levels` DOM hops (i.e. the set of ancestors up to depth N for the
+ * first input has a non-empty intersection with the same set for
+ * every other input).
+ */
+function hasCommonAncestorWithin(inputs: HTMLInputElement[], levels: number): boolean {
+  if (inputs.length === 0) return false
+
+  const ancestorsOf = (el: HTMLElement): Set<Element> => {
+    const chain = new Set<Element>()
+    let node: Element | null = el
+    let depth = 0
+    while (node && depth <= levels) {
+      chain.add(node)
+      node = node.parentElement
+      depth += 1
+    }
+    return chain
+  }
+
+  const firstChain = ancestorsOf(inputs[0])
+  for (let i = 1; i < inputs.length; i += 1) {
+    const chain = ancestorsOf(inputs[i])
+    let shares = false
+    for (const ancestor of chain) {
+      if (firstChain.has(ancestor)) {
+        shares = true
+        break
+      }
+    }
+    if (!shares) return false
+  }
   return true
 }
 
