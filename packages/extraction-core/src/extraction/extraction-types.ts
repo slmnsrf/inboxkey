@@ -96,10 +96,10 @@ export interface ExtractionDefaults {
 // ------------------------------
 
 /**
- * Numeric codes: 4–8 digits, not embedded in longer digit sequences.
- * Uses lookarounds to avoid capturing digits adjacent to other digits.
+ * Numeric codes: 4–8 digits, not embedded in longer alphanumeric tokens.
+ * This avoids extracting numeric runs from URL/query IDs such as abc1234def.
  */
-const RX_NUMERIC: RegExp = /(?<!\d)(\d{4,8})(?!\d)/gu
+const RX_NUMERIC: RegExp = /(?<![A-Za-z0-9])(\d{4,8})(?![A-Za-z0-9])/gu
 
 /**
  * Grouped numerics: common 3-3 / 4-4 splits with space or hyphen separator.

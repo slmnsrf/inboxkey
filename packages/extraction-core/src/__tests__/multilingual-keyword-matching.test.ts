@@ -139,11 +139,10 @@ describe('Multilingual OTP Keyword Matching', () => {
   })
 
   describe('Edge Cases - Prevent False Positives', () => {
-    it('should NOT match "code" mid-word in "discount"', () => {
+    it('does not treat promotional discount codes as OTPs', () => {
       const text = 'Get 20% discount with code SAVE20'
       const result = extractOTPs(text)
-      // Should extract the alphanumeric code "SAVE20", not match "discount"
-      expect(result.every(r => !r.keyword?.includes('discount'))).toBe(true)
+      expect(result).toHaveLength(0)
     })
 
     it('should NOT match "code" in "encode"', () => {
@@ -159,6 +158,156 @@ describe('Multilingual OTP Keyword Matching', () => {
       expect(result).toHaveLength(1)
       expect(result[0].code).toBe('246813')
       // This is DESIRED behavior (compound word contains keyword)
+    })
+
+    it('does not treat country/phone code metadata as OTP context', () => {
+      const text = `
+        Your annual domain contact details review.
+        Current registrant:
+        First name: Jane
+        Last name: Doe
+        Email: jane.doe@example.com
+        Company name: Not Applicable
+        Address: 100 Main St
+        City: Springfield
+        State: IL
+        Country code: US
+        Zip: 62701
+        Phone country code: 1
+        Phone number: 5551234567
+        Nameservers: ns1.example-dns.com ns2.example-dns.com
+      `
+
+      const result = extractOTPs(text, {
+        subject: 'Review your domain example.com contact information',
+      })
+
+      expect(result).toHaveLength(0)
+    })
+
+    it('does not rank ordinary prose words as all-letter OTP candidates', () => {
+      const text = `
+        Hi there,
+        Enter the 6-digit code below to verify your identity and regain access
+        to your account.
+
+        343987
+
+        Thanks for helping us keep your account secure.
+      `
+
+      const result = extractOTPs(text, {
+        subject: "Here's your verification code 343987",
+      })
+
+      expect(result).toHaveLength(1)
+      expect(result[0].code).toBe('343987')
+      expect(result[0].context?.footerPenalty).toBe(false)
+    })
+
+    it('only allows all-letter codes when explicitly expected', () => {
+      const text = 'Your verification code is ABCDEF'
+
+      expect(extractOTPs(text)).toHaveLength(0)
+
+      const result = extractOTPs(text, {
+        expectedCharset: 'alnum',
+      })
+
+      expect(result).toHaveLength(1)
+      expect(result[0].code).toBe('ABCDEF')
+    })
+
+    it('does not treat German coupon code labels as OTP context', () => {
+      const text = 'Sichern Sie sich den Gutschein-Code LIFETIME50 für Ihre Bestellung.'
+      const result = extractOTPs(text)
+      expect(result).toHaveLength(0)
+    })
+
+    it('does not treat German Rabattcode training discounts as OTPs', () => {
+      const text = 'Der Rabattcode für CISTEC ist bereit: CISTEC15. Der Code gilt für den Schulungskatalog.'
+      const result = extractOTPs(text)
+      expect(result).toHaveLength(0)
+    })
+
+    it('does not treat localized commercial codes as OTPs', () => {
+      const cases = [
+        'Indirim kodu BAHAR20 ile yüzde 20 indirim kazanın.',
+        'Utilisez le code promo PRINTEMPS20 pour économiser 20%.',
+        'Usa el código promocional AHORRA20 para obtener descuento.',
+        'Usa il codice sconto ESTATE20 per risparmiare.',
+        'Use o código promocional OFERTA20 para obter desconto.',
+        'Gebruik kortingscode LENTE20 voor 20% korting.',
+        'Kod rabatowy WIOSNA20 daje 20% rabatu.',
+      ]
+
+      for (const text of cases) {
+        expect(extractOTPs(text)).toHaveLength(0)
+      }
+    })
+
+    it('does not extract URL query token fragments as OTPs', () => {
+      const text = `
+        Confirm your vendor email address:
+        https://vendors.example.com/confirm?code=c9ed466122856aa6103dd272191
+      `
+
+      const result = extractOTPs(text)
+      expect(result).toHaveLength(0)
+    })
+
+    it('does not treat software/product code mentions as OTP context', () => {
+      const text = 'On March 12, 2026, Claude Code on Windows added new terminal support.'
+      const result = extractOTPs(text)
+      expect(result).toHaveLength(0)
+    })
+
+    it('does not extract tutorial platform names near generic code content', () => {
+      const text = 'W3Schools Academy can now help your classroom. Every tutorial, exercise, quiz, and code example is ready.'
+      const result = extractOTPs(text)
+      expect(result).toHaveLength(0)
+    })
+
+    it('does not extract dev-tool names from GitHub issue discussion', () => {
+      const text = 'Checked the current docs via Context7 in GitHub issue #677. The refactor uses useCallback around code paths.'
+      const result = extractOTPs(text)
+      expect(result).toHaveLength(0)
+    })
+
+    it('does not extract CSS colors or units near inline code examples', () => {
+      const text = `
+        View this issue on CodePen.
+        .inline-code { color: #8C8C8C; background-color: #FF6166; padding: 15px 30px; }
+      `
+
+      const result = extractOTPs(text)
+      expect(result).toHaveLength(0)
+    })
+
+    it('does not extract date ordinals near promotional code copy', () => {
+      const text = 'Limited time, only valid until the 28th of January. Use the code: JAN40 for 40% off.'
+      const result = extractOTPs(text)
+      expect(result).toHaveLength(0)
+    })
+
+    it('does not extract standalone years from non-auth contexts', () => {
+      const cases = [
+        'March 2026 product update: new code examples for your team.',
+        'Your exam is scheduled to take place on 16/02/2026. The course code will be sent separately.',
+        'Use code 2026_SUPABASE20 for 20% off registration.',
+        'Finished: 2026-04-21 14:44 UTC. Claude Code Review results are available.',
+      ]
+
+      for (const text of cases) {
+        expect(extractOTPs(text)).toHaveLength(0)
+      }
+    })
+
+    it('still allows year-shaped values with strong OTP context', () => {
+      const text = 'Your verification code is 2026'
+      const result = extractOTPs(text)
+      expect(result).toHaveLength(1)
+      expect(result[0].code).toBe('2026')
     })
   })
 
