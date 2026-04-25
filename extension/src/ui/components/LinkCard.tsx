@@ -50,10 +50,16 @@ export function LinkCard({ item, onOpen }: LinkCardProps) {
     try { return new URL(item.url).hostname } catch { return item.url }
   })()
 
+  // The badge at the top of the card is what catches the eye when the
+  // user scans the popup. Show the link destination here, not the
+  // sender domain - the user is about to navigate to this domain, and
+  // surprises ("clicked Google magic link, landed on click-tracker.com")
+  // happen when sender ≠ destination. The full sender is still shown
+  // below in the info row.
   return (
     <article className="item-card" data-kind="link" aria-labelledby={`link-${uid}-from`}>
       <div className="item-card__top">
-        <span className="provider-badge">{meta.from.split('@')[1] || meta.from}</span>
+        <span className="provider-badge" title={item.url}>{linkDomain}</span>
         <span className="time-pill" aria-label={t('aria_received_time', [timeLabel])}>
           {timeLabel}
         </span>

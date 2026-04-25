@@ -20,6 +20,9 @@ import {
   MAGIC_LINK_KEYWORDS,
   MAGIC_LINK_URL_HINTS,
   DANGEROUS_LINK_KEYWORDS,
+  TRACKER_HOST_PATTERNS,
+  TRACKER_PATH_PATTERNS,
+  TRACKER_URL_PARAM_NAMES,
 } from './extraction-types.js'
 import { extractOTPs } from './otp-extractor.js'
 
@@ -214,6 +217,12 @@ function scoreLinkCandidate(href: string, anchorText: string, fullText: string, 
   if (/^http:\/\//i.test(href)) return null // disallow plain HTTP for security
   if (containsAny(hrefLower, DANGEROUS_LINK_KEYWORDS)) return null // unsubscribe, reset password, etc.
 
+  // Reject ESP click-tracking redirectors. The tracker's 302 lands the
+  // user on the real destination, but we surface URLs to the user
+  // verbatim - showing them a "magic link" that points to
+  // click.example-tracker.com erodes trust and leaks click events.
+  if (isTrackerUrl(href)) return null
+
   // Base score & reasons
   let score = 0.30
   const reasons: string[] = []
@@ -297,6 +306,43 @@ function containsAny(hay: string, needles: readonly string[]): boolean {
 
 function safeHostname(u: string): string {
   try { return new URL(u).hostname.toLowerCase() } catch { return '' }
+}
+
+/**
+ * True if the URL is an ESP click-tracking redirector. Detection is
+ * three-pronged because trackers split between dedicated hostnames
+ * (hubspotlinks.com), brand subdomains hosting redirector paths
+ * (e.deepgram.com/e3t/...), and generic shorteners that embed the
+ * destination in a query param (?u=https%3A%2F%2F...).
+ */
+export function isTrackerUrl(href: string): boolean {
+  let url: URL
+  try { url = new URL(href) } catch { return false }
+
+  const host = url.hostname.toLowerCase()
+  for (const pattern of TRACKER_HOST_PATTERNS) {
+    if (pattern.test(host)) return true
+  }
+
+  const pathname = url.pathname
+  for (const pattern of TRACKER_PATH_PATTERNS) {
+    if (pattern.test(pathname)) return true
+  }
+
+  // Embedded-destination query: any tracker param whose value parses
+  // as an http(s) URL. Catches generic shorteners that don't match
+  // the host or path lists above.
+  for (const name of TRACKER_URL_PARAM_NAMES) {
+    const value = url.searchParams.get(name)
+    if (!value) continue
+    if (/^https?:\/\//i.test(value)) return true
+    // Try one decode pass for percent-encoded inner URLs
+    try {
+      if (/^https?:\/\//i.test(decodeURIComponent(value))) return true
+    } catch { /* malformed encoding, ignore */ }
+  }
+
+  return false
 }
 
 function hostOnly(d: string): string {

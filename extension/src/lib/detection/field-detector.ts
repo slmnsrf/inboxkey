@@ -22,6 +22,7 @@ import type { DetectionResult } from '../types'
 import { createCooldownRegistry, type CooldownRegistry } from './cooldown-registry'
 import { detectTier1, type Tier1Result } from './tier1-fast'
 import { detectTier2, type Tier2Result } from './tier2-deep'
+import { isRelevantInputType } from './patterns'
 
 // ═══════════════════════════════════════════════════════════════
 // Cooldown Registry Singleton
@@ -145,6 +146,13 @@ function getInputFields(strictVisibility = true): HTMLInputElement[] {
       return false
     }
 
+    // Must be a text-entry type. Rejects radio/checkbox/button/submit/
+    // file/etc. up front so a single radio with name="otp" or a
+    // checkbox with autocomplete="one-time-code" can't reach Tier 1.
+    if (!isRelevantInputType(input)) {
+      return false
+    }
+
     // Must not be hidden type
     if (input.type === 'hidden') {
       return false
@@ -213,6 +221,11 @@ function getAllInputFields(strictVisibility = true): HTMLInputElement[] {
   return inputs.filter(input => {
     // Must not be disabled
     if (input.disabled) {
+      return false
+    }
+
+    // Must be a text-entry type (see getInputFields for rationale)
+    if (!isRelevantInputType(input)) {
       return false
     }
 
@@ -598,14 +611,17 @@ export class FieldDetector {
     const inputs = Array.from(this.pendingMutations)
     this.pendingMutations.clear()
 
-    // Filter visible inputs
+    // Filter visible inputs - and require a text-entry type so dynamic
+    // <input type="radio">/<input type="checkbox"> nodes can't slip
+    // into Tier 1 via the mutation path (see getInputFields).
     const visibleInputs = inputs.filter(input => {
       const style = window.getComputedStyle(input)
       return (
         style.display !== 'none' &&
         style.visibility !== 'hidden' &&
         input.type !== 'hidden' &&
-        !input.disabled
+        !input.disabled &&
+        isRelevantInputType(input)
       )
     })
 
@@ -662,6 +678,14 @@ export class FieldDetector {
     field: HTMLInputElement,
     options?: { strictVisibility?: boolean }
   ): DetectionResult | null {
+    // Reject non-text-entry types up front. Single-field callers (e.g.
+    // shouldBypassFocusGate, manual re-evaluation) bypass the
+    // collection filters in getInputFields/getAllInputFields, so the
+    // gate has to be repeated here.
+    if (!isRelevantInputType(field)) {
+      return null
+    }
+
     const startTime = performance.now()
 
     // Try Tier 1

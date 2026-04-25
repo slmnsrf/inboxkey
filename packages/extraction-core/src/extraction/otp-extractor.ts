@@ -70,6 +70,11 @@ export interface OTPExtractOptions {
   // Allow alphanumeric codes in addition to digits (default true)
   allowAlnum?: boolean
 
+  // Allow all-letter codes only when explicitly expected. Default false:
+  // ordinary prose words near "code" are otherwise indistinguishable from
+  // alphabetic OTPs.
+  allowAlphaOnly?: boolean
+
   // Experimental: further restrict numeric code lengths (e.g., [4,6,8])
   allowedNumericLengths?: number[] // default from COMMON_OTP_PATTERNS
 }
@@ -79,6 +84,7 @@ export function extractOTPs(input: string, opts: OTPExtractOptions = {}): OTPCan
   const threshold = clamp(opts.threshold ?? 0.58, 0, 1)
   const windowRadius = Math.max(40, Math.min(400, opts.windowRadius ?? 120))
   const allowAlnum = opts.allowAlnum ?? true
+  const allowAlphaOnly = shouldAllowAlphaOnly(opts)
   const maxResults = Math.max(1, Math.min(10, opts.maxResults ?? 3))
 
   // Normalize to plain text; remove HTML noise early to reduce spurious matches
@@ -98,20 +104,25 @@ export function extractOTPs(input: string, opts: OTPExtractOptions = {}): OTPCan
   const windows = collectWindows(text, kwRegex, windowRadius)
 
   // If we had no keyword windows but do have expectedLength, scan the whole text but with strict scoring
+  if (windows.length === 0 && !opts.expectedLength && !opts.expectedShape) {
+    return []
+  }
   const ranges = windows.length > 0 ? windows : [{ start: 0, end: text.length, reason: 'fallback-whole' }]
 
   // Extract raw matches in ranges, normalize, and score
   const rawCandidates = findCandidatesInRanges(text, ranges, {
     allowAlnum,
+    allowAlphaOnly,
     expectedLength: opts.expectedLength,
     allowedNumericLengths: opts.allowedNumericLengths,
   })
 
-  if (rawCandidates.length === 0) return []
+  const viableCandidates = rawCandidates.filter(c => isPlausibleOtpCandidate(text, c))
+  if (viableCandidates.length === 0) return []
 
   // Score each candidate with context signals
   const subject = (opts.subject || '').toLowerCase()
-  const scored: OTPCandidate[] = rawCandidates.map(c => {
+  const scored: OTPCandidate[] = viableCandidates.map(c => {
     const base = baseScore(c, opts)
     const near = nearestKeywordSignal(text, c, kwRegex)
     const footer = footerPenalty(text, c)
@@ -147,6 +158,7 @@ export function extractOTPs(input: string, opts: OTPExtractOptions = {}): OTPCan
   // Filter: high precision; drop anything below threshold or looking like a phone/order
   const precise = scored
     .filter(isNotPhoneLike)
+    .filter(isNotContactMetadata)
     .filter(s => s.confidence >= threshold)
 
   if (precise.length === 0) return []
@@ -263,6 +275,8 @@ function collectWindows(text: string, kw: RegExp, radius: number): { start: numb
   kw.lastIndex = 0
   let m: RegExpExecArray | null
   while ((m = kw.exec(text))) {
+    if (isNonOtpKeywordMatch(text, m)) continue
+
     const center = m.index + m[0].length / 2
     const start = Math.max(0, Math.floor(center - radius))
     const end = Math.min(text.length, Math.ceil(center + radius))
@@ -285,7 +299,12 @@ function mergeRange(ranges: { start: number; end: number; reason: string }[], r:
 function findCandidatesInRanges(
   text: string,
   ranges: { start: number; end: number }[],
-  cfg: { allowAlnum: boolean; expectedLength?: number; allowedNumericLengths?: number[] }
+  cfg: {
+    allowAlnum: boolean;
+    allowAlphaOnly: boolean;
+    expectedLength?: number;
+    allowedNumericLengths?: number[];
+  }
 ): InternalCandidate[] {
   // Construct working pattern set: clone to avoid mutating shared instances
   const patterns: RegExp[] = COMMON_OTP_PATTERNS
@@ -308,7 +327,10 @@ function findCandidatesInRanges(
       let m: RegExpExecArray | null
       while ((m = re.exec(slice))) {
         const raw = m[1] ?? m[0]
-        const norm = normalizeCode(raw, { allowAlnum: cfg.allowAlnum })
+        const norm = normalizeCode(raw, {
+          allowAlnum: cfg.allowAlnum,
+          allowAlphaOnly: cfg.allowAlphaOnly,
+        })
         if (!norm) continue
         const charset: OtpCharset = /^[0-9]+$/.test(norm) ? 'digits' : 'alnum'
         const len = norm.length
@@ -349,13 +371,16 @@ function findCandidatesInRanges(
  * apply structural filters.
  *
  * When `allowAlnum` is false (numeric-only mode), any letter-containing
- * token is rejected. When `allowAlnum` is true, letter-only tokens are
- * accepted only at length >= 6 to avoid matching common English words;
- * shorter letter-only tokens are almost certainly not OTPs.
+ * token is rejected. When `allowAlnum` is true, mixed letter+digit tokens
+ * are accepted, but letter-only tokens require explicit opt-in because
+ * normal prose near "code" produces convincing false positives.
  */
 function normalizeCode(
   raw: string,
-  opts: { allowAlnum: boolean } = { allowAlnum: false }
+  opts: { allowAlnum: boolean; allowAlphaOnly: boolean } = {
+    allowAlnum: false,
+    allowAlphaOnly: false,
+  }
 ): string | null {
   // Remove spaces/hyphens/underscores/non-breaking space and zero-width spaces
   const cleaned = raw
@@ -369,12 +394,163 @@ function normalizeCode(
   if (!hasDigit) {
     // Numeric-only mode: never allow letter-only tokens.
     if (!opts.allowAlnum) return null
-    // Alnum mode: accept all-letter tokens only at length >= 6 so
-    // short English words don't slip through.
+    // Default alnum mode still rejects letter-only prose ("verify",
+    // "access", names). Only explicit alpha-only expectation enables it.
+    if (!opts.allowAlphaOnly) return null
+    // Even explicit alpha-only codes need a length floor so short words
+    // and button labels do not slip through.
     if (cleaned.length < 6) return null
   }
 
   return cleaned
+}
+
+function shouldAllowAlphaOnly(opts: OTPExtractOptions): boolean {
+  return (
+    opts.allowAlphaOnly === true ||
+    opts.expectedCharset === 'alnum' ||
+    opts.expectedShape?.charset === 'alnum'
+  )
+}
+
+/**
+ * Generic "code" is only useful when it means an OTP. Phrases like
+ * "country code" and "phone country code" are metadata labels; using
+ * them as keyword anchors turns addresses and phone records into OTP
+ * windows.
+ */
+function isNonOtpKeywordMatch(text: string, match: RegExpExecArray): boolean {
+  const rawKeyword = match[0]
+    ?.trim()
+    .toLowerCase()
+    .replace(/^[^\p{L}\p{N}]+/u, '')
+  if (!rawKeyword) return false
+
+  const genericCodeTerms = new Set([
+    'code',
+    'kod',
+    'kode',
+    'kód',
+    'codice',
+    'código',
+  ])
+
+  if (!genericCodeTerms.has(rawKeyword)) {
+    return false
+  }
+
+  const start = Math.max(0, match.index - 36)
+  const end = Math.min(text.length, match.index + match[0].length + 36)
+  const around = text.slice(start, end).toLowerCase()
+
+  return (
+    /\b(?:country|phone|postal|zip|area|dial(?:ling|ing)?|calling)\s+code\b/i.test(around) ||
+    /\b(?:coupon|promo(?:tional)?|discount|voucher|referral|affiliate|invite|gutschein|rabatt)\s*[- ]?\s*code\b/i.test(around) ||
+    /\b(?:status|error|source|tracking|booking|reservation|order)\s+code\b/i.test(around) ||
+    /\b(?:claude\s+code|codepen|source\s+code|inline-code|code\s+editor|code\s+review|low-code|no-code|coding)\b/i.test(around)
+  )
+}
+
+function isPlausibleOtpCandidate(text: string, c: InternalCandidate): boolean {
+  const around = candidateWindow(text, c, 96).toLowerCase()
+
+  if (isEmbeddedInUrl(text, c)) return false
+  if (isCssToken(text, c)) return false
+  if (isDateOrdinal(c.code)) return false
+  if (isCommercialCodeContext(around)) return false
+  if (isSoftwareCodeContext(around)) return false
+  if (isStandaloneYear(c.code) && !hasStrongOtpContext(around)) return false
+
+  return true
+}
+
+function candidateWindow(text: string, c: InternalCandidate, radius: number): string {
+  return text.slice(Math.max(0, c.start - radius), Math.min(text.length, c.end + radius))
+}
+
+function isEmbeddedInUrl(text: string, c: InternalCandidate): boolean {
+  const segment = surroundingSegment(text, c.start, c.end)
+  if (!segmentIncludesCandidate(segment, c)) return false
+
+  return (
+    /(?:https?:\/\/|www\.)/i.test(segment) ||
+    /[?&][A-Za-z0-9_.~-]{1,40}=/.test(segment) ||
+    /\/[A-Za-z0-9._~%+-]{4,}/.test(segment) ||
+    /[A-Za-z0-9._~%+-]{16,}/.test(segment) && /[/?#&=]/.test(segment)
+  )
+}
+
+function surroundingSegment(text: string, start: number, end: number): string {
+  let left = start
+  let right = end
+
+  while (left > 0 && !/[\s<>"'()]/.test(text[left - 1])) left -= 1
+  while (right < text.length && !/[\s<>"'()]/.test(text[right])) right += 1
+
+  return text.slice(left, right)
+}
+
+function segmentIncludesCandidate(segment: string, c: InternalCandidate): boolean {
+  const upper = segment.toUpperCase()
+  return upper.includes(c.raw.toUpperCase()) || upper.includes(c.code)
+}
+
+function isCssToken(text: string, c: InternalCandidate): boolean {
+  if (/^\d{1,4}(?:PX|EM|REM|VH|VW|PT|%)$/i.test(c.code)) {
+    return true
+  }
+
+  if (!/^[0-9A-F]{6}$/i.test(c.code)) {
+    return false
+  }
+
+  const around = candidateWindow(text, c, 40).toLowerCase()
+  const escapedRaw = escapeRegExp(c.raw)
+  return (
+    new RegExp(`#\\s*${escapedRaw}`, 'i').test(around) ||
+    /\b(?:background-color|color|border-color|style|inline-code)\b/i.test(around)
+  )
+}
+
+function isCommercialCodeContext(around: string): boolean {
+  return (
+    /\b(?:coupon|promo(?:tional)?|discount|voucher|referral|affiliate|invite|deal|sale|register\s+now)\b/i.test(around) ||
+    /\b(?:gutschein|rabatt|rabattcode|aktion|angebot|sparen|schulungskatalog|firmenkonditionen)\b/i.test(around) ||
+    /\b(?:indirim|kupon|promosyon|kampanya|f[ıi]rsat|tasarruf|y[üu]zde)\b/i.test(around) ||
+    /\b(?:r[ée]duction|remise|code\s+promo(?:tionnel)?|promotion|soldes|[ée]conomis(?:e|ez|er))\b/i.test(around) ||
+    /\b(?:descuento|cup[oó]n|promoci[oó]n|oferta|ahorr(?:a|e|o)|c[oó]digo\s+promocional)\b/i.test(around) ||
+    /\b(?:sconto|buono|promozione|offerta|risparmi(?:a|o)|codice\s+promo)\b/i.test(around) ||
+    /\b(?:desconto|cup[oã]m|promo[cç][aã]o|oferta|economi(?:ze|zar)|c[oó]digo\s+promocional)\b/i.test(around) ||
+    /\b(?:korting|kortingscode|actiecode|aanbieding|coupon)\b/i.test(around) ||
+    /\b(?:rabat|rabatowy|kod\s+rabatowy|kupon|promocj[aei]|zni[zż]k[ai]|oszcz[eę]d[zź])\b/i.test(around) ||
+    /\buse\s+(?:the\s+)?code\b.{0,40}\b(?:save|off|discount|deal|sale|register)\b/i.test(around) ||
+    /\b(?:save|get)\s+\d{1,3}%\b/i.test(around) ||
+    /\d{1,3}%\s+(?:off|discount|rabatt)\b/i.test(around) ||
+    /\blifetime\s+(?:license|deal|access)\b/i.test(around)
+  )
+}
+
+function isSoftwareCodeContext(around: string): boolean {
+  if (hasStrongOtpContext(around)) return false
+
+  return /\b(?:claude\s+code|codepen|source\s+code|inline-code|code\s+editor|code\s+review|low-code|no-code|coding|api\s+code|tutorials?|exercises?|classroom|w3schools|github|pull\s+request|issue\s+#?\d+|refactor|usecallback|current\s+docs|repository|repo)\b/i.test(around)
+}
+
+function isDateOrdinal(code: string): boolean {
+  return /^\d{1,2}(?:ST|ND|RD|TH)$/i.test(code)
+}
+
+function isStandaloneYear(code: string): boolean {
+  return /^(?:19|20)\d{2}$/.test(code)
+}
+
+function hasStrongOtpContext(around: string): boolean {
+  return /\b(?:single-use|one[-\s]?time|verification|security|login|sign[-\s]?in|auth(?:entication)?|passcode|otp)\s+code\b/i.test(around) ||
+    /\b(?:your|enter|use)\s+(?:verification\s+|security\s+|login\s+|sign[-\s]?in\s+|auth(?:entication)?\s+)?code\s+(?:is|below|to)\b/i.test(around)
+}
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 }
 
 /**
@@ -453,6 +629,8 @@ function nearestKeywordSignal(text: string, c: InternalCandidate, kw: RegExp): {
 
   let m: RegExpExecArray | null
   while ((m = kw.exec(text))) {
+    if (isNonOtpKeywordMatch(text, m)) continue
+
     const center = m.index + m[0].length / 2
     const dist = distancePointToRange(center, c.start, c.end)
     if (dist < bestDist) {
@@ -490,7 +668,7 @@ function footerPenalty(text: string, c: InternalCandidate): { applies: boolean }
   // like "Need help? Your code is 123456."
   const after = text.slice(c.end, Math.min(text.length, c.end + 160)).toLowerCase()
   const footerHints =
-    /(unsubscribe|preferences|support|help|customer\s+service|do\s+not\s+reply|please\s+do\s+not\s+reply|sent\s+from|regards|kind\s+regards|signature)/i
+    /\b(?:unsubscribe|preferences|support|help|customer\s+service|do\s+not\s+reply|please\s+do\s+not\s+reply|sent\s+from|regards|kind\s+regards|signature)\b/i
   return { applies: footerHints.test(after) }
 }
 
@@ -500,6 +678,38 @@ function isNotPhoneLike(c: OTPCandidate): boolean {
   // Penalize grouped patterns that resemble phone formatting in snippet
   const snip = (c.context?.snippet || '').toLowerCase()
   if (/\b(call|phone|tel|fax)\b/.test(snip)) return false
+  return true
+}
+
+/** Reject candidates embedded in address/contact/domain metadata blocks. */
+function isNotContactMetadata(c: OTPCandidate): boolean {
+  const snip = (c.context?.snippet || '').toLowerCase()
+  if (!snip) return true
+
+  // "Address: 6295 ... City: ... State: ... Country code: ..."
+  if (/\baddress\s*:\s*\d/.test(snip) && /\b(city|state|zip|postal|country)\b/.test(snip)) {
+    return false
+  }
+
+  // Registrar/contact-review records often contain several metadata
+  // fields in one compact block. These are not OTP contexts even when
+  // a nearby label contains "country code" or "phone country code".
+  const contactHints = [
+    /\bcountry\s+code\b/,
+    /\bphone\s+(?:country\s+)?code\b/,
+    /\bphone\s+number\b/,
+    /\bnameservers?\b/,
+    /\bregistrant\b/,
+    /\bicann\b/,
+  ]
+  const hitCount = contactHints.reduce((count, pattern) => (
+    pattern.test(snip) ? count + 1 : count
+  ), 0)
+
+  if (hitCount >= 2 && /\b(address|city|state|zip|postal|country|phone)\b/.test(snip)) {
+    return false
+  }
+
   return true
 }
 

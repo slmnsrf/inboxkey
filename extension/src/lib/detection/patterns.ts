@@ -70,13 +70,34 @@ export const AUTOCOMPLETE_VALUES = [
 ] as const
 
 /**
- * Input types that commonly contain verification codes
+ * Input types that can plausibly hold a verification code.
+ *
+ * Anything outside this set (radio, checkbox, button, submit, reset,
+ * file, image, color, date, time, range, hidden, password, email,
+ * search, url) is rejected up front: a single radio named "otp" or a
+ * checkbox with autocomplete="one-time-code" is still not a code field,
+ * and 5+ same-type radios in distinct label parents otherwise sneak
+ * through split-input grouping (Microsoft codeEntry maxLength=-1 path).
+ *
+ * Password is intentionally excluded - tier1 layer 2 already rejects
+ * type=password before this check would matter.
  */
 export const RELEVANT_INPUT_TYPES = [
   'text',
   'tel',
   'number',
 ] as const
+
+const RELEVANT_INPUT_TYPE_SET: Set<string> = new Set(RELEVANT_INPUT_TYPES)
+
+/**
+ * True if the input's type can plausibly hold a verification code.
+ * Use this at every entry point that collects candidate fields so a
+ * radio/checkbox can never reach the scoring or split-grouping paths.
+ */
+export function isRelevantInputType(input: HTMLInputElement): boolean {
+  return RELEVANT_INPUT_TYPE_SET.has(input.type)
+}
 
 /**
  * Inputmode values that suggest verification codes

@@ -14,6 +14,8 @@
  * Performance: Fast rejection for non-split inputs (< 1ms overhead)
  */
 
+import { isRelevantInputType } from './patterns'
+
 export interface SplitInputGroup {
   inputs: HTMLInputElement[]
   representative: HTMLInputElement  // First input (left-most in DOM order)
@@ -32,6 +34,14 @@ export interface SplitInputGroup {
 export function detectSplitInputGroup(
   field: HTMLInputElement
 ): SplitInputGroup | null {
+  // Reject non-text-entry types up front. Radio/checkbox/etc. share
+  // maxLength === -1 with Microsoft's codeEntry pattern, and 5 radios
+  // wrapped in 5 distinct <label> parents would otherwise satisfy
+  // the per-cell-wrapper shape (b) check below.
+  if (!isRelevantInputType(field)) {
+    return null
+  }
+
   // Fast rejection: Skip if maxLength is explicitly set to large values
   // Allow unset maxLength (-1) for fields like Microsoft (codeEntry-0...5)
   // Split-input fields typically have maxlength="1" (Steam) or maxlength="2" (some banks)
@@ -90,17 +100,22 @@ export function detectSplitInputGroup(
 function getSimilarSiblings(field: HTMLInputElement): HTMLInputElement[] {
   const candidates: HTMLInputElement[] = []
 
+  const matchesField = (input: Element): input is HTMLInputElement =>
+    input instanceof HTMLInputElement &&
+    input.type === field.type &&
+    input.maxLength === field.maxLength &&
+    !input.disabled &&
+    !input.readOnly &&
+    // Belt-and-braces: caller already gated on isRelevantInputType,
+    // but the sibling collection itself must reject non-text inputs
+    // so a future caller path can't pull in radios/checkboxes.
+    isRelevantInputType(input)
+
   // Check parent container
   const parent = field.parentElement
   if (parent) {
     const parentInputs = Array.from(parent.querySelectorAll('input'))
-      .filter((input): input is HTMLInputElement =>
-        input instanceof HTMLInputElement &&
-        input.type === field.type &&
-        input.maxLength === field.maxLength &&
-        !input.disabled &&
-        !input.readOnly
-      )
+      .filter(matchesField)
     candidates.push(...parentInputs)
   }
 
@@ -109,13 +124,7 @@ function getSimilarSiblings(field: HTMLInputElement): HTMLInputElement[] {
     const grandparent = parent?.parentElement
     if (grandparent) {
       const grandparentInputs = Array.from(grandparent.querySelectorAll('input'))
-        .filter((input): input is HTMLInputElement =>
-          input instanceof HTMLInputElement &&
-          input.type === field.type &&
-          input.maxLength === field.maxLength &&
-          !input.disabled &&
-          !input.readOnly
-        )
+        .filter(matchesField)
       candidates.push(...grandparentInputs)
     }
   }
@@ -126,13 +135,7 @@ function getSimilarSiblings(field: HTMLInputElement): HTMLInputElement[] {
     const greatGrandparent = parent?.parentElement?.parentElement
     if (greatGrandparent) {
       const greatGrandparentInputs = Array.from(greatGrandparent.querySelectorAll('input'))
-        .filter((input): input is HTMLInputElement =>
-          input instanceof HTMLInputElement &&
-          input.type === field.type &&
-          input.maxLength === field.maxLength &&
-          !input.disabled &&
-          !input.readOnly
-        )
+        .filter(matchesField)
       candidates.push(...greatGrandparentInputs)
     }
   }
