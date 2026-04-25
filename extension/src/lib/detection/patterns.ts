@@ -56,9 +56,28 @@ export const PLACEHOLDER_PATTERNS = {
  * Pattern attribute matching (HTML5 pattern attribute)
  */
 export const HTML_PATTERN_DETECTION = {
-  digits: /^\[?\\?d\]?\{\s*(\d+)\s*\}$/,  // [0-9]{6}, \d{6}
-  range: /^\[?\\?d\]?\{\s*(\d+)\s*,\s*(\d+)\s*\}$/,  // [0-9]{4,8}
+  digits: /^(?:\\d|\[0-9\]|\[\\d\])\{\s*(\d+)\s*\}$/,  // [0-9]{6}, \d{6}
+  range: /^(?:\\d|\[0-9\]|\[\\d\])\{\s*(\d+)\s*,\s*(\d+)\s*\}$/,  // [0-9]{4,8}
 } as const
+
+export function getCodeLengthRangeFromPattern(pattern: string): { min: number; max: number } | null {
+  const normalized = pattern.trim().replace(/^\^/, '').replace(/\$$/, '')
+  const exact = normalized.match(HTML_PATTERN_DETECTION.digits)
+  if (exact) {
+    const length = parseInt(exact[1], 10)
+    return { min: length, max: length }
+  }
+
+  const range = normalized.match(HTML_PATTERN_DETECTION.range)
+  if (range) {
+    return {
+      min: parseInt(range[1], 10),
+      max: parseInt(range[2], 10),
+    }
+  }
+
+  return null
+}
 
 /**
  * Autocomplete attribute values that indicate verification codes
@@ -139,8 +158,10 @@ export const EXCLUSION_PATTERNS = {
   address: /address/i,
   phone: /phone.*number/i,  // Full phone number, not just verification
   zip: /zip[\s\-_]?code/i,
+  postcode: /post[\s\-_]?code/i,
   postal: /postal/i,
   card: /card.*number/i,
+  card_security: /card[\s\-_]?security[\s\-_]?code/i,
   cvv: /cvv/i,
   ssn: /ssn|social.*security/i,
 
@@ -152,6 +173,7 @@ export const EXCLUSION_PATTERNS = {
 
   // Developer & API
   api_key: /api[\s\-_]?(key|secret)/i,
+  auth_state: /(?:oauth|auth)[\s\-_]?state/i,
   access_token: /access[\s\-_]?token/i,
   refresh_token: /refresh[\s\-_]?token/i,
 

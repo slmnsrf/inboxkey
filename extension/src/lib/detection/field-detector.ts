@@ -146,6 +146,10 @@ function getInputFields(strictVisibility = true): HTMLInputElement[] {
       return false
     }
 
+    if (input.readOnly || input.hidden) {
+      return false
+    }
+
     // Must be a text-entry type. Rejects radio/checkbox/button/submit/
     // file/etc. up front so a single radio with name="otp" or a
     // checkbox with autocomplete="one-time-code" can't reach Tier 1.
@@ -192,12 +196,16 @@ function getInputFields(strictVisibility = true): HTMLInputElement[] {
 /**
  * Find input fields within shadow DOM recursively
  */
-function findInputsInShadowDOM(root: Document | ShadowRoot): HTMLInputElement[] {
+function findInputsInShadowDOM(root: Document | ShadowRoot | Element): HTMLInputElement[] {
   const inputs: HTMLInputElement[] = []
 
   // Get regular input fields
   const regularInputs = root.querySelectorAll<HTMLInputElement>('input')
   inputs.push(...Array.from(regularInputs))
+
+  if (root instanceof Element && root.shadowRoot) {
+    inputs.push(...findInputsInShadowDOM(root.shadowRoot))
+  }
 
   // Traverse shadow roots recursively
   const allElements = root.querySelectorAll('*')
@@ -221,6 +229,10 @@ function getAllInputFields(strictVisibility = true): HTMLInputElement[] {
   return inputs.filter(input => {
     // Must not be disabled
     if (input.disabled) {
+      return false
+    }
+
+    if (input.readOnly || input.hidden) {
       return false
     }
 
@@ -388,8 +400,9 @@ export function detectAllFields(options?: {
     }
   }
 
-  // Sort by tier first (Tier 1 before Tier 2), then by confidence within same tier
-  results.sort((a, b) => a.tier - b.tier || b.confidence - a.confidence)
+  // Sort by confidence first, then tier. A broad Tier 1 heuristic should
+  // not beat a stronger Tier 2 split-input/code-context candidate.
+  results.sort((a, b) => b.confidence - a.confidence || a.tier - b.tier)
 
   return results
 }
@@ -432,6 +445,9 @@ export class FieldDetector {
   private pendingMutations: Set<HTMLInputElement> = new Set()
   private callback: ((field: HTMLInputElement, result: DetectionResult) => void) | null = null
   private cooldown: CooldownRegistry
+  private readonly handleRescanEvent = (): void => {
+    this.queueAllInputsForRescan()
+  }
 
   constructor() {
     // Create a new cooldown registry instance for this detector
@@ -514,8 +530,8 @@ export class FieldDetector {
       }
     }
 
-    // Sort by tier first (Tier 1 before Tier 2), then by confidence within same tier
-    results.sort((a, b) => a.tier - b.tier || b.confidence - a.confidence)
+    // Sort by confidence first, then tier.
+    results.sort((a, b) => b.confidence - a.confidence || a.tier - b.tier)
 
     return results
   }
@@ -540,8 +556,27 @@ export class FieldDetector {
     this.observer.observe(document.body, {
       childList: true,
       subtree: true,
-      attributes: false, // Don't watch attribute changes for performance
+      attributes: true,
+      attributeFilter: [
+        'type',
+        'autocomplete',
+        'name',
+        'id',
+        'maxlength',
+        'inputmode',
+        'style',
+        'disabled',
+        'readonly',
+        'hidden',
+        'aria-label',
+        'aria-labelledby',
+        'aria-describedby',
+      ],
     })
+
+    window.addEventListener('focus', this.handleRescanEvent)
+    window.addEventListener('pageshow', this.handleRescanEvent)
+    document.addEventListener('visibilitychange', this.handleRescanEvent)
   }
 
   /**
@@ -558,6 +593,10 @@ export class FieldDetector {
       this.debounceTimer = null
     }
 
+    window.removeEventListener('focus', this.handleRescanEvent)
+    window.removeEventListener('pageshow', this.handleRescanEvent)
+    document.removeEventListener('visibilitychange', this.handleRescanEvent)
+
     this.pendingMutations.clear()
     this.callback = null
   }
@@ -571,22 +610,15 @@ export class FieldDetector {
       return
     }
 
-    // Collect new input fields
+    // Collect new and newly-revealed input fields
     for (const mutation of mutations) {
+      if (mutation.type === 'attributes') {
+        this.collectInputFromNode(mutation.target)
+        continue
+      }
+
       for (const node of mutation.addedNodes) {
-        if (node instanceof HTMLInputElement) {
-          if (!this.detectedFields.has(node)) {
-            this.pendingMutations.add(node)
-          }
-        } else if (node instanceof HTMLElement) {
-          // Check descendants
-          const inputs = node.querySelectorAll<HTMLInputElement>('input')
-          for (const input of inputs) {
-            if (!this.detectedFields.has(input)) {
-              this.pendingMutations.add(input)
-            }
-          }
-        }
+        this.collectInputFromNode(node)
       }
     }
 
@@ -598,6 +630,51 @@ export class FieldDetector {
     this.debounceTimer = window.setTimeout(() => {
       this.processPendingMutations()
     }, 100) // 100ms debounce window
+  }
+
+  private collectInputFromNode(node: Node): void {
+    if (node instanceof HTMLInputElement) {
+      if (!this.detectedFields.has(node)) {
+        this.pendingMutations.add(node)
+      }
+      return
+    }
+
+    if (!(node instanceof HTMLElement)) {
+      return
+    }
+
+    const inputs = findInputsInShadowDOM(node)
+    for (const input of inputs) {
+      if (!this.detectedFields.has(input)) {
+        this.pendingMutations.add(input)
+      }
+    }
+  }
+
+  private queueAllInputsForRescan(): void {
+    if (!this.callback) {
+      return
+    }
+
+    const inputs = getAllInputFields(false)
+    for (const input of inputs) {
+      if (!this.detectedFields.has(input)) {
+        this.pendingMutations.add(input)
+      }
+    }
+
+    if (this.pendingMutations.size === 0) {
+      return
+    }
+
+    if (this.debounceTimer !== null) {
+      clearTimeout(this.debounceTimer)
+    }
+
+    this.debounceTimer = window.setTimeout(() => {
+      this.processPendingMutations()
+    }, 100)
   }
 
   /**
@@ -621,6 +698,8 @@ export class FieldDetector {
         style.visibility !== 'hidden' &&
         input.type !== 'hidden' &&
         !input.disabled &&
+        !input.readOnly &&
+        !input.hidden &&
         isRelevantInputType(input)
       )
     })
@@ -676,7 +755,7 @@ export class FieldDetector {
    */
   evaluateField(
     field: HTMLInputElement,
-    options?: { strictVisibility?: boolean }
+    _options?: { strictVisibility?: boolean }
   ): DetectionResult | null {
     // Reject non-text-entry types up front. Single-field callers (e.g.
     // shouldBypassFocusGate, manual re-evaluation) bypass the

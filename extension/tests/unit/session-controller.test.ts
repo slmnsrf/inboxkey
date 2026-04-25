@@ -1096,6 +1096,69 @@ describe("SessionController", () => {
   })
 
   // ===========================================================================
+  // Google Messages google.com policy
+  // ===========================================================================
+
+  describe("Google Messages google.com policy", () => {
+    it("strips SMS from google.com sessions in the background", async () => {
+      const controller = createController({ onSessionCompleted: vi.fn() })
+      await controller.initialize()
+
+      const session = await controller.startSession({
+        tabId: 1,
+        url: "https://myaccount.google.com/security",
+        expected: {},
+        timeoutSeconds: 0.2,
+        detectedChannels: ["email", "sms"],
+      })
+
+      expect(session.detectedChannels).toEqual(["email"])
+    })
+
+    it("does not poll the Google Messages adapter on google.com", async () => {
+      const { createAdaptersFromMailboxes } = await import("../../src/lib/services/provider-adapter")
+      const { EmailPollingService } = await import("../../src/lib/services/email-polling-service")
+
+      const gmailAdapter = { id: "gmail" }
+      const googleMessagesAdapter = { id: "google-messages" }
+      const pollOnce = vi.fn(() => Promise.resolve({ candidates: [], adapterResults: [] }))
+
+      ;(createAdaptersFromMailboxes as any).mockResolvedValueOnce([
+        gmailAdapter,
+        googleMessagesAdapter,
+      ])
+      ;(EmailPollingService as any).mockImplementationOnce((adapters: unknown[]) => ({
+        pollOnce,
+        adapters,
+      }))
+
+      mockGetMailboxes.mockResolvedValue([
+        { id: "gmail-1", providerId: "gmail", email: "user@gmail.com" },
+        { id: "gm-1", providerId: "google-messages", email: "sms@google-messages.local" },
+      ])
+
+      const controller = createController({ onSessionCompleted: vi.fn() })
+      await controller.initialize()
+
+      await controller.startSession({
+        tabId: 1,
+        url: "https://accounts.google.com/signin/v2/challenge",
+        expected: {},
+        timeoutSeconds: 0.2,
+        detectedChannels: ["email", "sms"],
+      })
+
+      await vi.advanceTimersByTimeAsync(1)
+
+      expect(EmailPollingService).toHaveBeenCalledWith(
+        [gmailAdapter],
+        expect.anything()
+      )
+      expect(pollOnce).toHaveBeenCalled()
+    })
+  })
+
+  // ===========================================================================
   // SMS session_expired guard
   // ===========================================================================
 
@@ -1138,7 +1201,7 @@ describe("SessionController", () => {
         })),
       }))
 
-      const session = await controller.startSession({
+      await controller.startSession({
         tabId: 100,
         url: "https://example.com/verify",
         expected: {},
@@ -1223,7 +1286,7 @@ describe("SessionController", () => {
         })),
       }))
 
-      const session = await controller.startSession({
+      await controller.startSession({
         tabId: 101,
         url: "https://example.com/verify",
         expected: {},

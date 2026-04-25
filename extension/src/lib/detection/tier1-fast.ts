@@ -23,7 +23,12 @@ import type { CooldownRegistry } from './cooldown-registry'
 import { validateContext } from './context-validator'
 import { validateURL } from './url-pattern-validator'
 import { classifyDeliveryChannel } from './signal-classifier'
-import { getAriaDescribedbyText } from './detection-utils'
+import {
+  getAriaDescribedbyText,
+  getAriaLabelledbyText,
+  getExplicitLabelText,
+  getMatchingAutocompleteToken,
+} from './detection-utils'
 import { smsFeatureEnabledCache } from './sms-feature-cache'
 import type { TextSources } from './types'
 import {
@@ -78,13 +83,9 @@ export interface Tier1Result {
 function getLabelText(input: HTMLInputElement): string {
   const labels: string[] = []
 
-  // Check for label element (by 'for' attribute)
-  const id = input.id
-  if (id) {
-    const label = input.ownerDocument?.querySelector(`label[for="${id}"]`)
-    if (label?.textContent) {
-      labels.push(label.textContent.trim())
-    }
+  const explicitLabel = getExplicitLabelText(input)
+  if (explicitLabel) {
+    labels.push(explicitLabel)
   }
 
   // Check for parent label
@@ -99,13 +100,9 @@ function getLabelText(input: HTMLInputElement): string {
     labels.push(ariaLabel)
   }
 
-  // Check for aria-labelledby
-  const ariaLabelledby = input.getAttribute('aria-labelledby')
+  const ariaLabelledby = getAriaLabelledbyText(input)
   if (ariaLabelledby) {
-    const labelElement = input.ownerDocument?.getElementById(ariaLabelledby)
-    if (labelElement?.textContent) {
-      labels.push(labelElement.textContent.trim())
-    }
+    labels.push(ariaLabelledby)
   }
 
   return labels.join(' ')
@@ -131,6 +128,15 @@ function getNearbyText(input: HTMLInputElement): string {
   while (element && levels < 4) {
     // Get all text from siblings
     if (element.parentElement) {
+      const directText = Array.from(element.parentElement.childNodes)
+        .filter(node => node !== element && node.nodeType === 3)
+        .map(node => node.textContent?.trim() || '')
+        .filter(Boolean)
+        .join(' ')
+      if (directText && directText.length < 150) {
+        texts.push(directText)
+      }
+
       const siblings = Array.from(element.parentElement.children)
       siblings.forEach((sibling) => {
         if (sibling !== element && sibling instanceof HTMLElement) {
@@ -421,8 +427,8 @@ export function detectTier1(
   // ═══════════════════════════════════════════════════════════════
 
   // Check autocomplete attribute (HTML standard) - highest confidence
-  const autocomplete = input.getAttribute('autocomplete')?.toLowerCase()
-  if (autocomplete && AUTOCOMPLETE_VALUES.includes(autocomplete as any)) {
+  const autocomplete = getMatchingAutocompleteToken(input, AUTOCOMPLETE_VALUES)
+  if (autocomplete) {
     const validation = validateFieldContext(input, cooldown)
     if (!validation.pass) return validation.result
 

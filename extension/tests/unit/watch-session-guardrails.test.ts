@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { hasEmailContext } from '../../src/lib/detection/email-context-guard'
 import { AUTOCOMPLETE_VALUES } from '../../src/lib/detection/patterns'
+import { getMatchingAutocompleteToken } from '../../src/lib/detection/detection-utils'
 
 vi.mock('../../src/lib/detection/email-context-guard')
 const mockHasEmailContext = vi.mocked(hasEmailContext)
@@ -14,40 +15,42 @@ describe('Email context bypass logic', () => {
   it('bypasses email context check for autocomplete="one-time-code"', () => {
     const field = document.createElement('input')
     field.setAttribute('autocomplete', 'one-time-code')
-    const ac = field.getAttribute('autocomplete')?.toLowerCase()
-    const bypass = ac != null && (AUTOCOMPLETE_VALUES as readonly string[]).includes(ac)
+    const bypass = getMatchingAutocompleteToken(field, AUTOCOMPLETE_VALUES) !== null
     expect(bypass).toBe(true)
   })
 
   it('bypasses email context check for autocomplete="one-time-password"', () => {
     const field = document.createElement('input')
     field.setAttribute('autocomplete', 'one-time-password')
-    const ac = field.getAttribute('autocomplete')?.toLowerCase()
-    const bypass = ac != null && (AUTOCOMPLETE_VALUES as readonly string[]).includes(ac)
+    const bypass = getMatchingAutocompleteToken(field, AUTOCOMPLETE_VALUES) !== null
     expect(bypass).toBe(true)
   })
 
   it('bypasses email context check for autocomplete="otp"', () => {
     const field = document.createElement('input')
     field.setAttribute('autocomplete', 'otp')
-    const ac = field.getAttribute('autocomplete')?.toLowerCase()
-    const bypass = ac != null && (AUTOCOMPLETE_VALUES as readonly string[]).includes(ac)
+    const bypass = getMatchingAutocompleteToken(field, AUTOCOMPLETE_VALUES) !== null
+    expect(bypass).toBe(true)
+  })
+
+  it('bypasses email context check for tokenized autocomplete containing one-time-code', () => {
+    const field = document.createElement('input')
+    field.setAttribute('autocomplete', 'section-login one-time-code')
+    const bypass = getMatchingAutocompleteToken(field, AUTOCOMPLETE_VALUES) !== null
     expect(bypass).toBe(true)
   })
 
   it('does NOT bypass for name="otp" (no autocomplete)', () => {
     const field = document.createElement('input')
     field.setAttribute('name', 'otp')
-    const ac = field.getAttribute('autocomplete')?.toLowerCase()
-    const bypass = ac != null && (AUTOCOMPLETE_VALUES as readonly string[]).includes(ac)
+    const bypass = getMatchingAutocompleteToken(field, AUTOCOMPLETE_VALUES) !== null
     expect(bypass).toBe(false)
   })
 
   it('does NOT bypass for name="activation_code"', () => {
     const field = document.createElement('input')
     field.setAttribute('name', 'activation_code')
-    const ac = field.getAttribute('autocomplete')?.toLowerCase()
-    const bypass = ac != null && (AUTOCOMPLETE_VALUES as readonly string[]).includes(ac)
+    const bypass = getMatchingAutocompleteToken(field, AUTOCOMPLETE_VALUES) !== null
     expect(bypass).toBe(false)
   })
 

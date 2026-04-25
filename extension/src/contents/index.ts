@@ -27,6 +27,8 @@ import { isHTMLDocument } from '@/lib/utils/is-html-document'
 import { detectSplitInputGroup } from '@/lib/detection/split-input-detector'
 import { hasEmailContext } from '@/lib/detection/email-context-guard'
 import { hydrateSmsCache } from '@/lib/detection/sms-feature-cache'
+import { getMatchingAutocompleteToken } from '@/lib/detection/detection-utils'
+import { AUTOCOMPLETE_VALUES } from '@/lib/detection/patterns'
 import { cancelPendingNotifications } from './notification'
 
 /**
@@ -98,8 +100,7 @@ export function clearProcessedFields(): void {
   ): boolean {
     try {
       // Always bypass for OTP autocomplete values
-      const autocomplete = field.getAttribute('autocomplete')?.toLowerCase() || ''
-      if (['one-time-code', 'one-time-password', 'otp'].includes(autocomplete)) {
+      if (getMatchingAutocompleteToken(field, AUTOCOMPLETE_VALUES) !== null) {
         return true
       }
 
@@ -192,6 +193,7 @@ export function clearProcessedFields(): void {
         focusGateRegistry.delete(representativeField)
       }
       representativeField.removeAttribute('data-inboxkey-focus-gated')
+      representativeField.removeAttribute('data-inboxkey-watching')
     }
 
     // Start watch session on representative field
@@ -200,7 +202,7 @@ export function clearProcessedFields(): void {
       detectionResult,
       {
         onSessionStarted: (_sessionId: string) => {
-          // Session started
+          representativeField.setAttribute('data-inboxkey-watching', 'true')
         },
         onCodeFound: (_result) => {
           // Code found (any path: autofill, clipboard, fallback).

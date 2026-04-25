@@ -22,27 +22,16 @@ import { detectSplitInputGroup } from "@/lib/detection/split-input-detector"
 import { hasEmailContext } from '@/lib/detection/email-context-guard'
 import { smsFeatureEnabledCache } from '@/lib/detection/sms-feature-cache'
 import { AUTOCOMPLETE_VALUES } from '@/lib/detection/patterns'
+import { getMatchingAutocompleteToken } from '@/lib/detection/detection-utils'
 
 /**
- * Google sign-in hostnames where Google deliberately hides its own SMS codes
- * from messages.google.com web. For users with only Google Messages paired,
- * starting a session on these pages is guaranteed to fail - Google's own
- * verification codes will only show up on the phone, not in the web interface.
- *
- * Narrow list by design: mail.google.com, youtube.com, workspace.google.com,
- * and Drive/Docs flows all redirect to accounts.google.com/signin for the
- * actual credential step. myaccount.google.com is intentionally excluded
- * because it is the post-auth account-management dashboard, not a sign-in
- * surface, and may contain third-party OTP fields that should still autofill.
+ * Google deliberately hides its own SMS codes from messages.google.com web.
+ * Treat Google Messages as unavailable on google.com and all subdomains.
  */
-const GOOGLE_SIGNIN_HOSTNAMES = new Set<string>([
-  'accounts.google.com',
-  'signin.google.com',
-])
-
-function isGoogleSignInUrl(url: string): boolean {
+function isGoogleComUrl(url: string): boolean {
   try {
-    return GOOGLE_SIGNIN_HOSTNAMES.has(new URL(url).hostname.toLowerCase())
+    const hostname = new URL(url).hostname.toLowerCase()
+    return hostname === 'google.com' || hostname.endsWith('.google.com')
   } catch {
     return false
   }
@@ -115,11 +104,12 @@ export class WatchSession {
       }
     }
 
-    // GUARDRAIL 1: No-mailbox check + Google-signin SMS-only skip
+    const googleMessagesDisabled = isGoogleComUrl(currentUrl)
+
+    // GUARDRAIL 1: No-mailbox check + google.com SMS-only skip
     // Skip silently if no mailboxes are connected (failure-open on error).
-    // Also skip when the user has ONLY Google Messages paired and the current
-    // page is a Google sign-in hostname: Google hides its own SMS codes from
-    // messages.google.com for security, so the session would never succeed.
+    // Also skip when the user has ONLY Google Messages paired on google.com:
+    // Google Messages cannot surface Google's own SMS codes in the web app.
     try {
       const guardStorage = await StorageFactory.create()
       const mailboxes = await guardStorage.getMailboxes()
@@ -128,9 +118,8 @@ export class WatchSession {
         this.callbacks.onVetoed?.()
         return
       }
-      if (isGoogleSignInUrl(currentUrl) &&
-          mailboxes.every(m => m.providerId === 'google-messages')) {
-        console.log("[WatchSession] Google sign-in + SMS-only: session skipped (Google hides its own SMS codes from web)")
+      if (googleMessagesDisabled && mailboxes.every(m => m.providerId === 'google-messages')) {
+        console.log("[WatchSession] google.com + Google Messages-only: session skipped")
         this.callbacks.onVetoed?.()
         return
       }
@@ -139,35 +128,57 @@ export class WatchSession {
     }
 
     // GUARDRAIL 3: Email context check
-    // Bypass for OTP autocomplete or split-input groups (unambiguous signals)
-    const autocomplete = this.field.getAttribute('autocomplete')?.toLowerCase()
-    const isOtpAutocomplete = autocomplete != null &&
-      (AUTOCOMPLETE_VALUES as readonly string[]).includes(autocomplete)
-    const isSplitInput = detectSplitInputGroup(this.field) !== null
+    // Bypass for OTP autocomplete. Split-input alone is not enough:
+    // false split groups must still pass email-context validation.
+    const isOtpAutocomplete = getMatchingAutocompleteToken(this.field, AUTOCOMPLETE_VALUES) !== null
 
-    const isSmsChannel = this.detectionResult.detectedChannels?.includes('sms')
+    const isSmsChannel = !googleMessagesDisabled &&
+      this.detectionResult.detectedChannels?.includes('sms')
     // When a google-messages mailbox is paired, SMS is a valid source even if
     // the classifier's narrow nearbyText missed the channel label (e.g. Google
     // 2-Step Verification "idvPin" field). Mirrors the GM bypass in
     // tier1-fast.ts and tier2-deep.ts so the guardrail stays consistent.
-    const gmPaired = smsFeatureEnabledCache
+    const gmPaired = !googleMessagesDisabled && smsFeatureEnabledCache
     // Track whether the GM bypass actually saved this session (no email context,
     // allowed only because GM is paired). This narrower flag determines whether
     // we should inject 'sms' into the session below - if email context exists,
     // we should NOT broaden the session to hybrid email+SMS for normal pages.
     let gmBypassFired = false
-    if (!isOtpAutocomplete && !isSplitInput && !isSmsChannel && !gmPaired) {
+    if (!isOtpAutocomplete && !isSmsChannel && !gmPaired) {
       if (!hasEmailContext(this.field)) {
         console.log("[WatchSession] No email context near field, skipping watch session")
         this.callbacks.onVetoed?.()
         return
       }
-    } else if (!isOtpAutocomplete && !isSplitInput && !isSmsChannel && gmPaired) {
+    } else if (!isOtpAutocomplete && !isSmsChannel && gmPaired) {
       // GM is paired and SMS wasn't classified - only treat as SMS source if
       // the email-context guardrail would have rejected this field.
       if (!hasEmailContext(this.field)) {
         gmBypassFired = true
       }
+    }
+
+    // Filter out 'authenticator' -- background only accepts 'email' | 'sms'
+    const rawActionableChannels = (this.detectionResult.detectedChannels ?? ['email'])
+      .filter((ch): ch is 'email' | 'sms' => ch === 'email' || ch === 'sms')
+    const actionableChannels = googleMessagesDisabled
+      ? rawActionableChannels.filter(ch => ch !== 'sms')
+      : [...rawActionableChannels]
+
+    // When the GM bypass fired (no email context, allowed only because GM is
+    // paired), inject 'sms' so session-controller includes the google-messages
+    // adapter. Scoped to gmBypassFired so normal email-only pages don't become
+    // hybrid email+SMS sessions for users with GM paired.
+    if (gmBypassFired && !actionableChannels.includes('sms')) {
+      actionableChannels.push('sms')
+    }
+
+    if (googleMessagesDisabled &&
+        rawActionableChannels.includes('sms') &&
+        actionableChannels.length === 0) {
+      console.log("[WatchSession] google.com SMS-only session skipped")
+      this.callbacks.onVetoed?.()
+      return
     }
 
     try {
@@ -197,17 +208,6 @@ export class WatchSession {
     const storage = await StorageFactory.create()
     const settings = await storage.getSettings()
     const timeoutSeconds = settings.sessionTimeoutSeconds ?? 60
-
-    // Filter out 'authenticator' -- background only accepts 'email' | 'sms'
-    const actionableChannels = (this.detectionResult.detectedChannels ?? ['email'])
-      .filter((ch): ch is 'email' | 'sms' => ch === 'email' || ch === 'sms')
-    // When the GM bypass fired (no email context, allowed only because GM is
-    // paired), inject 'sms' so session-controller includes the google-messages
-    // adapter. Scoped to gmBypassFired so normal email-only pages don't become
-    // hybrid email+SMS sessions for users with GM paired.
-    if (gmBypassFired && !actionableChannels.includes('sms')) {
-      actionableChannels.push('sms')
-    }
 
     try {
       this.port.postMessage({

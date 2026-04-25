@@ -10,10 +10,6 @@ import {
   analyzeButtonIntent,
   analyzeFieldProximity,
   detectTier2,
-  type FormContext as _FormContext,
-  type ButtonIntent as _ButtonIntent,
-  type FieldProximity as _FieldProximity,
-  type Tier2Result as _Tier2Result,
 } from '../tier2-deep'
 import { createCooldownRegistry } from '../cooldown-registry'
 
@@ -1205,6 +1201,63 @@ describe('tier2-deep helpers', () => {
         // Total should be 65 but might be 70+ if nearby scoring is different
         expect(result.detected).toBe(true) // Actually passes threshold
         expect(result.score).toBeGreaterThanOrEqual(70)
+      })
+
+      it('should handle aria-labelledby with multiple IDs', () => {
+        container.innerHTML = `
+          <div>
+            <span id="verb">Enter</span>
+            <span id="subject">verification code</span>
+            <input type="text" id="field" aria-labelledby="verb subject" placeholder="123456" />
+          </div>
+        `
+
+        const input = container.querySelector<HTMLInputElement>('#field')!
+        const result = detectTier2(input, cooldown)
+
+        expect(result.detected).toBe(true)
+        expect(result.score).toBeGreaterThanOrEqual(70)
+      })
+
+      it('should score direct text-node context around the input', () => {
+        container.innerHTML = `
+          <div>
+            Enter verification code
+            <input type="text" id="field" placeholder="123456" pattern="[0-9]{6}" />
+          </div>
+        `
+
+        const input = container.querySelector<HTMLInputElement>('#field')!
+        const result = detectTier2(input, cooldown)
+
+        expect(result.score).toBeGreaterThanOrEqual(60)
+        expect(result.reason).toContain('nearby:20')
+      })
+
+      it('should score [0-9]{6} pattern attributes', () => {
+        container.innerHTML = `
+          <label for="field">Verification Code</label>
+          <input type="text" id="field" placeholder="123456" pattern="[0-9]{6}" />
+        `
+
+        const input = container.querySelector<HTMLInputElement>('#field')!
+        const result = detectTier2(input, cooldown)
+
+        expect(result.detected).toBe(true)
+        expect(result.reason).toContain('pattern:15')
+      })
+
+      it('should score [0-9]{4,8} pattern attributes', () => {
+        container.innerHTML = `
+          <label for="field">Verification Code</label>
+          <input type="text" id="field" placeholder="123456" pattern="[0-9]{4,8}" />
+        `
+
+        const input = container.querySelector<HTMLInputElement>('#field')!
+        const result = detectTier2(input, cooldown)
+
+        expect(result.detected).toBe(true)
+        expect(result.reason).toContain('pattern:15')
       })
 
       it('should handle combined label sources', () => {

@@ -22,6 +22,8 @@ export interface SplitInputGroup {
   pattern: 'maxlength-1' | 'sequential-name' | 'adjacent-siblings'
 }
 
+const OTP_EVIDENCE_PATTERN = /\b(?:otp|one[-\s_]?time|verification|verify|security|auth(?:entication)?|mfa|2fa|twofa|code|pin|sms)\b|codeentry/i
+
 /**
  * Detect if field is part of a split-input group
  * Returns null if single field, or SplitInputGroup if part of a group
@@ -182,11 +184,15 @@ function isCoherentGroup(inputs: HTMLInputElement[]): boolean {
   if (sharedMaxLen >= 1 && sharedMaxLen <= 6) {
     // shape (a): OK
   } else if (sharedMaxLen === -1) {
-    // shape (b): require per-cell wrapping.
+    // shape (b): require per-cell wrapping plus OTP-ish structure.
     const immediateParents = new Set(inputs.map(i => i.parentElement))
     if (immediateParents.size < inputs.length) {
       // Two or more inputs share an immediate parent - flat form, not
       // a wrapped OTP widget.
+      return false
+    }
+
+    if (!hasSequentialIdentifiers(inputs) && !hasOtpContainerEvidence(inputs)) {
       return false
     }
   } else {
@@ -217,6 +223,77 @@ function isCoherentGroup(inputs: HTMLInputElement[]): boolean {
   }
 
   return true
+}
+
+function hasSequentialIdentifiers(inputs: HTMLInputElement[]): boolean {
+  const sorted = sortByDomOrder(inputs)
+  const values = sorted.map(input => input.name || input.id || '')
+  if (values.some(value => value.length === 0)) return false
+
+  const parsed = values.map(value => {
+    const match = value.match(/^(.*?)(\d+)$/)
+    if (!match) return null
+    return {
+      prefix: match[1],
+      index: parseInt(match[2], 10),
+    }
+  })
+
+  if (parsed.some(value => value === null)) return false
+  const first = parsed[0]!
+  return parsed.every((value, index) => (
+    value !== null &&
+    value.prefix === first.prefix &&
+    (value.index === first.index + index || value.index === index || value.index === index + 1)
+  ))
+}
+
+function hasOtpContainerEvidence(inputs: HTMLInputElement[]): boolean {
+  const commonAncestor = findCommonAncestor(inputs, 4)
+  const candidates = [
+    ...inputs,
+    ...inputs.map(input => input.parentElement).filter((el): el is HTMLElement => el !== null),
+    ...(commonAncestor ? [commonAncestor] : []),
+  ]
+
+  return candidates.some(element => {
+    const text = [
+      element.id,
+      element.getAttribute('name') || '',
+      element.getAttribute('class') || '',
+      element.getAttribute('data-testid') || '',
+      element.getAttribute('aria-label') || '',
+      element.getAttribute('autocomplete') || '',
+      element.textContent || '',
+    ].join(' ')
+
+    return OTP_EVIDENCE_PATTERN.test(text)
+  })
+}
+
+function findCommonAncestor(inputs: HTMLInputElement[], levels: number): HTMLElement | null {
+  if (inputs.length === 0) return null
+
+  let node: HTMLElement | null = inputs[0]
+  let depth = 0
+  while (node && depth <= levels) {
+    if (inputs.every(input => node!.contains(input))) {
+      return node
+    }
+    node = node.parentElement
+    depth += 1
+  }
+
+  return null
+}
+
+function sortByDomOrder(inputs: HTMLInputElement[]): HTMLInputElement[] {
+  return [...inputs].sort((a, b) => {
+    const position = a.compareDocumentPosition(b)
+    if (position & Node.DOCUMENT_POSITION_FOLLOWING) return -1
+    if (position & Node.DOCUMENT_POSITION_PRECEDING) return 1
+    return 0
+  })
 }
 
 /**
@@ -272,17 +349,7 @@ function detectGroupPattern(
 
   // Check for sequential naming pattern
   // Examples: code_1, code_2, ... or digit-1, digit-2, ...
-  const names = inputs.map(input => input.name || input.id || '')
-  const hasSequentialNumbers = names.every((name, index) => {
-    // Extract last number from name
-    const match = name.match(/\d+$/)
-    if (!match) return false
-    const num = parseInt(match[0], 10)
-    // Check if it matches expected sequence (0-based or 1-based)
-    return num === index || num === index + 1
-  })
-
-  if (hasSequentialNumbers) {
+  if (hasSequentialIdentifiers(inputs)) {
     return 'sequential-name'
   }
 
