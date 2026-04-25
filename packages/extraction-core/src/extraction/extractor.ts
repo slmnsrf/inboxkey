@@ -20,6 +20,7 @@ import {
   MAGIC_LINK_KEYWORDS,
   MAGIC_LINK_URL_HINTS,
   DANGEROUS_LINK_KEYWORDS,
+  RESET_LINK_PATH_PATTERNS,
   TRACKER_HOST_PATTERNS,
   TRACKER_PATH_PATTERNS,
   TRACKER_URL_PARAM_NAMES,
@@ -231,6 +232,18 @@ function scoreLinkCandidate(href: string, anchorText: string, fullText: string, 
   if (!domain) return null
   if (/^http:\/\//i.test(href)) return null // disallow plain HTTP for security
   if (containsAny(hrefLower, DANGEROUS_LINK_KEYWORDS)) return null // unsubscribe, reset password, etc.
+
+  // Reject password-reset / account-recovery URLs. Opening one
+  // consumes the token and forces a re-auth flow the user may not
+  // have initiated. Pre-PR-1 these were filtered indirectly via the
+  // strict body-keyword intent gate; that gate now also admits on
+  // URL hints (so magic-link emails with generic prose work), which
+  // means reset emails - same /reset?token=... shape - need an
+  // explicit URL-path filter.
+  try {
+    const pathname = new URL(href).pathname
+    if (RESET_LINK_PATH_PATTERNS.some(p => p.test(pathname))) return null
+  } catch { /* unparseable URL - already rejected above */ }
 
   // Reject ESP click-tracking redirectors. The tracker's 302 lands the
   // user on the real destination, but we surface URLs to the user

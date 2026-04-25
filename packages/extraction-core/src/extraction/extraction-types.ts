@@ -799,6 +799,23 @@ export const DANGEROUS_LINK_KEYWORDS: ReadonlyArray<string> = Object.freeze([
   'help center',
 ])
 
+/**
+ * URL path segments that indicate a password-reset / account-recovery
+ * flow. These are sensitive: opening a reset link consumes the token
+ * and forces the user into a re-auth flow they may not have initiated.
+ * Magic-link extraction rejects URLs whose pathname matches one of
+ * these patterns.
+ *
+ * Match is anchored at a path segment boundary (`/...` followed by
+ * `/`, `?`, `#`, or end-of-string) so that legitimate paths like
+ * `/resetting-quotas` or `/password-strength-meter` are not blocked.
+ */
+export const RESET_LINK_PATH_PATTERNS: ReadonlyArray<RegExp> = Object.freeze([
+  /\/(?:reset|forgot|recover)(?:[/?#]|$)/i,
+  /\/(?:reset|forgot|recover)[-_](?:password|account|access)(?:[/?#]|$)/i,
+  /\/(?:password|account)[-_](?:reset|recovery)(?:[/?#]|$)/i,
+])
+
 /** URL fragments that *positively* hint at login/verify links. */
 export const MAGIC_LINK_URL_HINTS: ReadonlyArray<string> = Object.freeze([
   'login',
