@@ -505,6 +505,101 @@ export const MAGIC_LINK_URL_HINTS: ReadonlyArray<string> = Object.freeze([
 ])
 
 // ------------------------------
+// Tracker URL detection
+// ------------------------------
+
+/**
+ * Hostnames belonging to ESP click-tracking redirectors. These wrap real
+ * destinations in an opaque link that records opens/clicks before
+ * 302-redirecting. They are never the actual magic link, so the
+ * extractor refuses to surface them at all - opening one in a tab and
+ * letting it redirect would still leak the click event and would show
+ * the user a domain they didn't expect.
+ *
+ * Patterns match the full hostname (case-insensitive). Subdomains are
+ * handled with leading wildcards expressed as `(?:^|\.)host\.tld$`.
+ */
+export const TRACKER_HOST_PATTERNS: ReadonlyArray<RegExp> = Object.freeze([
+  // HubSpot click tracking (hubspotlinks.com, plus on-host /e3t/, /Ctc/, /CL0/ paths)
+  /(?:^|\.)hubspotlinks\.com$/i,
+  // Mailchimp / Mandrill
+  /(?:^|\.)list-manage\.com$/i,
+  /(?:^|\.)mandrillapp\.com$/i,
+  // SendGrid / Twilio email
+  /(?:^|\.)sendgrid\.net$/i,
+  /(?:^|\.)mailgun\.org$/i,
+  /(?:^|\.)sparkpostmail\.com$/i,
+  /(?:^|\.)sparkpost\.com$/i,
+  // Brevo / Sendinblue
+  /(?:^|\.)sendinblue\.com$/i,
+  /(?:^|\.)brevo\.com$/i,
+  // Marketo / Pardot / Salesforce Marketing Cloud
+  /(?:^|\.)mktomail\.com$/i,
+  /(?:^|\.)marketo\.com$/i,
+  /(?:^|\.)pardot\.com$/i,
+  /(?:^|\.)exct\.net$/i,
+  /(?:^|\.)exacttarget\.com$/i,
+  // ConvertKit
+  /(?:^|\.)convertkit-mail\d*\.com$/i,
+  // Campaign Monitor
+  /(?:^|\.)createsend\.com$/i,
+  /(?:^|\.)cmail\d*\.com$/i,
+  // Iterable / Klaviyo / Customer.io
+  /(?:^|\.)iterable\.com$/i,
+  /(?:^|\.)klaviyomail\.com$/i,
+  /(?:^|\.)customeriomail\.com$/i,
+  // AWeber
+  /(?:^|\.)aweber\.com$/i,
+  // ActiveCampaign
+  /(?:^|\.)activehosted\.com$/i,
+  // Beehiiv
+  /(?:^|\.)beehiiv\.net$/i,
+  // Generic click/track subdomain prefixes (conservative: leftmost label
+  // must be one of these, not just contain them)
+  /^click\d*\./i,
+  /^clicks\./i,
+  /^track\d*\./i,
+  /^tracking\./i,
+  /^email-track\./i,
+  /^mailtrack\./i,
+  /^mailtrk\./i,
+])
+
+/**
+ * Path prefixes used by ESP redirector endpoints. Match against the
+ * URL pathname (case-insensitive). HubSpot's per-account endpoints
+ * (`/Ctc/`, `/e3t/`, `/CL0/`) are the primary case here - a tracker
+ * hosted under the brand's own subdomain (e.g. `e.deepgram.com/e3t/...`)
+ * isn't caught by hostname alone.
+ */
+export const TRACKER_PATH_PATTERNS: ReadonlyArray<RegExp> = Object.freeze([
+  /^\/(?:Ctc|CL0|e3t)\//i,           // HubSpot
+  /^\/wf\/(?:click|open)\b/i,         // HubSpot legacy
+  /^\/ls\/click\b/i,                  // Marketo / Salesforce Marketing
+  /^\/c\/[A-Za-z0-9_-]{6,}/,          // Generic /c/<token> redirectors
+  /^\/r\/[A-Za-z0-9_-]{6,}/,          // Generic /r/<token> redirectors
+  /^\/track\//i,
+  /^\/redir(?:ect)?\b/i,
+])
+
+/**
+ * Query-parameter names that carry an embedded destination URL. When
+ * an HTTPS URL appears as the value of any of these params, the link
+ * is a redirector by construction.
+ */
+export const TRACKER_URL_PARAM_NAMES: ReadonlyArray<string> = Object.freeze([
+  'u',
+  'url',
+  'redirect',
+  'redirect_url',
+  'goto',
+  'to',
+  'r',
+  'destination',
+  'continue',
+])
+
+// ------------------------------
 // Exclusions to reduce false positives
 // ------------------------------
 
