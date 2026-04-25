@@ -215,19 +215,30 @@ function htmlToText(html: string): string {
  * worker safety).
  *
  * Each anchor also carries a `localContext` snippet derived from the
- * raw HTML around its position. This is what hasLocalDangerContext
- * checks against - using indexOf on the normalized body text would
- * latch every <a>Continue</a> onto the *first* "Continue" in the
- * email, so a safe early Continue link followed by a destructive
- * "To delete your account, click [Continue]" pair would have BOTH
- * anchors checked against the safe early context. Per-anchor HTML
- * windowing avoids that ambiguity.
+ * visible text around its position in the source HTML. This is what
+ * hasLocalDangerContext checks against - using indexOf on the
+ * normalized body text would latch every <a>Continue</a> onto the
+ * *first* "Continue" in the email, so a safe early Continue link
+ * followed by a destructive "To delete your account, click
+ * [Continue]" pair would have BOTH anchors checked against the safe
+ * early context. Per-anchor windowing avoids that ambiguity.
  *
- * Window sizes are wider in HTML (1500 before / 600 after) than the
- * visible-text targets (~240 before / ~80 after) because tag stripping
- * compresses the byte count substantially. The before-heavy bias
+ * Window construction is intentionally NOT capped by raw HTML byte
+ * count. Real email markup (table layouts, button wrappers, long
+ * inline styles, MSO conditional comments) easily consumes 1500+
+ * raw bytes between the visible "To delete your account" copy and
+ * the anchor, even though the text is visually adjacent. We instead
+ * strip tags from the full pre-anchor and post-anchor HTML and slice
+ * by visible-character count - so markup density doesn't shrink the
+ * effective neighborhood.
+ *
+ * Targets: 240 visible chars before, 80 after. Before-heavy bias
  * matches real email structure: purpose statements precede the link;
  * security footers follow it.
+ *
+ * Performance: O(N*K) where N = anchors and K = HTML size, because
+ * each anchor strips the full pre-anchor prefix. For typical email
+ * shapes (5-15 anchors, <50KB HTML) this is sub-millisecond.
  */
 function harvestAnchors(html: string): Array<{ href: string; anchorText: string; localContext: string }> {
   const res: Array<{ href: string; anchorText: string; localContext: string }> = []
@@ -242,18 +253,14 @@ function harvestAnchors(html: string): Array<{ href: string; anchorText: string;
     if (containsAny(href.toLowerCase(), DANGEROUS_LINK_KEYWORDS)) continue
     const text = normalizeWhitespace(stripTags(m[2] || ''))
 
-    // Per-anchor context for hasLocalDangerContext. HTML window
-    // around the regex match position, then strip tags and normalize.
-    // Exclude the anchor's own text from the window (it would dilute
-    // before/after balance and could carry its own keyword like
-    // "Sign in" into the danger check).
-    const beforeStart = Math.max(0, m.index - 1500)
-    const afterEnd = Math.min(html.length, m.index + m[0].length + 600)
-    const beforeHtml = html.slice(beforeStart, m.index)
-    const afterHtml = html.slice(m.index + m[0].length, afterEnd)
-    const beforeText = normalizeWhitespace(stripTags(beforeHtml))
-    const afterText = normalizeWhitespace(stripTags(afterHtml))
-    // Trim each side to the visible-text target length, before-heavy.
+    // Per-anchor context. Strip the full pre/post HTML to visible
+    // text, then slice by visible-char counts. Re-uses htmlToText so
+    // script/style blocks and HTML entities are handled the same way
+    // they are in the body normalization upstream.
+    const beforeHtml = html.slice(0, m.index)
+    const afterHtml = html.slice(m.index + m[0].length)
+    const beforeText = htmlToText(beforeHtml)
+    const afterText = htmlToText(afterHtml)
     const beforeWindow = beforeText.length > 240
       ? beforeText.slice(beforeText.length - 240)
       : beforeText

@@ -349,5 +349,46 @@ describe('destructive-action link rejection', () => {
       // Only the second (safe) link should survive.
       expect(hrefs).toEqual(['https://app.example.com/auth/login?token=SAFE'])
     })
+
+    it('catches destructive context behind heavy table/inline-style markup', () => {
+      // Codex round-6 finding. A 1500-raw-byte window before the
+      // anchor missed visually-adjacent destructive copy when email
+      // markup (table wrappers, deep inline styles, MSO comments)
+      // consumed the byte budget. Visible-text slicing instead of
+      // raw-byte slicing fixes this.
+      const heavyStyle = 'font-family:Arial,Helvetica,sans-serif;'
+        + 'background-color:#f5f5f5;border-radius:6px;padding:12px 24px;'
+        + 'border:1px solid #cccccc;color:#333333;font-size:14px;line-height:1.5;'
+        + 'text-align:center;'.repeat(8)
+      const tableWrapper = `
+        <table cellpadding="0" cellspacing="0" border="0" style="${heavyStyle}">
+          <tr><td style="${heavyStyle}">
+            <table style="${heavyStyle}">
+              <tr><td style="${heavyStyle}">
+                <table style="${heavyStyle}">
+                  <tr><td style="${heavyStyle}">
+      `
+      const tableClose = `
+                  </td></tr></table>
+                </td></tr></table>
+              </td></tr></table>
+      `
+      const html = `
+        <p style="${heavyStyle}">To delete your account, click below:</p>
+        ${tableWrapper}
+        <a href="https://app.example.com/action?token=DELETE" style="${heavyStyle}">Continue</a>
+        ${tableClose}
+      `
+
+      // Sanity: confirm raw HTML between the destructive copy and the
+      // anchor exceeds the prior 1500-byte window so this test
+      // actually exercises the regression.
+      const purposeIdx = html.indexOf('To delete')
+      const anchorIdx = html.indexOf('<a href=')
+      expect(anchorIdx - purposeIdx).toBeGreaterThan(1500)
+
+      const result = extractMagicLinks({ html, subject: 'Account update' })
+      expect(result).toEqual([])
+    })
   })
 })
