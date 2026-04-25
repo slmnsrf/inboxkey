@@ -22,6 +22,7 @@ import {
   DANGEROUS_LINK_KEYWORDS,
   RESET_LINK_PATH_PATTERNS,
   DESTRUCTIVE_ACTION_PATH_PATTERNS,
+  HARD_DANGER_BODY_KEYWORDS,
   TRACKER_HOST_PATTERNS,
   TRACKER_PATH_PATTERNS,
   TRACKER_URL_PARAM_NAMES,
@@ -109,6 +110,20 @@ export function extractMagicLinks(
   const textFromHtml = html ? htmlToText(html) : ''
   const text = normalizeWhitespace((plain || '') + (textFromHtml ? (' ' + textFromHtml) : ''))
   const lower = text.toLowerCase()
+
+  // Whole-email destructive context veto. If the body or subject
+  // strongly indicates password-reset / account-deletion / cancel-
+  // subscription flows, every link in the email is part of that
+  // flow - even a generic "Continue" anchor pointing at /action?
+  // token=abc. Per-anchor checks fundamentally can't catch this
+  // because the danger lives in the surrounding copy, not in the
+  // link itself. Drop the email entirely.
+  if (
+    containsAny(lower, HARD_DANGER_BODY_KEYWORDS) ||
+    containsAny(subject, HARD_DANGER_BODY_KEYWORDS)
+  ) {
+    return []
+  }
 
   // Harvest URLs first - cheap regex work, and the URL itself is
   // strong evidence of intent. Real magic-link URLs almost always

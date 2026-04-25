@@ -194,6 +194,15 @@ export function clearProcessedFields(): void {
       }
       representativeField.removeAttribute('data-inboxkey-focus-gated')
       representativeField.removeAttribute('data-inboxkey-watching')
+      // Drop the field from the detector's WeakSet too. Without this,
+      // the mutation/focus/pageshow rescan paths would still treat the
+      // input as "already detected" and skip it on resend / retry /
+      // SPA route changes that don't replace the DOM node.
+      const allInputs = group ? group.inputs : [field]
+      for (const input of allInputs) {
+        detector.forgetField(input)
+        globalProcessedRepresentatives?.delete(input)
+      }
     }
 
     // Start watch session on representative field

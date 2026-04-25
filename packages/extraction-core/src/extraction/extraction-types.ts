@@ -861,6 +861,7 @@ export const RESET_LINK_PATH_PATTERNS: ReadonlyArray<RegExp> = Object.freeze([
  * Pattern shapes (all anchored at path segment boundaries):
  *   /(verify|confirm)-(action)               action verb adjacent to verify
  *   /(verify|confirm)-account-(deletion|...) verify + account + noun
+ *   /(verify|confirm)-account-(action)       verify + account + verb
  *   /(verify|confirm)-(action)-account       verify + verb + account
  *   /(action)-account                         delete-account, close-account, ...
  *   /account/(action|noun)                    /account/delete, /account/closure
@@ -875,8 +876,10 @@ export const DESTRUCTIVE_ACTION_PATH_PATTERNS: ReadonlyArray<RegExp> = Object.fr
   new RegExp(`\\/(?:verify|confirm)[-_](?:${DESTRUCTIVE_VERBS})(?:[/?#]|$)`, 'i'),
   // /verify-delete-account, /confirm-close-account
   new RegExp(`\\/(?:verify|confirm)[-_](?:${DESTRUCTIVE_VERBS})[-_]account(?:[/?#]|$)`, 'i'),
-  // /verify-account-deletion, /confirm-account-closure, etc.
+  // /verify-account-deletion, /confirm-account-closure, etc. (noun)
   new RegExp(`\\/(?:verify|confirm)[-_]account[-_](?:${DESTRUCTIVE_NOUNS})(?:[/?#]|$)`, 'i'),
+  // /verify-account-delete, /confirm-account-close, etc. (verb after account)
+  new RegExp(`\\/(?:verify|confirm)[-_]account[-_](?:${DESTRUCTIVE_VERBS})(?:[/?#]|$)`, 'i'),
   // /delete-account, /close-account, etc.
   new RegExp(`\\/(?:${DESTRUCTIVE_VERBS})[-_]account(?:[/?#]|$)`, 'i'),
   // /account/delete, /account/deletion, /account/closure, etc.
@@ -885,6 +888,53 @@ export const DESTRUCTIVE_ACTION_PATH_PATTERNS: ReadonlyArray<RegExp> = Object.fr
   new RegExp(`\\/account[-_](?:${DESTRUCTIVE_NOUNS})(?:[/?#]|$)`, 'i'),
   // /close-subscription, /cancel-subscription, /delete-subscription
   /\/(?:close|delete|cancel)[-_]subscription(?:[/?#]|$)/i,
+])
+
+/**
+ * Phrases that, when present in body or subject, mark the entire
+ * email as a destructive / sensitive flow - regardless of how
+ * innocent any individual link inside looks. Used by extractMagicLinks
+ * to skip the email entirely before scoring URLs.
+ *
+ * Without this whole-email guard, a generic anchor like
+ *   <a href="https://app/action?token=abc">Continue</a>
+ * inside an email titled "Confirm account deletion" would extract
+ * as a magic link (the URL has no destructive markers, the anchor
+ * text is innocuous). Per-anchor checks fundamentally can't catch
+ * this class because the danger context lives in the surrounding
+ * copy, not in the link itself.
+ *
+ * Substring matched (case-insensitive). Each phrase is at least
+ * 2 words to avoid false-rejecting legitimate magic-link emails
+ * that incidentally use a single word like "reset" or "delete".
+ */
+export const HARD_DANGER_BODY_KEYWORDS: ReadonlyArray<string> = Object.freeze([
+  // Password reset
+  'password reset',
+  'reset your password',
+  'reset password',
+  'forgot your password',
+  'forgot password',
+  // Account closure / deletion
+  'delete your account',
+  'delete account',
+  'account deletion',
+  'account closure',
+  'account termination',
+  'close your account',
+  'close account',
+  'cancel your account',
+  'cancel account',
+  'cancel subscription',
+  'remove your account',
+  'remove account',
+  'terminate your account',
+  'terminate account',
+  'deactivate your account',
+  'deactivate account',
+  'confirm account deletion',
+  'confirm account closure',
+  'confirm deletion',
 ])
 
 /** URL fragments that *positively* hint at login/verify links. */

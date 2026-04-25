@@ -156,6 +156,44 @@ describe('normalizeUrl: distinct magic-link tokens never collide', () => {
       expect(noFragment).toBe(emptyFragment)
     })
   })
+
+  describe('SPA hash router fragments', () => {
+    // Codex round-3 finding: feeding the whole hash to URLSearchParams
+    // turns "#/auth/callback?access_token=A" into a single key named
+    // "/auth/callback?access_token". Distinct hash-router magic links
+    // collapsed silently. Strip the leading hash-path before the first
+    // ? so the actual params are recovered.
+    it('distinct hash-router #/path?access_token values normalize differently', () => {
+      const a = normalizeUrl('https://app.example.com/#/auth/callback?access_token=AAA')
+      const b = normalizeUrl('https://app.example.com/#/auth/callback?access_token=BBB')
+      expect(a).not.toBe(b)
+    })
+
+    it('same hash-router access_token collapses (intended)', () => {
+      const a = normalizeUrl('https://app.example.com/#/auth/callback?access_token=ABC&utm=email1')
+      const b = normalizeUrl('https://app.example.com/#/auth/callback?access_token=ABC&utm=email2')
+      expect(a).toBe(b)
+    })
+
+    it('hash-bang router (#!/path?token=X) is also handled', () => {
+      const a = normalizeUrl('https://app.example.com/#!/auth?token=AAA')
+      const b = normalizeUrl('https://app.example.com/#!/auth?token=BBB')
+      expect(a).not.toBe(b)
+    })
+
+    it('hash router without query still produces no fragment params', () => {
+      const a = normalizeUrl('https://app.example.com/?token=A#/auth/callback')
+      const b = normalizeUrl('https://app.example.com/?token=A')
+      // Pure path in fragment, no params - fragment contributes nothing
+      expect(a).toBe(b)
+    })
+
+    it('plain (non-router) #access_token still works', () => {
+      const a = normalizeUrl('https://app.example.com/cb#access_token=AAA')
+      const b = normalizeUrl('https://app.example.com/cb#access_token=BBB')
+      expect(a).not.toBe(b)
+    })
+  })
 })
 
 describe('makeDedupKey + dedupeByKey: distinct magic-link tokens are kept', () => {

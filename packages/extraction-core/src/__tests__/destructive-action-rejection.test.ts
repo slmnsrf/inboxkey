@@ -130,4 +130,97 @@ describe('destructive-action link rejection', () => {
       expect(result).toHaveLength(1)
     })
   })
+
+  describe('/confirm-account-delete (verb after account)', () => {
+    // Codex round-3 finding: confirm-account-deletion (noun) was
+    // covered, confirm-account-delete (verb) was not, so the URL
+    // /confirm-account-delete?token=abc passed extraction.
+    it('rejects /confirm-account-delete', () => {
+      const html = `
+        <p>Magic link:</p>
+        <a href="https://app.example.com/confirm-account-delete?token=abc">Magic link</a>
+      `
+      const result = extractMagicLinks({ html, subject: 'Magic link' })
+      expect(result).toEqual([])
+    })
+
+    it('rejects /verify-account-close', () => {
+      const html = `
+        <p>Magic link:</p>
+        <a href="https://app.example.com/verify-account-close?token=abc">Magic link</a>
+      `
+      const result = extractMagicLinks({ html, subject: 'Magic link' })
+      expect(result).toEqual([])
+    })
+
+    it('rejects /confirm-account-cancel', () => {
+      const html = `
+        <p>Magic link:</p>
+        <a href="https://app.example.com/confirm-account-cancel?token=abc">Magic link</a>
+      `
+      const result = extractMagicLinks({ html, subject: 'Magic link' })
+      expect(result).toEqual([])
+    })
+  })
+
+  describe('whole-email body context veto', () => {
+    // Codex round-3 finding: a generic /action?token= URL with a
+    // generic "Continue" anchor passes per-link checks (no danger
+    // markers in href or anchor text), but the surrounding email
+    // body says "Reset your password" or "Confirm account deletion".
+    // Per-link checks fundamentally can't catch this; the danger
+    // lives in the body context. New HARD_DANGER_BODY_KEYWORDS
+    // veto rejects the whole email at the gate.
+    it('rejects email with "Reset your password" body and generic Continue link', () => {
+      const html = `
+        <p>Reset your password:</p>
+        <a href="https://app.example.com/action?token=abc">Continue</a>
+      `
+      const result = extractMagicLinks({ html, subject: 'Account update' })
+      expect(result).toEqual([])
+    })
+
+    it('rejects email with "Confirm account deletion" subject', () => {
+      const html = `
+        <p>To proceed, click the link below:</p>
+        <a href="https://app.example.com/proceed?token=abc">Continue</a>
+      `
+      const result = extractMagicLinks({
+        html,
+        subject: 'Confirm account deletion',
+      })
+      expect(result).toEqual([])
+    })
+
+    it('rejects email with "Cancel subscription" body', () => {
+      const html = `
+        <p>To cancel subscription, click below:</p>
+        <a href="https://app.example.com/proceed?token=abc">Continue</a>
+      `
+      const result = extractMagicLinks({ html, subject: 'Subscription update' })
+      expect(result).toEqual([])
+    })
+
+    it('rejects email with "delete your account" in body', () => {
+      const html = `
+        <p>You requested to delete your account. Click below to proceed:</p>
+        <a href="https://app.example.com/proceed?token=abc">Continue</a>
+      `
+      const result = extractMagicLinks({ html, subject: 'Account update' })
+      expect(result).toEqual([])
+    })
+
+    it('does NOT reject a clean magic-link email mentioning "support"', () => {
+      // "support" is in DANGEROUS_LINK_KEYWORDS but NOT in
+      // HARD_DANGER_BODY_KEYWORDS - body mention shouldn't kill the
+      // whole email. Per-link "support" check still applies if a URL
+      // points at /support directly.
+      const html = `
+        <p>Use this link to sign in. If you didn't request this, contact support.</p>
+        <a href="https://app.example.com/auth/magic?token=abc">Magic link</a>
+      `
+      const result = extractMagicLinks({ html, subject: 'Magic link' })
+      expect(result).toHaveLength(1)
+    })
+  })
 })

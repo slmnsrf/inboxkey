@@ -566,6 +566,33 @@ describe('FieldDetector', () => {
     })
   })
 
+  describe('forgetField (resend / retry support)', () => {
+    it('clears the cooldown so the same field can be evaluated again', () => {
+      document.body.innerHTML = `
+        <input type="text" autocomplete="one-time-code" id="otp">
+      `
+      const field = document.getElementById('otp') as HTMLInputElement
+
+      // First evaluation marks the field as detected; cooldown is set.
+      const first = detector.evaluateField(field, { strictVisibility: false })
+      expect(first).not.toBeNull()
+      expect(first!.tier).toBe(1)
+
+      // Without forgetField, Tier 1 short-circuits on cooldown and
+      // returns a "Field in cooldown period" result with detected=false.
+      const blocked = detector.evaluateField(field, { strictVisibility: false })
+      expect(blocked).toBeNull()
+
+      // forgetField drops both the WeakSet entry and the cooldown
+      // entry, so the next evaluation re-runs Tier 1 from scratch.
+      detector.forgetField(field)
+
+      const reevaluated = detector.evaluateField(field, { strictVisibility: false })
+      expect(reevaluated).not.toBeNull()
+      expect(reevaluated!.tier).toBe(1)
+    })
+  })
+
   describe('result priority ordering', () => {
     it('should rank stronger Tier 2 results above weaker Tier 1 results', () => {
       // Set up page with both a Tier 1 field and a Tier 2 split-input field

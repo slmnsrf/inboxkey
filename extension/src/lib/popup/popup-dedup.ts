@@ -83,9 +83,20 @@ export function normalizeUrl(url: string): string {
     //   https://app/callback#access_token=A
     //   https://app/callback#access_token=B
     // would normalize identically and dedup would drop one.
+    //
+    // SPA hash routers (#/auth/callback?access_token=A) put a path
+    // before the query inside the hash. Feeding the whole hash to
+    // URLSearchParams would treat `/auth/callback?access_token` as a
+    // key name, not split on `?`. Strip the leading hash-path before
+    // the first `?` (if any) so the params are recovered.
     const fragmentParams: string[] = []
     if (u.hash && u.hash.length > 1) {
-      collect(u.hash.slice(1), fragmentParams)
+      let hashRaw = u.hash.slice(1)
+      if (hashRaw.startsWith('/') || hashRaw.startsWith('!')) {
+        const qIdx = hashRaw.indexOf('?')
+        hashRaw = qIdx === -1 ? '' : hashRaw.slice(qIdx + 1)
+      }
+      collect(hashRaw, fragmentParams)
     }
 
     if (relevantParams.length > 0) {

@@ -456,6 +456,27 @@ export class FieldDetector {
   }
 
   /**
+   * Forget a previously-detected field so it can be re-evaluated.
+   *
+   * detectedFields gates the mutation/focus/pageshow rescan paths so
+   * we don't re-fire callbacks on inputs already handled. The cooldown
+   * registry also blocks re-detection (Tier 1's first check is
+   * `cooldown.isInCooldown`). Both gates are correct during the
+   * lifetime of a watch session but become a trap once the session
+   * ends: same DOM input + resend / retry / SPA route change can't
+   * trigger a fresh detection because neither gate expires on its own
+   * within the typical resend window.
+   *
+   * Session cleanup (in contents/index.ts) calls this so the next
+   * resend or context change re-enters the detection pipeline as if
+   * the field were brand new.
+   */
+  forgetField(field: HTMLInputElement): void {
+    this.detectedFields.delete(field)
+    this.cooldown.forget(field)
+  }
+
+  /**
    * Detect existing fields on page
    *
    * NOTE: This method intentionally does NOT use cooldown to allow
