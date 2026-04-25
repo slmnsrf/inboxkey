@@ -564,6 +564,15 @@ export class FieldDetector {
         'id',
         'maxlength',
         'inputmode',
+        // Tier 2 scores against placeholder, pattern, and class-
+        // derived context (tier2-deep.ts:544 + :585), and SPAs
+        // commonly toggle visibility / labeling via class swaps.
+        // A late-applied placeholder ("Enter the verification
+        // code") or a class change that reveals an OTP container
+        // would otherwise miss a rescan.
+        'placeholder',
+        'pattern',
+        'class',
         'style',
         'disabled',
         'readonly',

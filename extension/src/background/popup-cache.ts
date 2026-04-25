@@ -23,6 +23,7 @@
  * - Responds to popup requests in <50ms
  */
 
+import { RESET_LINK_PATH_PATTERNS } from '@inboxkey/extraction-core'
 import type { StoredCode, Mailbox } from '@/lib/storage/schema'
 import type {
   UnifiedPopupCache,
@@ -44,6 +45,47 @@ import { extractETLD, domainAffinity as computeDomainAffinity } from '@/lib/matc
 import { recencyBoost } from '@/lib/matching/recency-scorer'
 
 const POPUP_CACHE_KEY = 'inboxkey.popup_cache'
+
+/**
+ * Classify a magic-link URL into login / verify / reset.
+ *
+ * Uses pathname-anchored matching, not href substring search, because
+ * the substring-based predecessor mis-classified valid passwordless URLs:
+ *
+ *   /passwordless/login?token=...   → 'reset' (matched substring '/password')
+ *   /resetting-quotas?...            → 'reset' (matched substring '/reset')
+ *
+ * Reset misclassification is load-bearing - HIDDEN_LINK_TYPES = ['reset']
+ * means the popup hides the link entirely. We expanded MAGIC_LINK_KEYWORDS
+ * to cover passwordless flows (commit cca2982); this misclassification
+ * dropped those wins on the floor.
+ *
+ * Reset detection delegates to RESET_LINK_PATH_PATTERNS - the same
+ * patterns scoreLinkCandidate uses to reject reset URLs entirely. In
+ * practice reset URLs should already be rejected upstream (extractor
+ * returns null), so this branch is defensive: it ensures any reset
+ * URL that somehow reaches the cache is at least labeled correctly.
+ */
+export function classifyLinkType(url: string): 'login' | 'verify' | 'reset' {
+  let pathname: string
+  try {
+    pathname = new URL(url).pathname
+  } catch {
+    return 'login'
+  }
+
+  if (RESET_LINK_PATH_PATTERNS.some(p => p.test(pathname))) {
+    return 'reset'
+  }
+
+  // Verify path patterns - segment-anchored to avoid catching
+  // unrelated paths that happen to contain "verify" or "confirm".
+  if (/\/(?:verify|confirm)(?:[/?#]|$)/i.test(pathname)) {
+    return 'verify'
+  }
+
+  return 'login'
+}
 
 /**
  * Internal cache shape stored in memory and chrome.storage.session.
@@ -442,10 +484,7 @@ export class PopupCacheManager {
     if (stored.code.startsWith('magic-link:')) {
       // Magic link
       const url = stored.code.replace('magic-link:', '')
-      let linkType: 'login' | 'verify' | 'reset' = 'login'
-
-      if (url.includes('/verify') || url.includes('/confirm')) linkType = 'verify'
-      if (url.includes('/reset') || url.includes('/password')) linkType = 'reset'
+      const linkType = classifyLinkType(url)
 
       const linkItem: LinkItem = {
         kind: 'link',

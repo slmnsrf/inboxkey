@@ -80,6 +80,43 @@ describe('normalizeUrl: distinct magic-link tokens never collide', () => {
     const b = normalizeUrl('https://app2.example.com/auth?token=X')
     expect(a).not.toBe(b)
   })
+
+  describe('extended provider param coverage', () => {
+    // Each pair must normalize differently - distinct secret values
+    // for the same provider param.
+    const providerCases: Array<[string, string, string]> = [
+      ['token_hash', 'aaa', 'bbb'],            // Supabase
+      ['oobCode', 'aaa', 'bbb'],               // Firebase (mixed case)
+      ['auth_token', 'aaa', 'bbb'],            // Auth0 / Stytch
+      ['login_token', 'aaa', 'bbb'],           // custom flows
+      ['access_token', 'aaa', 'bbb'],          // OAuth implicit
+      ['magic_token', 'aaa', 'bbb'],           // Stytch / Magic.link
+      ['ticket', 'st-aaa', 'st-bbb'],          // CAS / SAML
+      ['state', 'aaa', 'bbb'],                 // OAuth state
+      ['t', 'aaa', 'bbb'],                     // shorthand
+      ['sig', 'aaa', 'bbb'],                   // signed-URL flows
+    ]
+
+    for (const [param, valueA, valueB] of providerCases) {
+      it(`${param}=AAA vs ${param}=BBB normalize differently`, () => {
+        const a = normalizeUrl(`https://app.example.com/auth/magic?${param}=${valueA}`)
+        const b = normalizeUrl(`https://app.example.com/auth/magic?${param}=${valueB}`)
+        expect(a).not.toBe(b)
+      })
+    }
+
+    it('oobCode (Firebase mixed case) is recognized regardless of case', () => {
+      // Firebase actually emits "oobCode" with mixed case in the wild.
+      // Token allowlist must match case-insensitively so its values
+      // are preserved at full fidelity.
+      const a = normalizeUrl('https://app.example.com/__/auth/action?oobCode=AAA&mode=signIn')
+      const b = normalizeUrl('https://app.example.com/__/auth/action?oobCode=BBB&mode=signIn')
+      expect(a).not.toBe(b)
+      expect(a).toContain('oobcode=AAA')
+      // mode= is not in the allowlist - dropped
+      expect(a).not.toContain('mode=')
+    })
+  })
 })
 
 describe('makeDedupKey + dedupeByKey: distinct magic-link tokens are kept', () => {
