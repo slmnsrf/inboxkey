@@ -433,6 +433,11 @@ export class PopupCacheManager {
     // Generate unique ID
     const id = `${providerId}:${stored.mailboxId || 'unknown'}:${stored.timestamp}`
 
+    // Real extraction confidence when the polling layer plumbs it
+    // through; falls back to the historical 0.65 default for legacy
+    // records that predate the StoredCode.extractionScore field.
+    const score = stored.extractionScore ?? 0.65
+
     // Determine if this is a magic link or code
     if (stored.code.startsWith('magic-link:')) {
       // Magic link
@@ -448,7 +453,7 @@ export class PopupCacheManager {
         providerId,
         source: stored.source,
         receivedAt: stored.timestamp,
-        score: 0.65, // Default score (will be overridden by matcher in future)
+        score,
         domain,
         url,
         linkType,
@@ -464,7 +469,7 @@ export class PopupCacheManager {
         providerId,
         source: stored.source,
         receivedAt: stored.timestamp,
-        score: 0.65, // Default score (will be overridden by matcher in future)
+        score,
         domain,
         code: stored.code,
         len: stored.code.length,

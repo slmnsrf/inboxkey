@@ -149,6 +149,7 @@ export class PopupMessageHandler {
                   used: false,
                   siteMatch: undefined,
                   mailboxId: mailbox.id,
+                  extractionScore: candidate.code.score,
                 })
                 console.log(`[PopupHandler] Found code: (redacted ${candidate.code.value.length} chars)`)
               }
@@ -161,6 +162,7 @@ export class PopupMessageHandler {
                   used: false,
                   siteMatch: candidate.link.domain,
                   mailboxId: mailbox.id,
+                  extractionScore: candidate.link.score,
                 })
                 console.log(`[PopupHandler] Found magic link from: ${candidate.link.domain}`)
               }
