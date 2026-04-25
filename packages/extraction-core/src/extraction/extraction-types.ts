@@ -40,8 +40,20 @@ export { DOMAIN_ALIASES, WATCH_SESSION_SCORING } from '../matching/scoring-confi
  * deduplication keys (e.g. seen-message store) so a tightened or
  * loosened extractor takes effect on the next poll instead of being
  * shadowed by cached "no-candidate" entries from the previous version.
+ *
+ * Version history:
+ *   '1' - initial constant (no behavior change vs. pre-versioning)
+ *   '2' - PR 1 magic-link extraction overhaul:
+ *           - MAGIC_LINK_KEYWORDS_BY_LANG expanded with SSO /
+ *             passwordless wording across 21 languages
+ *           - extractMagicLinks intent gate accepts URL hints (not
+ *             just body keywords)
+ *           - RESET_LINK_PATH_PATTERNS rejects /reset, /forgot,
+ *             /recover paths
+ *           - the OTP extractor false-positive overhaul also lives
+ *             behind this stamp (Codex's PR #51 work)
  */
-export const EXTRACTOR_VERSION = '1' as const
+export const EXTRACTOR_VERSION = '2' as const
 
 // ------------------------------
 // Types
