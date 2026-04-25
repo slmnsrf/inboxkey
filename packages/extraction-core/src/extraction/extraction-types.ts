@@ -801,7 +801,15 @@ export const NEGATIVE_CONTEXT_REGEX: RegExp = buildKeywordRegex(
   NEGATIVE_CONTEXT_KEYWORDS_TOTP
 )
 
-/** Link words to reject auto-open (handled as "danger"). */
+/**
+ * Link words to reject auto-open (handled as "danger"). Substring
+ * matched (case-insensitive) against href and anchor text in
+ * scoreLinkCandidate. Phrases like "delete account" / "verify account
+ * deletion" appear in destructive flows that should never be surfaced
+ * as magic links - the URL itself often looks innocuous
+ * (/verify-account-deletion?token=...) but the anchor text or
+ * surrounding copy reveals the intent.
+ */
 export const DANGEROUS_LINK_KEYWORDS: ReadonlyArray<string> = Object.freeze([
   'password reset',
   'reset your password',
@@ -809,6 +817,19 @@ export const DANGEROUS_LINK_KEYWORDS: ReadonlyArray<string> = Object.freeze([
   'preferences',
   'support',
   'help center',
+  // Destructive account actions
+  'delete account',
+  'delete your account',
+  'account deletion',
+  'close account',
+  'close your account',
+  'account closure',
+  'remove account',
+  'cancel account',
+  'cancel your account',
+  'cancel subscription',
+  'terminate account',
+  'deactivate account',
 ])
 
 /**
@@ -826,6 +847,44 @@ export const RESET_LINK_PATH_PATTERNS: ReadonlyArray<RegExp> = Object.freeze([
   /\/(?:reset|forgot|recover)(?:[/?#]|$)/i,
   /\/(?:reset|forgot|recover)[-_](?:password|account|access)(?:[/?#]|$)/i,
   /\/(?:password|account)[-_](?:reset|recovery)(?:[/?#]|$)/i,
+])
+
+/**
+ * URL path patterns for destructive account actions. These flow
+ * through the magic-link surface because the URL often contains
+ * "verify" / "confirm" (e.g. /verify-account-deletion, /confirm-close-
+ * account). The MAGIC_LINK_URL_HINTS scoring boost for "verify" and
+ * "confirm" pushes them above threshold, and pathname-anchored verify
+ * detection in popup-cache (which requires `/verify/`) labels them as
+ * 'login' so they show in the popup. Reject at extraction time.
+ *
+ * Pattern shapes (all anchored at path segment boundaries):
+ *   /(verify|confirm)-(action)               action verb adjacent to verify
+ *   /(verify|confirm)-account-(deletion|...) verify + account + noun
+ *   /(verify|confirm)-(action)-account       verify + verb + account
+ *   /(action)-account                         delete-account, close-account, ...
+ *   /account/(action|noun)                    /account/delete, /account/closure
+ *   /(close|delete|cancel)-subscription
+ *   /account-(deletion|closure|...)           noun forms after /account-
+ */
+const DESTRUCTIVE_VERBS = 'delete|close|cancel|terminate|remove|deactivate'
+const DESTRUCTIVE_NOUNS = 'deletion|closure|removal|termination|cancellation|deactivation'
+
+export const DESTRUCTIVE_ACTION_PATH_PATTERNS: ReadonlyArray<RegExp> = Object.freeze([
+  // /verify-delete, /confirm-close, etc.
+  new RegExp(`\\/(?:verify|confirm)[-_](?:${DESTRUCTIVE_VERBS})(?:[/?#]|$)`, 'i'),
+  // /verify-delete-account, /confirm-close-account
+  new RegExp(`\\/(?:verify|confirm)[-_](?:${DESTRUCTIVE_VERBS})[-_]account(?:[/?#]|$)`, 'i'),
+  // /verify-account-deletion, /confirm-account-closure, etc.
+  new RegExp(`\\/(?:verify|confirm)[-_]account[-_](?:${DESTRUCTIVE_NOUNS})(?:[/?#]|$)`, 'i'),
+  // /delete-account, /close-account, etc.
+  new RegExp(`\\/(?:${DESTRUCTIVE_VERBS})[-_]account(?:[/?#]|$)`, 'i'),
+  // /account/delete, /account/deletion, /account/closure, etc.
+  new RegExp(`\\/account\\/(?:${DESTRUCTIVE_VERBS}|${DESTRUCTIVE_NOUNS})(?:[/?#]|$)`, 'i'),
+  // /account-deletion, /account-closure, etc.
+  new RegExp(`\\/account[-_](?:${DESTRUCTIVE_NOUNS})(?:[/?#]|$)`, 'i'),
+  // /close-subscription, /cancel-subscription, /delete-subscription
+  /\/(?:close|delete|cancel)[-_]subscription(?:[/?#]|$)/i,
 ])
 
 /** URL fragments that *positively* hint at login/verify links. */

@@ -61,22 +61,39 @@ export function normalizeUrl(url: string): string {
       'sig',
       'signature',
     ]
-    const params = new URLSearchParams(u.search)
+    const lowerAllow = new Set(tokenParams.map(p => p.toLowerCase()))
+
+    const collect = (raw: string, dest: string[]): void => {
+      if (!raw) return
+      const params = new URLSearchParams(raw)
+      for (const [name, value] of params.entries()) {
+        if (lowerAllow.has(name.toLowerCase()) && value) {
+          dest.push(`${name.toLowerCase()}=${value}`)
+        }
+      }
+    }
 
     const relevantParams: string[] = []
-    // URLSearchParams keys are case-sensitive but most providers use
-    // lower-case. Iterate the actual keys present so we match
-    // case-insensitively against our allowlist without having to
-    // try every case variant.
-    const lowerAllow = new Set(tokenParams.map(p => p.toLowerCase()))
-    for (const [name, value] of params.entries()) {
-      if (lowerAllow.has(name.toLowerCase()) && value) {
-        relevantParams.push(`${name.toLowerCase()}=${value}`)
-      }
+    collect(u.search, relevantParams)
+
+    // OAuth implicit flow and several auth providers (Firebase action
+    // links, Auth0 redirect callbacks, Stytch return URLs) put tokens
+    // in the URL fragment instead of the query string. Without parsing
+    // the fragment, two distinct magic links like
+    //   https://app/callback#access_token=A
+    //   https://app/callback#access_token=B
+    // would normalize identically and dedup would drop one.
+    const fragmentParams: string[] = []
+    if (u.hash && u.hash.length > 1) {
+      collect(u.hash.slice(1), fragmentParams)
     }
 
     if (relevantParams.length > 0) {
       normalized += '?' + relevantParams.sort().join('&')
+    }
+
+    if (fragmentParams.length > 0) {
+      normalized += '#' + fragmentParams.sort().join('&')
     }
 
     return normalized

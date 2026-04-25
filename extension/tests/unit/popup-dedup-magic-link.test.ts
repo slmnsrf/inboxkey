@@ -117,6 +117,45 @@ describe('normalizeUrl: distinct magic-link tokens never collide', () => {
       expect(a).not.toContain('mode=')
     })
   })
+
+  describe('URL fragment tokens (OAuth implicit flow / Firebase action links)', () => {
+    it('distinct #access_token values normalize differently', () => {
+      const a = normalizeUrl('https://app.example.com/callback#access_token=AAA')
+      const b = normalizeUrl('https://app.example.com/callback#access_token=BBB')
+      expect(a).not.toBe(b)
+    })
+
+    it('same #access_token value collapses (intended dedup)', () => {
+      const a = normalizeUrl('https://app.example.com/callback#access_token=ABC&token_type=Bearer')
+      const b = normalizeUrl('https://app.example.com/callback#access_token=ABC&token_type=bearer')
+      // token_type isn't in the allowlist; only access_token contributes
+      expect(a).toBe(b)
+    })
+
+    it('preserves both query and fragment tokens when present', () => {
+      const url = normalizeUrl(
+        'https://app.example.com/callback?state=xyz#access_token=secret',
+      )
+      expect(url).toContain('state=xyz')
+      expect(url).toContain('access_token=secret')
+      expect(url).toContain('#')
+      expect(url).toContain('?')
+    })
+
+    it('fragment-only token still distinguishes links', () => {
+      const a = normalizeUrl('https://app.example.com/cb#token=AAA')
+      const b = normalizeUrl('https://app.example.com/cb#token=BBB')
+      const same = normalizeUrl('https://app.example.com/cb#token=AAA')
+      expect(a).not.toBe(b)
+      expect(a).toBe(same)
+    })
+
+    it('empty fragment is ignored gracefully', () => {
+      const noFragment = normalizeUrl('https://app.example.com/cb?token=A')
+      const emptyFragment = normalizeUrl('https://app.example.com/cb?token=A#')
+      expect(noFragment).toBe(emptyFragment)
+    })
+  })
 })
 
 describe('makeDedupKey + dedupeByKey: distinct magic-link tokens are kept', () => {
