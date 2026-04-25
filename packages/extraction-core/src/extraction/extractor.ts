@@ -111,17 +111,20 @@ export function extractMagicLinks(
   const text = normalizeWhitespace((plain || '') + (textFromHtml ? (' ' + textFromHtml) : ''))
   const lower = text.toLowerCase()
 
-  // Whole-email destructive context veto. If the body or subject
-  // strongly indicates password-reset / account-deletion / cancel-
-  // subscription flows, every link in the email is part of that
-  // flow - even a generic "Continue" anchor pointing at /action?
-  // token=abc. Per-anchor checks fundamentally can't catch this
-  // because the danger lives in the surrounding copy, not in the
-  // link itself. Drop the email entirely.
-  if (
-    containsAny(lower, HARD_DANGER_BODY_KEYWORDS) ||
-    containsAny(subject, HARD_DANGER_BODY_KEYWORDS)
-  ) {
+  // Subject-level destructive veto. The subject is where the email
+  // declares its primary purpose - "Confirm account deletion" or
+  // "Reset your password" in the subject means the entire email is
+  // about that flow, regardless of how innocuous individual links
+  // look. Drop the email entirely.
+  //
+  // We deliberately do NOT veto on body-text matches. Many
+  // legitimate sign-in emails include a security footer like "If
+  // this wasn't you, reset your password" - vetoing on body would
+  // drop the magic link in that email even though the actual
+  // purpose is sign-in. Per-link link-local context checks (added
+  // in scoreLinkCandidate below) catch the case where the danger
+  // wording is adjacent to a specific link rather than in a footer.
+  if (containsAny(subject, HARD_DANGER_BODY_KEYWORDS)) {
     return []
   }
 
@@ -260,6 +263,25 @@ function scoreLinkCandidate(href: string, anchorText: string, fullText: string, 
     return null
   }
 
+  // Link-local destructive-context veto. For each candidate, look at
+  // the visible text immediately before/around the link in the body.
+  // If a hard-danger phrase (e.g. "Reset your password", "Confirm
+  // account deletion") appears in that local window AND the link
+  // itself lacks strong login evidence, reject.
+  //
+  // The local window is intentionally before-heavy: real sign-in
+  // emails often include a security footer ("If this wasn't you,
+  // reset your password") AFTER the magic link. A whole-body or
+  // after-only check would drop those legitimate links.
+  //
+  // Strong login evidence (anchor text "Sign in" / "Magic link" /
+  // "Passwordless"; href path /login, /signin, /magic, /session)
+  // overrides the veto - those signals are precise enough that a
+  // co-located warning shouldn't kill the link.
+  if (hasLocalDangerContext(fullText, href, anchorText) && !hasStrongLoginEvidence(href, anchorText)) {
+    return null
+  }
+
   // Reject password-reset / account-recovery and destructive-action
   // URLs. Both consume sensitive tokens and force flows the user may
   // not have initiated. Pre-PR-1 these were filtered indirectly via
@@ -363,6 +385,73 @@ function containsAny(hay: string, needles: readonly string[]): boolean {
 
 function safeHostname(u: string): string {
   try { return new URL(u).hostname.toLowerCase() } catch { return '' }
+}
+
+/**
+ * True if the visible text immediately around the link contains a
+ * hard-danger phrase. "Around" leans heavily before the link because
+ * email security footers (often AFTER the link) routinely say
+ * "If this wasn't you, reset your password" - that's noise, not
+ * intent. Anchors are located via their visible text; raw URLs by
+ * the URL string itself.
+ */
+function hasLocalDangerContext(fullText: string, href: string, anchorText: string): boolean {
+  const text = fullText || ''
+  const probe = (anchorText || href).trim()
+  if (!probe) return false
+
+  // Locate the link in the body. For HTML anchors, the anchor's
+  // VISIBLE TEXT lives in the body after htmlToText; the href does
+  // not. For raw plain-text URLs, the URL itself is in the body.
+  const idx = text.indexOf(probe)
+  if (idx === -1) {
+    // Anchor text not in normalized body (e.g. emoji-only or empty);
+    // fall back to anchor text + href in isolation.
+    const fallback = (anchorText + ' ' + href).toLowerCase()
+    return containsAny(fallback, HARD_DANGER_BODY_KEYWORDS)
+  }
+
+  // Before-heavy window: 240 chars before, 80 after. Tuned to catch
+  // pre-link "purpose" statements ("To delete your account, click
+  // below:") without grabbing a full security footer that may sit
+  // 200+ chars after the link.
+  const start = Math.max(0, idx - 240)
+  const end = Math.min(text.length, idx + probe.length + 80)
+  const window = text.slice(start, end).toLowerCase()
+  return containsAny(window, HARD_DANGER_BODY_KEYWORDS)
+}
+
+/**
+ * True if the link itself carries strong login-flow signal. These
+ * markers are precise enough that a co-located danger phrase
+ * shouldn't kill the link (real magic-link emails sometimes show a
+ * sign-in link right next to a "or reset your password" alternative).
+ *
+ * Generic markers like "verify", "confirm", "continue", and the
+ * "token" query param are deliberately NOT counted as strong - they
+ * appear too broadly across destructive flows too.
+ */
+function hasStrongLoginEvidence(href: string, anchorText: string): boolean {
+  const STRONG_TEXT_MARKERS = [
+    'sign in', 'sign-in', 'signin',
+    'log in', 'log-in', 'login',
+    'magic link',
+    'passwordless',
+    'sso',
+    'single sign-on',
+    'single sign on',
+  ]
+  const STRONG_PATH_MARKERS = ['/login', '/signin', '/sign-in', '/magic', '/session']
+
+  const text = (anchorText || '').toLowerCase()
+  if (text && STRONG_TEXT_MARKERS.some(m => text.includes(m))) return true
+
+  try {
+    const path = new URL(href).pathname.toLowerCase()
+    if (STRONG_PATH_MARKERS.some(m => path.includes(m))) return true
+  } catch { /* ignore */ }
+
+  return false
 }
 
 /**

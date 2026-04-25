@@ -163,23 +163,10 @@ describe('destructive-action link rejection', () => {
     })
   })
 
-  describe('whole-email body context veto', () => {
-    // Codex round-3 finding: a generic /action?token= URL with a
-    // generic "Continue" anchor passes per-link checks (no danger
-    // markers in href or anchor text), but the surrounding email
-    // body says "Reset your password" or "Confirm account deletion".
-    // Per-link checks fundamentally can't catch this; the danger
-    // lives in the body context. New HARD_DANGER_BODY_KEYWORDS
-    // veto rejects the whole email at the gate.
-    it('rejects email with "Reset your password" body and generic Continue link', () => {
-      const html = `
-        <p>Reset your password:</p>
-        <a href="https://app.example.com/action?token=abc">Continue</a>
-      `
-      const result = extractMagicLinks({ html, subject: 'Account update' })
-      expect(result).toEqual([])
-    })
-
+  describe('subject-level destructive veto', () => {
+    // Subject is the cleanest declaration of email intent. A
+    // destructive subject vetoes every link in the email regardless
+    // of how innocuous individual links look.
     it('rejects email with "Confirm account deletion" subject', () => {
       const html = `
         <p>To proceed, click the link below:</p>
@@ -192,35 +179,132 @@ describe('destructive-action link rejection', () => {
       expect(result).toEqual([])
     })
 
-    it('rejects email with "Cancel subscription" body', () => {
+    it('rejects email with "Reset your password" subject', () => {
       const html = `
-        <p>To cancel subscription, click below:</p>
         <a href="https://app.example.com/proceed?token=abc">Continue</a>
       `
-      const result = extractMagicLinks({ html, subject: 'Subscription update' })
+      const result = extractMagicLinks({
+        html,
+        subject: 'Reset your password',
+      })
       expect(result).toEqual([])
     })
 
-    it('rejects email with "delete your account" in body', () => {
+    it('rejects destructive subject even with link text claiming login', () => {
       const html = `
-        <p>You requested to delete your account. Click below to proceed:</p>
-        <a href="https://app.example.com/proceed?token=abc">Continue</a>
+        <a href="https://app.example.com/login?token=abc">Sign in</a>
+      `
+      const result = extractMagicLinks({
+        html,
+        subject: 'Cancel subscription',
+      })
+      expect(result).toEqual([])
+    })
+  })
+
+  describe('link-local danger context (no whole-body veto)', () => {
+    // Per Codex round-4: whole-body veto was too broad. Many real
+    // sign-in emails have security footers like "If this wasn't you,
+    // reset your password" - those should NOT kill the magic link.
+    // Per-link, before-heavy local context check + strong-login-
+    // evidence override is the right precision/recall tradeoff.
+
+    it('rejects when destructive phrase appears immediately before a generic Continue link', () => {
+      const html = `
+        <p>To delete your account, click below:</p>
+        <a href="https://app.example.com/action?token=abc">Continue</a>
       `
       const result = extractMagicLinks({ html, subject: 'Account update' })
       expect(result).toEqual([])
     })
 
-    it('does NOT reject a clean magic-link email mentioning "support"', () => {
-      // "support" is in DANGEROUS_LINK_KEYWORDS but NOT in
-      // HARD_DANGER_BODY_KEYWORDS - body mention shouldn't kill the
-      // whole email. Per-link "support" check still applies if a URL
-      // points at /support directly.
+    it('rejects when "Reset your password" appears before generic /action?token link', () => {
       const html = `
-        <p>Use this link to sign in. If you didn't request this, contact support.</p>
+        <p>Reset your password:</p>
+        <a href="https://app.example.com/action?token=abc">Continue</a>
+      `
+      const result = extractMagicLinks({ html, subject: 'Account update' })
+      expect(result).toEqual([])
+    })
+
+    it('rejects when "Confirm account deletion" appears before generic Continue link', () => {
+      const html = `
+        <p>Confirm account deletion:</p>
+        <a href="https://app.example.com/action?token=abc">Continue</a>
+      `
+      const result = extractMagicLinks({ html, subject: 'Account update' })
+      expect(result).toEqual([])
+    })
+
+    it('ACCEPTS legitimate sign-in link with security footer mentioning password reset', () => {
+      // This is the round-4 false-rejection case. The footer
+      // "reset your password if this wasn't you" is AFTER the magic
+      // link and is just a CYA note - the email's purpose is
+      // sign-in. Whole-body veto would drop it; link-local veto
+      // (before-heavy + strong-evidence override) keeps it.
+      const html = `
+        <p>Click the link below to sign in:</p>
+        <a href="https://app.example.com/auth/login?token=abc">Sign in</a>
+        <p>If this wasn't you, reset your password from your account settings.</p>
+      `
+      const result = extractMagicLinks({ html, subject: 'Sign in to your account' })
+      expect(result).toHaveLength(1)
+      expect(result[0].href).toBe('https://app.example.com/auth/login?token=abc')
+    })
+
+    it('ACCEPTS sign-in link in plain text with password-reset security footer', () => {
+      const text = `
+        Click the link below to sign in:
+        https://app.example.com/auth/login?token=abc
+
+        If this wasn't you, you can reset your password.
+      `
+      const result = extractMagicLinks({ text, subject: 'Sign in' })
+      expect(result).toHaveLength(1)
+    })
+
+    it('ACCEPTS magic link with support / help footer', () => {
+      const html = `
+        <p>Click your magic link:</p>
         <a href="https://app.example.com/auth/magic?token=abc">Magic link</a>
+        <p>Need help? Contact support or visit our help center.</p>
       `
       const result = extractMagicLinks({ html, subject: 'Magic link' })
       expect(result).toHaveLength(1)
+    })
+
+    it('strong login evidence in anchor text overrides nearby reset wording', () => {
+      // "Sign in" anchor + nearby "reset your password" - strong
+      // text marker overrides. This handles emails that surface
+      // both sign-in and password-reset options.
+      const html = `
+        <p>Reset your password or sign in:</p>
+        <a href="https://app.example.com/x?token=abc">Sign in to your account</a>
+      `
+      const result = extractMagicLinks({ html, subject: 'Account access' })
+      expect(result).toHaveLength(1)
+    })
+
+    it('strong login evidence in URL path overrides nearby destructive wording', () => {
+      // Path /login is a strong marker; nearby "delete your account"
+      // shouldn't kill the link.
+      const html = `
+        <p>Delete your account or click below:</p>
+        <a href="https://app.example.com/login?token=abc">Continue</a>
+      `
+      const result = extractMagicLinks({ html, subject: 'Account access' })
+      expect(result).toHaveLength(1)
+    })
+
+    it('generic "verify" / "confirm" / "continue" do NOT count as strong evidence', () => {
+      // Per Codex: "verify"/"confirm"/"continue" are too broad.
+      // /verify path with destructive nearby context still rejects.
+      const html = `
+        <p>To delete your account, verify below:</p>
+        <a href="https://app.example.com/verify?token=abc">Confirm</a>
+      `
+      const result = extractMagicLinks({ html, subject: 'Account access' })
+      expect(result).toEqual([])
     })
   })
 })
