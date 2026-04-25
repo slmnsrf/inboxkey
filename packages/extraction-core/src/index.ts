@@ -38,6 +38,7 @@ export {
   SCORE_WEIGHTS,
   THRESHOLDS,
   EXTRACTION_DEFAULTS,
+  EXTRACTOR_VERSION,
 } from './extraction/extraction-types.js'
 
 // Matching utilities (for advanced use)

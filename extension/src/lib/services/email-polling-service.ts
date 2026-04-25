@@ -18,9 +18,9 @@
 // which provides OTP and magic-link extraction logic.
 // -----------------------------------------------------------------------------
 
-import { extractFromEmail } from '@inboxkey/extraction-core'
+import { extractFromEmail, EXTRACTOR_VERSION } from '@inboxkey/extraction-core'
 import { SCORE_POPUP } from '@/lib/popup/popup-config'
-import { SeenMessageStore } from './seen-message-store'
+import { SeenMessageStore, HIT_TTL_MS, MISS_TTL_MS } from './seen-message-store'
 
 // ---------------- Types ----------------
 
@@ -194,15 +194,17 @@ export class EmailPollingService {
           // (compensates for Gmail's day-granularity newerThan rounding)
           if (msg.receivedEpochMs && msg.receivedEpochMs < since) continue
 
-          // Skip messages we've processed before (use adapter.mailboxId for multi-account)
-          const seenKey = `${ad.mailboxId}:${msg.id}`
+          // Skip messages already processed under the *current* extractor
+          // version. Stamping EXTRACTOR_VERSION into the seen key means a
+          // version bump invalidates miss-cached entries automatically -
+          // an updated extractor takes effect on the next poll instead of
+          // being shadowed by stale "no-candidate" entries from before.
+          const seenKey = `${ad.mailboxId}:${msg.id}:v${EXTRACTOR_VERSION}`
           if (this.seenStore) {
             if (await this.seenStore.hasSeen(seenKey)) continue
-            await this.seenStore.add(seenKey)
           } else {
             // Fallback to in-memory set (backward compat for callers that don't pass store)
             if (this.seenMessageIds.has(seenKey)) continue
-            this.seenMessageIds.add(seenKey)
           }
 
           const subject = msg.subject || ''
@@ -232,8 +234,22 @@ export class EmailPollingService {
           const linkScore = topLink ? (topLink.score ?? 0) : 0
           const topScore = Math.max(otpScore, linkScore)
 
+          // Outcome-aware seen marking. Done *after* extraction so a
+          // failure to extract doesn't permanently suppress a message
+          // that a future extractor version could parse.
+          //   - hit (>= minScore): 24h TTL, prevents re-shipping the same
+          //     code/link to the user on every subsequent poll
+          //   - miss (< minScore or empty): 5min TTL, allows fast retry
+          //     within the same browser session as polls churn
+          const passesGate = topScore >= minScore
+          if (this.seenStore) {
+            await this.seenStore.add(seenKey, passesGate ? HIT_TTL_MS : MISS_TTL_MS)
+          } else {
+            this.seenMessageIds.add(seenKey)
+          }
+
           // Gate by minScore; ignore everything else
-          if (topScore >= minScore) {
+          if (passesGate) {
             const rec: CandidateRecord = {
               provider: msg.provider,
               mailboxId: ad.mailboxId,

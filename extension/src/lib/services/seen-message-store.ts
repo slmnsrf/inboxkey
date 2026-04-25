@@ -1,27 +1,57 @@
 // seen-message-store.ts
-// InboxKey - Persistent Duplicate Suppression
+// InboxKey - Persistent Duplicate Suppression with Outcome-Aware TTL
 // -----------------------------------------------------------------------------
-// Stores seen message IDs in chrome.storage.session with a 24-hour TTL.
+// Stores seen message IDs in chrome.storage.session with per-entry TTL.
 // Survives across EmailPollingService instance lifetimes (within a browser
 // session) so the same email is never re-processed even when the service
 // worker restarts and creates a fresh EmailPollingService.
+//
+// Outcome-aware TTL (fixes the "tightened extractor doesn't take effect for
+// 24h" trap):
+//   - HIT_TTL_MS  (24h): a candidate (OTP or magic link) was extracted.
+//                        Long TTL prevents re-shipping the same code/link
+//                        to the user on every subsequent poll.
+//   - MISS_TTL_MS (5min): no candidate was found. Short TTL allows fast
+//                         retry if extraction heuristics change between
+//                         polls (extension upgrade, version bump, etc.).
+//
+// Callers should also stamp the EXTRACTOR_VERSION constant into the seen
+// key so a version bump invalidates cached miss entries immediately rather
+// than waiting for them to age out naturally.
 // -----------------------------------------------------------------------------
 
 const STORAGE_KEY = 'inboxkey.seen_messages'
-const TTL_MS = 24 * 60 * 60 * 1000 // 24 hours
+
+/** TTL for messages where extraction succeeded (a code or link was found). */
+export const HIT_TTL_MS = 24 * 60 * 60 * 1000
+
+/** TTL for messages where extraction returned no candidate. */
+export const MISS_TTL_MS = 5 * 60 * 1000
+
+interface SeenEntry {
+  /** Epoch ms when the entry was recorded. */
+  ts: number
+  /** TTL applied to this entry (HIT_TTL_MS or MISS_TTL_MS). */
+  ttl: number
+}
 
 /**
- * Persistent duplicate suppression for email message IDs.
- * Stores Map<messageId, timestamp> in chrome.storage.session.
- * Prunes entries older than 24 hours on each write.
+ * Persistent duplicate suppression for email message IDs with per-entry TTL.
+ * Stores Map<messageId, SeenEntry> in chrome.storage.session.
+ * Prunes expired entries on each write.
  */
 export class SeenMessageStore {
-  private entries: Map<string, number> = new Map()
+  private entries: Map<string, SeenEntry> = new Map()
   private loaded = false
 
   /**
    * Load persisted entries from chrome.storage.session.
    * Idempotent: no-op if already loaded.
+   *
+   * Backward-compatible with the pre-TTL-aware storage shape, where each
+   * entry was just a timestamp. Legacy entries are treated as HIT_TTL_MS
+   * (the previous global TTL) so an upgrade doesn't re-show codes the
+   * user already saw.
    */
   async load(): Promise<void> {
     if (this.loaded) return
@@ -30,11 +60,14 @@ export class SeenMessageStore {
       const result = await chrome.storage.session.get(STORAGE_KEY)
       const raw = result[STORAGE_KEY]
       if (typeof raw === 'string') {
-        const pairs: [string, number][] = JSON.parse(raw)
+        const pairs: Array<[string, number | SeenEntry]> = JSON.parse(raw)
         const now = Date.now()
-        for (const [id, ts] of pairs) {
-          if (now - ts < TTL_MS) {
-            this.entries.set(id, ts)
+        for (const [id, value] of pairs) {
+          const entry: SeenEntry = typeof value === 'number'
+            ? { ts: value, ttl: HIT_TTL_MS }
+            : value
+          if (now - entry.ts < entry.ttl) {
+            this.entries.set(id, entry)
           }
         }
       }
@@ -46,15 +79,15 @@ export class SeenMessageStore {
   }
 
   /**
-   * Check whether a message ID has been seen within the TTL window.
+   * Check whether a message ID has been seen and is still within its TTL.
    * Lazy-loads from storage on first call.
    */
   async hasSeen(messageId: string): Promise<boolean> {
     await this.load()
-    const ts = this.entries.get(messageId)
-    if (ts === undefined) return false
+    const entry = this.entries.get(messageId)
+    if (!entry) return false
     // Enforce TTL inline (handles entries that aged out after load)
-    if (Date.now() - ts >= TTL_MS) {
+    if (Date.now() - entry.ts >= entry.ttl) {
       this.entries.delete(messageId)
       return false
     }
@@ -62,23 +95,25 @@ export class SeenMessageStore {
   }
 
   /**
-   * Mark a single message ID as seen and persist immediately.
+   * Mark a single message ID as seen with the given TTL and persist
+   * immediately. Callers pick HIT_TTL_MS for messages that produced a
+   * candidate and MISS_TTL_MS for messages that did not.
    */
-  async add(messageId: string): Promise<void> {
+  async add(messageId: string, ttl: number): Promise<void> {
     await this.load()
-    this.entries.set(messageId, Date.now())
+    this.entries.set(messageId, { ts: Date.now(), ttl })
     await this.persist()
   }
 
   /**
-   * Mark multiple message IDs as seen in a single write.
-   * More efficient than calling add() in a loop.
+   * Mark multiple message IDs as seen with the same TTL in a single
+   * write. More efficient than calling add() in a loop.
    */
-  async addBatch(messageIds: string[]): Promise<void> {
+  async addBatch(messageIds: string[], ttl: number): Promise<void> {
     await this.load()
     const now = Date.now()
     for (const id of messageIds) {
-      this.entries.set(id, now)
+      this.entries.set(id, { ts: now, ttl })
     }
     await this.persist()
   }
@@ -88,8 +123,8 @@ export class SeenMessageStore {
    */
   private async persist(): Promise<void> {
     const now = Date.now()
-    for (const [id, ts] of this.entries) {
-      if (now - ts >= TTL_MS) {
+    for (const [id, entry] of this.entries) {
+      if (now - entry.ts >= entry.ttl) {
         this.entries.delete(id)
       }
     }

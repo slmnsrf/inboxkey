@@ -33,6 +33,16 @@
  */
 export { DOMAIN_ALIASES, WATCH_SESSION_SCORING } from '../matching/scoring-config.js'
 
+/**
+ * Extractor behavior version. Bump on any change that could affect
+ * extraction outcomes - keyword expansion, gate logic, scoring, filter
+ * additions, threshold tweaks. Callers stamp this into their
+ * deduplication keys (e.g. seen-message store) so a tightened or
+ * loosened extractor takes effect on the next poll instead of being
+ * shadowed by cached "no-candidate" entries from the previous version.
+ */
+export const EXTRACTOR_VERSION = '1' as const
+
 // ------------------------------
 // Types
 // ------------------------------
