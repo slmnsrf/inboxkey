@@ -108,13 +108,28 @@ export function extractMagicLinks(
   const text = normalizeWhitespace((plain || '') + (textFromHtml ? (' ' + textFromHtml) : ''))
   const lower = text.toLowerCase()
 
-  // Quick intent check before URL work
-  const hasIntent = containsAny(lower, MAGIC_LINK_KEYWORDS) || containsAny(subject, MAGIC_LINK_KEYWORDS)
-  if (!hasIntent) return []
-
-  // Harvest anchors from HTML (best signal), then raw URLs from text/plain
+  // Harvest URLs first - cheap regex work, and the URL itself is
+  // strong evidence of intent. Real magic-link URLs almost always
+  // contain at least one MAGIC_LINK_URL_HINT in the path/query
+  // (login, signin, magic, token, session, verify, continue), so a
+  // matching URL alone is enough to admit the email even when the
+  // body uses generic prose like "Click the link below to sign in"
+  // that doesn't quite hit the keyword list.
   const anchors = harvestAnchors(html)
   const rawUrls = harvestRawUrls(text)
+  const hasUrlHint =
+    anchors.some(a => containsAny(a.href.toLowerCase(), MAGIC_LINK_URL_HINTS)) ||
+    rawUrls.some(href => containsAny(href.toLowerCase(), MAGIC_LINK_URL_HINTS))
+
+  // Admit if any of body keyword, subject keyword, or URL hint matches.
+  // Without the URL-hint arm, fixtures using plain wording ("Click
+  // the link below to sign in: https://app/.../auth?token=...") were
+  // rejected even though the URL was unmistakably a magic link.
+  const hasIntent =
+    containsAny(lower, MAGIC_LINK_KEYWORDS) ||
+    containsAny(subject, MAGIC_LINK_KEYWORDS) ||
+    hasUrlHint
+  if (!hasIntent) return []
 
   // Build candidates
   const candidates: LinkCandidate[] = []
