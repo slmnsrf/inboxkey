@@ -33,6 +33,7 @@ import {
   setBadgeSyncError,
   clearBadge,
 } from "@/contents/badge-manager"
+import { countBadgeEligible } from "@/lib/popup/popup-filters"
 import { addBlacklistedDomain, removeBlacklistedDomain } from "@/lib/utils/blacklist"
 import { getMessagesTabManager } from "@/lib/providers/google-messages/tab-manager"
 
@@ -127,9 +128,11 @@ sessionController
       await popupCacheManager.updateWithNewCodes([], mailboxes.length, mailboxes)
       console.log(`[InboxKey] PopupCache warmed with ${mailboxes.length} mailboxes (codes ephemeral-only)`)
 
-      // Update count badge with unseen codes
+      // Update count badge with unseen items (codes + magic links).
+      // Uses the same safety/freshness/score pipeline as the popup
+      // display so the badge matches what the user will actually see.
       const cache = await popupCacheManager.getCache()
-      const unseenCount = cache.codes.filter((c) => !c.seenAt && !c.usedAt).length
+      const unseenCount = countBadgeEligible(cache.items ?? [], Date.now())
       if (unseenCount > 0) {
         setBadgeCount(unseenCount)
       }

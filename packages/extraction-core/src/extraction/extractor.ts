@@ -20,6 +20,9 @@ import {
   MAGIC_LINK_KEYWORDS,
   MAGIC_LINK_URL_HINTS,
   DANGEROUS_LINK_KEYWORDS,
+  RESET_LINK_PATH_PATTERNS,
+  DESTRUCTIVE_ACTION_PATH_PATTERNS,
+  HARD_DANGER_BODY_KEYWORDS,
   TRACKER_HOST_PATTERNS,
   TRACKER_PATH_PATTERNS,
   TRACKER_URL_PARAM_NAMES,
@@ -108,24 +111,61 @@ export function extractMagicLinks(
   const text = normalizeWhitespace((plain || '') + (textFromHtml ? (' ' + textFromHtml) : ''))
   const lower = text.toLowerCase()
 
-  // Quick intent check before URL work
-  const hasIntent = containsAny(lower, MAGIC_LINK_KEYWORDS) || containsAny(subject, MAGIC_LINK_KEYWORDS)
-  if (!hasIntent) return []
+  // Subject-level destructive veto. The subject is where the email
+  // declares its primary purpose - "Confirm account deletion" or
+  // "Reset your password" in the subject means the entire email is
+  // about that flow, regardless of how innocuous individual links
+  // look. Drop the email entirely.
+  //
+  // We deliberately do NOT veto on body-text matches. Many
+  // legitimate sign-in emails include a security footer like "If
+  // this wasn't you, reset your password" - vetoing on body would
+  // drop the magic link in that email even though the actual
+  // purpose is sign-in. Per-link link-local context checks (added
+  // in scoreLinkCandidate below) catch the case where the danger
+  // wording is adjacent to a specific link rather than in a footer.
+  if (containsAny(subject, HARD_DANGER_BODY_KEYWORDS)) {
+    return []
+  }
 
-  // Harvest anchors from HTML (best signal), then raw URLs from text/plain
+  // Harvest URLs first - cheap regex work, and the URL itself is
+  // strong evidence of intent. Real magic-link URLs almost always
+  // contain at least one MAGIC_LINK_URL_HINT in the path/query
+  // (login, signin, magic, token, session, verify, continue), so a
+  // matching URL alone is enough to admit the email even when the
+  // body uses generic prose like "Click the link below to sign in"
+  // that doesn't quite hit the keyword list.
   const anchors = harvestAnchors(html)
   const rawUrls = harvestRawUrls(text)
+  const hasUrlHint =
+    anchors.some(a => containsAny(a.href.toLowerCase(), MAGIC_LINK_URL_HINTS)) ||
+    rawUrls.some(href => containsAny(href.toLowerCase(), MAGIC_LINK_URL_HINTS))
+
+  // Admit if any of body keyword, subject keyword, or URL hint matches.
+  // Without the URL-hint arm, fixtures using plain wording ("Click
+  // the link below to sign in: https://app/.../auth?token=...") were
+  // rejected even though the URL was unmistakably a magic link.
+  const hasIntent =
+    containsAny(lower, MAGIC_LINK_KEYWORDS) ||
+    containsAny(subject, MAGIC_LINK_KEYWORDS) ||
+    hasUrlHint
+  if (!hasIntent) return []
 
   // Build candidates
   const candidates: LinkCandidate[] = []
 
-  // 1) From <a href="...">anchor</a>
+  // 1) From <a href="...">anchor</a>. Pass each anchor's own
+  //    pre-built local-context window so per-anchor danger checks
+  //    don't collapse onto the first occurrence of repeated visible
+  //    text like "Continue" / "Sign in".
   for (const a of anchors) {
-    const cand = scoreLinkCandidate(a.href, a.anchorText, text, ctx, subject)
+    const cand = scoreLinkCandidate(a.href, a.anchorText, text, ctx, subject, a.localContext)
     if (cand) candidates.push(cand)
   }
 
-  // 2) From plain text URLs (avoid duplicates)
+  // 2) From plain text URLs (avoid duplicates). No localContext for
+  //    raw URLs - hasLocalDangerContext locates them by URL string,
+  //    which is unique enough that first-occurrence is safe.
   for (const href of rawUrls) {
     // Skip if already present from anchors
     if (anchors.some(a => sameUrl(a.href, href))) continue
@@ -170,9 +210,38 @@ function htmlToText(html: string): string {
   return normalizeWhitespace(s)
 }
 
-/** Extract <a href="..."> anchors with visible text (regex-based for worker safety). */
-function harvestAnchors(html: string): Array<{ href: string; anchorText: string }> {
-  const res: Array<{ href: string; anchorText: string }> = []
+/**
+ * Extract <a href="..."> anchors with visible text (regex-based for
+ * worker safety).
+ *
+ * Each anchor also carries a `localContext` snippet derived from the
+ * visible text around its position in the source HTML. This is what
+ * hasLocalDangerContext checks against - using indexOf on the
+ * normalized body text would latch every <a>Continue</a> onto the
+ * *first* "Continue" in the email, so a safe early Continue link
+ * followed by a destructive "To delete your account, click
+ * [Continue]" pair would have BOTH anchors checked against the safe
+ * early context. Per-anchor windowing avoids that ambiguity.
+ *
+ * Window construction is intentionally NOT capped by raw HTML byte
+ * count. Real email markup (table layouts, button wrappers, long
+ * inline styles, MSO conditional comments) easily consumes 1500+
+ * raw bytes between the visible "To delete your account" copy and
+ * the anchor, even though the text is visually adjacent. We instead
+ * strip tags from the full pre-anchor and post-anchor HTML and slice
+ * by visible-character count - so markup density doesn't shrink the
+ * effective neighborhood.
+ *
+ * Targets: 240 visible chars before, 80 after. Before-heavy bias
+ * matches real email structure: purpose statements precede the link;
+ * security footers follow it.
+ *
+ * Performance: O(N*K) where N = anchors and K = HTML size, because
+ * each anchor strips the full pre-anchor prefix. For typical email
+ * shapes (5-15 anchors, <50KB HTML) this is sub-millisecond.
+ */
+function harvestAnchors(html: string): Array<{ href: string; anchorText: string; localContext: string }> {
+  const res: Array<{ href: string; anchorText: string; localContext: string }> = []
   if (!html) return res
 
   const re = /<a\b[^>]*?href\s*=\s*["']([^"']+)["'][^>]*>([\s\S]*?)<\/a>/gi
@@ -183,7 +252,24 @@ function harvestAnchors(html: string): Array<{ href: string; anchorText: string 
     // deny obvious dangerous anchors quickly
     if (containsAny(href.toLowerCase(), DANGEROUS_LINK_KEYWORDS)) continue
     const text = normalizeWhitespace(stripTags(m[2] || ''))
-    res.push({ href, anchorText: text })
+
+    // Per-anchor context. Strip the full pre/post HTML to visible
+    // text, then slice by visible-char counts. Re-uses htmlToText so
+    // script/style blocks and HTML entities are handled the same way
+    // they are in the body normalization upstream.
+    const beforeHtml = html.slice(0, m.index)
+    const afterHtml = html.slice(m.index + m[0].length)
+    const beforeText = htmlToText(beforeHtml)
+    const afterText = htmlToText(afterHtml)
+    const beforeWindow = beforeText.length > 240
+      ? beforeText.slice(beforeText.length - 240)
+      : beforeText
+    const afterWindow = afterText.length > 80
+      ? afterText.slice(0, 80)
+      : afterText
+    const localContext = `${beforeWindow} ${afterWindow}`.trim()
+
+    res.push({ href, anchorText: text, localContext })
   }
   return res
 }
@@ -205,8 +291,18 @@ function normalizeWhitespace(s: string): string {
   return (s || '').replace(/\s+/g, ' ').trim()
 }
 
-/** Build and score one link candidate from context. Returns null if clearly unsafe/noise. */
-function scoreLinkCandidate(href: string, anchorText: string, fullText: string, ctx: ExtractContext, subjectLower: string): LinkCandidate | null {
+/**
+ * Build and score one link candidate from context. Returns null if
+ * clearly unsafe/noise.
+ *
+ * `localContext` is the per-anchor visible-text window from
+ * harvestAnchors; for raw URLs it's omitted and the danger check
+ * falls back to locating the URL in the full body. The distinction
+ * matters because anchor visible text often repeats ("Continue" /
+ * "Sign in" appear many times in promotional emails) so a body-wide
+ * indexOf would attach every anchor to the first occurrence.
+ */
+function scoreLinkCandidate(href: string, anchorText: string, fullText: string, ctx: ExtractContext, subjectLower: string, localContext?: string): LinkCandidate | null {
   try { new URL(href) } catch { return null }
 
   const hrefLower = href.toLowerCase()
@@ -215,7 +311,51 @@ function scoreLinkCandidate(href: string, anchorText: string, fullText: string, 
   // Hard denylists
   if (!domain) return null
   if (/^http:\/\//i.test(href)) return null // disallow plain HTTP for security
-  if (containsAny(hrefLower, DANGEROUS_LINK_KEYWORDS)) return null // unsubscribe, reset password, etc.
+  // Dangerous wording in the URL itself (legacy: "/password-reset/",
+  // "unsubscribe?...") OR in the anchor text the user actually sees
+  // ("Verify account deletion" anchored to /verify-account-deletion).
+  // Both surfaces matter because destructive links commonly use
+  // innocent-looking URLs with the warning only in the visible text.
+  const anchorLower = anchorText.toLowerCase()
+  if (
+    containsAny(hrefLower, DANGEROUS_LINK_KEYWORDS) ||
+    (anchorLower && containsAny(anchorLower, DANGEROUS_LINK_KEYWORDS))
+  ) {
+    return null
+  }
+
+  // Link-local destructive-context veto. For each candidate, look at
+  // the visible text immediately before/around the link in the body.
+  // If a hard-danger phrase (e.g. "Reset your password", "Confirm
+  // account deletion") appears in that local window AND the link
+  // itself lacks strong login evidence, reject.
+  //
+  // The local window is intentionally before-heavy: real sign-in
+  // emails often include a security footer ("If this wasn't you,
+  // reset your password") AFTER the magic link. A whole-body or
+  // after-only check would drop those legitimate links.
+  //
+  // Strong login evidence (anchor text "Sign in" / "Magic link" /
+  // "Passwordless"; href path /login, /signin, /magic, /session)
+  // overrides the veto - those signals are precise enough that a
+  // co-located warning shouldn't kill the link.
+  if (hasLocalDangerContext(fullText, href, anchorText, localContext) && !hasStrongLoginEvidence(href, anchorText)) {
+    return null
+  }
+
+  // Reject password-reset / account-recovery and destructive-action
+  // URLs. Both consume sensitive tokens and force flows the user may
+  // not have initiated. Pre-PR-1 these were filtered indirectly via
+  // the strict body-keyword intent gate; that gate now also admits
+  // on URL hints (so magic-link emails with generic prose work), so
+  // both reset (/reset?token=...) and destructive
+  // (/verify-account-deletion?token=...) emails need explicit
+  // path-anchored filters.
+  try {
+    const pathname = new URL(href).pathname
+    if (RESET_LINK_PATH_PATTERNS.some(p => p.test(pathname))) return null
+    if (DESTRUCTIVE_ACTION_PATH_PATTERNS.some(p => p.test(pathname))) return null
+  } catch { /* unparseable URL - already rejected above */ }
 
   // Reject ESP click-tracking redirectors. The tracker's 302 lands the
   // user on the real destination, but we surface URLs to the user
@@ -306,6 +446,83 @@ function containsAny(hay: string, needles: readonly string[]): boolean {
 
 function safeHostname(u: string): string {
   try { return new URL(u).hostname.toLowerCase() } catch { return '' }
+}
+
+/**
+ * True if the visible text immediately around the link contains a
+ * hard-danger phrase. "Around" leans heavily before the link because
+ * email security footers (often AFTER the link) routinely say "If
+ * this wasn't you, reset your password" - that's noise, not intent.
+ *
+ * For HTML anchors, callers pass `localContext` - the per-anchor
+ * visible-text window built from the anchor's actual position in the
+ * source HTML. This is the precise path: every anchor gets its own
+ * neighborhood, even when many anchors share visible text.
+ *
+ * For raw plain-text URLs, no localContext is provided and we
+ * locate the URL by searching `fullText`. Raw URLs almost never
+ * repeat (they carry unique tokens), so first-occurrence is safe.
+ */
+function hasLocalDangerContext(
+  fullText: string,
+  href: string,
+  anchorText: string,
+  localContext?: string,
+): boolean {
+  // Anchor path: harvest provided a precomputed window.
+  if (localContext !== undefined) {
+    if (!localContext) return false
+    return containsAny(localContext.toLowerCase(), HARD_DANGER_BODY_KEYWORDS)
+  }
+
+  // Raw-URL path: locate by URL string in body.
+  const text = fullText || ''
+  const idx = text.indexOf(href)
+  if (idx === -1) {
+    // URL not directly in normalized body (rare). Fall back to
+    // checking anchor text + href in isolation.
+    const fallback = (anchorText + ' ' + href).toLowerCase()
+    return containsAny(fallback, HARD_DANGER_BODY_KEYWORDS)
+  }
+
+  // Before-heavy window: 240 chars before, 80 after.
+  const start = Math.max(0, idx - 240)
+  const end = Math.min(text.length, idx + href.length + 80)
+  const window = text.slice(start, end).toLowerCase()
+  return containsAny(window, HARD_DANGER_BODY_KEYWORDS)
+}
+
+/**
+ * True if the link itself carries strong login-flow signal. These
+ * markers are precise enough that a co-located danger phrase
+ * shouldn't kill the link (real magic-link emails sometimes show a
+ * sign-in link right next to a "or reset your password" alternative).
+ *
+ * Generic markers like "verify", "confirm", "continue", and the
+ * "token" query param are deliberately NOT counted as strong - they
+ * appear too broadly across destructive flows too.
+ */
+function hasStrongLoginEvidence(href: string, anchorText: string): boolean {
+  const STRONG_TEXT_MARKERS = [
+    'sign in', 'sign-in', 'signin',
+    'log in', 'log-in', 'login',
+    'magic link',
+    'passwordless',
+    'sso',
+    'single sign-on',
+    'single sign on',
+  ]
+  const STRONG_PATH_MARKERS = ['/login', '/signin', '/sign-in', '/magic', '/session']
+
+  const text = (anchorText || '').toLowerCase()
+  if (text && STRONG_TEXT_MARKERS.some(m => text.includes(m))) return true
+
+  try {
+    const path = new URL(href).pathname.toLowerCase()
+    if (STRONG_PATH_MARKERS.some(m => path.includes(m))) return true
+  } catch { /* ignore */ }
+
+  return false
 }
 
 /**

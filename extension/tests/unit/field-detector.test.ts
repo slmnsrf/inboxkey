@@ -250,6 +250,73 @@ describe('FieldDetector', () => {
       expect(callback).toHaveBeenCalledWith(input, expect.objectContaining({ tier: 1 }))
     })
 
+    it('should detect fields revealed by attribute changes after insertion', async () => {
+      const callback = vi.fn()
+
+      detector.startObserving(callback)
+
+      const input = document.createElement('input')
+      input.type = 'text'
+      document.body.appendChild(input)
+
+      await new Promise((resolve) => setTimeout(resolve, 150))
+      expect(callback).not.toHaveBeenCalled()
+
+      input.setAttribute('autocomplete', 'section-login one-time-code')
+
+      await new Promise((resolve) => setTimeout(resolve, 150))
+
+      expect(callback).toHaveBeenCalledWith(input, expect.objectContaining({ tier: 1 }))
+    })
+
+    it('should detect dynamically added inputs inside open shadow DOM', async () => {
+      const callback = vi.fn()
+
+      detector.startObserving(callback)
+
+      const host = document.createElement('div')
+      const shadow = host.attachShadow({ mode: 'open' })
+      const input = document.createElement('input')
+      input.type = 'text'
+      input.setAttribute('autocomplete', 'one-time-code')
+      shadow.appendChild(input)
+      document.body.appendChild(host)
+
+      await new Promise((resolve) => setTimeout(resolve, 150))
+
+      expect(callback).toHaveBeenCalledWith(input, expect.objectContaining({ tier: 1 }))
+    })
+
+    it('should rescan when a background tab regains focus', async () => {
+      const callback = vi.fn()
+      const hasFocus = vi.fn().mockReturnValue(false)
+      Object.defineProperty(document, 'readyState', {
+        value: 'complete',
+        configurable: true,
+      })
+      Object.defineProperty(document, 'hasFocus', {
+        value: hasFocus,
+        configurable: true,
+      })
+
+      detector.startObserving(callback)
+
+      const input = document.createElement('input')
+      input.type = 'text'
+      input.setAttribute('autocomplete', 'one-time-code')
+      document.body.appendChild(input)
+
+      await new Promise((resolve) => setTimeout(resolve, 150))
+      expect(callback).not.toHaveBeenCalled()
+
+      hasFocus.mockReturnValue(true)
+      window.dispatchEvent(new window.Event('focus'))
+
+      await new Promise((resolve) => setTimeout(resolve, 150))
+
+      expect(callback).toHaveBeenCalledWith(input, expect.objectContaining({ tier: 1 }))
+    })
+
     it('should debounce mutations within 100ms window', async () => {
       const callback = vi.fn()
 
@@ -499,8 +566,35 @@ describe('FieldDetector', () => {
     })
   })
 
-  describe('tier priority ordering', () => {
-    it('should rank Tier 1 results above Tier 2 results even with lower confidence', () => {
+  describe('forgetField (resend / retry support)', () => {
+    it('clears the cooldown so the same field can be evaluated again', () => {
+      document.body.innerHTML = `
+        <input type="text" autocomplete="one-time-code" id="otp">
+      `
+      const field = document.getElementById('otp') as HTMLInputElement
+
+      // First evaluation marks the field as detected; cooldown is set.
+      const first = detector.evaluateField(field, { strictVisibility: false })
+      expect(first).not.toBeNull()
+      expect(first!.tier).toBe(1)
+
+      // Without forgetField, Tier 1 short-circuits on cooldown and
+      // returns a "Field in cooldown period" result with detected=false.
+      const blocked = detector.evaluateField(field, { strictVisibility: false })
+      expect(blocked).toBeNull()
+
+      // forgetField drops both the WeakSet entry and the cooldown
+      // entry, so the next evaluation re-runs Tier 1 from scratch.
+      detector.forgetField(field)
+
+      const reevaluated = detector.evaluateField(field, { strictVisibility: false })
+      expect(reevaluated).not.toBeNull()
+      expect(reevaluated!.tier).toBe(1)
+    })
+  })
+
+  describe('result priority ordering', () => {
+    it('should rank stronger Tier 2 results above weaker Tier 1 results', () => {
       // Set up page with both a Tier 1 field and a Tier 2 split-input field
       document.body.innerHTML = `
         <input type="text" inputmode="numeric" maxlength="6" id="otp-single">
@@ -527,10 +621,10 @@ describe('FieldDetector', () => {
       expect(tier1Results.length).toBeGreaterThan(0)
       expect(tier2Results.length).toBeGreaterThan(0)
 
-      // Tier 1 must appear before Tier 2 in sorted results
+      // Confidence wins before tier so page load picks the strongest field.
       const firstTier1Index = results.indexOf(tier1Results[0])
       const firstTier2Index = results.indexOf(tier2Results[0])
-      expect(firstTier1Index).toBeLessThan(firstTier2Index)
+      expect(firstTier2Index).toBeLessThan(firstTier1Index)
     })
   })
 

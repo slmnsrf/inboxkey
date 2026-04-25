@@ -34,10 +34,12 @@ export {
   MAGIC_LINK_KEYWORDS_BY_LANG,
   MAGIC_LINK_URL_HINTS,
   DANGEROUS_LINK_KEYWORDS,
+  RESET_LINK_PATH_PATTERNS,
   OTP_PATTERNS,
   SCORE_WEIGHTS,
   THRESHOLDS,
   EXTRACTION_DEFAULTS,
+  EXTRACTOR_VERSION,
 } from './extraction/extraction-types.js'
 
 // Matching utilities (for advanced use)

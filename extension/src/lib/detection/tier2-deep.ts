@@ -12,13 +12,17 @@ import { validateContext } from './context-validator'
 import { classifyDeliveryChannel } from './signal-classifier'
 import { classifyNonEmailIntent } from './non-email-contexts'
 import { detectSplitInputGroup } from './split-input-detector'
-import { getAriaDescribedbyText } from './detection-utils'
+import {
+  getAriaDescribedbyText,
+  getAriaLabelledbyText,
+  getExplicitLabelText,
+} from './detection-utils'
 import { smsFeatureEnabledCache } from './sms-feature-cache'
 import type { TextSources } from './types'
 import {
   getLabelMatchStrength,
   getPlaceholderMatchStrength,
-  HTML_PATTERN_DETECTION,
+  getCodeLengthRangeFromPattern,
   TYPICAL_CODE_LENGTHS,
 } from './patterns'
 
@@ -385,13 +389,9 @@ export interface Tier2Result {
 function getLabelText(input: HTMLInputElement): string {
   const labels: string[] = []
 
-  // Check for label element (by 'for' attribute)
-  const id = input.id
-  if (id) {
-    const label = input.ownerDocument?.querySelector(`label[for="${id}"]`)
-    if (label?.textContent) {
-      labels.push(label.textContent.trim())
-    }
+  const explicitLabel = getExplicitLabelText(input)
+  if (explicitLabel) {
+    labels.push(explicitLabel)
   }
 
   // Check for parent label
@@ -406,13 +406,9 @@ function getLabelText(input: HTMLInputElement): string {
     labels.push(ariaLabel)
   }
 
-  // Check for aria-labelledby
-  const ariaLabelledby = input.getAttribute('aria-labelledby')
+  const ariaLabelledby = getAriaLabelledbyText(input)
   if (ariaLabelledby) {
-    const labelElement = input.ownerDocument?.getElementById(ariaLabelledby)
-    if (labelElement?.textContent) {
-      labels.push(labelElement.textContent.trim())
-    }
+    labels.push(ariaLabelledby)
   }
 
   return labels.join(' ')
@@ -437,6 +433,15 @@ function getNearbyText(input: HTMLInputElement, isSplitInput: boolean = false): 
   while (element && levels < 5) {
     // Get all text from siblings
     if (element.parentElement) {
+      const directText = Array.from(element.parentElement.childNodes)
+        .filter(node => node !== element && node.nodeType === 3)
+        .map(node => node.textContent?.trim() || '')
+        .filter(Boolean)
+        .join(' ')
+      if (directText && directText.length < maxLength) {
+        texts.push(directText)
+      }
+
       const siblings = Array.from(element.parentElement.children)
       siblings.forEach((sibling) => {
         if (sibling !== element && sibling instanceof HTMLElement) {
@@ -579,10 +584,12 @@ export function detectTier2(
 
   // Check HTML pattern attribute (e.g., pattern="\\d{6}")
   const pattern = input.getAttribute('pattern')
-  if (pattern && HTML_PATTERN_DETECTION.digits.test(pattern)) {
-    const match = pattern.match(HTML_PATTERN_DETECTION.digits)
-    const length = match ? parseInt(match[1], 10) : 0
-    if (length >= TYPICAL_CODE_LENGTHS.min && length <= TYPICAL_CODE_LENGTHS.max) {
+  const patternRange = pattern ? getCodeLengthRangeFromPattern(pattern) : null
+  if (patternRange) {
+    if (
+      patternRange.min >= TYPICAL_CODE_LENGTHS.min &&
+      patternRange.max <= TYPICAL_CODE_LENGTHS.max
+    ) {
       score += 15
       scoreBreakdown.push('pattern:15')
     }

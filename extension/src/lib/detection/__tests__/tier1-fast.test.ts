@@ -344,6 +344,16 @@ describe('Tier 1 Fast Detection', () => {
       expect(result.detected).toBe(true)
       expect(result.confidence).toBe(1.0)
     })
+
+    it('should detect tokenized autocomplete containing one-time-code', () => {
+      const input = createInput({ autocomplete: 'section-login one-time-code' })
+
+      const result = detectTier1(input, cooldown)
+
+      expect(result.detected).toBe(true)
+      expect(result.confidence).toBe(1.0)
+      expect(result.reason).toBe('autocomplete="one-time-code"')
+    })
   })
 
   describe('Layer 4: Name/ID Exact Match', () => {
@@ -599,6 +609,33 @@ describe('Tier 1 Fast Detection', () => {
 
       expect(result.detected).toBe(false)
       expect(result.reason).toBe('Zip/postal code detected')
+    })
+
+    it('should reject postcode fields', () => {
+      const input = createInput({ name: 'postcode', maxLength: 6 })
+
+      const result = detectTier1(input, cooldown)
+
+      expect(result.detected).toBe(false)
+      expect(result.reason).toContain('Excluded pattern')
+    })
+
+    it('should reject cardSecurityCode fields', () => {
+      const input = createInput({ name: 'cardSecurityCode', maxLength: 4 })
+
+      const result = detectTier1(input, cooldown)
+
+      expect(result.detected).toBe(false)
+      expect(result.reason).toContain('Excluded pattern')
+    })
+
+    it('should reject auth_state fields', () => {
+      const input = createInput({ name: 'auth_state' })
+
+      const result = detectTier1(input, cooldown)
+
+      expect(result.detected).toBe(false)
+      expect(result.reason).toContain('Excluded pattern')
     })
 
     it('should reject user_name fields with underscore separator', () => {

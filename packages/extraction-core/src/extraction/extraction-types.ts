@@ -33,6 +33,28 @@
  */
 export { DOMAIN_ALIASES, WATCH_SESSION_SCORING } from '../matching/scoring-config.js'
 
+/**
+ * Extractor behavior version. Bump on any change that could affect
+ * extraction outcomes - keyword expansion, gate logic, scoring, filter
+ * additions, threshold tweaks. Callers stamp this into their
+ * deduplication keys (e.g. seen-message store) so a tightened or
+ * loosened extractor takes effect on the next poll instead of being
+ * shadowed by cached "no-candidate" entries from the previous version.
+ *
+ * Version history:
+ *   '1' - initial constant (no behavior change vs. pre-versioning)
+ *   '2' - PR 1 magic-link extraction overhaul:
+ *           - MAGIC_LINK_KEYWORDS_BY_LANG expanded with SSO /
+ *             passwordless wording across 21 languages
+ *           - extractMagicLinks intent gate accepts URL hints (not
+ *             just body keywords)
+ *           - RESET_LINK_PATH_PATTERNS rejects /reset, /forgot,
+ *             /recover paths
+ *           - the OTP extractor false-positive overhaul also lives
+ *             behind this stamp (Codex's PR #51 work)
+ */
+export const EXTRACTOR_VERSION = '2' as const
+
 // ------------------------------
 // Types
 // ------------------------------
@@ -396,6 +418,7 @@ export const MAGIC_LINK_KEYWORDS_BY_LANG: Readonly<
   Record<string, ReadonlyArray<string>>
 > = Object.freeze({
   en: [
+    // Original tight phrases
     'magic link',
     'login link',
     'sign-in link',
@@ -405,6 +428,28 @@ export const MAGIC_LINK_KEYWORDS_BY_LANG: Readonly<
     'verify email',
     'verify your email',
     'continue login',
+    // SSO / passwordless terminology
+    'passwordless',
+    'sso',
+    'single sign-on',
+    'single sign on',
+    // "Click the link" patterns (real fixture wording: "Click the
+    // link below to sign in" - all 19 magic-link fixtures use this)
+    'click the link below to sign in',
+    'click the link below to log in',
+    'click below to sign in',
+    'click below to log in',
+    'click here to sign in',
+    'click here to log in',
+    'use this link to sign in',
+    'use this link to log in',
+    // Authentication / token wording
+    'authentication link',
+    'authenticate via email',
+    'your sign-in link',
+    'your login link',
+    'sign-in token',
+    'login token',
   ],
   es: [
     'enlace mágico',
@@ -413,6 +458,17 @@ export const MAGIC_LINK_KEYWORDS_BY_LANG: Readonly<
     'inicia sesión desde el correo',
     'verificar correo',
     'verifica tu correo',
+    // SSO / passwordless
+    'sin contraseña',
+    'inicio de sesión único',
+    // Click patterns
+    'haz clic en el enlace para iniciar sesión',
+    'pulsa el enlace para iniciar sesión',
+    'usa este enlace para iniciar sesión',
+    // Token / link references
+    'enlace de inicio de sesión',
+    'tu enlace de acceso',
+    'enlace de autenticación',
   ],
   fr: [
     'lien magique',
@@ -420,6 +476,16 @@ export const MAGIC_LINK_KEYWORDS_BY_LANG: Readonly<
     'connexion par e-mail',
     'se connecter',
     'vérifier votre e-mail',
+    // SSO / passwordless
+    'sans mot de passe',
+    'authentification unique',
+    // Click patterns
+    'cliquez sur le lien pour vous connecter',
+    'cliquez ci-dessous pour vous connecter',
+    'utilisez ce lien pour vous connecter',
+    // Token / link references
+    'lien d\'authentification',
+    'votre lien de connexion',
   ],
   de: [
     'magic link',
@@ -428,29 +494,282 @@ export const MAGIC_LINK_KEYWORDS_BY_LANG: Readonly<
     'per e-mail anmelden',
     'e-mail-anmeldung',
     'e-mail bestätigen',
+    // SSO / passwordless
+    'passwortlos',
+    'passwortlose anmeldung',
+    'einmalige anmeldung',
+    'single sign-on',
+    // Click patterns
+    'klicken sie auf den link zum anmelden',
+    'klicken sie unten zum anmelden',
+    'klicken sie hier zum anmelden',
+    'verwenden sie diesen link zur anmeldung',
+    // Token / link references
+    'authentifizierungslink',
+    'ihr anmeldelink',
   ],
-  it: ['link magico', 'link di accesso', 'accedi', 'accedi via email', 'verifica email'],
+  it: [
+    'link magico',
+    'link di accesso',
+    'accedi',
+    'accedi via email',
+    'verifica email',
+    // SSO / passwordless
+    'senza password',
+    'accesso singolo',
+    // Click patterns
+    'fai clic sul link per accedere',
+    'clicca qui per accedere',
+    'usa questo link per accedere',
+    // Token / link references
+    'link di autenticazione',
+    'il tuo link di accesso',
+  ],
   pt: [
     'link mágico',
     'link de login',
     'entrar',
     'entrar por e-mail',
     'verificar e-mail',
+    // SSO / passwordless
+    'sem senha',
+    'login único',
+    // Click patterns
+    'clique no link para entrar',
+    'clique abaixo para entrar',
+    'use este link para entrar',
+    // Token / link references
+    'link de autenticação',
+    'seu link de login',
   ],
-  nl: ['magische link', 'inloglink', 'via e-mail inloggen', 'e-mail bevestigen'],
-  sv: ['magisk länk', 'inloggningslänk', 'logga in via e‑post', 'bekräfta e‑post'],
-  fi: ['taikalinkki', 'kirjautumislinkki', 'sähköposti-kirjautuminen', 'vahvista sähköposti'],
-  da: ['magisk link', 'loginlink', 'log ind via e‑mail', 'bekræft e‑mail'],
-  no: ['magisk lenke', 'innloggingslenke', 'logg inn via e‑post', 'bekreft e‑post'],
-  pl: ['magiczny link', 'link logowania', 'zaloguj przez e‑mail', 'potwierdź e‑mail'],
-  cs: ['magický odkaz', 'přihlašovací odkaz', 'přihlásit e‑mailem', 'ověřit e‑mail'],
-  tr: ['sihirli bağlantı', 'giriş bağlantısı', 'e‑postayla giriş', 'e‑posta doğrulama'],
-  ru: ['магическая ссылка', 'ссылка для входа', 'вход по e‑mail', 'подтвердите e‑mail'],
-  uk: ['магічне посилання', 'посилання для входу', 'вхід по e‑mail', 'підтвердьте e‑mail'],
-  ar: ['رابط سحري', 'رابط تسجيل الدخول', 'تسجيل الدخول عبر البريد', 'تأكيد البريد الإلكتروني'],
-  ja: ['マジックリンク', 'ログインリンク', 'メールでログイン', 'メール確認', 'メールアドレスを確認'],
-  ko: ['매직 링크', '로그인 링크', '이메일로 로그인', '이메일 확인'],
-  zh: ['魔法链接', '登录链接', '通过邮件登录', '验证邮箱', '用邮箱登录'],
+  nl: [
+    'magische link',
+    'inloglink',
+    'via e-mail inloggen',
+    'e-mail bevestigen',
+    // SSO / passwordless
+    'wachtwoordloos',
+    'eenmalige aanmelding',
+    // Click patterns
+    'klik op de link om in te loggen',
+    'klik hieronder om in te loggen',
+    'gebruik deze link om in te loggen',
+    // Token / link references
+    'authenticatielink',
+    'jouw inloglink',
+  ],
+  sv: [
+    'magisk länk',
+    'inloggningslänk',
+    'logga in via e‑post',
+    'bekräfta e‑post',
+    // SSO / passwordless
+    'lösenordsfri',
+    'enkel inloggning',
+    // Click patterns
+    'klicka på länken för att logga in',
+    'klicka nedan för att logga in',
+    'använd den här länken för att logga in',
+    // Token references
+    'autentiseringslänk',
+    'din inloggningslänk',
+  ],
+  fi: [
+    'taikalinkki',
+    'kirjautumislinkki',
+    'sähköposti-kirjautuminen',
+    'vahvista sähköposti',
+    // SSO / passwordless
+    'salasanaton',
+    'kertakirjautuminen',
+    // Click patterns
+    'klikkaa linkkiä kirjautuaksesi',
+    'käytä tätä linkkiä kirjautuaksesi',
+    // Token references
+    'todennuslinkki',
+    'oma kirjautumislinkkisi',
+  ],
+  da: [
+    'magisk link',
+    'loginlink',
+    'log ind via e‑mail',
+    'bekræft e‑mail',
+    // SSO / passwordless
+    'adgangskodefri',
+    'fælles login',
+    // Click patterns
+    'klik på linket for at logge ind',
+    'klik nedenfor for at logge ind',
+    'brug dette link for at logge ind',
+    // Token references
+    'godkendelseslink',
+    'dit loginlink',
+  ],
+  no: [
+    'magisk lenke',
+    'innloggingslenke',
+    'logg inn via e‑post',
+    'bekreft e‑post',
+    // SSO / passwordless
+    'passordfri',
+    'felles pålogging',
+    // Click patterns
+    'klikk på lenken for å logge inn',
+    'klikk nedenfor for å logge inn',
+    'bruk denne lenken for å logge inn',
+    // Token references
+    'autentiseringslenke',
+    'din innloggingslenke',
+  ],
+  pl: [
+    'magiczny link',
+    'link logowania',
+    'zaloguj przez e‑mail',
+    'potwierdź e‑mail',
+    // SSO / passwordless
+    'bez hasła',
+    'logowanie jednokrotne',
+    // Click patterns
+    'kliknij link, aby się zalogować',
+    'kliknij poniżej, aby się zalogować',
+    'użyj tego linku, aby się zalogować',
+    // Token references
+    'link uwierzytelniający',
+    'twój link logowania',
+  ],
+  cs: [
+    'magický odkaz',
+    'přihlašovací odkaz',
+    'přihlásit e‑mailem',
+    'ověřit e‑mail',
+    // SSO / passwordless
+    'bez hesla',
+    'jednotné přihlášení',
+    // Click patterns
+    'klikněte na odkaz pro přihlášení',
+    'klikněte níže pro přihlášení',
+    'použijte tento odkaz pro přihlášení',
+    // Token references
+    'ověřovací odkaz',
+    'váš přihlašovací odkaz',
+  ],
+  tr: [
+    'sihirli bağlantı',
+    'giriş bağlantısı',
+    'e‑postayla giriş',
+    'e‑posta doğrulama',
+    // SSO / passwordless
+    'şifresiz giriş',
+    'tek oturum',
+    // Click patterns
+    'giriş yapmak için bağlantıya tıklayın',
+    'giriş yapmak için aşağıdaki bağlantıya tıklayın',
+    'giriş yapmak için bu bağlantıyı kullanın',
+    // Token references
+    'kimlik doğrulama bağlantısı',
+    'giriş bağlantınız',
+  ],
+  ru: [
+    'магическая ссылка',
+    'ссылка для входа',
+    'вход по e‑mail',
+    'подтвердите e‑mail',
+    // SSO / passwordless
+    'без пароля',
+    'единый вход',
+    // Click patterns
+    'нажмите на ссылку для входа',
+    'нажмите ниже для входа',
+    'используйте эту ссылку для входа',
+    // Token references
+    'ссылка для аутентификации',
+    'ваша ссылка для входа',
+  ],
+  uk: [
+    'магічне посилання',
+    'посилання для входу',
+    'вхід по e‑mail',
+    'підтвердьте e‑mail',
+    // SSO / passwordless
+    'без пароля',
+    'єдиний вхід',
+    // Click patterns
+    'натисніть на посилання для входу',
+    'натисніть нижче для входу',
+    'використайте це посилання для входу',
+    // Token references
+    'посилання для автентифікації',
+    'ваше посилання для входу',
+  ],
+  ar: [
+    'رابط سحري',
+    'رابط تسجيل الدخول',
+    'تسجيل الدخول عبر البريد',
+    'تأكيد البريد الإلكتروني',
+    // SSO / passwordless
+    'بدون كلمة مرور',
+    'الدخول الموحد',
+    // Click patterns
+    'انقر على الرابط لتسجيل الدخول',
+    'انقر أدناه لتسجيل الدخول',
+    'استخدم هذا الرابط لتسجيل الدخول',
+    // Token references
+    'رابط المصادقة',
+    'رابط تسجيل الدخول الخاص بك',
+  ],
+  ja: [
+    'マジックリンク',
+    'ログインリンク',
+    'メールでログイン',
+    'メール確認',
+    'メールアドレスを確認',
+    // SSO / passwordless
+    'パスワード不要',
+    'パスワードなし',
+    'シングルサインオン',
+    // Click patterns
+    'ログインするにはリンクをクリック',
+    '以下のリンクをクリックしてログイン',
+    'このリンクを使ってログイン',
+    // Token references
+    '認証リンク',
+    'あなたのログインリンク',
+  ],
+  ko: [
+    '매직 링크',
+    '로그인 링크',
+    '이메일로 로그인',
+    '이메일 확인',
+    // SSO / passwordless
+    '비밀번호 없이',
+    '비밀번호 없는 로그인',
+    '싱글 사인온',
+    // Click patterns
+    '로그인하려면 링크를 클릭',
+    '아래 링크를 클릭하여 로그인',
+    '이 링크를 사용하여 로그인',
+    // Token references
+    '인증 링크',
+    '로그인 링크',
+  ],
+  zh: [
+    '魔法链接',
+    '登录链接',
+    '通过邮件登录',
+    '验证邮箱',
+    '用邮箱登录',
+    // SSO / passwordless
+    '免密码',
+    '无密码登录',
+    '单点登录',
+    // Click patterns
+    '点击链接登录',
+    '点击下方链接登录',
+    '使用此链接登录',
+    // Token references
+    '验证链接',
+    '您的登录链接',
+  ],
 })
 
 /** Flattened keyword lists (legacy-compatible) */
@@ -482,7 +801,15 @@ export const NEGATIVE_CONTEXT_REGEX: RegExp = buildKeywordRegex(
   NEGATIVE_CONTEXT_KEYWORDS_TOTP
 )
 
-/** Link words to reject auto-open (handled as "danger"). */
+/**
+ * Link words to reject auto-open (handled as "danger"). Substring
+ * matched (case-insensitive) against href and anchor text in
+ * scoreLinkCandidate. Phrases like "delete account" / "verify account
+ * deletion" appear in destructive flows that should never be surfaced
+ * as magic links - the URL itself often looks innocuous
+ * (/verify-account-deletion?token=...) but the anchor text or
+ * surrounding copy reveals the intent.
+ */
 export const DANGEROUS_LINK_KEYWORDS: ReadonlyArray<string> = Object.freeze([
   'password reset',
   'reset your password',
@@ -490,6 +817,124 @@ export const DANGEROUS_LINK_KEYWORDS: ReadonlyArray<string> = Object.freeze([
   'preferences',
   'support',
   'help center',
+  // Destructive account actions
+  'delete account',
+  'delete your account',
+  'account deletion',
+  'close account',
+  'close your account',
+  'account closure',
+  'remove account',
+  'cancel account',
+  'cancel your account',
+  'cancel subscription',
+  'terminate account',
+  'deactivate account',
+])
+
+/**
+ * URL path segments that indicate a password-reset / account-recovery
+ * flow. These are sensitive: opening a reset link consumes the token
+ * and forces the user into a re-auth flow they may not have initiated.
+ * Magic-link extraction rejects URLs whose pathname matches one of
+ * these patterns.
+ *
+ * Match is anchored at a path segment boundary (`/...` followed by
+ * `/`, `?`, `#`, or end-of-string) so that legitimate paths like
+ * `/resetting-quotas` or `/password-strength-meter` are not blocked.
+ */
+export const RESET_LINK_PATH_PATTERNS: ReadonlyArray<RegExp> = Object.freeze([
+  /\/(?:reset|forgot|recover)(?:[/?#]|$)/i,
+  /\/(?:reset|forgot|recover)[-_](?:password|account|access)(?:[/?#]|$)/i,
+  /\/(?:password|account)[-_](?:reset|recovery)(?:[/?#]|$)/i,
+])
+
+/**
+ * URL path patterns for destructive account actions. These flow
+ * through the magic-link surface because the URL often contains
+ * "verify" / "confirm" (e.g. /verify-account-deletion, /confirm-close-
+ * account). The MAGIC_LINK_URL_HINTS scoring boost for "verify" and
+ * "confirm" pushes them above threshold, and pathname-anchored verify
+ * detection in popup-cache (which requires `/verify/`) labels them as
+ * 'login' so they show in the popup. Reject at extraction time.
+ *
+ * Pattern shapes (all anchored at path segment boundaries):
+ *   /(verify|confirm)-(action)               action verb adjacent to verify
+ *   /(verify|confirm)-account-(deletion|...) verify + account + noun
+ *   /(verify|confirm)-account-(action)       verify + account + verb
+ *   /(verify|confirm)-(action)-account       verify + verb + account
+ *   /(action)-account                         delete-account, close-account, ...
+ *   /account/(action|noun)                    /account/delete, /account/closure
+ *   /(close|delete|cancel)-subscription
+ *   /account-(deletion|closure|...)           noun forms after /account-
+ */
+const DESTRUCTIVE_VERBS = 'delete|close|cancel|terminate|remove|deactivate'
+const DESTRUCTIVE_NOUNS = 'deletion|closure|removal|termination|cancellation|deactivation'
+
+export const DESTRUCTIVE_ACTION_PATH_PATTERNS: ReadonlyArray<RegExp> = Object.freeze([
+  // /verify-delete, /confirm-close, etc.
+  new RegExp(`\\/(?:verify|confirm)[-_](?:${DESTRUCTIVE_VERBS})(?:[/?#]|$)`, 'i'),
+  // /verify-delete-account, /confirm-close-account
+  new RegExp(`\\/(?:verify|confirm)[-_](?:${DESTRUCTIVE_VERBS})[-_]account(?:[/?#]|$)`, 'i'),
+  // /verify-account-deletion, /confirm-account-closure, etc. (noun)
+  new RegExp(`\\/(?:verify|confirm)[-_]account[-_](?:${DESTRUCTIVE_NOUNS})(?:[/?#]|$)`, 'i'),
+  // /verify-account-delete, /confirm-account-close, etc. (verb after account)
+  new RegExp(`\\/(?:verify|confirm)[-_]account[-_](?:${DESTRUCTIVE_VERBS})(?:[/?#]|$)`, 'i'),
+  // /delete-account, /close-account, etc.
+  new RegExp(`\\/(?:${DESTRUCTIVE_VERBS})[-_]account(?:[/?#]|$)`, 'i'),
+  // /account/delete, /account/deletion, /account/closure, etc.
+  new RegExp(`\\/account\\/(?:${DESTRUCTIVE_VERBS}|${DESTRUCTIVE_NOUNS})(?:[/?#]|$)`, 'i'),
+  // /account-deletion, /account-closure, etc.
+  new RegExp(`\\/account[-_](?:${DESTRUCTIVE_NOUNS})(?:[/?#]|$)`, 'i'),
+  // /close-subscription, /cancel-subscription, /delete-subscription
+  /\/(?:close|delete|cancel)[-_]subscription(?:[/?#]|$)/i,
+])
+
+/**
+ * Phrases that, when present in body or subject, mark the entire
+ * email as a destructive / sensitive flow - regardless of how
+ * innocent any individual link inside looks. Used by extractMagicLinks
+ * to skip the email entirely before scoring URLs.
+ *
+ * Without this whole-email guard, a generic anchor like
+ *   <a href="https://app/action?token=abc">Continue</a>
+ * inside an email titled "Confirm account deletion" would extract
+ * as a magic link (the URL has no destructive markers, the anchor
+ * text is innocuous). Per-anchor checks fundamentally can't catch
+ * this class because the danger context lives in the surrounding
+ * copy, not in the link itself.
+ *
+ * Substring matched (case-insensitive). Each phrase is at least
+ * 2 words to avoid false-rejecting legitimate magic-link emails
+ * that incidentally use a single word like "reset" or "delete".
+ */
+export const HARD_DANGER_BODY_KEYWORDS: ReadonlyArray<string> = Object.freeze([
+  // Password reset
+  'password reset',
+  'reset your password',
+  'reset password',
+  'forgot your password',
+  'forgot password',
+  // Account closure / deletion
+  'delete your account',
+  'delete account',
+  'account deletion',
+  'account closure',
+  'account termination',
+  'close your account',
+  'close account',
+  'cancel your account',
+  'cancel account',
+  'cancel subscription',
+  'remove your account',
+  'remove account',
+  'terminate your account',
+  'terminate account',
+  'deactivate your account',
+  'deactivate account',
+  'confirm account deletion',
+  'confirm account closure',
+  'confirm deletion',
 ])
 
 /** URL fragments that *positively* hint at login/verify links. */

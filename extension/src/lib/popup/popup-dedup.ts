@@ -31,20 +31,80 @@ export function normalizeUrl(url: string): string {
     // Start with origin + pathname
     let normalized = u.origin + u.pathname
 
-    // Include token-like query params (common in magic links)
-    const tokenParams = ['token', 'code', 'verify', 'session', 'key', 'id']
-    const params = new URLSearchParams(u.search)
+    // Include token-like query params (common in magic links).
+    // Two magic links with different secrets MUST normalize differently
+    // even when they share the path, otherwise dedupeByKey drops one.
+    // Provider conventions vary widely:
+    //   token / code / verify / session / key / id  - generic
+    //   token_hash / oobCode                          - Supabase, Firebase
+    //   auth_token / login_token / access_token       - Auth0, Stytch, custom
+    //   ticket                                        - Auth0 / SAML
+    //   state                                         - OAuth state param
+    //   t / k / sig                                   - shorthand variants
+    const tokenParams = [
+      'token',
+      'code',
+      'verify',
+      'session',
+      'key',
+      'id',
+      'token_hash',
+      'oobcode',
+      'auth_token',
+      'login_token',
+      'access_token',
+      'magic_token',
+      'ticket',
+      'state',
+      't',
+      'k',
+      'sig',
+      'signature',
+    ]
+    const lowerAllow = new Set(tokenParams.map(p => p.toLowerCase()))
+
+    const collect = (raw: string, dest: string[]): void => {
+      if (!raw) return
+      const params = new URLSearchParams(raw)
+      for (const [name, value] of params.entries()) {
+        if (lowerAllow.has(name.toLowerCase()) && value) {
+          dest.push(`${name.toLowerCase()}=${value}`)
+        }
+      }
+    }
 
     const relevantParams: string[] = []
-    for (const key of tokenParams) {
-      const value = params.get(key)
-      if (value) {
-        relevantParams.push(`${key}=${value}`)
+    collect(u.search, relevantParams)
+
+    // OAuth implicit flow and several auth providers (Firebase action
+    // links, Auth0 redirect callbacks, Stytch return URLs) put tokens
+    // in the URL fragment instead of the query string. Without parsing
+    // the fragment, two distinct magic links like
+    //   https://app/callback#access_token=A
+    //   https://app/callback#access_token=B
+    // would normalize identically and dedup would drop one.
+    //
+    // SPA hash routers (#/auth/callback?access_token=A) put a path
+    // before the query inside the hash. Feeding the whole hash to
+    // URLSearchParams would treat `/auth/callback?access_token` as a
+    // key name, not split on `?`. Strip the leading hash-path before
+    // the first `?` (if any) so the params are recovered.
+    const fragmentParams: string[] = []
+    if (u.hash && u.hash.length > 1) {
+      let hashRaw = u.hash.slice(1)
+      if (hashRaw.startsWith('/') || hashRaw.startsWith('!')) {
+        const qIdx = hashRaw.indexOf('?')
+        hashRaw = qIdx === -1 ? '' : hashRaw.slice(qIdx + 1)
       }
+      collect(hashRaw, fragmentParams)
     }
 
     if (relevantParams.length > 0) {
       normalized += '?' + relevantParams.sort().join('&')
+    }
+
+    if (fragmentParams.length > 0) {
+      normalized += '#' + fragmentParams.sort().join('&')
     }
 
     return normalized

@@ -223,6 +223,43 @@ describe('cooldown-registry', () => {
     });
   });
 
+  describe('forget (per-field reset)', () => {
+    it('drops a detected field from cooldown immediately', () => {
+      const field = createMockField('forget-1');
+      registry.markDetected(field);
+      expect(registry.isInCooldown(field)).toBe(true);
+
+      registry.forget(field);
+      expect(registry.isInCooldown(field)).toBe(false);
+    });
+
+    it('drops a rejected field from cooldown immediately', () => {
+      const field = createMockField('forget-2');
+      registry.markRejected(field);
+      expect(registry.isInCooldown(field)).toBe(true);
+
+      registry.forget(field);
+      expect(registry.isInCooldown(field)).toBe(false);
+    });
+
+    it('only forgets the specified field', () => {
+      const a = createMockField('forget-a');
+      const b = createMockField('forget-b');
+      registry.markDetected(a);
+      registry.markDetected(b);
+
+      registry.forget(a);
+      expect(registry.isInCooldown(a)).toBe(false);
+      expect(registry.isInCooldown(b)).toBe(true);
+    });
+
+    it('forgetting an unknown field is a no-op', () => {
+      const field = createMockField('forget-unknown');
+      expect(() => registry.forget(field)).not.toThrow();
+      expect(registry.isInCooldown(field)).toBe(false);
+    });
+  });
+
   describe('memory management', () => {
     it('WeakMap allows garbage collection when elements removed', () => {
       // Create and mark 100 fields

@@ -206,5 +206,19 @@ describe('detectSplitInputGroup', () => {
       const first = container.querySelector<HTMLInputElement>('input')!
       expect(detectSplitInputGroup(first)).toBeNull()
     })
+
+    it('rejects wrapped maxLength=-1 text fields without sequential or OTP evidence', () => {
+      container.innerHTML = `
+        <form>
+          <div><input type="text" name="street" /></div>
+          <div><input type="text" name="city" /></div>
+          <div><input type="text" name="state" /></div>
+          <div><input type="text" name="postcode" /></div>
+          <div><input type="text" name="country" /></div>
+        </form>
+      `
+      const first = container.querySelector<HTMLInputElement>('input')!
+      expect(detectSplitInputGroup(first)).toBeNull()
+    })
   })
 })

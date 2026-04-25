@@ -33,6 +33,24 @@ import type { PopupCacheManager } from "./popup-cache"
 const SESSION_STORAGE_KEY = "inboxkey.sessions"
 
 type SessionStatus = "active" | "filled" | "timedout" | "canceled"
+type SessionChannel = 'email' | 'sms'
+
+function isGoogleComUrl(url: string): boolean {
+  try {
+    const hostname = new URL(url).hostname.toLowerCase()
+    return hostname === 'google.com' || hostname.endsWith('.google.com')
+  } catch {
+    return false
+  }
+}
+
+function getEffectiveChannelsForUrl(channels: SessionChannel[], url: string): SessionChannel[] {
+  if (!isGoogleComUrl(url)) {
+    return channels
+  }
+
+  return channels.filter(channel => channel !== 'sms')
+}
 
 interface SessionExpected {
   length?: number
@@ -67,7 +85,7 @@ interface SessionState {
    * Used for channel-aware adapter filtering during polling.
    * @since SMS support
    */
-  detectedChannels: Array<'email' | 'sms'>
+  detectedChannels: SessionChannel[]
   /**
    * Effective session timeout in seconds, after channel-specific capping.
    * Sent back to content script for chip timer. Default 45s for all session types.
@@ -150,7 +168,7 @@ export class SessionController {
     url: string
     expected: SessionExpected
     timeoutSeconds?: number
-    detectedChannels?: Array<'email' | 'sms'>
+    detectedChannels?: SessionChannel[]
   }): Promise<SessionState> {
     const { tabId, url, expected, timeoutSeconds, detectedChannels } = params
 
@@ -165,7 +183,7 @@ export class SessionController {
     const now = Date.now()
 
     // Compute effective timeout (same for all session types)
-    const channels = detectedChannels ?? ['email']
+    const channels = getEffectiveChannelsForUrl(detectedChannels ?? ['email'], url)
     const effectiveTimeout = timeoutSeconds ?? 60
 
     // Use fixed poll schedule, filtered by effective timeout
@@ -384,7 +402,11 @@ export class SessionController {
 
       // Channel-aware filtering: only poll adapters matching detected channels
       // Fallback to ['email'] for sessions restored from storage before SMS support
-      const channels = session.detectedChannels ?? ['email']
+      const channels = getEffectiveChannelsForUrl(session.detectedChannels ?? ['email'], session.url)
+      if (channels.length === 0) {
+        console.log('[SessionController] No permitted channels for this session URL, skipping poll')
+        return null
+      }
       const adapters = allAdapters.filter(adapter => {
         if (adapter.id === 'google-messages') {
           return channels.includes('sms')
@@ -475,6 +497,7 @@ export class SessionController {
               siteMatch: undefined,
               mailboxId: mailbox.id,
               senderETLD,
+              extractionScore: candidate.code.score,
             })
           }
 
@@ -488,6 +511,7 @@ export class SessionController {
               siteMatch: candidate.link.domain,
               mailboxId: mailbox.id,
               senderETLD,
+              extractionScore: candidate.link.score,
             })
           }
 

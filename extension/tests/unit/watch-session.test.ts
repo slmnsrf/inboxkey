@@ -151,6 +151,13 @@ describe("WatchSession", () => {
     // Restore defaults that previous tests may have overridden.
     // vi.clearAllMocks() clears call history but not implementations.
     vi.mocked(hasEmailContext).mockReturnValue(true)
+    vi.mocked(detectSplitInputGroup).mockReturnValue(null)
+    vi.mocked(StorageFactory.create).mockResolvedValue({
+      getSettings: vi.fn().mockResolvedValue({ sessionTimeoutSeconds: 20 }),
+      getMailboxes: vi.fn().mockResolvedValue([
+        { id: 'mb-default', providerId: 'gmail', email: 'test@example.com' },
+      ]),
+    } as never)
     smsCache._resetSmsCacheForTest()
   })
 
@@ -243,15 +250,58 @@ describe("WatchSession", () => {
     smsCache._resetSmsCacheForTest()
   })
 
-  it("should skip watch session on Google sign-in when only Google Messages is paired", async () => {
-    // Simulate a Google sign-in page
+  it("bypasses email-context veto for tokenized OTP autocomplete", async () => {
+    vi.mocked(hasEmailContext).mockReturnValue(false)
+
+    const field = documentRef.createElement("input")
+    field.setAttribute("autocomplete", "section-login one-time-code")
+    documentRef.body.appendChild(field)
+
+    const detection = createDetectionResult(field)
+    const onVetoed = vi.fn()
+    const onCodeFound = vi.fn()
+
+    const session = new WatchSession(field, detection, { onCodeFound, onVetoed })
+    await session.start()
+
+    expect(onVetoed).not.toHaveBeenCalled()
+    expect(chrome.runtime.connect).toHaveBeenCalledWith({ name: "watch-session" })
+    expect(port.postMessage).toHaveBeenCalledWith(
+      expect.objectContaining({ type: "START_SESSION" })
+    )
+  })
+
+  it("does not let split-input alone bypass email-context veto", async () => {
+    vi.mocked(hasEmailContext).mockReturnValue(false)
+
+    const field = documentRef.createElement("input")
+    field.maxLength = 1
+    documentRef.body.appendChild(field)
+    vi.mocked(detectSplitInputGroup).mockReturnValue({
+      inputs: [field],
+      representative: field,
+      pattern: "maxlength-1",
+    })
+
+    const detection = createDetectionResult(field)
+    const onVetoed = vi.fn()
+    const onCodeFound = vi.fn()
+
+    const session = new WatchSession(field, detection, { onCodeFound, onVetoed })
+    await session.start()
+
+    expect(onVetoed).toHaveBeenCalledTimes(1)
+    expect(chrome.runtime.connect).not.toHaveBeenCalled()
+    expect(port.postMessage).not.toHaveBeenCalled()
+  })
+
+  it("should skip watch session on google.com when only Google Messages is paired", async () => {
     Object.defineProperty(window, "location", {
       value: { href: "https://accounts.google.com/signin/v2/identifier" },
       writable: true,
       configurable: true,
     })
 
-    // User has ONLY google-messages (no Gmail, no IMAP)
     const gmOnlyStorage = {
       getSettings: vi.fn().mockResolvedValue({ sessionTimeoutSeconds: 20 }),
       getMailboxes: vi.fn().mockResolvedValue([
@@ -275,15 +325,13 @@ describe("WatchSession", () => {
     expect(port.postMessage).not.toHaveBeenCalled()
   })
 
-  it("should proceed on Google sign-in when Gmail is also paired alongside GM", async () => {
-    // Simulate a Google sign-in page
+  it("should proceed on google.com with email providers but strip Google Messages", async () => {
     Object.defineProperty(window, "location", {
-      value: { href: "https://accounts.google.com/signin/v2/identifier" },
+      value: { href: "https://myaccount.google.com/security" },
       writable: true,
       configurable: true,
     })
 
-    // Mixed: user has both Gmail AND google-messages
     const mixedStorage = {
       getSettings: vi.fn().mockResolvedValue({ sessionTimeoutSeconds: 20 }),
       getMailboxes: vi.fn().mockResolvedValue([
@@ -296,7 +344,10 @@ describe("WatchSession", () => {
     const field = documentRef.createElement("input")
     documentRef.body.appendChild(field)
 
-    const detection = createDetectionResult(field)
+    const detection: DetectionResult = {
+      ...createDetectionResult(field),
+      detectedChannels: ["email", "sms"],
+    }
     const onVetoed = vi.fn()
     const onCodeFound = vi.fn()
 
@@ -306,12 +357,49 @@ describe("WatchSession", () => {
     expect(onVetoed).not.toHaveBeenCalled()
     expect(chrome.runtime.connect).toHaveBeenCalledWith({ name: "watch-session" })
     expect(port.postMessage).toHaveBeenCalledWith(
-      expect.objectContaining({ type: "START_SESSION" })
+      expect.objectContaining({
+        type: "START_SESSION",
+        detectedChannels: ["email"],
+      })
     )
   })
 
-  it("should proceed on Google sign-in when only Gmail is paired (no GM)", async () => {
-    // Confirms the skip check doesn't over-trigger based on URL alone
+  it("should not let a stripped SMS channel bypass email context on google.com", async () => {
+    Object.defineProperty(window, "location", {
+      value: { href: "https://accounts.google.com/signin/v2/challenge" },
+      writable: true,
+      configurable: true,
+    })
+
+    const mixedStorage = {
+      getSettings: vi.fn().mockResolvedValue({ sessionTimeoutSeconds: 20 }),
+      getMailboxes: vi.fn().mockResolvedValue([
+        { id: "mb-gmail", providerId: "gmail", email: "test@example.com" },
+        { id: "mb-gm", providerId: "google-messages", email: "sms@google-messages.local" },
+      ]),
+    }
+    vi.mocked(StorageFactory.create).mockResolvedValue(mixedStorage as never)
+    vi.mocked(hasEmailContext).mockReturnValue(false)
+
+    const field = documentRef.createElement("input")
+    documentRef.body.appendChild(field)
+
+    const detection: DetectionResult = {
+      ...createDetectionResult(field),
+      detectedChannels: ["email", "sms"],
+    }
+    const onVetoed = vi.fn()
+    const onCodeFound = vi.fn()
+
+    const session = new WatchSession(field, detection, { onCodeFound, onVetoed })
+    await session.start()
+
+    expect(onVetoed).toHaveBeenCalledTimes(1)
+    expect(chrome.runtime.connect).not.toHaveBeenCalled()
+    expect(port.postMessage).not.toHaveBeenCalled()
+  })
+
+  it("should proceed on google.com when only Gmail is paired", async () => {
     Object.defineProperty(window, "location", {
       value: { href: "https://accounts.google.com/signin/v2/identifier" },
       writable: true,
@@ -344,10 +432,9 @@ describe("WatchSession", () => {
     )
   })
 
-  it("should also skip on signin.google.com when only Google Messages is paired", async () => {
-    // Confirms the skip covers all hostnames in GOOGLE_SIGNIN_HOSTNAMES, not just accounts.google.com
+  it("should skip on non-signin google.com subdomains when only Google Messages is paired", async () => {
     Object.defineProperty(window, "location", {
-      value: { href: "https://signin.google.com/some/path" },
+      value: { href: "https://mail.google.com/mail/u/0/" },
       writable: true,
       configurable: true,
     })
@@ -375,36 +462,38 @@ describe("WatchSession", () => {
     expect(port.postMessage).not.toHaveBeenCalled()
   })
 
-  it("should NOT skip on myaccount.google.com (post-auth dashboard, not sign-in)", async () => {
-    // Regression test: myaccount.google.com is the account management dashboard,
-    // not a sign-in page. SMS-only users should still get sessions there because
-    // third-party OTP fields may legitimately appear.
+  it("should skip SMS-only detection on google.com even with Gmail also paired", async () => {
     Object.defineProperty(window, "location", {
       value: { href: "https://myaccount.google.com/security" },
       writable: true,
       configurable: true,
     })
 
-    const gmOnlyStorage = {
+    const mixedStorage = {
       getSettings: vi.fn().mockResolvedValue({ sessionTimeoutSeconds: 20 }),
       getMailboxes: vi.fn().mockResolvedValue([
+        { id: "mb-gmail", providerId: "gmail", email: "test@example.com" },
         { id: "mb-gm", providerId: "google-messages", email: "sms@google-messages.local" },
       ]),
     }
-    vi.mocked(StorageFactory.create).mockResolvedValue(gmOnlyStorage as never)
+    vi.mocked(StorageFactory.create).mockResolvedValue(mixedStorage as never)
 
     const field = documentRef.createElement("input")
     documentRef.body.appendChild(field)
 
-    const detection = createDetectionResult(field)
+    const detection: DetectionResult = {
+      ...createDetectionResult(field),
+      detectedChannels: ["sms"],
+    }
     const onVetoed = vi.fn()
     const onCodeFound = vi.fn()
 
     const session = new WatchSession(field, detection, { onCodeFound, onVetoed })
     await session.start()
 
-    expect(onVetoed).not.toHaveBeenCalled()
-    expect(chrome.runtime.connect).toHaveBeenCalledWith({ name: "watch-session" })
+    expect(onVetoed).toHaveBeenCalledTimes(1)
+    expect(chrome.runtime.connect).not.toHaveBeenCalled()
+    expect(port.postMessage).not.toHaveBeenCalled()
   })
 
   it("should invoke callback when SESSION_CODE_FOUND arrives", async () => {

@@ -66,6 +66,14 @@ export interface CooldownRegistry {
    * Should be called periodically to prevent memory growth
    */
   cleanup(): void;
+
+  /**
+   * Drop the cooldown entry for a single field. Used by session
+   * cleanup so a resend / retry on the same DOM input can be
+   * re-detected without waiting for the natural cooldown TTL.
+   * @param field - Input field to forget
+   */
+  forget(field: HTMLInputElement): void;
 }
 
 /**
@@ -212,6 +220,14 @@ export function createCooldownRegistry(): CooldownRegistry {
       toDelete.forEach((key) => {
         persistentCache.delete(key);
       });
+    },
+
+    forget(field: HTMLInputElement): void {
+      // Both caches must drop the entry. WeakMap delete is the fast
+      // path; persistentCache requires the field key.
+      weakCache.delete(field);
+      const fieldKey = generateFieldKey(field);
+      persistentCache.delete(fieldKey);
     },
   };
 }

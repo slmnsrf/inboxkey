@@ -15,6 +15,9 @@ vi.mock('@inboxkey/extraction-core', () => ({
       links: [],
     }
   }),
+  // Stub the extractor version constant the polling service stamps into
+  // its seen-message keys. Real value lives in extraction-types.ts.
+  EXTRACTOR_VERSION: '1',
 }))
 
 // Mock popup-config

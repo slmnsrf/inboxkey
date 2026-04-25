@@ -103,6 +103,15 @@ export interface StoredCode {
   receivedAt?: number
   /** Optional domain affinity score for popup display prioritization */
   domainAffinity?: number
+  /**
+   * Confidence score from extraction (0..1). For codes this is the
+   * OTP extractor's confidence; for magic links it's
+   * extractMagicLinks' link score. Used in popup cache to feed real
+   * ranking signal instead of a hardcoded fallback. Optional for
+   * backward compatibility with persisted records that predate this
+   * field.
+   */
+  extractionScore?: number
 }
 
 /**
