@@ -154,13 +154,18 @@ export function extractMagicLinks(
   // Build candidates
   const candidates: LinkCandidate[] = []
 
-  // 1) From <a href="...">anchor</a>
+  // 1) From <a href="...">anchor</a>. Pass each anchor's own
+  //    pre-built local-context window so per-anchor danger checks
+  //    don't collapse onto the first occurrence of repeated visible
+  //    text like "Continue" / "Sign in".
   for (const a of anchors) {
-    const cand = scoreLinkCandidate(a.href, a.anchorText, text, ctx, subject)
+    const cand = scoreLinkCandidate(a.href, a.anchorText, text, ctx, subject, a.localContext)
     if (cand) candidates.push(cand)
   }
 
-  // 2) From plain text URLs (avoid duplicates)
+  // 2) From plain text URLs (avoid duplicates). No localContext for
+  //    raw URLs - hasLocalDangerContext locates them by URL string,
+  //    which is unique enough that first-occurrence is safe.
   for (const href of rawUrls) {
     // Skip if already present from anchors
     if (anchors.some(a => sameUrl(a.href, href))) continue
@@ -205,9 +210,27 @@ function htmlToText(html: string): string {
   return normalizeWhitespace(s)
 }
 
-/** Extract <a href="..."> anchors with visible text (regex-based for worker safety). */
-function harvestAnchors(html: string): Array<{ href: string; anchorText: string }> {
-  const res: Array<{ href: string; anchorText: string }> = []
+/**
+ * Extract <a href="..."> anchors with visible text (regex-based for
+ * worker safety).
+ *
+ * Each anchor also carries a `localContext` snippet derived from the
+ * raw HTML around its position. This is what hasLocalDangerContext
+ * checks against - using indexOf on the normalized body text would
+ * latch every <a>Continue</a> onto the *first* "Continue" in the
+ * email, so a safe early Continue link followed by a destructive
+ * "To delete your account, click [Continue]" pair would have BOTH
+ * anchors checked against the safe early context. Per-anchor HTML
+ * windowing avoids that ambiguity.
+ *
+ * Window sizes are wider in HTML (1500 before / 600 after) than the
+ * visible-text targets (~240 before / ~80 after) because tag stripping
+ * compresses the byte count substantially. The before-heavy bias
+ * matches real email structure: purpose statements precede the link;
+ * security footers follow it.
+ */
+function harvestAnchors(html: string): Array<{ href: string; anchorText: string; localContext: string }> {
+  const res: Array<{ href: string; anchorText: string; localContext: string }> = []
   if (!html) return res
 
   const re = /<a\b[^>]*?href\s*=\s*["']([^"']+)["'][^>]*>([\s\S]*?)<\/a>/gi
@@ -218,7 +241,28 @@ function harvestAnchors(html: string): Array<{ href: string; anchorText: string 
     // deny obvious dangerous anchors quickly
     if (containsAny(href.toLowerCase(), DANGEROUS_LINK_KEYWORDS)) continue
     const text = normalizeWhitespace(stripTags(m[2] || ''))
-    res.push({ href, anchorText: text })
+
+    // Per-anchor context for hasLocalDangerContext. HTML window
+    // around the regex match position, then strip tags and normalize.
+    // Exclude the anchor's own text from the window (it would dilute
+    // before/after balance and could carry its own keyword like
+    // "Sign in" into the danger check).
+    const beforeStart = Math.max(0, m.index - 1500)
+    const afterEnd = Math.min(html.length, m.index + m[0].length + 600)
+    const beforeHtml = html.slice(beforeStart, m.index)
+    const afterHtml = html.slice(m.index + m[0].length, afterEnd)
+    const beforeText = normalizeWhitespace(stripTags(beforeHtml))
+    const afterText = normalizeWhitespace(stripTags(afterHtml))
+    // Trim each side to the visible-text target length, before-heavy.
+    const beforeWindow = beforeText.length > 240
+      ? beforeText.slice(beforeText.length - 240)
+      : beforeText
+    const afterWindow = afterText.length > 80
+      ? afterText.slice(0, 80)
+      : afterText
+    const localContext = `${beforeWindow} ${afterWindow}`.trim()
+
+    res.push({ href, anchorText: text, localContext })
   }
   return res
 }
@@ -240,8 +284,18 @@ function normalizeWhitespace(s: string): string {
   return (s || '').replace(/\s+/g, ' ').trim()
 }
 
-/** Build and score one link candidate from context. Returns null if clearly unsafe/noise. */
-function scoreLinkCandidate(href: string, anchorText: string, fullText: string, ctx: ExtractContext, subjectLower: string): LinkCandidate | null {
+/**
+ * Build and score one link candidate from context. Returns null if
+ * clearly unsafe/noise.
+ *
+ * `localContext` is the per-anchor visible-text window from
+ * harvestAnchors; for raw URLs it's omitted and the danger check
+ * falls back to locating the URL in the full body. The distinction
+ * matters because anchor visible text often repeats ("Continue" /
+ * "Sign in" appear many times in promotional emails) so a body-wide
+ * indexOf would attach every anchor to the first occurrence.
+ */
+function scoreLinkCandidate(href: string, anchorText: string, fullText: string, ctx: ExtractContext, subjectLower: string, localContext?: string): LinkCandidate | null {
   try { new URL(href) } catch { return null }
 
   const hrefLower = href.toLowerCase()
@@ -278,7 +332,7 @@ function scoreLinkCandidate(href: string, anchorText: string, fullText: string, 
   // "Passwordless"; href path /login, /signin, /magic, /session)
   // overrides the veto - those signals are precise enough that a
   // co-located warning shouldn't kill the link.
-  if (hasLocalDangerContext(fullText, href, anchorText) && !hasStrongLoginEvidence(href, anchorText)) {
+  if (hasLocalDangerContext(fullText, href, anchorText, localContext) && !hasStrongLoginEvidence(href, anchorText)) {
     return null
   }
 
@@ -390,33 +444,43 @@ function safeHostname(u: string): string {
 /**
  * True if the visible text immediately around the link contains a
  * hard-danger phrase. "Around" leans heavily before the link because
- * email security footers (often AFTER the link) routinely say
- * "If this wasn't you, reset your password" - that's noise, not
- * intent. Anchors are located via their visible text; raw URLs by
- * the URL string itself.
+ * email security footers (often AFTER the link) routinely say "If
+ * this wasn't you, reset your password" - that's noise, not intent.
+ *
+ * For HTML anchors, callers pass `localContext` - the per-anchor
+ * visible-text window built from the anchor's actual position in the
+ * source HTML. This is the precise path: every anchor gets its own
+ * neighborhood, even when many anchors share visible text.
+ *
+ * For raw plain-text URLs, no localContext is provided and we
+ * locate the URL by searching `fullText`. Raw URLs almost never
+ * repeat (they carry unique tokens), so first-occurrence is safe.
  */
-function hasLocalDangerContext(fullText: string, href: string, anchorText: string): boolean {
-  const text = fullText || ''
-  const probe = (anchorText || href).trim()
-  if (!probe) return false
+function hasLocalDangerContext(
+  fullText: string,
+  href: string,
+  anchorText: string,
+  localContext?: string,
+): boolean {
+  // Anchor path: harvest provided a precomputed window.
+  if (localContext !== undefined) {
+    if (!localContext) return false
+    return containsAny(localContext.toLowerCase(), HARD_DANGER_BODY_KEYWORDS)
+  }
 
-  // Locate the link in the body. For HTML anchors, the anchor's
-  // VISIBLE TEXT lives in the body after htmlToText; the href does
-  // not. For raw plain-text URLs, the URL itself is in the body.
-  const idx = text.indexOf(probe)
+  // Raw-URL path: locate by URL string in body.
+  const text = fullText || ''
+  const idx = text.indexOf(href)
   if (idx === -1) {
-    // Anchor text not in normalized body (e.g. emoji-only or empty);
-    // fall back to anchor text + href in isolation.
+    // URL not directly in normalized body (rare). Fall back to
+    // checking anchor text + href in isolation.
     const fallback = (anchorText + ' ' + href).toLowerCase()
     return containsAny(fallback, HARD_DANGER_BODY_KEYWORDS)
   }
 
-  // Before-heavy window: 240 chars before, 80 after. Tuned to catch
-  // pre-link "purpose" statements ("To delete your account, click
-  // below:") without grabbing a full security footer that may sit
-  // 200+ chars after the link.
+  // Before-heavy window: 240 chars before, 80 after.
   const start = Math.max(0, idx - 240)
-  const end = Math.min(text.length, idx + probe.length + 80)
+  const end = Math.min(text.length, idx + href.length + 80)
   const window = text.slice(start, end).toLowerCase()
   return containsAny(window, HARD_DANGER_BODY_KEYWORDS)
 }

@@ -306,5 +306,48 @@ describe('destructive-action link rejection', () => {
       const result = extractMagicLinks({ html, subject: 'Account access' })
       expect(result).toEqual([])
     })
+
+    it('per-anchor local context: repeated anchor text resolves correctly', () => {
+      // Codex round-5 finding. Two <a>Continue</a> anchors. The first
+      // sits in a safe context. After enough filler, the second sits
+      // immediately after a destructive purpose statement. With the
+      // pre-fix indexOf-on-normalized-text approach, BOTH anchors
+      // were checked against the *first* "Continue" position - so the
+      // second (destructive) anchor passed because its local context
+      // looked like the first. Per-anchor HTML windowing in
+      // harvestAnchors fixes this.
+      const filler = '<p>Welcome back to our service. ' + 'Lorem ipsum dolor sit amet '.repeat(40) + '</p>'
+      const html = `
+        <p>Click your magic link:</p>
+        <a href="https://app.example.com/auth/login?token=SAFE">Continue</a>
+        ${filler}
+        <p>To delete your account, click below:</p>
+        <a href="https://app.example.com/action?token=DELETE">Continue</a>
+      `
+      const result = extractMagicLinks({ html, subject: 'Magic link' })
+      // Only the safe link should survive. The destructive second
+      // anchor must be rejected via its OWN local context, not the
+      // first anchor's.
+      const hrefs = result.map(r => r.href).sort()
+      expect(hrefs).toEqual(['https://app.example.com/auth/login?token=SAFE'])
+    })
+
+    it('per-anchor: safe second anchor is not rejected because of dangerous first anchor context', () => {
+      // Symmetrical case. Destructive first, safe second. Without
+      // per-anchor windowing, BOTH would be rejected because both
+      // would inherit the first anchor's dangerous neighborhood.
+      const filler = '<p>' + 'Lorem ipsum dolor sit amet '.repeat(40) + '</p>'
+      const html = `
+        <p>To delete your account, click below:</p>
+        <a href="https://app.example.com/action?token=DELETE">Continue</a>
+        ${filler}
+        <p>Click your magic link to sign in:</p>
+        <a href="https://app.example.com/auth/login?token=SAFE">Continue</a>
+      `
+      const result = extractMagicLinks({ html, subject: 'Account update' })
+      const hrefs = result.map(r => r.href).sort()
+      // Only the second (safe) link should survive.
+      expect(hrefs).toEqual(['https://app.example.com/auth/login?token=SAFE'])
+    })
   })
 })
