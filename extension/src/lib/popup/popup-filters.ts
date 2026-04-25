@@ -114,6 +114,34 @@ export function filterPopupItems(items: PopupItem[], now: number): PopupItem[] {
 }
 
 /**
+ * Count badge-eligible items: items that are unseen, not consumed
+ * (used codes / opened links), still within their TTL, *and* survive
+ * the same safety/freshness/score filters that produce the popup
+ * display. Counting here rather than at the call site keeps the
+ * badge count and the visible popup list in lock-step.
+ *
+ * `maxAgeMs` lets the manual-sync path require fresh-only items
+ * (default: any age within TTL) - matches the previous behavior
+ * where badges only appeared for codes received in the last 10 min.
+ */
+export function countBadgeEligible(
+  items: PopupItem[],
+  now: number,
+  maxAgeMs?: number,
+): number {
+  const safe = filterPopupItems(items, now)
+  return safe.filter((item) => {
+    if (item.seenAt) return false
+    // Codes are consumed via usedAt; links via openedAt. Either
+    // means the user already acted on the item.
+    if (item.kind === 'code' && item.usedAt) return false
+    if (item.kind === 'link' && item.openedAt) return false
+    if (maxAgeMs !== undefined && now - item.receivedAt > maxAgeMs) return false
+    return true
+  }).length
+}
+
+/**
  * Separate items into codes and links
  */
 export function separateItems(items: PopupItem[]): {

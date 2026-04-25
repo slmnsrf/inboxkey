@@ -16,7 +16,7 @@ import { StorageFactory } from '@/lib/storage/storage-factory'
 import { setBadgeCount, setBadgeSyncError, clearBadge } from '@/contents/badge-manager'
 import { BADGE_EXPIRY_MS } from '@/lib/popup/popup-config'
 import { sortByPriority } from '@/lib/popup/popup-priority'
-import { separateItems } from '@/lib/popup/popup-filters'
+import { countBadgeEligible, separateItems } from '@/lib/popup/popup-filters'
 import { GmailAPIClient } from '@/lib/providers/gmail/gmail-api'
 import { GmailAuth } from '@/lib/providers/gmail/gmail-auth'
 import { IMAPBridgeAdapter } from '@/lib/providers/imap-bridge/imap-bridge-adapter'
@@ -236,12 +236,16 @@ export class PopupMessageHandler {
               }
             }
 
-            // Update badge with unseen code count (only fresh codes < 10 min old)
-            const unseenCount = cache.codes.filter((c) =>
-              !c.seenAt &&
-              !c.usedAt &&
-              (now - c.receivedAt) < BADGE_EXPIRY_MS
-            ).length
+            // Update badge with unseen item count. Counts both codes and
+            // magic links via the same pipeline that produces the popup
+            // display, so the badge can never overstate (e.g. count
+            // unsafe links the popup hides) or undercount (links were
+            // skipped entirely before this).
+            const unseenCount = countBadgeEligible(
+              cache.items ?? [],
+              now,
+              BADGE_EXPIRY_MS,
+            )
             if (unseenCount > 0) {
               setBadgeCount(unseenCount)
             } else {
