@@ -223,6 +223,27 @@ describe('initPasswordlessWatcher', () => {
     expect(chrome.runtime.sendMessage).not.toHaveBeenCalled()
   })
 
+  it('test 8: fail-closed default — sendMessage suppressed during storage hydration gap', async () => {
+    // Stub storage.get to never resolve, simulating the hydration gap
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    ;(vi.mocked(chrome.storage.local.get) as any).mockReturnValue(new Promise(() => {}))
+
+    mockDetectPasswordlessPage.mockReturnValue(true)
+
+    const { initPasswordlessWatcher } = await import('../passwordless-watcher')
+    cleanupFn = initPasswordlessWatcher()
+
+    // Even if pushState fires immediately (before hydration resolves),
+    // the watcher must NOT call sendMessage because the default is 'manual'.
+    history.pushState({}, '', '/signin/magic')
+
+    // Wait for debounce
+    await new Promise(resolve => setTimeout(resolve, 300))
+
+    // Must be silent — storage never resolved, so automationLevel stays 'manual'
+    expect(chrome.runtime.sendMessage).not.toHaveBeenCalled()
+  })
+
   it('test 7: cleanup clears seen-URL set so the same URL can trigger after re-init', async () => {
     mockDetectPasswordlessPage.mockReturnValue(true)
 

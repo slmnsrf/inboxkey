@@ -16,12 +16,7 @@
  */
 
 import { detectPasswordlessPage } from '@/lib/detection/passwordless-page-detector'
-
-// ---------------------------------------------------------------------------
-// Types
-// ---------------------------------------------------------------------------
-
-type AutomationLevel = 'autofill' | 'manual' | string
+import type { AutomationLevel } from '@/lib/storage/schema'
 
 // ---------------------------------------------------------------------------
 // Public API
@@ -42,14 +37,14 @@ export function initPasswordlessWatcher(): () => void {
   const seenUrls = new Set<string>()
 
   /** Cached automation level — updated by chrome.storage.onChanged. */
-  let automationLevel: AutomationLevel = 'autofill'
+  let automationLevel: AutomationLevel = 'manual'
 
   /** Debounce timer id for SPA URL changes. */
   let debounceTimer: ReturnType<typeof setTimeout> | null = null
 
   /** Original pushState/replaceState references (restored on cleanup). */
-  const originalPushState = history.pushState.bind(history)
-  const originalReplaceState = history.replaceState.bind(history)
+  const originalPushState = history.pushState
+  const originalReplaceState = history.replaceState
 
   // -- Automation level cache ----------------------------------------------
 
@@ -62,7 +57,9 @@ export function initPasswordlessWatcher(): () => void {
       const result = await chrome.storage.local.get('settings')
       automationLevel = result.settings?.automationLevel ?? 'autofill'
     } catch {
-      // Fail-open: default to 'autofill' so the watcher still fires.
+      // Fail-closed: leave automationLevel as 'manual' so the watcher does
+      // nothing if storage is unavailable. Better to miss a fire than to fire
+      // when the user may have configured manual mode.
     }
   }
 
@@ -95,11 +92,17 @@ export function initPasswordlessWatcher(): () => void {
     seenUrls.add(url)
 
     // Fire-and-forget — background always returns { success: true }
-    chrome.runtime.sendMessage({
-      type: 'TRIGGER_INBOX_POLL',
-      source: 'passwordless-page',
-      url,
-    })
+    try {
+      chrome.runtime.sendMessage({
+        type: 'TRIGGER_INBOX_POLL',
+        source: 'passwordless-page',
+        url,
+      })
+    } catch {
+      // Extension context invalidated (e.g., extension update). Remove from
+      // seenUrls so a subsequent navigation can retry once context recovers.
+      seenUrls.delete(url)
+    }
   }
 
   // -- Initial load --------------------------------------------------------
@@ -133,20 +136,20 @@ export function initPasswordlessWatcher(): () => void {
   // popstate covers browser back/forward navigation
   window.addEventListener('popstate', onUrlChange)
 
-  // Monkey-patch pushState and replaceState for SPA router navigation
-  history.pushState = function (
-    ...args: Parameters<typeof history.pushState>
-  ): void {
-    originalPushState(...args)
+  // Monkey-patch pushState and replaceState for SPA router navigation.
+  // Named functions allow identity-check in cleanup so we only unwrap our own
+  // patch (preserving any third-party patch installed after ours).
+  function patchedPushState(...args: Parameters<typeof history.pushState>): void {
+    originalPushState.call(history, ...args)
+    onUrlChange()
+  }
+  function patchedReplaceState(...args: Parameters<typeof history.replaceState>): void {
+    originalReplaceState.call(history, ...args)
     onUrlChange()
   }
 
-  history.replaceState = function (
-    ...args: Parameters<typeof history.replaceState>
-  ): void {
-    originalReplaceState(...args)
-    onUrlChange()
-  }
+  history.pushState = patchedPushState
+  history.replaceState = patchedReplaceState
 
   // -- Cleanup -------------------------------------------------------------
 
@@ -160,9 +163,14 @@ export function initPasswordlessWatcher(): () => void {
     // Remove URL listeners
     window.removeEventListener('popstate', onUrlChange)
 
-    // Restore original history methods
-    history.pushState = originalPushState
-    history.replaceState = originalReplaceState
+    // Restore original history methods only if our patch is still on top.
+    // This preserves any third-party patch that may have wrapped ours.
+    if (history.pushState === patchedPushState) {
+      history.pushState = originalPushState
+    }
+    if (history.replaceState === patchedReplaceState) {
+      history.replaceState = originalReplaceState
+    }
 
     // Unsubscribe storage listener
     chrome.storage.onChanged.removeListener(onStorageChanged)
