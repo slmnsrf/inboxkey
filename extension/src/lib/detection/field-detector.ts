@@ -272,6 +272,30 @@ function getAllInputFields(strictVisibility = true): HTMLInputElement[] {
 }
 
 // ═══════════════════════════════════════════════════════════════
+// Input Field Collection (Public)
+// ═══════════════════════════════════════════════════════════════
+
+/**
+ * Get all visible relevant input fields on the page (including shadow DOM)
+ *
+ * Returns text-entry fields that are:
+ * - Not disabled, hidden, or read-only
+ * - Text-entry type (text, tel, number) — rejects radio/checkbox/button/etc
+ * - Visible (not display:none, visibility:hidden, zero-size)
+ *
+ * Useful for detecting "is there ANY relevant input field on this page?"
+ * (e.g., passwordless page detection).
+ *
+ * @param strictVisibility - Visibility checking mode (default: true for production)
+ *   - TRUE (production): Full visibility checks via getComputedStyle() + getBoundingClientRect()
+ *   - FALSE (test mode): Basic checks only, skips DOM APIs
+ * @returns Array of visible relevant input fields
+ */
+export function getVisibleRelevantInputFields(strictVisibility = true): HTMLInputElement[] {
+  return getAllInputFields(strictVisibility)
+}
+
+// ═══════════════════════════════════════════════════════════════
 // Main Detection API (Public - Backward Compatible)
 // ═══════════════════════════════════════════════════════════════
 
