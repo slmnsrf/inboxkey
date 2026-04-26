@@ -488,14 +488,11 @@ export class PopupMessageHandler {
           // Auto-poll triggered by passwordless page detector (content script).
           // Silent by design: never surfaces errors or rate-limit messages to the user.
           try {
-            // Rate-limit check: if already polled within the last 30s, silently skip.
-            if (!await this.autoPollRateLimiter.canPoll()) {
+            // Atomic check-and-record: if already polled within the last 30s,
+            // or another concurrent call is already in flight, silently skip.
+            if (!await this.autoPollRateLimiter.tryAcquirePoll()) {
               return { success: true }
             }
-
-            // Record immediately after passing the gate, before any other I/O.
-            // Ensures any subsequent failure does not allow an instant retry.
-            await this.autoPollRateLimiter.recordPoll()
 
             const storage = await StorageFactory.create()
             const mailboxes = await storage.getMailboxes()
@@ -552,6 +549,12 @@ export class PopupMessageHandler {
               return results
             })
 
+            // If auto-poll found nothing new, leave existing cache and badge
+            // intact. Silent polls must add evidence, not destroy current signal.
+            if (ephemeralCodes.length === 0) {
+              return { success: true }
+            }
+
             // Update popup cache with discovered items
             await this.cacheManager.updateWithNewCodes(ephemeralCodes, mailboxes.length, mailboxes)
 
@@ -572,8 +575,8 @@ export class PopupMessageHandler {
             return { success: true }
           } catch (error) {
             // Silent failure: auto-poll errors must never surface to the user.
-            // recordPoll() was already called before any I/O, so the cooldown
-            // is enforced even on failure — no retry-spam possible.
+            // tryAcquirePoll() wrote the cooldown timestamp before any other I/O,
+            // so the cooldown is enforced even on failure — no retry-spam possible.
             console.warn('[PopupHandler] Auto-poll failed silently:', error)
             return { success: true }
           }

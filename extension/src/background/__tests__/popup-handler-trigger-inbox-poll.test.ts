@@ -6,9 +6,10 @@
  * 2. Rate-limit allowed  → pollOnce IS called, cache updated, badge updated
  * 3. lastSyncedAt is NOT touched by TRIGGER_INBOX_POLL
  * 4. errorManager.recordFailure NOT called even when adapter fails
- * 5. recordPoll() is called after the poll attempt (success or fail)
+ * 5. tryAcquirePoll() is called (cooldown enforced up-front, before any other I/O)
  * 6. Empty mailbox list → returns success silently, pollOnce NOT called
- * 7. recordPoll() called even when getMailboxes rejects (early I/O failure)
+ * 7. tryAcquirePoll() called even when getMailboxes rejects (early I/O failure)
+ * 8. Zero candidates → updateWithNewCodes and badge functions NOT called (Fix A)
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest'
@@ -19,8 +20,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 // at the correct time even after Vitest hoists vi.mock calls to the top.
 // ---------------------------------------------------------------------------
 const {
-  mockCanPoll,
-  mockRecordPoll,
+  mockTryAcquirePoll,
   mockPollOnce,
   mockUpdateWithNewCodes,
   mockGetCache,
@@ -28,8 +28,7 @@ const {
   mockClearBadge,
   mockCountBadgeEligible,
 } = vi.hoisted(() => ({
-  mockCanPoll: vi.fn<[], Promise<boolean>>(),
-  mockRecordPoll: vi.fn<[], Promise<void>>(),
+  mockTryAcquirePoll: vi.fn<[], Promise<boolean>>(),
   mockPollOnce: vi.fn<[], Promise<{ candidates: unknown[]; adapterResults: unknown[] }>>(),
   mockUpdateWithNewCodes: vi.fn<[], Promise<void>>(),
   mockGetCache: vi.fn<[], Promise<{ items: unknown[] }>>(),
@@ -44,8 +43,7 @@ const {
 
 vi.mock('../auto-poll-rate-limiter', () => ({
   AutoPollRateLimiter: vi.fn().mockImplementation(() => ({
-    canPoll: mockCanPoll,
-    recordPoll: mockRecordPoll,
+    tryAcquirePoll: mockTryAcquirePoll,
   })),
 }))
 
@@ -176,9 +174,8 @@ describe('PopupMessageHandler — TRIGGER_INBOX_POLL', () => {
   beforeEach(() => {
     vi.clearAllMocks()
 
-    // Default: polling is allowed
-    mockCanPoll.mockResolvedValue(true)
-    mockRecordPoll.mockResolvedValue(undefined)
+    // Default: polling is allowed (tryAcquirePoll returns true)
+    mockTryAcquirePoll.mockResolvedValue(true)
 
     // Default: pollOnce returns no candidates
     mockPollOnce.mockResolvedValue({ candidates: [], adapterResults: [] })
@@ -202,7 +199,7 @@ describe('PopupMessageHandler — TRIGGER_INBOX_POLL', () => {
   // Test 1: Rate-limit blocked
   // -------------------------------------------------------------------------
   it('returns { success: true } silently when rate-limited, without calling pollOnce', async () => {
-    mockCanPoll.mockResolvedValue(false)
+    mockTryAcquirePoll.mockResolvedValue(false)
 
     const mockStorage = buildMockStorage([makeMailbox('mb1')])
     ;(StorageFactory.create as ReturnType<typeof vi.fn>).mockResolvedValue(mockStorage)
@@ -215,8 +212,8 @@ describe('PopupMessageHandler — TRIGGER_INBOX_POLL', () => {
 
     expect(response).toEqual({ success: true })
     expect(mockPollOnce).not.toHaveBeenCalled()
-    // recordPoll should NOT be called when rate-limited (no poll happened)
-    expect(mockRecordPoll).not.toHaveBeenCalled()
+    // tryAcquirePoll was called but returned false — cooldown still active
+    expect(mockTryAcquirePoll).toHaveBeenCalledTimes(1)
   })
 
   // -------------------------------------------------------------------------
@@ -298,9 +295,12 @@ describe('PopupMessageHandler — TRIGGER_INBOX_POLL', () => {
   })
 
   // -------------------------------------------------------------------------
-  // Test 5: recordPoll() IS called — both on success and on failure
+  // Test 5: tryAcquirePoll() IS called — both on success and on failure
+  // The cooldown is enforced atomically inside tryAcquirePoll, so a single
+  // call both checks AND records the timestamp. Verifying it was called once
+  // ensures the rate-limit gate ran before any downstream I/O.
   // -------------------------------------------------------------------------
-  it('calls recordPoll() after a successful poll', async () => {
+  it('calls tryAcquirePoll() for a successful poll', async () => {
     const mockStorage = buildMockStorage([makeMailbox('mb1')])
     ;(StorageFactory.create as ReturnType<typeof vi.fn>).mockResolvedValue(mockStorage)
     ;(createAdaptersFromMailboxes as ReturnType<typeof vi.fn>).mockResolvedValue([{ id: 'adapter1' }])
@@ -311,10 +311,10 @@ describe('PopupMessageHandler — TRIGGER_INBOX_POLL', () => {
       url: 'https://example.com/login',
     })
 
-    expect(mockRecordPoll).toHaveBeenCalledTimes(1)
+    expect(mockTryAcquirePoll).toHaveBeenCalledTimes(1)
   })
 
-  it('calls recordPoll() even when pollOnce throws', async () => {
+  it('calls tryAcquirePoll() even when pollOnce throws', async () => {
     const mockStorage = buildMockStorage([makeMailbox('mb1')])
     ;(StorageFactory.create as ReturnType<typeof vi.fn>).mockResolvedValue(mockStorage)
     ;(createAdaptersFromMailboxes as ReturnType<typeof vi.fn>).mockResolvedValue([{ id: 'adapter1' }])
@@ -326,8 +326,8 @@ describe('PopupMessageHandler — TRIGGER_INBOX_POLL', () => {
       url: 'https://example.com/login',
     })
 
-    // recordPoll is called before I/O so it is recorded on failure too
-    expect(mockRecordPoll).toHaveBeenCalledTimes(1)
+    // tryAcquirePoll is called before I/O so it is recorded on failure too
+    expect(mockTryAcquirePoll).toHaveBeenCalledTimes(1)
   })
 
   // -------------------------------------------------------------------------
@@ -345,16 +345,18 @@ describe('PopupMessageHandler — TRIGGER_INBOX_POLL', () => {
 
     expect(response).toEqual({ success: true })
     expect(mockPollOnce).not.toHaveBeenCalled()
-    // recordPoll IS still called (up-front, before any I/O) so we don't spin on empty mailbox state
-    expect(mockRecordPoll).toHaveBeenCalledTimes(1)
+    // tryAcquirePoll IS still called (up-front, before any I/O) so we don't spin on empty mailbox state
+    expect(mockTryAcquirePoll).toHaveBeenCalledTimes(1)
   })
 
   // -------------------------------------------------------------------------
-  // Test 7: recordPoll() called even when getMailboxes rejects (early I/O failure)
-  // This is the regression test for the retry-spam bug: if recordPoll() were called
-  // AFTER I/O, a storage failure would skip it and allow an instant retry loop.
+  // Test 7: tryAcquirePoll() called even when getMailboxes rejects (early I/O failure)
+  // This is the regression test for the retry-spam bug: if the rate-limit gate
+  // were called AFTER I/O, a storage failure would skip it and allow an instant
+  // retry loop. tryAcquirePoll() atomically records the cooldown before any
+  // downstream I/O proceeds.
   // -------------------------------------------------------------------------
-  it('calls recordPoll() even when getMailboxes rejects (early I/O failure)', async () => {
+  it('calls tryAcquirePoll() even when getMailboxes rejects (early I/O failure)', async () => {
     const failingStorage = {
       getMailboxes: vi.fn().mockRejectedValue(new Error('storage error')),
       updateMailbox: vi.fn(),
@@ -371,7 +373,32 @@ describe('PopupMessageHandler — TRIGGER_INBOX_POLL', () => {
 
     // Still silent success
     expect(result).toEqual({ success: true })
-    // Critical: recordPoll must have been called before the I/O that failed
-    expect(mockRecordPoll).toHaveBeenCalledTimes(1)
+    // Critical: tryAcquirePoll must have been called before the I/O that failed
+    expect(mockTryAcquirePoll).toHaveBeenCalledTimes(1)
+  })
+
+  // -------------------------------------------------------------------------
+  // Test 8: Zero candidates → does NOT call updateWithNewCodes or badge functions
+  // Fix A: auto-poll must not wipe cache on no-result
+  // -------------------------------------------------------------------------
+  it('does NOT call updateWithNewCodes or badge functions when pollOnce returns zero candidates', async () => {
+    const mockStorage = buildMockStorage([makeMailbox('m1')])
+    ;(StorageFactory.create as ReturnType<typeof vi.fn>).mockResolvedValue(mockStorage)
+    ;(createAdaptersFromMailboxes as ReturnType<typeof vi.fn>).mockResolvedValue([{ id: 'adapter1' }])
+    mockPollOnce.mockResolvedValue({
+      candidates: [],
+      adapterResults: [{ mailboxId: 'm1', success: true }],
+    })
+
+    const response = await handler.handleMessage({
+      type: 'TRIGGER_INBOX_POLL',
+      source: 'passwordless-page',
+      url: 'https://example.com/login',
+    })
+
+    expect(response).toEqual({ success: true })
+    expect(mockUpdateWithNewCodes).not.toHaveBeenCalled()
+    expect(mockSetBadgeCount).not.toHaveBeenCalled()
+    expect(mockClearBadge).not.toHaveBeenCalled()
   })
 })
