@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
-import { EXCLUDED_TAGS, EXCLUDED_ROLES, getFilteredText } from '../dom-text-scanner'
+import { getFilteredText } from '../dom-text-scanner'
 
 describe('dom-text-scanner', () => {
   beforeEach(() => {
@@ -8,30 +8,6 @@ describe('dom-text-scanner', () => {
 
   afterEach(() => {
     document.body.innerHTML = ''
-  })
-
-  describe('EXCLUDED_TAGS', () => {
-    it('contains HEADER, FOOTER, NAV', () => {
-      expect(EXCLUDED_TAGS.has('HEADER')).toBe(true)
-      expect(EXCLUDED_TAGS.has('FOOTER')).toBe(true)
-      expect(EXCLUDED_TAGS.has('NAV')).toBe(true)
-    })
-
-    it('has exactly 3 tags', () => {
-      expect(EXCLUDED_TAGS.size).toBe(3)
-    })
-  })
-
-  describe('EXCLUDED_ROLES', () => {
-    it('contains navigation, banner, contentinfo', () => {
-      expect(EXCLUDED_ROLES.has('navigation')).toBe(true)
-      expect(EXCLUDED_ROLES.has('banner')).toBe(true)
-      expect(EXCLUDED_ROLES.has('contentinfo')).toBe(true)
-    })
-
-    it('has exactly 3 roles', () => {
-      expect(EXCLUDED_ROLES.size).toBe(3)
-    })
   })
 
   describe('getFilteredText', () => {

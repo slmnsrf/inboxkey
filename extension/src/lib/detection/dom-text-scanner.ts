@@ -6,10 +6,10 @@
  */
 
 /** Elements to exclude from text scanning */
-export const EXCLUDED_TAGS = new Set(['HEADER', 'FOOTER', 'NAV'])
+const EXCLUDED_TAGS = new Set(['HEADER', 'FOOTER', 'NAV'])
 
 /** ARIA roles to exclude from text scanning */
-export const EXCLUDED_ROLES = new Set(['navigation', 'banner', 'contentinfo'])
+const EXCLUDED_ROLES = new Set(['navigation', 'banner', 'contentinfo'])
 
 /**
  * Get text content from container, excluding footer/nav/header zones.

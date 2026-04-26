@@ -9,7 +9,7 @@
  */
 
 import { EMAIL_PATTERNS } from './signal-classifier'
-import { EXCLUDED_TAGS, EXCLUDED_ROLES, getFilteredText } from './dom-text-scanner'
+import { getFilteredText } from './dom-text-scanner'
 
 /** Semantic container elements to walk up to */
 const SEMANTIC_CONTAINERS = new Set(['FORM', 'MAIN', 'SECTION', 'ARTICLE', 'DIALOG'])
