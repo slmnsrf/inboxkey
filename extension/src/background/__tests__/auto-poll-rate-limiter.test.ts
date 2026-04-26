@@ -78,6 +78,48 @@ describe('AutoPollRateLimiter', () => {
   })
 
   // -----------------------------------------------------------------------
+  // Test 4b: Concurrency — leader rejection does NOT propagate to waiters
+  // Regression guard: if chrome.storage.session.set throws (rare — quota
+  // exhaustion, extension context invalidated mid-call), concurrent waiters
+  // must NOT receive an unhandled rejection. Waiters should resolve to false
+  // even when the leader rejects.
+  // -----------------------------------------------------------------------
+  it('concurrent waiters resolve to false (no unhandled rejection) when leader storage.set throws', async () => {
+    // Spy on storage.set and make it reject once to simulate a leader failure.
+    // Use mockImplementationOnce so the spy is restored to the real impl automatically
+    // and does not corrupt subsequent tests (no global state mutation).
+    const setSpy = vi.spyOn(chrome.storage.session, 'set').mockRejectedValueOnce(
+      new Error('Storage quota exceeded')
+    )
+
+    // Fire 3 concurrent calls. The leader (first call) will throw because
+    // storage.set fails. Waiters (2nd and 3rd) attach to the same acquirePromise
+    // via .catch(() => {}) and then return false — they must NOT rethrow.
+    //
+    // We use Promise.allSettled so a leader rejection does not abort the overall
+    // Promise.all. The waiters will resolve to false; the leader may reject.
+    const outcomes = await Promise.allSettled([
+      limiter.tryAcquirePoll(),
+      limiter.tryAcquirePoll(),
+      limiter.tryAcquirePoll(),
+    ])
+
+    setSpy.mockRestore()
+
+    // The leader may reject (it awaits this.acquirePromise which rejects).
+    // Waiters MUST resolve to false (they use .catch(() => {}) to swallow the error).
+    const rejections = outcomes.filter(o => o.status === 'rejected')
+    const resolutions = outcomes.filter(o => o.status === 'fulfilled')
+
+    // At most 1 rejection (the leader). Waiters always resolve.
+    expect(rejections.length).toBeLessThanOrEqual(1)
+    // All resolved outcomes must be false (waiters never proceeded to poll).
+    for (const r of resolutions) {
+      expect((r as PromiseFulfilledResult<boolean>).value).toBe(false)
+    }
+  })
+
+  // -----------------------------------------------------------------------
   // Test 5: getTimeRemaining()
   // -----------------------------------------------------------------------
   it('getTimeRemaining() returns 0 when no poll recorded', async () => {

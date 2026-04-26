@@ -25,9 +25,11 @@ export class AutoPollRateLimiter {
    */
   async tryAcquirePoll(): Promise<boolean> {
     if (this.acquirePromise) {
-      // Another call is already in flight: wait for it, then return false
-      // because whichever caller arrived first will have recorded the poll.
-      await this.acquirePromise
+      // Concurrent caller: wait for the leader's check-and-record to complete,
+      // then return false (the leader either acquired the cooldown or hit the
+      // active cooldown — either way, we should not poll). Swallow leader
+      // errors so we don't re-log the same failure N times across waiters.
+      await this.acquirePromise.catch(() => {})
       return false
     }
 

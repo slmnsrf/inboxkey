@@ -575,8 +575,10 @@ export class PopupMessageHandler {
             return { success: true }
           } catch (error) {
             // Silent failure: auto-poll errors must never surface to the user.
-            // tryAcquirePoll() wrote the cooldown timestamp before any other I/O,
-            // so the cooldown is enforced even on failure — no retry-spam possible.
+            // Note: if tryAcquirePoll itself failed BEFORE recording the cooldown
+            // (rare — would require chrome.storage.session.set to throw), the
+            // cooldown is not enforced and the next URL change could re-trigger.
+            // The watcher's per-URL seenUrls Set provides a second line of defense.
             console.warn('[PopupHandler] Auto-poll failed silently:', error)
             return { success: true }
           }
