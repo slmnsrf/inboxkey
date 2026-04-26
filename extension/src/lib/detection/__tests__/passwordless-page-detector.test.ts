@@ -118,6 +118,53 @@ describe('detectPasswordlessPage', () => {
   })
 
   // =========================================================================
+  // Fix C — tightened /auth matching (regression guards + new negatives)
+  // =========================================================================
+
+  describe('Fix C — /auth pathname matching', () => {
+    it('/auth (bare) → still matches Gate 1', () => {
+      setBody(EN_WAITING_COPY)
+      expect(detectPasswordlessPage('https://app.example.com/auth')).toBe(true)
+    })
+
+    it('/auth/login → matches Gate 1', () => {
+      setBody(EN_WAITING_COPY)
+      expect(detectPasswordlessPage('https://app.example.com/auth/login')).toBe(true)
+    })
+
+    it('/auth/passwordless → matches Gate 1', () => {
+      setBody(EN_WAITING_COPY)
+      expect(detectPasswordlessPage('https://app.example.com/auth/passwordless')).toBe(true)
+    })
+
+    it('/auth/callback → matches Gate 1', () => {
+      setBody(EN_WAITING_COPY)
+      expect(detectPasswordlessPage('https://app.example.com/auth/callback')).toBe(true)
+    })
+
+    it('/auth/magic-link → matches Gate 1 (regression guard)', () => {
+      setBody(EN_WAITING_COPY)
+      expect(detectPasswordlessPage('https://app.example.com/auth/magic-link')).toBe(true)
+    })
+
+    it('/auth/dashboard → does NOT match Gate 1 → detector returns false', () => {
+      // Even with passwordless copy + no inputs, /auth/dashboard is an authenticated route.
+      setBody(EN_WAITING_COPY)
+      expect(detectPasswordlessPage('https://app.example.com/auth/dashboard')).toBe(false)
+    })
+
+    it('/auth/settings/email-change → does NOT match Gate 1 → detector returns false', () => {
+      setBody(EN_WAITING_COPY)
+      expect(detectPasswordlessPage('https://app.example.com/auth/settings/email-change')).toBe(false)
+    })
+
+    it('/auth/profile → does NOT match Gate 1 → detector returns false', () => {
+      setBody(EN_WAITING_COPY)
+      expect(detectPasswordlessPage('https://app.example.com/auth/profile')).toBe(false)
+    })
+  })
+
+  // =========================================================================
   // Gate 1: URL does not match sign-in route
   // =========================================================================
 

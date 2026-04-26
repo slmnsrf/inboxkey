@@ -31,11 +31,21 @@ import { getVisibleRelevantInputFields } from './field-detector'
 /**
  * Pathname segments that indicate a sign-in / auth route.
  * Match is anchored at path-segment boundaries:
- *   - /login, /login/foo      → match
- *   - /loginpage, /mylogin    → no match
+ *   - /login, /login/foo           → match
+ *   - /loginpage, /mylogin         → no match
+ *   - /auth (bare) or /auth/login  → match
+ *   - /auth/dashboard              → no match (authenticated route, not a sign-in interstitial)
+ *
+ * Two alternations:
+ *   1. Unambiguous sign-in segments: login, signin, sign-in, sso, passwordless,
+ *      magic, verify-email — allowed with any subpath.
+ *   2. /auth — only matched when terminal OR followed by a known sign-in
+ *      subpath (login, signin, sign-in, callback, magic, magic-link,
+ *      passwordless, sso, verify-email). This prevents matching authenticated
+ *      pages like /auth/dashboard or /auth/settings.
  */
 const SIGN_IN_PATH_REGEX =
-  /\/(?:login|signin|sign-in|auth|sso|passwordless|magic|verify-email)(?:\/|$)/i
+  /\/(?:login|signin|sign-in|sso|passwordless|magic|verify-email)(?:\/|$)|\/auth(?:$|\/(?:login|signin|sign-in|callback|magic(?:-link)?|passwordless|sso|verify-email))(?:\/|$)/i
 
 /**
  * Gate 1 — true when the URL pathname looks like a sign-in route.
