@@ -9,6 +9,7 @@
  */
 
 import { EMAIL_PATTERNS } from './signal-classifier'
+import { EXCLUDED_TAGS, EXCLUDED_ROLES, getFilteredText } from './dom-text-scanner'
 
 /** Semantic container elements to walk up to */
 const SEMANTIC_CONTAINERS = new Set(['FORM', 'MAIN', 'SECTION', 'ARTICLE', 'DIALOG'])
@@ -27,12 +28,6 @@ function isDialogContainer(el: HTMLElement): boolean {
   if (el.getAttribute('aria-modal') === 'true') return true
   return false
 }
-
-/** Elements to exclude from text scanning */
-const EXCLUDED_TAGS = new Set(['HEADER', 'FOOTER', 'NAV'])
-
-/** ARIA roles to exclude from text scanning */
-const EXCLUDED_ROLES = new Set(['navigation', 'banner', 'contentinfo'])
 
 /** Max DOM levels to walk up if no semantic container found */
 const FALLBACK_DEPTH = 5
@@ -119,30 +114,3 @@ function findScanContainer(field: HTMLInputElement): HTMLElement | null {
   return fallback ?? node
 }
 
-/**
- * Get text content from container, excluding footer/nav/header zones.
- */
-function getFilteredText(container: HTMLElement): string {
-  const parts: string[] = []
-
-  function walk(node: Node): void {
-    if (node.nodeType === Node.ELEMENT_NODE) {
-      const el = node as HTMLElement
-      if (EXCLUDED_TAGS.has(el.tagName)) return
-      const role = el.getAttribute('role')
-      if (role && EXCLUDED_ROLES.has(role)) return
-    }
-
-    if (node.nodeType === Node.TEXT_NODE) {
-      const text = node.textContent?.trim()
-      if (text) parts.push(text)
-    } else {
-      for (const child of node.childNodes) {
-        walk(child)
-      }
-    }
-  }
-
-  walk(container)
-  return parts.join(' ')
-}
