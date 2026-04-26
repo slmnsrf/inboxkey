@@ -17,7 +17,7 @@
 export const PASSWORDLESS_PAGE_KEYWORDS_BY_LANG: Readonly<
   Record<string, ReadonlyArray<string>>
 > = Object.freeze({
-  en: Object.freeze([
+  en: [
     // What users see on the waiting screen
     'check your email',
     'check your inbox',
@@ -44,9 +44,9 @@ export const PASSWORDLESS_PAGE_KEYWORDS_BY_LANG: Readonly<
     'no password required',
     'link expires in',
     'link is valid for',
-  ]),
+  ],
 
-  tr: Object.freeze([
+  tr: [
     // Turkish sign-in waiting screen copy
     'e-postanızı kontrol edin',
     'gelen kutunuzu kontrol edin',
@@ -61,9 +61,9 @@ export const PASSWORDLESS_PAGE_KEYWORDS_BY_LANG: Readonly<
     'şifre olmadan giriş yapın',
     'bağlantı gönderildi',
     'e-postanızı kontrol ederek devam edin',
-  ]),
+  ],
 
-  de: Object.freeze([
+  de: [
     // German sign-in waiting screen copy
     'prüfen sie ihre e-mail',
     'schauen sie in ihr postfach',
@@ -78,9 +78,9 @@ export const PASSWORDLESS_PAGE_KEYWORDS_BY_LANG: Readonly<
     'ohne passwort anmelden',
     'der link ist gültig für',
     'link wurde gesendet',
-  ]),
+  ],
 
-  es: Object.freeze([
+  es: [
     // Spanish sign-in waiting screen copy
     'revisa tu correo',
     'revisa tu bandeja de entrada',
@@ -95,9 +95,9 @@ export const PASSWORDLESS_PAGE_KEYWORDS_BY_LANG: Readonly<
     'inicia sesión sin contraseña',
     'el enlace expira en',
     'enlace enviado',
-  ]),
+  ],
 
-  fr: Object.freeze([
+  fr: [
     // French sign-in waiting screen copy
     'vérifiez votre e-mail',
     'vérifiez votre boîte de réception',
@@ -112,9 +112,9 @@ export const PASSWORDLESS_PAGE_KEYWORDS_BY_LANG: Readonly<
     'connectez-vous sans mot de passe',
     'le lien expire dans',
     'un lien a été envoyé',
-  ]),
+  ],
 
-  it: Object.freeze([
+  it: [
     // Italian sign-in waiting screen copy
     'controlla la tua email',
     'controlla la tua casella di posta',
@@ -129,9 +129,9 @@ export const PASSWORDLESS_PAGE_KEYWORDS_BY_LANG: Readonly<
     'accedi senza password',
     'il link scade tra',
     'link inviato',
-  ]),
+  ],
 
-  pt: Object.freeze([
+  pt: [
     // Portuguese sign-in waiting screen copy
     'verifique seu e-mail',
     'verifique sua caixa de entrada',
@@ -146,9 +146,9 @@ export const PASSWORDLESS_PAGE_KEYWORDS_BY_LANG: Readonly<
     'entre sem senha',
     'o link expira em',
     'link enviado',
-  ]),
+  ],
 
-  nl: Object.freeze([
+  nl: [
     // Dutch sign-in waiting screen copy
     'controleer je e-mail',
     'controleer je inbox',
@@ -163,9 +163,9 @@ export const PASSWORDLESS_PAGE_KEYWORDS_BY_LANG: Readonly<
     'log in zonder wachtwoord',
     'de link verloopt over',
     'link verzonden',
-  ]),
+  ],
 
-  pl: Object.freeze([
+  pl: [
     // Polish sign-in waiting screen copy
     'sprawdź swoją pocztę',
     'sprawdź swoją skrzynkę odbiorczą',
@@ -179,9 +179,9 @@ export const PASSWORDLESS_PAGE_KEYWORDS_BY_LANG: Readonly<
     'otwórz e-mail, aby się zalogować',
     'link wygasa za',
     'link został wysłany',
-  ]),
+  ],
 
-  ru: Object.freeze([
+  ru: [
     // Russian sign-in waiting screen copy
     'проверьте вашу почту',
     'проверьте входящие',
@@ -195,9 +195,9 @@ export const PASSWORDLESS_PAGE_KEYWORDS_BY_LANG: Readonly<
     'ссылка действительна',
     'ссылка истекает через',
     'войти без пароля',
-  ]),
+  ],
 
-  ja: Object.freeze([
+  ja: [
     // Japanese sign-in waiting screen copy
     'メールを確認してください',
     '受信トレイを確認してください',
@@ -211,9 +211,9 @@ export const PASSWORDLESS_PAGE_KEYWORDS_BY_LANG: Readonly<
     'メールを開いてサインインしてください',
     'リンクの有効期限',
     'リンクが送信されました',
-  ]),
+  ],
 
-  zh: Object.freeze([
+  zh: [
     // Chinese (Simplified) sign-in waiting screen copy
     '请查看您的电子邮件',
     '请检查您的收件箱',
@@ -228,9 +228,9 @@ export const PASSWORDLESS_PAGE_KEYWORDS_BY_LANG: Readonly<
     '链接的有效期将在到期',
     '链接有效时间有限',
     '登录链接已成功发送',
-  ]),
+  ],
 
-  ko: Object.freeze([
+  ko: [
     // Korean sign-in waiting screen copy
     '이메일을 확인하세요',
     '받은 편지함을 확인하세요',
@@ -244,9 +244,9 @@ export const PASSWORDLESS_PAGE_KEYWORDS_BY_LANG: Readonly<
     '이메일을 열어 로그인하세요',
     '링크 유효 시간',
     '링크가 전송되었습니다',
-  ]),
+  ],
 
-  ar: Object.freeze([
+  ar: [
     // Arabic sign-in waiting screen copy
     'تحقق من بريدك الإلكتروني',
     'تحقق من صندوق الوارد',
@@ -259,9 +259,9 @@ export const PASSWORDLESS_PAGE_KEYWORDS_BY_LANG: Readonly<
     'افتح بريدك الإلكتروني لتسجيل الدخول',
     'صلاحية الرابط تنتهي في غضون',
     'تم إرسال الرابط',
-  ]),
+  ],
 
-  he: Object.freeze([
+  he: [
     // Hebrew sign-in waiting screen copy
     'בדוק את הדואר האלקטרוני שלך',
     'בדוק את תיבת הדואר הנכנס',
@@ -274,9 +274,9 @@ export const PASSWORDLESS_PAGE_KEYWORDS_BY_LANG: Readonly<
     'פתח את הדואר האלקטרוני כדי להתחבר',
     'תוקף הקישור פג בעוד',
     'הקישור נשלח',
-  ]),
+  ],
 
-  sv: Object.freeze([
+  sv: [
     // Swedish sign-in waiting screen copy
     'kontrollera din e-post',
     'kontrollera din inkorg',
@@ -290,9 +290,9 @@ export const PASSWORDLESS_PAGE_KEYWORDS_BY_LANG: Readonly<
     'öppna din e-post för att logga in',
     'länken går ut om',
     'länk skickad',
-  ]),
+  ],
 
-  da: Object.freeze([
+  da: [
     // Danish sign-in waiting screen copy
     'tjek din e-mail',
     'tjek din indbakke',
@@ -306,9 +306,9 @@ export const PASSWORDLESS_PAGE_KEYWORDS_BY_LANG: Readonly<
     'åbn din e-mail for at logge ind',
     'linket udløber om',
     'link sendt',
-  ]),
+  ],
 
-  no: Object.freeze([
+  no: [
     // Norwegian sign-in waiting screen copy
     'sjekk e-posten din',
     'sjekk innboksen din',
@@ -322,9 +322,9 @@ export const PASSWORDLESS_PAGE_KEYWORDS_BY_LANG: Readonly<
     'åpne e-posten din for å logge inn',
     'lenken utløper om',
     'lenke sendt',
-  ]),
+  ],
 
-  fi: Object.freeze([
+  fi: [
     // Finnish sign-in waiting screen copy
     'tarkista sähköpostisi',
     'tarkista postilaatikkosi',
@@ -338,9 +338,9 @@ export const PASSWORDLESS_PAGE_KEYWORDS_BY_LANG: Readonly<
     'avaa sähköpostisi kirjautuaksesi',
     'linkki vanhenee',
     'linkki lähetetty',
-  ]),
+  ],
 
-  cs: Object.freeze([
+  cs: [
     // Czech sign-in waiting screen copy
     'zkontrolujte svůj e-mail',
     'zkontrolujte svou schránku',
@@ -354,9 +354,9 @@ export const PASSWORDLESS_PAGE_KEYWORDS_BY_LANG: Readonly<
     'otevřete e-mail pro přihlášení',
     'odkaz vyprší za',
     'odkaz byl odeslán',
-  ]),
+  ],
 
-  uk: Object.freeze([
+  uk: [
     // Ukrainian sign-in waiting screen copy
     'перевірте вашу пошту',
     'перевірте вхідні',
@@ -369,5 +369,5 @@ export const PASSWORDLESS_PAGE_KEYWORDS_BY_LANG: Readonly<
     'відкрийте лист для входу',
     'посилання дійсне протягом',
     'посилання надіслано',
-  ]),
+  ],
 })
