@@ -35,12 +35,16 @@ export {
   MAGIC_LINK_URL_HINTS,
   DANGEROUS_LINK_KEYWORDS,
   RESET_LINK_PATH_PATTERNS,
+  DESTRUCTIVE_ACTION_PATH_PATTERNS,
   OTP_PATTERNS,
   SCORE_WEIGHTS,
   THRESHOLDS,
   EXTRACTION_DEFAULTS,
   EXTRACTOR_VERSION,
 } from './extraction/extraction-types.js'
+
+// Page-level passwordless detection keywords
+export { PASSWORDLESS_PAGE_KEYWORDS_BY_LANG } from './extraction/passwordless-page-keywords.js'
 
 // Matching utilities (for advanced use)
 export { shapeScore, type ExpectedShape } from './matching/shape-matcher.js'
