@@ -244,6 +244,47 @@ describe('initPasswordlessWatcher', () => {
     expect(chrome.runtime.sendMessage).not.toHaveBeenCalled()
   })
 
+  it('test 9: hydration does not overwrite a value already set by onChanged listener', async () => {
+    // Stub storage.get to resolve slowly (50ms), simulating the hydration gap.
+    // The onChanged listener will fire before get() resolves, delivering 'manual'.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    ;(vi.mocked(chrome.storage.local.get) as any).mockReturnValue(
+      new Promise(resolve =>
+        setTimeout(() => resolve({ settings: { automationLevel: 'autofill' } }), 50)
+      )
+    )
+
+    // Detector always returns true for this test URL.
+    mockDetectPasswordlessPage.mockReturnValue(true)
+
+    const { initPasswordlessWatcher } = await import('../passwordless-watcher')
+    cleanupFn = initPasswordlessWatcher()
+
+    // Fire onChanged with 'manual' before the slow get resolves.
+    const listener = getLatestOnChangedListener()
+    listener(
+      { settings: { newValue: { automationLevel: 'manual' } } },
+      'local'
+    )
+
+    // Wait 100ms — enough for both the listener and the slow get() to complete.
+    await new Promise(resolve => setTimeout(resolve, 100))
+
+    // Trigger a SPA navigation so maybeFireForUrl runs with the current automationLevel.
+    Object.defineProperty(window, 'location', {
+      value: { href: 'https://example.com/signin/check' },
+      writable: true,
+      configurable: true,
+    })
+    history.pushState({}, '', '/signin/check')
+
+    // Wait for 250ms debounce
+    await new Promise(resolve => setTimeout(resolve, 300))
+
+    // 'manual' from onChanged must win — sendMessage must NOT have been called.
+    expect(chrome.runtime.sendMessage).not.toHaveBeenCalled()
+  })
+
   it('test 7: cleanup clears seen-URL set so the same URL can trigger after re-init', async () => {
     mockDetectPasswordlessPage.mockReturnValue(true)
 

@@ -39,6 +39,13 @@ export function initPasswordlessWatcher(): () => void {
   /** Cached automation level — updated by chrome.storage.onChanged. */
   let automationLevel: AutomationLevel = 'manual'
 
+  /**
+   * Set to true the first time onChanged delivers a settings value.
+   * Prevents the async storage.get() callback from overwriting a fresher
+   * value that already arrived via the listener while the get was in flight.
+   */
+  let hydratedFromListener = false
+
   /** Debounce timer id for SPA URL changes. */
   let debounceTimer: ReturnType<typeof setTimeout> | null = null
 
@@ -51,11 +58,19 @@ export function initPasswordlessWatcher(): () => void {
   /**
    * Read and cache automationLevel from chrome.storage.local.
    * Async, but called once at init — result is ready before first SPA event.
+   *
+   * Only applies the storage result if the onChanged listener has not already
+   * delivered a fresher value. This prevents a stale storage.get() response
+   * from overwriting a value that arrived via onChanged while the get was
+   * in flight.
    */
   async function hydrateAutomationLevel(): Promise<void> {
     try {
       const result = await chrome.storage.local.get('settings')
-      automationLevel = result.settings?.automationLevel ?? 'autofill'
+      // Only apply if a fresher value didn't already arrive via onChanged
+      if (!hydratedFromListener) {
+        automationLevel = result.settings?.automationLevel ?? 'autofill'
+      }
     } catch {
       // Fail-closed: leave automationLevel as 'manual' so the watcher does
       // nothing if storage is unavailable. Better to miss a fire than to fire
@@ -73,6 +88,7 @@ export function initPasswordlessWatcher(): () => void {
     if (changes.settings) {
       automationLevel =
         changes.settings.newValue?.automationLevel ?? 'autofill'
+      hydratedFromListener = true
     }
   }
 
