@@ -30,6 +30,7 @@ import { hydrateSmsCache } from '@/lib/detection/sms-feature-cache'
 import { getMatchingAutocompleteToken } from '@/lib/detection/detection-utils'
 import { AUTOCOMPLETE_VALUES } from '@/lib/detection/patterns'
 import { cancelPendingNotifications } from './notification'
+import { initPasswordlessWatcher } from './passwordless-watcher'
 
 /**
  * Global Set to track processed representative fields across all batches
@@ -44,6 +45,12 @@ let globalProcessedRepresentatives: Set<HTMLInputElement> | null = null
  * Cleared on page unload to prevent memory leaks
  */
 let urlCheckTimer: ReturnType<typeof setInterval> | null = null
+
+/**
+ * Cleanup function returned by initPasswordlessWatcher().
+ * Called on beforeunload to remove listeners and restore patched globals.
+ */
+let cleanupPasswordlessWatcher: (() => void) | null = null
 
 /**
  * Clear the global Set of processed representatives
@@ -379,6 +386,10 @@ export function clearProcessedFields(): void {
       childList: true,
       subtree: true,
     })
+
+    // Start passwordless page watcher (fires TRIGGER_INBOX_POLL when the
+    // user lands on a "check your inbox" waiting screen with no input fields)
+    cleanupPasswordlessWatcher = initPasswordlessWatcher()
   }
 
   // Initialize when DOM is ready
@@ -394,6 +405,12 @@ export function clearProcessedFields(): void {
     if (urlCheckTimer !== null) {
       clearInterval(urlCheckTimer)
       urlCheckTimer = null
+    }
+
+    // Clean up passwordless watcher (removes listeners, restores patched globals)
+    if (cleanupPasswordlessWatcher !== null) {
+      cleanupPasswordlessWatcher()
+      cleanupPasswordlessWatcher = null
     }
 
     detector.stopObserving()
