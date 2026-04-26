@@ -10,37 +10,52 @@ const STORAGE_KEY = 'last_auto_poll_time'
 const AUTO_POLL_COOLDOWN_MS = 30 * 1000 // 30 seconds
 
 export class AutoPollRateLimiter {
-  /**
-   * Check if an auto-poll is allowed (not rate limited).
-   */
-  async canPoll(): Promise<boolean> {
-    const lastPoll = await this.getLastPollTime()
-    if (!lastPoll) return true
+  private acquirePromise: Promise<boolean> | null = null
 
-    const elapsed = Date.now() - lastPoll
-    return elapsed >= AUTO_POLL_COOLDOWN_MS
+  /**
+   * Atomic check-and-record. Returns true if the poll is allowed
+   * (and the cooldown timestamp has been written to storage); false if the
+   * cooldown is still active.
+   *
+   * Concurrent callers within the same service-worker lifetime share the same
+   * in-flight operation. The first caller to arrive initiates the check+write;
+   * all subsequent callers that arrive while that is in flight await the result
+   * and then receive false — so exactly one caller proceeds to poll per cooldown
+   * window even under simultaneous calls.
+   */
+  async tryAcquirePoll(): Promise<boolean> {
+    if (this.acquirePromise) {
+      // Another call is already in flight: wait for it, then return false
+      // because whichever caller arrived first will have recorded the poll.
+      await this.acquirePromise
+      return false
+    }
+
+    this.acquirePromise = (async () => {
+      try {
+        const lastPoll = await this.getLastPollTime()
+        if (lastPoll && Date.now() - lastPoll < AUTO_POLL_COOLDOWN_MS) {
+          return false
+        }
+        await chrome.storage.session.set({ [STORAGE_KEY]: Date.now() })
+        return true
+      } finally {
+        this.acquirePromise = null
+      }
+    })()
+
+    return this.acquirePromise
   }
 
   /**
-   * Record that an auto-poll has started. Call this when the poll begins.
-   */
-  async recordPoll(): Promise<void> {
-    await chrome.storage.session.set({
-      [STORAGE_KEY]: Date.now(),
-    })
-  }
-
-  /**
-   * Get milliseconds remaining until the next poll is allowed.
-   * Returns 0 if a poll is allowed now.
+   * Get milliseconds remaining until next allowed poll (0 if allowed now).
+   * Read-only; safe for concurrent calls. Useful for UX/debug.
    */
   async getTimeRemaining(): Promise<number> {
     const lastPoll = await this.getLastPollTime()
     if (!lastPoll) return 0
-
     const elapsed = Date.now() - lastPoll
-    const remaining = AUTO_POLL_COOLDOWN_MS - elapsed
-    return Math.max(0, remaining)
+    return Math.max(0, AUTO_POLL_COOLDOWN_MS - elapsed)
   }
 
   private async getLastPollTime(): Promise<number | null> {
