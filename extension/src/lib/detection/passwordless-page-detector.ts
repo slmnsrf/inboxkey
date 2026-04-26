@@ -71,17 +71,19 @@ function hasDangerousUrlPath(pathname: string): boolean {
  * Passwordless waiting screens have no inputs; sign-in forms do.
  *
  * Two-part check:
- *   a) OTP/code-type inputs via getVisibleRelevantInputFields (text/tel/number)
+ *   a) OTP/code-type inputs via getVisibleRelevantInputFields (strict mode:
+ *      getComputedStyle + getBoundingClientRect). Production only — layout
+ *      APIs return zero dimensions in test environments, so this part is
+ *      effectively a no-op in happy-dom/jsdom.
  *   b) Sign-in form inputs: email and password — excluded from the OTP helper
  *      because they're not verification code fields, but they absolutely mark
  *      this page as an email-submission form rather than a waiting screen.
- *
- * Uses strictVisibility=false for test compatibility (jsdom lacks
- * getComputedStyle / getBoundingClientRect that the strict path needs).
+ *      Visibility is checked via both inline styles and getComputedStyle
+ *      (wrapped in try/catch for test-env robustness).
  */
-function hasNoRelevantInputs(strictVisibility = false): boolean {
-  // Part (a): OTP/code-type inputs
-  if (getVisibleRelevantInputFields(strictVisibility).length > 0) return false
+function hasNoRelevantInputs(): boolean {
+  // Part (a): OTP/code-type inputs — strict visibility (production path)
+  if (getVisibleRelevantInputFields(true).length > 0) return false
 
   // Part (b): email or password inputs — common on sign-in forms, never on
   // "check your inbox" waiting screens.
@@ -90,8 +92,21 @@ function hasNoRelevantInputs(strictVisibility = false): boolean {
   )
   for (const inp of signInInputs) {
     if (inp.disabled || inp.hidden || inp.readOnly) continue
-    const style = (inp.getAttribute('style') ?? '').toLowerCase()
-    if (/display\s*:\s*none|visibility\s*:\s*hidden/.test(style)) continue
+
+    // Inline-style visibility check
+    const inlineStyle = (inp.getAttribute('style') ?? '').toLowerCase()
+    if (/display\s*:\s*none|visibility\s*:\s*hidden/.test(inlineStyle)) continue
+
+    // Computed-style visibility check (wrapping in try/catch for test-env
+    // robustness — if getComputedStyle throws, treat input as visible so we
+    // err on the side of returning false from the detector).
+    try {
+      const computed = window.getComputedStyle(inp)
+      if (computed.display === 'none' || computed.visibility === 'hidden') continue
+    } catch {
+      // getComputedStyle unavailable (rare jsdom edge case) — treat as visible
+    }
+
     return false
   }
 
@@ -114,8 +129,8 @@ const ALL_PASSWORDLESS_PHRASES: ReadonlyArray<string> = Object.freeze(
  * Gate 4 — true when the filtered page text contains at least one
  * passwordless-page phrase from any supported language.
  */
-function hasPasswordlessCopy(doc: Document): boolean {
-  const body = doc.body
+function hasPasswordlessCopy(): boolean {
+  const body = document.body
   if (!body) return false
 
   const text = getFilteredText(body).toLowerCase()
@@ -142,11 +157,15 @@ function hasPasswordlessCopy(doc: Document): boolean {
  *
  * Strict failure mode: returns false on any exception (never throws).
  *
+ * All DOM access uses the global `document`. Gate 3 uses
+ * `getVisibleRelevantInputFields` which is hardcoded to global `document`
+ * inside field-detector.ts, making a `doc` parameter misleading — the
+ * contract is honest: this function inspects the current page document.
+ *
  * @param url  - The page URL (full string, e.g. window.location.href)
- * @param doc  - The page Document (e.g. window.document)
  * @returns true only when all four gates pass
  */
-export function detectPasswordlessPage(url: string, doc: Document): boolean {
+export function detectPasswordlessPage(url: string): boolean {
   try {
     const parsed = new URL(url)
     const pathname = parsed.pathname.toLowerCase()
@@ -161,7 +180,7 @@ export function detectPasswordlessPage(url: string, doc: Document): boolean {
     if (!hasNoRelevantInputs()) return false
 
     // Gate 4: must have passwordless-page copy
-    if (!hasPasswordlessCopy(doc)) return false
+    if (!hasPasswordlessCopy()) return false
 
     return true
   } catch {
