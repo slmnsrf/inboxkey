@@ -17,8 +17,12 @@
  *
  * NOTE: History patching (pushState/replaceState) is intentionally absent.
  * Chrome MV3 content scripts run in ISOLATED world; patching history there
- * has no effect on the MAIN-world SPA routers. URL change detection is
- * delegated to the host's window.location.href poller.
+ * has no effect on the MAIN-world SPA routers. SPA URL changes (including
+ * back/forward) are detected by the host's 500ms window.location.href poller
+ * (see contents/index.ts urlCheckTimer). Worst-case latency is ~500ms —
+ * acceptable since inbox polling itself is the slow path. We do NOT listen
+ * for popstate directly: history monkey-patches don't work in Chrome MV3
+ * ISOLATED-world content scripts (page-world router calls bypass the patch).
  */
 
 import { detectPasswordlessPage } from '@/lib/detection/passwordless-page-detector'

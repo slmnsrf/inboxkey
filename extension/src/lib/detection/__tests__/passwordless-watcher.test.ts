@@ -323,7 +323,7 @@ describe('initPasswordlessWatcher', () => {
     expect(chrome.runtime.sendMessage).not.toHaveBeenCalled()
   })
 
-  it('test 10: onUrlChanged() public API — does not fire before debounce, fires after', async () => {
+  it('test 10: debounces rapid onUrlChanged() calls into a single fire after 250ms', async () => {
     // Initial URL: detector false (no initial fire)
     mockDetectPasswordlessPage.mockReturnValueOnce(false)
 
@@ -331,9 +331,10 @@ describe('initPasswordlessWatcher', () => {
     watcher = initPasswordlessWatcher()
 
     await flushMicrotasks()
-    expect(chrome.runtime.sendMessage).not.toHaveBeenCalled()
+    // Reset to focus on the debounce test
+    vi.clearAllMocks()
 
-    // Navigate to a new URL that the detector recognises
+    // Configure detector to return true for the new URL
     Object.defineProperty(window, 'location', {
       value: { href: 'https://example.com/check-inbox' },
       writable: true,
@@ -341,12 +342,19 @@ describe('initPasswordlessWatcher', () => {
     })
     mockDetectPasswordlessPage.mockReturnValue(true)
 
-    // Must NOT fire synchronously (before debounce window expires)
-    watcher.onUrlChanged()
+    // Fire 5 rapid onUrlChanged() calls within ~100ms (well inside the 250ms debounce window)
+    for (let i = 0; i < 5; i++) {
+      watcher.onUrlChanged()
+      await new Promise(resolve => setTimeout(resolve, 20))
+    }
+
+    // At ~100ms elapsed, no fire yet (debounce restarted on each call)
     expect(chrome.runtime.sendMessage).not.toHaveBeenCalled()
 
-    // Must fire after debounce
+    // Wait for the 250ms quiet period from the LAST call to elapse
     await new Promise(resolve => setTimeout(resolve, 300))
+
+    // Exactly ONE fire — all 5 calls collapsed into one
     expect(chrome.runtime.sendMessage).toHaveBeenCalledOnce()
     expect(chrome.runtime.sendMessage).toHaveBeenCalledWith({
       type: 'TRIGGER_INBOX_POLL',

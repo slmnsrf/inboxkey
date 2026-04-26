@@ -295,7 +295,8 @@ export function clearProcessedFields(): void {
 
     // globalProcessedRepresentatives already initialized in initialize()
 
-    // Clear Set on SPA navigation (assign to module-level variable for cleanup)
+    // Clear Set on SPA navigation AND notify the passwordless watcher
+    // (which can't observe page-world history.pushState in Chrome MV3 ISOLATED).
     let lastUrl = window.location.href
     urlCheckTimer = window.setInterval(() => {
       if (window.location.href !== lastUrl) {
