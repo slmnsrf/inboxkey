@@ -30,7 +30,8 @@ import { hydrateSmsCache } from '@/lib/detection/sms-feature-cache'
 import { getMatchingAutocompleteToken } from '@/lib/detection/detection-utils'
 import { AUTOCOMPLETE_VALUES } from '@/lib/detection/patterns'
 import { cancelPendingNotifications } from './notification'
-import { initPasswordlessWatcher } from './passwordless-watcher'
+import { initPasswordlessWatcher } from '@/lib/detection/passwordless-watcher'
+import type { PasswordlessWatcher } from '@/lib/detection/passwordless-watcher'
 
 /**
  * Global Set to track processed representative fields across all batches
@@ -47,10 +48,10 @@ let globalProcessedRepresentatives: Set<HTMLInputElement> | null = null
 let urlCheckTimer: ReturnType<typeof setInterval> | null = null
 
 /**
- * Cleanup function returned by initPasswordlessWatcher().
- * Called on beforeunload to remove listeners and restore patched globals.
+ * Watcher instance returned by initPasswordlessWatcher().
+ * Called on beforeunload to remove listeners.
  */
-let cleanupPasswordlessWatcher: (() => void) | null = null
+let passwordlessWatcher: PasswordlessWatcher | null = null
 
 /**
  * Clear the global Set of processed representatives
@@ -299,6 +300,7 @@ export function clearProcessedFields(): void {
     urlCheckTimer = window.setInterval(() => {
       if (window.location.href !== lastUrl) {
         globalProcessedRepresentatives?.clear()
+        passwordlessWatcher?.onUrlChanged()
         lastUrl = window.location.href
       }
     }, 500)
@@ -389,7 +391,7 @@ export function clearProcessedFields(): void {
 
     // Start passwordless page watcher (fires TRIGGER_INBOX_POLL when the
     // user lands on a "check your inbox" waiting screen with no input fields)
-    cleanupPasswordlessWatcher = initPasswordlessWatcher()
+    passwordlessWatcher = initPasswordlessWatcher()
   }
 
   // Initialize when DOM is ready
@@ -407,10 +409,10 @@ export function clearProcessedFields(): void {
       urlCheckTimer = null
     }
 
-    // Clean up passwordless watcher (removes listeners, restores patched globals)
-    if (cleanupPasswordlessWatcher !== null) {
-      cleanupPasswordlessWatcher()
-      cleanupPasswordlessWatcher = null
+    // Clean up passwordless watcher (removes listeners)
+    if (passwordlessWatcher !== null) {
+      passwordlessWatcher.cleanup()
+      passwordlessWatcher = null
     }
 
     detector.stopObserving()

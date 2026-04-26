@@ -5,13 +5,17 @@
  *  1. Initial-load: detector true → sendMessage fired
  *  2. Initial-load: detector false → sendMessage NOT fired
  *  3. Per-URL one-shot: same URL detected twice → sendMessage called once
- *  4. SPA URL change: new URL → detector re-runs → sendMessage fired again
+ *  4. SPA URL change via onUrlChanged() → detector fires for new URL
  *  5. automationLevel='manual' → sendMessage suppressed
  *  6. automationLevel flips mid-session via chrome.storage.onChanged
- *  7. Cleanup removes listeners and clears state
+ *  7. Cleanup clears seenUrls + removes storage listener so re-init fires again
+ *  8. Fail-closed default: sendMessage suppressed during storage hydration gap
+ *  9. Hydration does not overwrite a value already set by onChanged listener
+ * 10. onUrlChanged() public API contract: fires after debounce, not before
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
+import type { PasswordlessWatcher } from '../passwordless-watcher'
 
 // ---------------------------------------------------------------------------
 // Mock the detector — we never exercise all 4 real gates in unit tests
@@ -54,7 +58,7 @@ async function flushMicrotasks(): Promise<void> {
 // Setup
 // ---------------------------------------------------------------------------
 
-let cleanupFn: (() => void) | null = null
+let watcher: PasswordlessWatcher | null = null
 
 beforeEach(() => {
   vi.clearAllMocks()
@@ -77,10 +81,10 @@ beforeEach(() => {
 })
 
 afterEach(() => {
-  // Always call cleanup to restore patched globals
-  if (cleanupFn) {
-    cleanupFn()
-    cleanupFn = null
+  // Always call cleanup to release resources
+  if (watcher) {
+    watcher.cleanup()
+    watcher = null
   }
 })
 
@@ -94,7 +98,7 @@ describe('initPasswordlessWatcher', () => {
     mockDetectPasswordlessPage.mockReturnValue(true)
 
     const { initPasswordlessWatcher } = await import('../passwordless-watcher')
-    cleanupFn = initPasswordlessWatcher()
+    watcher = initPasswordlessWatcher()
 
     // Wait for the async storage hydration + .then()
     await flushMicrotasks()
@@ -111,7 +115,7 @@ describe('initPasswordlessWatcher', () => {
     mockDetectPasswordlessPage.mockReturnValue(false)
 
     const { initPasswordlessWatcher } = await import('../passwordless-watcher')
-    cleanupFn = initPasswordlessWatcher()
+    watcher = initPasswordlessWatcher()
 
     await flushMicrotasks()
 
@@ -122,12 +126,12 @@ describe('initPasswordlessWatcher', () => {
     mockDetectPasswordlessPage.mockReturnValue(true)
 
     const { initPasswordlessWatcher } = await import('../passwordless-watcher')
-    cleanupFn = initPasswordlessWatcher()
+    watcher = initPasswordlessWatcher()
 
     await flushMicrotasks()
 
-    // Simulate popstate on the SAME URL (e.g., hash change or SPA double-render)
-    window.dispatchEvent(new Event('popstate'))
+    // Simulate host calling onUrlChanged() for the SAME URL (e.g., SPA double-render)
+    watcher.onUrlChanged()
 
     // Wait for 250ms debounce
     await new Promise(resolve => setTimeout(resolve, 300))
@@ -141,14 +145,14 @@ describe('initPasswordlessWatcher', () => {
     mockDetectPasswordlessPage.mockReturnValueOnce(false)
 
     const { initPasswordlessWatcher } = await import('../passwordless-watcher')
-    cleanupFn = initPasswordlessWatcher()
+    watcher = initPasswordlessWatcher()
 
     await flushMicrotasks()
 
     // Ensure sendMessage not called for initial false detection
     expect(chrome.runtime.sendMessage).not.toHaveBeenCalled()
 
-    // Simulate SPA navigation to a new URL
+    // Simulate SPA navigation: host updates location.href then calls onUrlChanged()
     Object.defineProperty(window, 'location', {
       value: { href: 'https://example.com/signin/magic' },
       writable: true,
@@ -158,8 +162,8 @@ describe('initPasswordlessWatcher', () => {
     // Detector now returns true for the new URL
     mockDetectPasswordlessPage.mockReturnValue(true)
 
-    // Trigger via pushState (which the watcher monkey-patches)
-    history.pushState({}, '', '/signin/magic')
+    // Host-driven notification (replaces old pushState patch)
+    watcher.onUrlChanged()
 
     // Wait for 250ms debounce
     await new Promise(resolve => setTimeout(resolve, 300))
@@ -181,7 +185,7 @@ describe('initPasswordlessWatcher', () => {
     mockDetectPasswordlessPage.mockReturnValue(true)
 
     const { initPasswordlessWatcher } = await import('../passwordless-watcher')
-    cleanupFn = initPasswordlessWatcher()
+    watcher = initPasswordlessWatcher()
 
     await flushMicrotasks()
 
@@ -193,7 +197,7 @@ describe('initPasswordlessWatcher', () => {
     mockDetectPasswordlessPage.mockReturnValueOnce(false)
 
     const { initPasswordlessWatcher } = await import('../passwordless-watcher')
-    cleanupFn = initPasswordlessWatcher()
+    watcher = initPasswordlessWatcher()
 
     await flushMicrotasks()
 
@@ -214,13 +218,47 @@ describe('initPasswordlessWatcher', () => {
     })
     mockDetectPasswordlessPage.mockReturnValue(true)
 
-    window.dispatchEvent(new Event('popstate'))
+    watcher.onUrlChanged()
 
     // Wait for 250ms debounce
     await new Promise(resolve => setTimeout(resolve, 300))
 
     // Should still be suppressed because manual mode is now active
     expect(chrome.runtime.sendMessage).not.toHaveBeenCalled()
+  })
+
+  it('test 7: cleanup clears seenUrls + removes storage listener so re-init fires again', async () => {
+    mockDetectPasswordlessPage.mockReturnValue(true)
+
+    const { initPasswordlessWatcher } = await import('../passwordless-watcher')
+    watcher = initPasswordlessWatcher()
+
+    await flushMicrotasks()
+
+    // First init fires
+    expect(chrome.runtime.sendMessage).toHaveBeenCalledOnce()
+
+    // Clean up the first watcher
+    watcher.cleanup()
+    watcher = null
+
+    // Verify storage listener was explicitly removed
+    expect(vi.mocked(chrome.storage.onChanged.removeListener)).toHaveBeenCalled()
+
+    // Clear mocks to reset call count
+    vi.clearAllMocks()
+    mockDetectPasswordlessPage.mockReturnValue(true)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    ;(vi.mocked(chrome.storage.local.get) as any).mockResolvedValue({
+      settings: { automationLevel: 'autofill' },
+    })
+
+    // Re-init should fire again (seenUrls was cleared)
+    watcher = initPasswordlessWatcher()
+
+    await flushMicrotasks()
+
+    expect(chrome.runtime.sendMessage).toHaveBeenCalledOnce()
   })
 
   it('test 8: fail-closed default — sendMessage suppressed during storage hydration gap', async () => {
@@ -231,11 +269,11 @@ describe('initPasswordlessWatcher', () => {
     mockDetectPasswordlessPage.mockReturnValue(true)
 
     const { initPasswordlessWatcher } = await import('../passwordless-watcher')
-    cleanupFn = initPasswordlessWatcher()
+    watcher = initPasswordlessWatcher()
 
-    // Even if pushState fires immediately (before hydration resolves),
+    // Even if onUrlChanged fires immediately (before hydration resolves),
     // the watcher must NOT call sendMessage because the default is 'manual'.
-    history.pushState({}, '', '/signin/magic')
+    watcher.onUrlChanged()
 
     // Wait for debounce
     await new Promise(resolve => setTimeout(resolve, 300))
@@ -258,7 +296,7 @@ describe('initPasswordlessWatcher', () => {
     mockDetectPasswordlessPage.mockReturnValue(true)
 
     const { initPasswordlessWatcher } = await import('../passwordless-watcher')
-    cleanupFn = initPasswordlessWatcher()
+    watcher = initPasswordlessWatcher()
 
     // Fire onChanged with 'manual' before the slow get resolves.
     const listener = getLatestOnChangedListener()
@@ -276,7 +314,7 @@ describe('initPasswordlessWatcher', () => {
       writable: true,
       configurable: true,
     })
-    history.pushState({}, '', '/signin/check')
+    watcher.onUrlChanged()
 
     // Wait for 250ms debounce
     await new Promise(resolve => setTimeout(resolve, 300))
@@ -285,34 +323,36 @@ describe('initPasswordlessWatcher', () => {
     expect(chrome.runtime.sendMessage).not.toHaveBeenCalled()
   })
 
-  it('test 7: cleanup clears seen-URL set so the same URL can trigger after re-init', async () => {
-    mockDetectPasswordlessPage.mockReturnValue(true)
+  it('test 10: onUrlChanged() public API — does not fire before debounce, fires after', async () => {
+    // Initial URL: detector false (no initial fire)
+    mockDetectPasswordlessPage.mockReturnValueOnce(false)
 
     const { initPasswordlessWatcher } = await import('../passwordless-watcher')
-    cleanupFn = initPasswordlessWatcher()
+    watcher = initPasswordlessWatcher()
 
     await flushMicrotasks()
+    expect(chrome.runtime.sendMessage).not.toHaveBeenCalled()
 
-    // First init fires
-    expect(chrome.runtime.sendMessage).toHaveBeenCalledOnce()
-
-    // Clean up the first watcher
-    cleanupFn()
-    cleanupFn = null
-
-    // Clear mocks to reset call count
-    vi.clearAllMocks()
-    mockDetectPasswordlessPage.mockReturnValue(true)
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    ;(vi.mocked(chrome.storage.local.get) as any).mockResolvedValue({
-      settings: { automationLevel: 'autofill' },
+    // Navigate to a new URL that the detector recognises
+    Object.defineProperty(window, 'location', {
+      value: { href: 'https://example.com/check-inbox' },
+      writable: true,
+      configurable: true,
     })
+    mockDetectPasswordlessPage.mockReturnValue(true)
 
-    // Re-init should fire again (seenUrls was cleared)
-    cleanupFn = initPasswordlessWatcher()
+    // Must NOT fire synchronously (before debounce window expires)
+    watcher.onUrlChanged()
+    expect(chrome.runtime.sendMessage).not.toHaveBeenCalled()
 
-    await flushMicrotasks()
-
+    // Must fire after debounce
+    await new Promise(resolve => setTimeout(resolve, 300))
     expect(chrome.runtime.sendMessage).toHaveBeenCalledOnce()
+    expect(chrome.runtime.sendMessage).toHaveBeenCalledWith({
+      type: 'TRIGGER_INBOX_POLL',
+      source: 'passwordless-page',
+      url: 'https://example.com/check-inbox',
+    })
   })
+
 })

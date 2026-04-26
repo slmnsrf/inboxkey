@@ -8,11 +8,17 @@
  *   1. On init: read automationLevel from chrome.storage.local, cache it,
  *      subscribe to chrome.storage.onChanged for live updates.
  *   2. On initial load: run detectPasswordlessPage(url) and fire if positive.
- *   3. On SPA navigation: monkey-patch pushState/replaceState and listen for
- *      popstate. After 250ms debounce, re-run detection on new URL.
+ *   3. On SPA navigation: the host (contents/index.ts) calls onUrlChanged()
+ *      from its existing 500ms href-polling interval. After 250ms debounce,
+ *      re-run detection on the new URL.
  *   4. Per-URL one-shot: a Set<string> prevents re-firing on the same URL
  *      within one content-script lifetime.
- *   5. Cleanup: restores patched globals, removes listeners, clears state.
+ *   5. Cleanup: removes storage listener and clears state.
+ *
+ * NOTE: History patching (pushState/replaceState) is intentionally absent.
+ * Chrome MV3 content scripts run in ISOLATED world; patching history there
+ * has no effect on the MAIN-world SPA routers. URL change detection is
+ * delegated to the host's window.location.href poller.
  */
 
 import { detectPasswordlessPage } from '@/lib/detection/passwordless-page-detector'
@@ -22,15 +28,21 @@ import type { AutomationLevel } from '@/lib/storage/schema'
 // Public API
 // ---------------------------------------------------------------------------
 
+export interface PasswordlessWatcher {
+  /** Host-driven notification: call when window.location.href changes. */
+  onUrlChanged(): void
+  /** Tear down the watcher (storage listener, debounce timer, seen-URL set). */
+  cleanup(): void
+}
+
 /**
  * Initialize the passwordless page watcher.
  *
  * Must be called inside the content-script IIFE after domain/HTML checks pass.
  *
- * @returns Cleanup function — call on `beforeunload` to remove all listeners
- *          and restore patched globals.
+ * @returns PasswordlessWatcher object exposing onUrlChanged() and cleanup().
  */
-export function initPasswordlessWatcher(): () => void {
+export function initPasswordlessWatcher(): PasswordlessWatcher {
   // -- State ----------------------------------------------------------------
 
   /** URLs already fired this content-script lifetime (prevents re-fire on same URL). */
@@ -48,10 +60,6 @@ export function initPasswordlessWatcher(): () => void {
 
   /** Debounce timer id for SPA URL changes. */
   let debounceTimer: ReturnType<typeof setTimeout> | null = null
-
-  /** Original pushState/replaceState references (restored on cleanup). */
-  const originalPushState = history.pushState
-  const originalReplaceState = history.replaceState
 
   // -- Automation level cache ----------------------------------------------
 
@@ -133,65 +141,40 @@ export function initPasswordlessWatcher(): () => void {
     maybeFireForUrl(window.location.href)
   })
 
-  // -- SPA URL-change detection --------------------------------------------
+  // -- Public interface ----------------------------------------------------
 
-  /**
-   * Debounced handler for any URL change event.
-   * Waits 250ms to let SPA double-renders settle before evaluating.
-   */
-  function onUrlChange(): void {
-    if (debounceTimer !== null) {
-      clearTimeout(debounceTimer)
-    }
-    debounceTimer = setTimeout(() => {
-      debounceTimer = null
-      maybeFireForUrl(window.location.href)
-    }, 250)
-  }
+  return {
+    /**
+     * Notify the watcher that window.location.href has changed.
+     * Called by the host's 500ms href-polling interval in contents/index.ts.
+     * Debounces 250ms to let SPA double-renders settle.
+     */
+    onUrlChanged(): void {
+      if (debounceTimer !== null) {
+        clearTimeout(debounceTimer)
+      }
+      debounceTimer = setTimeout(() => {
+        debounceTimer = null
+        maybeFireForUrl(window.location.href)
+      }, 250)
+    },
 
-  // popstate covers browser back/forward navigation
-  window.addEventListener('popstate', onUrlChange)
+    /**
+     * Tear down all resources held by this watcher instance.
+     * Call on beforeunload (or whenever the watcher should be disposed).
+     */
+    cleanup(): void {
+      // Clear debounce timer
+      if (debounceTimer !== null) {
+        clearTimeout(debounceTimer)
+        debounceTimer = null
+      }
 
-  // Monkey-patch pushState and replaceState for SPA router navigation.
-  // Named functions allow identity-check in cleanup so we only unwrap our own
-  // patch (preserving any third-party patch installed after ours).
-  function patchedPushState(...args: Parameters<typeof history.pushState>): void {
-    originalPushState.call(history, ...args)
-    onUrlChange()
-  }
-  function patchedReplaceState(...args: Parameters<typeof history.replaceState>): void {
-    originalReplaceState.call(history, ...args)
-    onUrlChange()
-  }
+      // Unsubscribe storage listener
+      chrome.storage.onChanged.removeListener(onStorageChanged)
 
-  history.pushState = patchedPushState
-  history.replaceState = patchedReplaceState
-
-  // -- Cleanup -------------------------------------------------------------
-
-  return function cleanup(): void {
-    // Clear debounce timer
-    if (debounceTimer !== null) {
-      clearTimeout(debounceTimer)
-      debounceTimer = null
-    }
-
-    // Remove URL listeners
-    window.removeEventListener('popstate', onUrlChange)
-
-    // Restore original history methods only if our patch is still on top.
-    // This preserves any third-party patch that may have wrapped ours.
-    if (history.pushState === patchedPushState) {
-      history.pushState = originalPushState
-    }
-    if (history.replaceState === patchedReplaceState) {
-      history.replaceState = originalReplaceState
-    }
-
-    // Unsubscribe storage listener
-    chrome.storage.onChanged.removeListener(onStorageChanged)
-
-    // Clear seen-URL set
-    seenUrls.clear()
+      // Clear seen-URL set
+      seenUrls.clear()
+    },
   }
 }
