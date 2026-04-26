@@ -493,12 +493,15 @@ export class PopupMessageHandler {
               return { success: true }
             }
 
+            // Record immediately after passing the gate, before any other I/O.
+            // Ensures any subsequent failure does not allow an instant retry.
+            await this.autoPollRateLimiter.recordPoll()
+
             const storage = await StorageFactory.create()
             const mailboxes = await storage.getMailboxes()
 
             if (mailboxes.length === 0) {
-              // Nothing configured — record and return silently.
-              await this.autoPollRateLimiter.recordPoll()
+              // Nothing configured — return silently.
               return { success: true }
             }
 
@@ -507,13 +510,8 @@ export class PopupMessageHandler {
 
             // SMS-only guard
             if (adapters.length === 0 && mailboxes.every(m => m.providerId === 'google-messages')) {
-              await this.autoPollRateLimiter.recordPoll()
               return { success: true }
             }
-
-            // Record the poll now — before network I/O — so a failure doesn't
-            // allow an immediate retry loop.
-            await this.autoPollRateLimiter.recordPoll()
 
             const pollingService = new EmailPollingService(adapters, this.seenStore)
             const { candidates } = await pollingService.pollOnce()
@@ -574,8 +572,9 @@ export class PopupMessageHandler {
             return { success: true }
           } catch (error) {
             // Silent failure: auto-poll errors must never surface to the user.
+            // recordPoll() was already called before any I/O, so the cooldown
+            // is enforced even on failure — no retry-spam possible.
             console.warn('[PopupHandler] Auto-poll failed silently:', error)
-            // recordPoll() already called before I/O; nothing more to do.
             return { success: true }
           }
         }

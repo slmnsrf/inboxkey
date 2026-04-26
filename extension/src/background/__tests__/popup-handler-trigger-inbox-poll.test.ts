@@ -8,6 +8,7 @@
  * 4. errorManager.recordFailure NOT called even when adapter fails
  * 5. recordPoll() is called after the poll attempt (success or fail)
  * 6. Empty mailbox list → returns success silently, pollOnce NOT called
+ * 7. recordPoll() called even when getMailboxes rejects (early I/O failure)
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest'
@@ -344,7 +345,33 @@ describe('PopupMessageHandler — TRIGGER_INBOX_POLL', () => {
 
     expect(response).toEqual({ success: true })
     expect(mockPollOnce).not.toHaveBeenCalled()
-    // recordPoll IS still called so we don't spin on empty mailbox state
+    // recordPoll IS still called (up-front, before any I/O) so we don't spin on empty mailbox state
+    expect(mockRecordPoll).toHaveBeenCalledTimes(1)
+  })
+
+  // -------------------------------------------------------------------------
+  // Test 7: recordPoll() called even when getMailboxes rejects (early I/O failure)
+  // This is the regression test for the retry-spam bug: if recordPoll() were called
+  // AFTER I/O, a storage failure would skip it and allow an instant retry loop.
+  // -------------------------------------------------------------------------
+  it('calls recordPoll() even when getMailboxes rejects (early I/O failure)', async () => {
+    const failingStorage = {
+      getMailboxes: vi.fn().mockRejectedValue(new Error('storage error')),
+      updateMailbox: vi.fn(),
+      addMailbox: vi.fn(),
+      removeMailbox: vi.fn(),
+    }
+    ;(StorageFactory.create as ReturnType<typeof vi.fn>).mockResolvedValue(failingStorage)
+
+    const result = await handler.handleMessage({
+      type: 'TRIGGER_INBOX_POLL',
+      source: 'passwordless-page',
+      url: 'https://example.com/login',
+    })
+
+    // Still silent success
+    expect(result).toEqual({ success: true })
+    // Critical: recordPoll must have been called before the I/O that failed
     expect(mockRecordPoll).toHaveBeenCalledTimes(1)
   })
 })
