@@ -45,7 +45,7 @@ import { getVisibleRelevantInputFields } from './field-detector'
  *      pages like /auth/dashboard or /auth/settings.
  */
 const SIGN_IN_PATH_REGEX =
-  /\/(?:login|signin|sign-in|sso|passwordless|magic|verify-email)(?:\/|$)|\/auth(?:$|\/(?:login|signin|sign-in|callback|magic(?:-link)?|passwordless|sso|verify-email))(?:\/|$)/i
+  /\/(?:login|signin|sign-in|sso|passwordless|magic|verify-email)(?:\/|$)|\/auth(?:\/?$|\/(?:login|signin|sign-in|callback|magic(?:-link)?|passwordless|sso|verify-email)(?:\/|$))/i
 
 /**
  * Gate 1 — true when the URL pathname looks like a sign-in route.

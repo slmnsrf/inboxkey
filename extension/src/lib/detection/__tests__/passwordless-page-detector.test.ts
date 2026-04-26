@@ -162,6 +162,14 @@ describe('detectPasswordlessPage', () => {
       setBody(EN_WAITING_COPY)
       expect(detectPasswordlessPage('https://app.example.com/auth/profile')).toBe(false)
     })
+
+    it('matches /auth/ (trailing slash, no subpath) — regression guard for trailingSlash framework convention', () => {
+      // Next.js (trailingSlash: true), Nuxt, Astro, Hugo, Cloudflare Pages normalize
+      // paths with a trailing slash. Browsers do NOT strip the trailing slash from
+      // new URL().pathname, so /auth/ must match as a terminal /auth route.
+      setBody(EN_WAITING_COPY)
+      expect(detectPasswordlessPage('https://app.example.com/auth/')).toBe(true)
+    })
   })
 
   // =========================================================================
