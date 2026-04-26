@@ -175,6 +175,7 @@ export type PopupRequest =
   | { type: 'GET_MAILBOXES' }
   | { type: 'GET_SYNC_ERROR' }
   | { type: 'TEST_MAILBOX_CONNECTION'; mailboxId: string }
+  | { type: 'TRIGGER_INBOX_POLL'; source: 'passwordless-page'; url: string }
 
 /**
  * Sync error info

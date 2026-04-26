@@ -359,7 +359,8 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     msg.type === "MARK_LINK_OPENED" ||
     msg.type === "GET_SYNC_ERROR" ||
     msg.type === "GET_MAILBOXES" ||
-    msg.type === "TEST_MAILBOX_CONNECTION"
+    msg.type === "TEST_MAILBOX_CONNECTION" ||
+    msg.type === "TRIGGER_INBOX_POLL"
   ) {
     outlookMigrationDone
       .then(() => popupMessageHandler.handleMessage(msg))

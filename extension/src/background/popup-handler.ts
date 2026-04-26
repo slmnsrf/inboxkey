@@ -8,6 +8,7 @@
 import { PopupCacheManager } from './popup-cache'
 import { ErrorStateManager } from './error-state-manager'
 import { SyncRateLimiter } from './sync-rate-limiter'
+import { AutoPollRateLimiter } from './auto-poll-rate-limiter'
 import type { PopupRequest, PopupResponse, CodeItem, LinkItem } from '@/shared/popup-messages'
 import { EmailPollingService } from '@/lib/services/email-polling-service'
 import { createAdaptersFromMailboxes } from '@/lib/services/provider-adapter'
@@ -27,6 +28,7 @@ import { getMessagesTabManager } from '@/lib/providers/google-messages/tab-manag
  */
 export class PopupMessageHandler {
   private readonly rateLimiter = new SyncRateLimiter()
+  private readonly autoPollRateLimiter = new AutoPollRateLimiter()
   private readonly seenStore = new SeenMessageStore()
 
   constructor(
@@ -479,6 +481,102 @@ export class PopupMessageHandler {
               success: false,
               error: error instanceof Error ? error.message : String(error),
             }
+          }
+        }
+
+        case 'TRIGGER_INBOX_POLL': {
+          // Auto-poll triggered by passwordless page detector (content script).
+          // Silent by design: never surfaces errors or rate-limit messages to the user.
+          try {
+            // Rate-limit check: if already polled within the last 30s, silently skip.
+            if (!await this.autoPollRateLimiter.canPoll()) {
+              return { success: true }
+            }
+
+            const storage = await StorageFactory.create()
+            const mailboxes = await storage.getMailboxes()
+
+            if (mailboxes.length === 0) {
+              // Nothing configured — record and return silently.
+              await this.autoPollRateLimiter.recordPoll()
+              return { success: true }
+            }
+
+            // Create adapters — google-messages excluded (session-scoped, not pollable here)
+            const adapters = await createAdaptersFromMailboxes(storage)
+
+            // SMS-only guard
+            if (adapters.length === 0 && mailboxes.every(m => m.providerId === 'google-messages')) {
+              await this.autoPollRateLimiter.recordPoll()
+              return { success: true }
+            }
+
+            // Record the poll now — before network I/O — so a failure doesn't
+            // allow an immediate retry loop.
+            await this.autoPollRateLimiter.recordPoll()
+
+            const pollingService = new EmailPollingService(adapters, this.seenStore)
+            const { candidates } = await pollingService.pollOnce()
+
+            console.log(`[PopupHandler] Auto-poll found ${candidates.length} candidates`)
+
+            // Convert candidates to ephemeral codes (same shape as TRIGGER_SYNC)
+            const ephemeralCodes = candidates.flatMap(candidate => {
+              const mailbox = mailboxes.find(m => m.id === candidate.mailboxId)
+              if (!mailbox) return []
+
+              const results = []
+
+              if (candidate.code) {
+                results.push({
+                  code: candidate.code.value,
+                  timestamp: candidate.receivedEpochMs || Date.now(),
+                  source: `${candidate.from || 'Unknown'} - ${candidate.subject || 'No subject'}`,
+                  used: false,
+                  siteMatch: undefined,
+                  mailboxId: mailbox.id,
+                  extractionScore: candidate.code.score,
+                })
+              }
+
+              if (candidate.link) {
+                results.push({
+                  code: `magic-link:${candidate.link.href}`,
+                  timestamp: candidate.receivedEpochMs || Date.now(),
+                  source: `${candidate.from || 'Unknown'} - ${candidate.subject || 'No subject'}`,
+                  used: false,
+                  siteMatch: candidate.link.domain,
+                  mailboxId: mailbox.id,
+                  extractionScore: candidate.link.score,
+                })
+              }
+
+              return results
+            })
+
+            // Update popup cache with discovered items
+            await this.cacheManager.updateWithNewCodes(ephemeralCodes, mailboxes.length, mailboxes)
+
+            // Update badge
+            const cache = await this.cacheManager.getCache()
+            const now = Date.now()
+            const unseenCount = countBadgeEligible(cache.items ?? [], now, BADGE_EXPIRY_MS)
+            if (unseenCount > 0) {
+              setBadgeCount(unseenCount)
+            } else {
+              clearBadge()
+            }
+
+            // NOTE: intentionally NOT updating lastSyncedAt on any mailbox
+            // NOTE: intentionally NOT calling errorManager.recordSuccess/recordFailure
+            // NOTE: intentionally NOT consuming the manual sync rateLimiter budget
+
+            return { success: true }
+          } catch (error) {
+            // Silent failure: auto-poll errors must never surface to the user.
+            console.warn('[PopupHandler] Auto-poll failed silently:', error)
+            // recordPoll() already called before I/O; nothing more to do.
+            return { success: true }
           }
         }
 
