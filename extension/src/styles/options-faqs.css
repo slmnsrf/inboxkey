@@ -1,0 +1,168 @@
+/**
+ * InboxKey Options Page -- FAQs Tab
+ *
+ * Single bordered card with native <details> accordions divided by borders.
+ * Matches Security/About visual weight.
+ */
+
+.faqs {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+  max-width: 720px;
+  margin: 0 auto;
+  padding: var(--space-4) 0 var(--space-8);
+}
+
+/* ===========================
+   HERO
+   =========================== */
+
+.faqs__head {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.faqs__title {
+  margin: 0;
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: -0.02em;
+  color: var(--color-text-primary);
+}
+
+.faqs__intro {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-relaxed);
+  color: var(--color-text-secondary);
+}
+
+/* ===========================
+   LIST CARD
+   Single card containing all FAQs, divided by borders.
+   =========================== */
+
+.faqs__list {
+  background: var(--surface-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  overflow: hidden;
+}
+
+/* ===========================
+   FAQ ITEM (<details>)
+   =========================== */
+
+.faq-item {
+  border-bottom: 1px solid var(--color-border);
+}
+
+.faq-item:last-child {
+  border-bottom: none;
+}
+
+/* Hide the native disclosure triangle without breaking screen reader
+   accessibility (WebKit requires ::-webkit-details-marker; list-style
+   covers other engines). */
+.faq-item__q::-webkit-details-marker {
+  display: none;
+}
+
+.faq-item__q {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-4) var(--space-5);
+  cursor: pointer;
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-primary);
+  list-style: none;
+  transition: background var(--duration-fast) ease-out;
+}
+
+.faq-item__q:hover {
+  background: var(--color-bg-secondary);
+}
+
+.faq-item__q:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: -2px;
+}
+
+.faq-item__q-text {
+  flex: 1;
+  line-height: var(--line-height-normal);
+}
+
+.faq-item__chev {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  color: var(--color-text-tertiary);
+  transition: transform var(--duration-fast) ease-out,
+              color var(--duration-fast) ease-out;
+}
+
+.faq-item[open] .faq-item__chev {
+  transform: rotate(90deg);
+  color: var(--color-primary);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .faq-item__chev,
+  .faq-item__q {
+    transition: none;
+  }
+}
+
+/* ===========================
+   ANSWER BODY
+   =========================== */
+
+.faq-item__a {
+  padding: 0 var(--space-5) var(--space-5);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  line-height: var(--line-height-relaxed);
+}
+
+.faq-item__a p {
+  margin: 0 0 var(--space-3);
+}
+
+.faq-item__a p:last-child {
+  margin-bottom: 0;
+}
+
+.faq-item__a strong {
+  color: var(--color-text-primary);
+  font-weight: var(--font-weight-semibold);
+}
+
+.faq-item__a a {
+  color: var(--color-text-link);
+  text-decoration: none;
+}
+
+.faq-item__a a:hover {
+  text-decoration: underline;
+}
+
+/* ===========================
+   RESPONSIVE
+   =========================== */
+
+@media (max-width: 600px) {
+  .faqs {
+    padding: var(--space-3) 0 var(--space-6);
+  }
+  .faq-item__q {
+    padding: var(--space-3) var(--space-4);
+  }
+  .faq-item__a {
+    padding: 0 var(--space-4) var(--space-4);
+  }
+}

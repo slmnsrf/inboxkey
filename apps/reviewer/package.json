@@ -1,0 +1,39 @@
+{
+  "name": "inboxkey-reviewer",
+  "displayName": "InboxKey Reviewer - DEV TOOL",
+  "version": "0.1.0",
+  "description": "Dev tool for labeling email batches to improve extraction",
+  "private": true,
+  "scripts": {
+    "dev": "plasmo dev",
+    "build": "plasmo build",
+    "package": "cd build/chrome-mv3-prod && zip -r ../../inboxkey-reviewer-v0.1.0.zip . && cd ../.."
+  },
+  "dependencies": {
+    "@inboxkey/extraction-core": "workspace:*",
+    "plasmo": "^0.88.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "dexie": "^3.2.4"
+  },
+  "devDependencies": {
+    "@types/chrome": "^0.0.268",
+    "@types/react": "^18.3.3",
+    "typescript": "^5.5.3"
+  },
+  "manifest": {
+    "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAy0OX3egpJIcZjix8egGtGWdNvC5ERKPxJoKY8uB4lAUYl9+rcwEyF91tZWrVqDJIkMCZeqP7m6SJ/ZgwxfvadbnGgc8ZwwYv9UfoFLWD/J01gPIPhdUrbrKKDTYaqPzFI3BCNDjxGM0lIg1XKLuT5rPrUY7ZPfBQRGBSCm8zbIAsNPfFAVitsGuOIwefbGSPyZPvNMK19efjZleB0vhYW3p0GNjo/Cbk4CeuAvdKIbNdHcOB8KpuN4DtnARkf/QoWusI30XsavF9xEFbdxKqNYfnCVPO4fpdfGJROvUSiexFx04kOi3sjcTdM2/VeS+1PcvAHDaEseDgpZxrWI82lwIDAQAB",
+    "permissions": ["identity", "storage", "downloads"],
+    "host_permissions": [
+      "https://www.googleapis.com/*",
+      "https://gmail.googleapis.com/*",
+      "https://graph.microsoft.com/*"
+    ],
+    "oauth2": {
+      "client_id": "63223580830-hogfiq2aue7urfjal2jrsj4biaussk3a.apps.googleusercontent.com",
+      "scopes": [
+        "https://www.googleapis.com/auth/gmail.readonly"
+      ]
+    }
+  }
+}

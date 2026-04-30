@@ -1,0 +1,13 @@
+{
+  "id": "grubhub-alpha-001",
+  "type": "alphanumeric",
+  "category": "delivery",
+  "from": "noreply@grubhub.com",
+  "subject": "Verification Code",
+  "body": "Your verification code is: GH78UB23",
+  "extracted": {
+    "code": "GH78UB23",
+    "pattern": "alphanumeric-8",
+    "confidence": "high"
+  }
+}

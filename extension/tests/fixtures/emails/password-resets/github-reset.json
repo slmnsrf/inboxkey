@@ -1,0 +1,14 @@
+{
+  "id": "github-reset-001",
+  "type": "password-reset",
+  "category": "security",
+  "from": "noreply@github.com",
+  "subject": "GitHub Password Reset",
+  "body": "You requested a password reset for your GitHub.\n\nClick here to reset: https://github.com/reset?token=4eedfac01334af09733175ecd262197b100d2527\n\nIf you didn't request this, please ignore this email.",
+  "extracted": {
+    "link": "https://github.com/reset?token=4eedfac01334af09733175ecd262197b100d2527",
+    "token": "4eedfac01334af09733175ecd262197b100d2527",
+    "type": "password-reset",
+    "confidence": "high"
+  }
+}

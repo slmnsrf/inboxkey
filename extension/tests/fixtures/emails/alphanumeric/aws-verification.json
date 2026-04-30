@@ -1,0 +1,13 @@
+{
+  "id": "aws-alpha-001",
+  "type": "alphanumeric",
+  "category": "tech",
+  "from": "no-reply@amazon.com",
+  "subject": "AWS Verification Code",
+  "body": "Your AWS verification code is: AB23CD45\n\nThis code expires in 15 minutes.",
+  "extracted": {
+    "code": "AB23CD45",
+    "pattern": "alphanumeric-8",
+    "confidence": "high"
+  }
+}

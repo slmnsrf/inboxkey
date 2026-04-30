@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 48" width="660" height="144">
+  <svg x="0" y="0" width="48" height="48" viewBox="0 0 64 64">
+    <path fill-rule="evenodd" d="M 19,18 A 13,13 0 1,1 45,18 A 13,13 0 1,1 19,18 Z M 27,18 A 5,5 0 1,0 37,18 A 5,5 0 1,0 27,18 Z" fill="#007AFF"/>
+    <rect x="29" y="28" width="6" height="28" rx="1.5" fill="#007AFF"/>
+    <rect x="29" y="44" width="13" height="4" rx="1" fill="#007AFF"/>
+    <rect x="29" y="50" width="9" height="3.5" rx="1" fill="#007AFF"/>
+  </svg>
+  <text x="56" y="33" fill="#1C1C1E" font-family="-apple-system, 'Segoe UI', system-ui, Roboto, Helvetica, Arial, sans-serif" font-size="24" font-weight="700" letter-spacing="-0.5">InboxKey</text>
+</svg>

@@ -1,0 +1,18 @@
+{
+  "id": "twilio-otp-001",
+  "type": "otp",
+  "category": "tech",
+  "from": "noreply@twilio.com",
+  "subject": "Your Twilio verification code",
+  "body": "Your Twilio verification code is: 241867\n\nIf you didn't request this code, please contact Twilio support immediately.",
+  "extracted": {
+    "code": "241867",
+    "pattern": "numeric-6",
+    "confidence": "high"
+  },
+  "metadata": {
+    "sent": "2025-10-15T11:15:18Z",
+    "expiresIn": "10 minutes",
+    "provider": "Twilio"
+  }
+}

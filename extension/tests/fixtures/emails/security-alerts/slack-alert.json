@@ -1,0 +1,14 @@
+{
+  "id": "slack-alert-001",
+  "type": "security-alert",
+  "category": "security",
+  "from": "security@slack.com",
+  "subject": "New workspace access",
+  "body": "We detected a new workspace access to your Slack account.\n\nLocation: Denver, CO\nDevice: Slack App\nTime: 2025-10-15T14:31:44Z\n\nIf this was you, you can ignore this email. If not, secure your account immediately.",
+  "extracted": {
+    "alertType": "New workspace access",
+    "location": "Denver, CO",
+    "device": "Slack App",
+    "requiresAction": false
+  }
+}

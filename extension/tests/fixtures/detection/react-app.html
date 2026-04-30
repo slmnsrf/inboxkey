@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Verify Account - SecureApp</title>
+  <style>
+    body { font-family: system-ui, -apple-system, sans-serif; background: #f9fafb; margin: 0; padding: 20px; }
+    .app-root { max-width: 480px; margin: 60px auto; }
+    .card { background: #fff; border-radius: 16px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); padding: 32px; }
+    .icon { width: 64px; height: 64px; margin: 0 auto 24px; background: linear-gradient(135deg, #6366f1, #8b5cf6); border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+    .icon svg { width: 32px; height: 32px; fill: #fff; }
+    h2 { font-size: 24px; font-weight: 600; margin: 0 0 8px; text-align: center; color: #111827; }
+    .description { text-align: center; color: #6b7280; font-size: 14px; margin-bottom: 32px; line-height: 1.5; }
+    .input-group { margin-bottom: 24px; }
+    .input-label { display: block; font-size: 14px; font-weight: 500; color: #374151; margin-bottom: 8px; }
+    .input-wrapper { position: relative; }
+    .verification-input { width: 100%; padding: 12px 16px; font-size: 16px; border: 2px solid #e5e7eb; border-radius: 8px; box-sizing: border-box; transition: all 0.2s; }
+    .verification-input:focus { border-color: #6366f1; outline: none; box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1); }
+    .submit-button { width: 100%; padding: 14px; background: #6366f1; color: #fff; border: none; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer; transition: background 0.2s; }
+    .submit-button:hover { background: #4f46e5; }
+    .footer-text { text-align: center; margin-top: 24px; font-size: 13px; color: #9ca3af; }
+    .footer-link { color: #6366f1; text-decoration: none; font-weight: 500; }
+  </style>
+</head>
+<body>
+  <!--
+    Expected Detection:
+    - Field: #verification-input (aria-label + data-verify-field)
+    - Confidence: 90-95 (Tier 1)
+    - Tier: 1
+    - Signals: id="verification-input", name="verifyCode"
+    - Rationale: Modern React app with semantic attributes and ARIA labels
+  -->
+  <div id="root" class="app-root">
+    <div class="card" data-component="VerificationCard">
+      <div class="icon">
+        <svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+      </div>
+
+      <h2>Verify your account</h2>
+      <p class="description">
+        We've sent a verification code to your email address. Please enter it below to complete your account setup.
+      </p>
+
+      <form data-form="verification">
+        <div class="input-group">
+          <label for="verification-input" class="input-label" id="verification-label">
+            Verification Code
+          </label>
+          <div class="input-wrapper">
+            <input
+              type="text"
+              id="verification-input"
+              name="verifyCode"
+              class="verification-input"
+              placeholder="Enter 6-digit code"
+              maxlength="6"
+              inputmode="numeric"
+              aria-labelledby="verification-label"
+              aria-required="true"
+              data-verify-field="true"
+              data-testid="verification-field"
+              autoComplete="off"
+            />
+          </div>
+        </div>
+
+        <button type="submit" class="submit-button" data-action="verify">
+          Verify Account
+        </button>
+      </form>
+
+      <p class="footer-text">
+        Didn't receive the code? <a href="#" class="footer-link" data-action="resend">Resend code</a>
+      </p>
+    </div>
+  </div>
+</body>
+</html>

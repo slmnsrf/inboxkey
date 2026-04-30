@@ -1,0 +1,18 @@
+{
+  "id": "slack-otp-001",
+  "type": "otp",
+  "category": "saas",
+  "from": "feedback@slack.com",
+  "subject": "Your Slack confirmation code",
+  "body": "Your Slack confirmation code is 682031\n\nIf you didn't request this code, you can safely ignore this email. Someone else may have typed your email address by mistake.",
+  "extracted": {
+    "code": "682031",
+    "pattern": "numeric-6",
+    "confidence": "high"
+  },
+  "metadata": {
+    "sent": "2025-10-15T10:50:08Z",
+    "expiresIn": "15 minutes",
+    "provider": "Slack"
+  }
+}

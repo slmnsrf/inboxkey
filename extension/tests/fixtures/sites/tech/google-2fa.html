@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>2-Step Verification - Google Account</title>
+</head>
+<body>
+    <div id="view_container">
+        <div class="main-content">
+            <div class="card-header">
+                <h1>2-Step Verification</h1>
+            </div>
+            <div class="card-body">
+                <p>To verify it's you, we'll send a code to your phone</p>
+                <form id="challenge" method="POST" action="/signin/challenge/totp/2">
+                    <div class="form-group">
+                        <!-- Detection signals: autocomplete="one-time-code", inputmode="numeric", id="totpPin" -->
+                        <label for="totpPin">Enter the code</label>
+                        <input
+                            type="text"
+                            id="totpPin"
+                            name="pin"
+                            autocomplete="one-time-code"
+                            inputmode="numeric"
+                            pattern="[0-9]{6}"
+                            maxlength="6"
+                            required
+                            aria-label="Enter verification code"
+                        >
+                        <div class="help-text">Check your phone for a 6-digit code</div>
+                    </div>
+                    <div class="button-group">
+                        <button type="button" class="secondary">Try another way</button>
+                        <button type="submit" class="primary">Next</button>
+                    </div>
+                </form>
+                <div class="footer-links">
+                    <a href="#">Didn't get a code?</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

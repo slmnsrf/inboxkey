@@ -1,0 +1,13 @@
+{
+  "id": "evernote-magic-001",
+  "type": "magic-link",
+  "category": "productivity",
+  "from": "noreply@evernote.com",
+  "subject": "Sign in to Evernote",
+  "body": "Click the link below to sign in:\n\nhttps://evernote.com/auth/login?token=faa82eb82c26801ff427e4a5f397b338\n\nThis link expires in 15 minutes.",
+  "extracted": {
+    "link": "https://evernote.com/auth/login?token=faa82eb82c26801ff427e4a5f397b338",
+    "token": "faa82eb82c26801ff427e4a5f397b338",
+    "confidence": "high"
+  }
+}

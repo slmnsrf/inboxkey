@@ -1,0 +1,18 @@
+{
+  "id": "airbnb-otp-001",
+  "type": "otp",
+  "category": "travel",
+  "from": "automated@airbnb.com",
+  "subject": "Your Airbnb verification code",
+  "body": "Your Airbnb verification code is: 915364. This code will expire shortly, so please enter it soon.",
+  "extracted": {
+    "code": "915364",
+    "pattern": "numeric-6",
+    "confidence": "high"
+  },
+  "metadata": {
+    "sent": "2025-10-15T11:12:52Z",
+    "expiresIn": "10 minutes",
+    "provider": "Airbnb"
+  }
+}

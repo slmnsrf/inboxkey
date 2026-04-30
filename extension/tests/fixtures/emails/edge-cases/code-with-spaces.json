@@ -1,0 +1,15 @@
+{
+  "id": "edge-spaces-001",
+  "type": "otp",
+  "category": "edge-case",
+  "from": "verify@example.com",
+  "subject": "Your Code",
+  "body": "Verification code: 1 2 3 4 5 6\n\nEnter this code without spaces.",
+  "extracted": {
+    "code": "123456",
+    "originalFormat": "1 2 3 4 5 6",
+    "pattern": "numeric-6",
+    "confidence": "medium",
+    "note": "Code with spaces between digits"
+  }
+}

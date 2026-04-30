@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Two-factor authentication - Slack</title>
+</head>
+<body>
+    <div class="p-two_factor_authentication_page">
+        <div class="card">
+            <div class="card_header">
+                <h1>Two-factor authentication</h1>
+            </div>
+            <div class="card_body">
+                <p class="subtitle">
+                    Enter the code from your authenticator app to finish signing in
+                </p>
+                <form method="POST" action="/checkcookie">
+                    <div class="margin_bottom_100">
+                        <!-- Detection signals: autocomplete="one-time-code", inputmode="numeric", name="2fa_code" -->
+                        <label for="2fa_code" class="c-label">Authentication code</label>
+                        <input
+                            type="text"
+                            id="2fa_code"
+                            name="2fa_code"
+                            class="c-input_text"
+                            autocomplete="one-time-code"
+                            inputmode="numeric"
+                            maxlength="6"
+                            required
+                            autofocus
+                        >
+                        <p class="c-input_helper_text">Enter 6-digit code</p>
+                    </div>
+                    <div class="margin_bottom_100">
+                        <button type="submit" class="c-button c-button--primary c-button--medium">
+                            Verify
+                        </button>
+                    </div>
+                </form>
+                <div class="card_footer">
+                    <a href="/2fa/sms">Get code via SMS</a> |
+                    <a href="/2fa/backup">Use backup code</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

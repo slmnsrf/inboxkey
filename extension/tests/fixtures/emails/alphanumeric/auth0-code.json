@@ -1,0 +1,13 @@
+{
+  "id": "auth0-alpha-001",
+  "type": "alphanumeric",
+  "category": "tech",
+  "from": "no-reply@auth0.com",
+  "subject": "Verification Code",
+  "body": "Your verification code is: AU92TH03",
+  "extracted": {
+    "code": "AU92TH03",
+    "pattern": "alphanumeric-8",
+    "confidence": "high"
+  }
+}

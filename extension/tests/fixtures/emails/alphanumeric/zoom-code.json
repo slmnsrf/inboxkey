@@ -1,0 +1,13 @@
+{
+  "id": "zoom-alpha-001",
+  "type": "alphanumeric",
+  "category": "tech",
+  "from": "noreply@zoom.us",
+  "subject": "Verification Code",
+  "body": "Your verification code is: ZM91NB82",
+  "extracted": {
+    "code": "ZM91NB82",
+    "pattern": "alphanumeric-8",
+    "confidence": "high"
+  }
+}

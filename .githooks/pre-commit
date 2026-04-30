@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+# Pre-commit hook: scan staged changes for secrets and personal-domain emails.
+# Activate once per clone with:  git config core.hooksPath .githooks
+set -e
+
+if ! command -v gitleaks >/dev/null 2>&1; then
+    cat <<'MSG' >&2
+[pre-commit] gitleaks not found on PATH.
+
+Install once:
+  Windows (scoop):    scoop install gitleaks
+  Windows (choco):    choco install gitleaks
+  macOS (brew):       brew install gitleaks
+  Linux (apt/dnf):    see https://github.com/gitleaks/gitleaks#installing
+  Cross-platform:     download a binary from https://github.com/gitleaks/gitleaks/releases
+
+After installing, retry the commit. To bypass this hook for a single commit
+(only when you have a verified good reason): git commit --no-verify
+MSG
+    exit 1
+fi
+
+# Scan only what is staged. --redact hides actual secret values in output.
+# --no-banner keeps the output clean. Config defaults to .gitleaks.toml at repo root.
+gitleaks protect --staged --no-banner --redact

@@ -1,0 +1,13 @@
+{
+  "id": "airtable-magic-001",
+  "type": "magic-link",
+  "category": "productivity",
+  "from": "noreply@airtable.com",
+  "subject": "Sign in to Airtable",
+  "body": "Click the link below to sign in:\n\nhttps://airtable.com/auth/login?token=a0ff05d9c80bc32e4028ec357f889563\n\nThis link expires in 15 minutes.",
+  "extracted": {
+    "link": "https://airtable.com/auth/login?token=a0ff05d9c80bc32e4028ec357f889563",
+    "token": "a0ff05d9c80bc32e4028ec357f889563",
+    "confidence": "high"
+  }
+}

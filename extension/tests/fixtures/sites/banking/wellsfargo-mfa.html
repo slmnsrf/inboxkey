@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Identity Verification - Wells Fargo</title>
+</head>
+<body>
+    <div class="wf-container">
+        <div class="wf-content">
+            <div class="wf-card">
+                <h1>Verify Your Identity</h1>
+                <p class="wf-description">
+                    Enter the code we sent to your mobile device ending in **7890
+                </p>
+                <form id="verificationForm" method="POST" action="/auth/verify">
+                    <fieldset>
+                        <div class="wf-input-wrapper">
+                            <!-- Detection signals: autocomplete="one-time-code", inputmode="numeric", name="authCode" -->
+                            <label for="authCode">Verification Code</label>
+                            <input
+                                type="text"
+                                id="authCode"
+                                name="authCode"
+                                class="wf-text-input"
+                                autocomplete="one-time-code"
+                                inputmode="numeric"
+                                maxlength="6"
+                                aria-describedby="code-help"
+                                required
+                            >
+                            <small id="code-help">Enter the 6-digit code</small>
+                        </div>
+                    </fieldset>
+                    <div class="wf-actions">
+                        <button type="submit" class="wf-button-primary">Verify</button>
+                    </div>
+                </form>
+                <div class="wf-footer">
+                    <a href="/auth/resend">Get a new code</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

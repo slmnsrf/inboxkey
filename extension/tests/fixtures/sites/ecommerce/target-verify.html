@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Target - Account Verification</title>
+    <style>
+        body { font-family: 'Helvetica Neue', Arial, sans-serif; background: #f9f9f9; margin: 0; padding: 20px; }
+        .target-wrapper { max-width: 500px; margin: 40px auto; }
+        .target-card { background: white; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.08); overflow: hidden; }
+        .target-header { background: #cc0000; color: white; padding: 20px; text-align: center; }
+        .target-logo { font-size: 32px; font-weight: bold; }
+        .target-bullseye { display: inline-block; width: 32px; height: 32px; border-radius: 50%; background: white; position: relative; vertical-align: middle; margin-right: 10px; }
+        .target-bullseye::before { content: ''; position: absolute; top: 6px; left: 6px; width: 20px; height: 20px; border-radius: 50%; background: #cc0000; }
+        .target-body { padding: 40px; }
+        .target-title { color: #333; font-size: 26px; margin-bottom: 15px; font-weight: 600; }
+        .target-description { color: #666; line-height: 1.7; margin-bottom: 28px; }
+        .target-input-wrapper { margin-bottom: 20px; }
+        .target-label { display: block; color: #333; margin-bottom: 10px; font-weight: 600; font-size: 15px; }
+        .target-input { width: 100%; padding: 14px; border: 2px solid #dadada; border-radius: 4px; font-size: 16px; box-sizing: border-box; }
+        .target-input:focus { border-color: #cc0000; outline: none; }
+        .target-button { width: 100%; padding: 15px; background: #cc0000; color: white; border: none; border-radius: 4px; font-size: 16px; font-weight: 700; cursor: pointer; }
+        .target-button:hover { background: #aa0000; }
+    </style>
+</head>
+<body>
+    <!-- Detection Signals:
+         - Ecommerce domain: target
+         - Security keywords: account verification, security
+         - Input patterns: 6-digit code, bold red theme
+         - Form structure: bullseye branding, card layout
+         - Brand colors: #cc0000 (Target red)
+         - Common IDs: verifyCode, otpInput, securityCode
+    -->
+    <div class="target-wrapper">
+        <div class="target-card">
+            <div class="target-header">
+                <div class="target-logo">
+                    <span class="target-bullseye"></span> Target
+                </div>
+            </div>
+
+            <div class="target-body">
+                <h1 class="target-title">Account Verification</h1>
+
+                <p class="target-description">
+                    To ensure your account security, we've sent a verification code to your registered mobile number. Please enter it below to continue.
+                </p>
+
+                <form id="verificationForm" action="/account/verify" method="POST">
+                    <div class="target-input-wrapper">
+                        <label for="verifyCode" class="target-label">Verification Code</label>
+                        <input
+                            type="text"
+                            id="verifyCode"
+                            name="verify_code"
+                            class="target-input"
+                            placeholder="Enter 6-digit code"
+                            maxlength="6"
+                            pattern="[0-9]{6}"
+                            inputmode="numeric"
+                            autocomplete="one-time-code"
+                            required
+                        />
+                    </div>
+
+                    <button type="submit" class="target-button">Submit</button>
+                </form>
+
+                <p style="text-align: center; margin-top: 25px; font-size: 14px; color: #666;">
+                    <a href="#" style="color: #cc0000; text-decoration: none; font-weight: 600;">Request new code</a>
+                </p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

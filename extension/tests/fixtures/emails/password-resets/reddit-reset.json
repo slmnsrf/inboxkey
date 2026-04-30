@@ -1,0 +1,14 @@
+{
+  "id": "reddit-reset-001",
+  "type": "password-reset",
+  "category": "security",
+  "from": "noreply@reddit.com",
+  "subject": "Reddit Password Reset",
+  "body": "You requested a password reset for your Reddit.\n\nClick here to reset: https://reddit.com/reset?token=466a3ad70fcb5ff92294492f76af51e568d281cd\n\nIf you didn't request this, please ignore this email.",
+  "extracted": {
+    "link": "https://reddit.com/reset?token=466a3ad70fcb5ff92294492f76af51e568d281cd",
+    "token": "466a3ad70fcb5ff92294492f76af51e568d281cd",
+    "type": "password-reset",
+    "confidence": "high"
+  }
+}

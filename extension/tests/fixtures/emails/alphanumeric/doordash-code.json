@@ -1,0 +1,13 @@
+{
+  "id": "doordash-alpha-001",
+  "type": "alphanumeric",
+  "category": "delivery",
+  "from": "no-reply@doordash.com",
+  "subject": "Verification Code",
+  "body": "Your verification code is: DD56SH90",
+  "extracted": {
+    "code": "DD56SH90",
+    "pattern": "alphanumeric-8",
+    "confidence": "high"
+  }
+}

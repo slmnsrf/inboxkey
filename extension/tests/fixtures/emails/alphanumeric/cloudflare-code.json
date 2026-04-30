@@ -1,0 +1,13 @@
+{
+  "id": "cloudflare-alpha-001",
+  "type": "alphanumeric",
+  "category": "tech",
+  "from": "noreply@cloudflare.com",
+  "subject": "Verification Code",
+  "body": "Your verification code is: CF34LR89",
+  "extracted": {
+    "code": "CF34LR89",
+    "pattern": "alphanumeric-8",
+    "confidence": "high"
+  }
+}

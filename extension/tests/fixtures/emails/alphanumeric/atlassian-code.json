@@ -1,0 +1,13 @@
+{
+  "id": "atlassian-alpha-001",
+  "type": "alphanumeric",
+  "category": "saas",
+  "from": "noreply@atlassian.com",
+  "subject": "Verification Code",
+  "body": "Your verification code is: JR73KL45",
+  "extracted": {
+    "code": "JR73KL45",
+    "pattern": "alphanumeric-8",
+    "confidence": "high"
+  }
+}

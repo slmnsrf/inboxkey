@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Verification - Trust Wallet</title>
+</head>
+<body>
+    <div class="tw-app">
+        <div class="tw-auth-page">
+            <div class="tw-card">
+                <h1 class="tw-heading">Verify Your Account</h1>
+                <p class="tw-text">
+                    Enter the 6-digit code we sent to your device
+                </p>
+                <form method="POST" action="/auth/verify">
+                    <div class="tw-form-group">
+                        <!-- Detection signals: autocomplete="one-time-code", inputmode="numeric", id="code" -->
+                        <label for="code" class="tw-label">Verification Code</label>
+                        <input
+                            type="tel"
+                            id="code"
+                            name="code"
+                            class="tw-input"
+                            autocomplete="one-time-code"
+                            inputmode="numeric"
+                            maxlength="6"
+                            pattern="[0-9]{6}"
+                            required
+                        >
+                    </div>
+                    <button type="submit" class="tw-button tw-button-primary">
+                        Verify
+                    </button>
+                </form>
+                <div class="tw-help">
+                    <a href="/resend-code">Resend Code</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

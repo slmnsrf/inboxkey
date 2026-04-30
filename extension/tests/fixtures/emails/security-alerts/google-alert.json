@@ -1,0 +1,14 @@
+{
+  "id": "google-alert-001",
+  "type": "security-alert",
+  "category": "security",
+  "from": "security@google.com",
+  "subject": "New sign-in",
+  "body": "We detected a new sign-in to your Google account.\n\nLocation: Mountain View, CA\nDevice: Chrome on Windows\nTime: 2025-10-15T14:31:44Z\n\nIf this was you, you can ignore this email. If not, secure your account immediately.",
+  "extracted": {
+    "alertType": "New sign-in",
+    "location": "Mountain View, CA",
+    "device": "Chrome on Windows",
+    "requiresAction": false
+  }
+}

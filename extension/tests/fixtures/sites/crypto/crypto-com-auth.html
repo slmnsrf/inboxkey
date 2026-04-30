@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crypto.com - 2FA Verification</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0b1426; color: #fff; margin: 0; padding: 20px; min-height: 100vh; display: flex; align-items: center; justify-content: center; }
+        .cdc-container { max-width: 460px; width: 100%; background: #15202f; border-radius: 12px; padding: 40px; box-shadow: 0 8px 32px rgba(0,0,0,0.4); }
+        .cdc-logo { text-align: center; margin-bottom: 30px; }
+        .cdc-logo-img { font-size: 32px; font-weight: 800; color: #002d74; background: linear-gradient(135deg, #002d74 0%, #1199fa 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .cdc-title { font-size: 26px; margin-bottom: 10px; font-weight: 700; }
+        .cdc-subtitle { color: #8f96a3; margin-bottom: 30px; font-size: 15px; }
+        .cdc-input-group { margin-bottom: 25px; }
+        .cdc-input-label { display: block; color: #b4b9c5; margin-bottom: 10px; font-size: 14px; font-weight: 500; }
+        .cdc-input-field { width: 100%; padding: 14px; background: #0b1426; border: 1px solid #2a3648; border-radius: 8px; color: #fff; font-size: 16px; box-sizing: border-box; }
+        .cdc-input-field:focus { border-color: #1199fa; outline: none; box-shadow: 0 0 0 3px rgba(17, 153, 250, 0.2); }
+        .cdc-submit { width: 100%; padding: 15px; background: linear-gradient(135deg, #002d74 0%, #1199fa 100%); color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer; }
+        .cdc-submit:hover { opacity: 0.92; }
+        .cdc-help { text-align: center; margin-top: 25px; font-size: 14px; color: #8f96a3; }
+        .cdc-link { color: #1199fa; text-decoration: none; }
+        .cdc-link:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+    <!-- Detection Signals:
+         - Crypto domain: crypto.com, cryptocurrency exchange
+         - Security keywords: 2FA, verification, authentication
+         - Input patterns: 6-digit code, dark theme, blue gradient
+         - Form structure: centered card, dark background
+         - Brand colors: #002d74, #1199fa (Crypto.com blue)
+         - Common IDs: tfaCode, authCode, verificationCode
+    -->
+    <div class="cdc-container">
+        <div class="cdc-logo">
+            <div class="cdc-logo-img">Crypto.com</div>
+        </div>
+
+        <h1 class="cdc-title">2FA Verification</h1>
+        <p class="cdc-subtitle">
+            Enter the authentication code from your authenticator app to continue.
+        </p>
+
+        <form id="tfaVerificationForm" action="/auth/2fa/verify" method="POST">
+            <div class="cdc-input-group">
+                <label for="tfaCode" class="cdc-input-label">Authentication Code</label>
+                <input
+                    type="tel"
+                    id="tfaCode"
+                    name="tfa_code"
+                    class="cdc-input-field"
+                    placeholder="000000"
+                    maxlength="6"
+                    pattern="[0-9]{6}"
+                    inputmode="numeric"
+                    autocomplete="one-time-code"
+                    required
+                />
+            </div>
+
+            <button type="submit" class="cdc-submit">Verify</button>
+        </form>
+
+        <div class="cdc-help">
+            <a href="#" class="cdc-link">Lost your device?</a> |
+            <a href="#" class="cdc-link">Resend code</a>
+        </div>
+    </div>
+</body>
+</html>

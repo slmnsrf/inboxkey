@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Etsy - Authentication</title>
+    <style>
+        body { font-family: 'Graphik Webfont', -apple-system, sans-serif; background: #f9fafb; margin: 0; padding: 20px; }
+        .etsy-container { max-width: 500px; margin: 50px auto; background: white; border-radius: 12px; box-shadow: 0 1px 6px rgba(0,0,0,0.1); padding: 45px; }
+        .etsy-header { text-align: center; margin-bottom: 30px; }
+        .etsy-logo { font-size: 32px; font-weight: 700; color: #f56400; }
+        .etsy-title { color: #222222; font-size: 24px; margin-bottom: 12px; font-weight: 600; }
+        .etsy-subtitle { color: #595959; line-height: 1.7; margin-bottom: 30px; font-size: 15px; }
+        .etsy-info-box { background: #fff8f0; border-left: 3px solid #f56400; padding: 16px; margin-bottom: 25px; border-radius: 4px; }
+        .etsy-info-text { color: #7a5d00; font-size: 14px; line-height: 1.5; }
+        .etsy-form-group { margin-bottom: 22px; }
+        .etsy-label { display: block; color: #222222; margin-bottom: 10px; font-weight: 600; font-size: 14px; }
+        .etsy-input { width: 100%; padding: 14px; border: 1px solid #d4d4d4; border-radius: 6px; font-size: 16px; box-sizing: border-box; transition: border-color 0.2s; }
+        .etsy-input:focus { border-color: #f56400; outline: none; box-shadow: 0 0 0 3px rgba(245, 100, 0, 0.1); }
+        .etsy-button { width: 100%; padding: 15px; background: #222222; color: white; border: none; border-radius: 24px; font-size: 16px; font-weight: 600; cursor: pointer; }
+        .etsy-button:hover { background: #333333; }
+        .etsy-footer { text-align: center; margin-top: 25px; font-size: 14px; color: #595959; }
+        .etsy-link { color: #f56400; text-decoration: none; font-weight: 600; }
+        .etsy-link:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+    <!-- Detection Signals:
+         - Ecommerce domain: etsy
+         - Security keywords: authentication, verification, security
+         - Input patterns: 6-digit code, rounded design
+         - Form structure: info boxes, centered layout
+         - Brand colors: #f56400 (Etsy orange), #222222 (black)
+         - Common IDs: authCode, verificationCode, otpInput
+    -->
+    <div class="etsy-container">
+        <div class="etsy-header">
+            <div class="etsy-logo">Etsy</div>
+        </div>
+
+        <h1 class="etsy-title">Authentication Required</h1>
+
+        <p class="etsy-subtitle">
+            To keep your account safe, we need to verify that it's really you signing in.
+        </p>
+
+        <div class="etsy-info-box">
+            <div class="etsy-info-text">
+                <strong>Security Notice:</strong> We've sent a verification code to your registered device.
+            </div>
+        </div>
+
+        <form id="authenticationForm" action="/identity/verify" method="POST">
+            <div class="etsy-form-group">
+                <label for="authCode" class="etsy-label">Verification Code</label>
+                <input
+                    type="text"
+                    id="authCode"
+                    name="auth_code"
+                    class="etsy-input"
+                    placeholder="Enter 6-digit code"
+                    maxlength="6"
+                    pattern="[0-9]{6}"
+                    inputmode="numeric"
+                    autocomplete="one-time-code"
+                    required
+                />
+            </div>
+
+            <button type="submit" class="etsy-button">Verify</button>
+        </form>
+
+        <div class="etsy-footer">
+            Didn't receive a code? <a href="#" class="etsy-link">Resend</a>
+        </div>
+    </div>
+</body>
+</html>

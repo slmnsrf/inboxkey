@@ -1,0 +1,13 @@
+{
+  "id": "adobe-alpha-001",
+  "type": "alphanumeric",
+  "category": "saas",
+  "from": "message@adobe.com",
+  "subject": "Adobe Account Verification",
+  "body": "Please use this verification code to access your Adobe account: RT45FG67\n\nThis code is valid for 15 minutes.",
+  "extracted": {
+    "code": "RT45FG67",
+    "pattern": "alphanumeric-8",
+    "confidence": "high"
+  }
+}

@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>2FA Verification - Crypto.com</title>
+</head>
+<body>
+    <div class="cdc-auth-wrapper">
+        <div class="cdc-auth-container">
+            <h1>2FA Verification</h1>
+            <p class="cdc-description">
+                Please enter the 6-digit verification code from your authenticator app
+            </p>
+            <form method="POST" action="/auth/2fa/verify">
+                <div class="cdc-field">
+                    <!-- Detection signals: autocomplete="one-time-code", inputmode="numeric", id="verification-code" -->
+                    <label for="verification-code">Verification Code</label>
+                    <input
+                        type="text"
+                        id="verification-code"
+                        name="verificationCode"
+                        class="cdc-input"
+                        autocomplete="one-time-code"
+                        inputmode="numeric"
+                        maxlength="6"
+                        placeholder="000000"
+                        required
+                    >
+                </div>
+                <div class="cdc-trust-device">
+                    <input type="checkbox" id="trustDevice" name="trustDevice">
+                    <label for="trustDevice">Trust this device</label>
+                </div>
+                <button type="submit" class="cdc-btn-primary">Verify</button>
+            </form>
+            <div class="cdc-help">
+                <a href="/2fa/help">Having issues?</a>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

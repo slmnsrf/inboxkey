@@ -1,0 +1,15 @@
+{
+  "id": "edge-localized-001",
+  "type": "otp",
+  "category": "edge-case",
+  "from": "seguridad@example.es",
+  "subject": "Código de verificación",
+  "body": "Su código de verificación es: 731859\n\nEste código expirará en 10 minutos.",
+  "extracted": {
+    "code": "731859",
+    "pattern": "numeric-6",
+    "confidence": "high",
+    "language": "es",
+    "note": "Spanish language email"
+  }
+}

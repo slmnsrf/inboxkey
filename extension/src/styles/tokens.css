@@ -1,0 +1,425 @@
+/**
+ * InboxKey Design Tokens
+ *
+ * Central source of truth for colors, spacing, typography, and motion.
+ * Based on design system specifications from docs/ui-ux/
+ *
+ * References:
+ * - font-and-colors.md: Color palette and typography
+ * - spacing-and-sizes.md: 4px scale and sizing
+ * - motion-and-feedback.md: Animation timing
+ */
+
+:root,
+:root[data-theme="light"] {
+  /* ========================================
+     COLORS - Primary Palette
+     ======================================== */
+
+  /*
+   * USAGE GUIDELINES:
+   * Base action colors (primary, success, error, warning) are optimized for:
+   *   ✓ Filled buttons (white text on color background)
+   *   ✓ Large text elements (≥18pt or ≥14pt bold)
+   *   ✓ Background fills with proper contrasting text
+   *
+   * ⚠️  WARNING: Base colors may fail WCAG AA for small text on light backgrounds.
+   * For small text/icons on light surfaces, use the -dark variants:
+   *   --color-success-dark, --color-error-dark, --color-warning-dark
+   */
+
+  /* Primary - Actions and links (WCAG AA compliant) */
+  --color-primary: #007AFF;
+  --color-primary-hover: #0066D6;
+  --color-primary-light: #E3F0FF;
+
+  /* Success - Positive feedback */
+  --color-success: #10B981;
+  --color-success-hover: #059669;
+  --color-success-light: #D1FAE5;
+
+  /* Error - Error states */
+  --color-error: #EF4444;
+  --color-error-hover: #DC2626;
+  --color-error-light: #FEE2E2;
+
+  /* Warning - Caution states */
+  --color-warning: #F59E0B;
+  --color-warning-hover: #D97706;
+  --color-warning-light: #FEF3C7;
+
+  /* Info - Informational states */
+  --color-info: #007AFF;
+  --color-info-hover: #0066D6;
+  --color-info-light: #E3F0FF;
+
+  /* ========================================
+     COLORS - Neutral Palette (Gray scale)
+     ======================================== */
+
+  --color-gray-50: #F9FAFB;
+  --color-gray-100: #F2F4F7;
+  --color-gray-200: #E5E7EB;
+  --color-gray-300: #C2C7CF;
+  --color-gray-400: #8E8E93;
+  --color-gray-500: #636366;
+  --color-gray-600: #48484A;
+  --color-gray-700: #2C2C2E;
+  --color-gray-800: #1C1C1E;
+  --color-gray-900: #0A0A0C;
+
+  /* ========================================
+     COLORS - Semantic Tokens
+     ======================================== */
+
+  /* Text colors */
+  --color-text-primary: #1C1C1E;
+  --color-text-secondary: #48484A;
+  --color-text-tertiary: #8E8E93;
+  --color-text-link: #0066D6;  /* Darker for inline links (WCAG AA) */
+  --color-text-inverse: #FFFFFF;
+
+  /* Background colors */
+  --color-bg-primary: #F2F2F7;
+  --color-bg-secondary: #E5E5EA;
+  --color-bg-tertiary: #D1D1D6;
+  --color-bg-overlay: rgba(0, 0, 0, 0.4);
+
+  /* Surface aliases */
+  --surface-page: #F2F2F7;
+  --surface-card: #FFFFFF;
+  --surface-card-muted: #F9FAFB;
+
+  /* Border colors */
+  --color-border: rgba(0, 0, 0, 0.08);
+  --color-border-strong: #8E8E93;
+  --color-border-hover: rgba(0, 0, 0, 0.15);
+  --color-border-focus: #007AFF;
+
+  /* ========================================
+     COLORS - Provider Badges (WCAG AA)
+     ======================================== */
+
+  --color-gmail: #ea4335;  /* Gmail red - Contrast: 4.5:1 on white (WCAG AA compliant) */
+  --color-gmail-hover: #d53a2d;
+  --color-imap: var(--color-gray-600);  /* Future IMAP neutral */
+
+  /* ========================================
+     COLORS - Support/Donation (WCAG AA)
+     ======================================== */
+
+  --color-support-bg: #FFDD00;  /* Ko-fi yellow brand */
+  --color-support-text: #1C1C1E;  /* Near-black on yellow: high contrast (WCAG AA) */
+  --color-support-border: rgba(0, 0, 0, 0.12);
+
+  /* ========================================
+     COLORS - Status Variants (Darker Shades)
+     ======================================== */
+
+  --color-success-dark: #248A3D;  /* Darker green for text/icons on light backgrounds */
+  --color-success-darker: #1B7A30;  /* Even darker for high emphasis */
+  --color-error-dark: #C62828;  /* Darker red for text/icons */
+  --color-error-darker: #B71C1C;  /* Even darker for high emphasis */
+  --color-danger-button-bg: #C62828;  /* Danger button background (light theme) */
+  --color-warning-dark: #B45309;  /* Darker amber for text/icons on light backgrounds */
+  --color-warning-darker: #92400E;  /* Even darker for high emphasis */
+
+  /* ========================================
+     COLORS - Number Badges
+     ======================================== */
+
+  --badge-bg: #E3F0FF;  /* Light blue background for code count badges */
+  --badge-fg: #1C1C1E;  /* Dark text on badge (high contrast) */
+  --badge-border: rgba(0, 122, 255, 0.15);  /* Subtle blue border */
+
+  /* ========================================
+     SPACING - 4px Scale
+     ======================================== */
+
+  --space-0: 0px;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-7: 28px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+  --space-20: 80px;
+  --space-24: 96px;
+
+  /* ========================================
+     TYPOGRAPHY - System Font Stack
+     ======================================== */
+
+  /* Font families */
+  --font-system: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+                 "Helvetica Neue", Arial, sans-serif, "Apple Color Emoji",
+                 "Segoe UI Emoji", "Segoe UI Symbol";
+  --font-mono: "SF Mono", Monaco, "Cascadia Code", "Roboto Mono",
+               "Courier New", monospace;
+
+  /* Font sizes */
+  --font-size-xs: 12px;
+  --font-size-sm: 13px;
+  --font-size-base: 14px;
+  --font-size-lg: 16px;
+  --font-size-xl: 18px;
+  --font-size-2xl: 20px;
+  --font-size-3xl: 24px;
+  --font-size-4xl: 30px;
+  --font-size-code: 24px;  /* Large monospace for codes */
+
+  /* Font weights */
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+
+  /* Line heights */
+  --line-height-tight: 1.25;
+  --line-height-normal: 1.5;
+  --line-height-relaxed: 1.75;
+
+  /* Letter spacing */
+  --letter-spacing-tight: -0.01em;
+  --letter-spacing-normal: 0;
+  --letter-spacing-wide: 0.025em;
+  --letter-spacing-wider: 0.05em;
+
+  /* ========================================
+     LAYOUT - Sizing
+     ======================================== */
+
+  /* Popup dimensions */
+  --popup-width: 400px;
+  --popup-min-height: 400px;
+  --popup-max-height: 600px;
+
+  /* Minimum tap target size (44px per guidelines) */
+  --min-tap-target: 44px;
+
+  /* Border radius - iOS-inspired generous radii */
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-full: 9999px;
+
+  /* Shadows - refined, layered depth */
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.03);
+  --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.06), 0 1px 3px rgba(0, 0, 0, 0.04);
+  --shadow-lg: 0 4px 16px rgba(0, 0, 0, 0.08), 0 2px 6px rgba(0, 0, 0, 0.04);
+  --shadow-xl: 0 8px 32px rgba(0, 0, 0, 0.1), 0 4px 12px rgba(0, 0, 0, 0.05);
+  --shadow-toast: 0 8px 24px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(0, 0, 0, 0.06);
+
+  /* ========================================
+     MOTION - Animation Timing
+     ======================================== */
+
+  /* Duration */
+  --duration-instant: 0ms;
+  --duration-fast: 100ms;
+  --duration-normal: 200ms;
+  --duration-slow: 300ms;
+  --duration-slower: 400ms;
+
+  /* Easing */
+  --easing-default: cubic-bezier(0.4, 0, 0.2, 1);  /* ease-out */
+  --easing-in: cubic-bezier(0.4, 0, 1, 1);
+  --easing-out: cubic-bezier(0, 0, 0.2, 1);
+  --easing-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* ========================================
+     ACCESSIBILITY - Focus & Interaction
+     ======================================== */
+
+  /* Focus ring */
+  --focus-ring-width: 2px;
+  --focus-ring-offset: 2px;
+  --focus-ring-color: var(--color-primary);
+  --focus-ring: 0 0 0 var(--focus-ring-width) var(--focus-ring-color);
+  --focus-ring-shadow: 0 0 0 var(--focus-ring-offset) var(--color-bg-primary),
+                       0 0 0 calc(var(--focus-ring-offset) + var(--focus-ring-width)) var(--focus-ring-color);
+
+  /* Z-index scale */
+  --z-base: 0;
+  --z-dropdown: 1000;
+  --z-sticky: 1100;
+  --z-overlay: 1200;
+  --z-modal: 1300;
+  --z-toast: 1400;
+  --z-tooltip: 1500;
+}
+
+/* Dark theme overrides - iOS-inspired dark palette */
+[data-theme="dark"] {
+  --color-primary: #0A84FF;
+  --color-primary-hover: #409CFF;
+  --color-primary-light: rgba(10, 132, 255, 0.16);
+
+  --color-success: #30D158;
+  --color-success-hover: #25A744;
+  --color-success-light: rgba(48, 209, 88, 0.15);
+
+  --color-error: #FF453A;
+  --color-error-hover: #FF6961;
+  --color-error-light: rgba(255, 69, 58, 0.14);
+
+  --color-warning: #FFD60A;
+  --color-warning-hover: #FFD426;
+  --color-warning-light: rgba(255, 214, 10, 0.16);
+
+  --color-info: #0A84FF;
+  --color-info-hover: #409CFF;
+  --color-info-light: rgba(10, 132, 255, 0.16);
+
+  --color-gray-50: #0A0A0C;
+  --color-gray-100: #1C1C1E;
+  --color-gray-200: #2C2C2E;
+  --color-gray-300: #3A3A3C;
+  --color-gray-400: #636366;
+  --color-gray-500: #8E8E93;
+  --color-gray-600: #AEAEB2;
+  --color-gray-700: #C7C7CC;
+  --color-gray-800: #E5E5EA;
+  --color-gray-900: #F2F2F7;
+
+  --color-text-primary: #F2F2F7;
+  --color-text-secondary: #AEAEB2;
+  --color-text-tertiary: #8E8E93;
+  --color-text-link: #64B5FF;
+  --color-text-inverse: #FFFFFF;
+
+  --color-bg-primary: #000000;
+  --color-bg-secondary: #1C1C1E;
+  --color-bg-tertiary: #2C2C2E;
+  --color-bg-overlay: rgba(0, 0, 0, 0.6);
+
+  --surface-page: #000000;
+  --surface-card: #1C1C1E;
+  --surface-card-muted: #0A0A0C;
+
+  --color-border: rgba(255, 255, 255, 0.1);
+  --color-border-strong: rgba(255, 255, 255, 0.2);
+  --color-border-hover: rgba(255, 255, 255, 0.18);
+  --color-border-focus: #0A84FF;
+
+  --focus-ring-color: #0A84FF;
+  --focus-ring: 0 0 0 var(--focus-ring-width) var(--focus-ring-color);
+  --focus-ring-shadow: 0 0 0 var(--focus-ring-offset) var(--color-bg-primary),
+                       0 0 0 calc(var(--focus-ring-offset) + var(--focus-ring-width)) var(--focus-ring-color);
+
+  /* Status variants for dark theme */
+  --color-success-dark: #30D158;
+  --color-success-darker: #25A744;
+  --color-error-dark: #FF453A;
+  --color-error-darker: #FF6961;
+  --color-danger-button-bg: #B71C1C;  /* Muted dark red for buttons (avoids bright #FF453A) */
+  --color-warning-dark: #FFD60A;
+  --color-warning-darker: #FFD426;
+
+  /* Number badges for dark theme */
+  --badge-bg: rgba(10, 132, 255, 0.15);
+  --badge-fg: #F2F2F7;
+  --badge-border: rgba(10, 132, 255, 0.25);
+
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.5), 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 2px 10px rgba(0, 0, 0, 0.5), 0 1px 4px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 6px 20px rgba(0, 0, 0, 0.55), 0 2px 8px rgba(0, 0, 0, 0.4);
+  --shadow-xl: 0 12px 40px rgba(0, 0, 0, 0.6), 0 4px 16px rgba(0, 0, 0, 0.45);
+  --shadow-toast: 0 8px 28px rgba(0, 0, 0, 0.6), 0 2px 10px rgba(0, 0, 0, 0.45);
+}
+
+/* ========================================
+   REDUCED MOTION SUPPORT
+
+   Respect user's motion preferences.
+   Disable animations for users with vestibular disorders.
+   ======================================== */
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    /* Reduce animation durations to near-instant */
+    --duration-fast: 0ms;
+    --duration-normal: 0ms;
+    --duration-slow: 50ms;
+    --duration-slower: 50ms;
+  }
+
+  /* Disable all animations and transitions */
+  *,
+  *::before,
+  *::after {
+    animation-duration: 50ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 50ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  /* Disable skeleton loading animations */
+  .skeleton,
+  .loading-skeleton {
+    animation: none !important;
+    background: var(--color-bg-secondary) !important;
+  }
+
+  /* Simplify toast animations to fade only */
+  .toast {
+    animation: toast-fade-in 50ms !important;
+  }
+}
+
+/* ========================================
+   DARK MODE SUPPORT (Future)
+
+   Placeholder for dark mode tokens.
+   Not implemented in MVP but prepared for future.
+   ======================================== */
+
+/* ========================================
+   UTILITY CLASSES
+   ======================================== */
+
+/* Screen reader only (accessible but invisible) */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+/* Visually hidden but focusable */
+.sr-only-focusable:focus {
+  position: static;
+  width: auto;
+  height: auto;
+  padding: inherit;
+  margin: inherit;
+  overflow: visible;
+  clip: auto;
+  white-space: normal;
+}
+
+/* Prevent text selection */
+.no-select {
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+}
+
+/* Truncate text with ellipsis */
+.truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

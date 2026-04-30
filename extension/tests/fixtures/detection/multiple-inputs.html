@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Complete Your Profile</title>
+  <style>
+    body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: #f0f2f5; padding: 40px 20px; margin: 0; }
+    .container { max-width: 500px; margin: 0 auto; background: #fff; padding: 40px; border-radius: 8px; box-shadow: 0 2px 12px rgba(0,0,0,0.08); }
+    h1 { font-size: 28px; margin: 0 0 10px; color: #1c1e21; }
+    .subtitle { color: #65676b; font-size: 15px; margin-bottom: 30px; }
+    .form-section { margin-bottom: 24px; padding-bottom: 24px; border-bottom: 1px solid #e4e6eb; }
+    .form-section:last-of-type { border-bottom: none; }
+    .section-title { font-size: 18px; font-weight: 600; margin-bottom: 16px; color: #1c1e21; }
+    label { display: block; font-size: 14px; font-weight: 500; color: #1c1e21; margin-bottom: 6px; }
+    input { width: 100%; padding: 10px 12px; font-size: 15px; border: 1px solid #ccd0d5; border-radius: 6px; box-sizing: border-box; margin-bottom: 16px; }
+    input:focus { border-color: #1877f2; outline: none; }
+    .helper-text { font-size: 12px; color: #65676b; margin-top: -12px; margin-bottom: 16px; }
+    button { width: 100%; padding: 14px; background: #1877f2; color: #fff; border: none; border-radius: 6px; font-size: 16px; font-weight: 600; cursor: pointer; margin-top: 20px; }
+    button:hover { background: #166fe5; }
+    .verification-badge { display: inline-block; background: #e7f3ff; color: #1877f2; padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: 600; margin-left: 8px; }
+  </style>
+</head>
+<body>
+  <!--
+    Expected Detection:
+    - Field: #email-verification-code (highest confidence among multiple inputs)
+    - Confidence: 90-95 (Tier 1)
+    - Tier: 1
+    - Signals: name="verification" matches pattern
+    - Rationale: Must correctly distinguish verification field from other inputs (phone, zip)
+  -->
+  <div class="container">
+    <h1>Complete Your Profile</h1>
+    <p class="subtitle">Just a few more details to get started</p>
+
+    <form>
+      <div class="form-section">
+        <div class="section-title">Contact Information</div>
+
+        <label for="phone-number">Phone Number</label>
+        <input
+          type="tel"
+          id="phone-number"
+          name="phone"
+          placeholder="+1 (555) 123-4567"
+          maxlength="15"
+        />
+
+        <label for="zip-code">ZIP Code</label>
+        <input
+          type="text"
+          id="zip-code"
+          name="zipCode"
+          placeholder="12345"
+          maxlength="5"
+          inputmode="numeric"
+        />
+      </div>
+
+      <div class="form-section">
+        <div class="section-title">
+          Email Verification
+          <span class="verification-badge">Required</span>
+        </div>
+
+        <label for="email-verification-code">Verification Code</label>
+        <input
+          type="text"
+          id="email-verification-code"
+          name="verification"
+          placeholder="Enter 6-digit code"
+          maxlength="6"
+          inputmode="numeric"
+          data-testid="verification-field"
+        />
+        <p class="helper-text">Check your email for the verification code we just sent</p>
+      </div>
+
+      <div class="form-section">
+        <div class="section-title">Preferences</div>
+
+        <label for="referral-code">Referral Code (Optional)</label>
+        <input
+          type="text"
+          id="referral-code"
+          name="referralCode"
+          placeholder="Enter referral code"
+          maxlength="8"
+        />
+      </div>
+
+      <button type="submit">Complete Setup</button>
+    </form>
+  </div>
+</body>
+</html>

@@ -1,0 +1,13 @@
+{
+  "id": "roblox-alpha-001",
+  "type": "alphanumeric",
+  "category": "gaming",
+  "from": "noreply@roblox.com",
+  "subject": "Verification Code",
+  "body": "Your verification code is: RB34LX89",
+  "extracted": {
+    "code": "RB34LX89",
+    "pattern": "alphanumeric-8",
+    "confidence": "high"
+  }
+}

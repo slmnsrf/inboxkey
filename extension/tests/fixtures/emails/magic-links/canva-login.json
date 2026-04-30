@@ -1,0 +1,13 @@
+{
+  "id": "canva-magic-001",
+  "type": "magic-link",
+  "category": "design",
+  "from": "noreply@canva.com",
+  "subject": "Sign in to Canva",
+  "body": "Click the link below to sign in:\n\nhttps://canva.com/auth/login?token=5201ce25e533a59d4c6ac2aff00bb310\n\nThis link expires in 15 minutes.",
+  "extracted": {
+    "link": "https://canva.com/auth/login?token=5201ce25e533a59d4c6ac2aff00bb310",
+    "token": "5201ce25e533a59d4c6ac2aff00bb310",
+    "confidence": "high"
+  }
+}

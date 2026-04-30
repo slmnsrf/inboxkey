@@ -1,0 +1,14 @@
+{
+  "id": "microsoft-reset-001",
+  "type": "password-reset",
+  "category": "security",
+  "from": "noreply@account.microsoft.com",
+  "subject": "Microsoft account Password Reset",
+  "body": "You requested a password reset for your Microsoft account.\n\nClick here to reset: https://account.microsoft.com/reset?token=ba84be97182d4068317e2c12cc52d5166588d895\n\nIf you didn't request this, please ignore this email.",
+  "extracted": {
+    "link": "https://account.microsoft.com/reset?token=ba84be97182d4068317e2c12cc52d5166588d895",
+    "token": "ba84be97182d4068317e2c12cc52d5166588d895",
+    "type": "password-reset",
+    "confidence": "high"
+  }
+}

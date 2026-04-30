@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Verify Your Email</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Inter', -apple-system, sans-serif; background: #0a0a0a; color: #fff; display: flex; align-items: center; justify-content: center; min-height: 100vh; }
+    .container { max-width: 400px; padding: 20px; }
+    h1 { font-size: 32px; font-weight: 700; margin-bottom: 12px; }
+    p { color: #a0a0a0; margin-bottom: 32px; line-height: 1.6; }
+    input { width: 100%; padding: 16px; font-size: 18px; background: #1a1a1a; border: 1px solid #333; border-radius: 12px; color: #fff; text-align: center; letter-spacing: 4px; }
+    input::placeholder { color: #666; letter-spacing: normal; }
+    input:focus { outline: none; border-color: #0070f3; }
+    button { width: 100%; padding: 16px; background: #0070f3; color: #fff; border: none; border-radius: 12px; font-size: 16px; font-weight: 600; margin-top: 20px; cursor: pointer; }
+    button:hover { background: #0051cc; }
+  </style>
+</head>
+<body>
+  <!--
+    Expected Detection:
+    - Field: input (only input, placeholder="Enter 6-digit code")
+    - Confidence: 75-80 (Tier 2)
+    - Tier: 2
+    - Signals: placeholder text match, maxlength=6
+    - Rationale: Minimal markup, relies on placeholder and context
+  -->
+  <div class="container">
+    <h1>Check your email</h1>
+    <p>We sent a verification code to your email address. Enter it below to continue.</p>
+
+    <form>
+      <input
+        type="text"
+        placeholder="Enter 6-digit code"
+        maxlength="6"
+        inputmode="numeric"
+        data-testid="verification-field"
+      />
+      <button type="submit">Verify</button>
+    </form>
+  </div>
+</body>
+</html>

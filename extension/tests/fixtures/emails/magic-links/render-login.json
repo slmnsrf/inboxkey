@@ -1,0 +1,13 @@
+{
+  "id": "render-magic-001",
+  "type": "magic-link",
+  "category": "tech",
+  "from": "noreply@render.com",
+  "subject": "Sign in to Render",
+  "body": "Click the link below to sign in:\n\nhttps://render.com/auth/login?token=9df0e3e23797a74dc99ab79f31503cc6\n\nThis link expires in 15 minutes.",
+  "extracted": {
+    "link": "https://render.com/auth/login?token=9df0e3e23797a74dc99ab79f31503cc6",
+    "token": "9df0e3e23797a74dc99ab79f31503cc6",
+    "confidence": "high"
+  }
+}

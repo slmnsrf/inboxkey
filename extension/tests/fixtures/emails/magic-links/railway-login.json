@@ -1,0 +1,13 @@
+{
+  "id": "railway-magic-001",
+  "type": "magic-link",
+  "category": "tech",
+  "from": "noreply@railway.app",
+  "subject": "Sign in to Railway",
+  "body": "Click the link below to sign in:\n\nhttps://railway.app/auth/login?token=575c3f27ef47966c39f6cd695572316f\n\nThis link expires in 15 minutes.",
+  "extracted": {
+    "link": "https://railway.app/auth/login?token=575c3f27ef47966c39f6cd695572316f",
+    "token": "575c3f27ef47966c39f6cd695572316f",
+    "confidence": "high"
+  }
+}

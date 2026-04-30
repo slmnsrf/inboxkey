@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Secure Verification - Chase</title>
+</head>
+<body>
+    <div id="main-container">
+        <div class="jpmc-mfa-container">
+            <header class="mfa-header">
+                <h1>Identify verification</h1>
+            </header>
+            <div class="mfa-content">
+                <p class="instructions">
+                    For your security, we sent a verification code to (***) ***-5678
+                </p>
+                <form name="VerifyForm" id="VerifyForm" method="post" action="/auth/fcc/login">
+                    <div class="input-group">
+                        <!-- Detection signals: autocomplete="one-time-code", inputmode="numeric", name="otpcode" -->
+                        <label for="otpcode">Enter verification code</label>
+                        <input
+                            type="tel"
+                            id="otpcode"
+                            name="otpcode"
+                            class="chase-input"
+                            autocomplete="one-time-code"
+                            inputmode="numeric"
+                            maxlength="6"
+                            aria-required="true"
+                            required
+                        >
+                        <span class="hint-text">6-digit code</span>
+                    </div>
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="trustDevice" name="trustDevice">
+                        <label for="trustDevice">Remember this device</label>
+                    </div>
+                    <div class="button-group">
+                        <button type="submit" class="btn-primary">Continue</button>
+                    </div>
+                </form>
+                <div class="help-links">
+                    <a href="/auth/resend">Didn't receive a code? Resend</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

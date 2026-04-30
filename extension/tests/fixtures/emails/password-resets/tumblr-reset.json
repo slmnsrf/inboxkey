@@ -1,0 +1,14 @@
+{
+  "id": "tumblr-reset-001",
+  "type": "password-reset",
+  "category": "security",
+  "from": "noreply@tumblr.com",
+  "subject": "Tumblr Password Reset",
+  "body": "You requested a password reset for your Tumblr.\n\nClick here to reset: https://tumblr.com/reset?token=abbbe22fd61ec4735f66bb6be59313b9b2841def\n\nIf you didn't request this, please ignore this email.",
+  "extracted": {
+    "link": "https://tumblr.com/reset?token=abbbe22fd61ec4735f66bb6be59313b9b2841def",
+    "token": "abbbe22fd61ec4735f66bb6be59313b9b2841def",
+    "type": "password-reset",
+    "confidence": "high"
+  }
+}

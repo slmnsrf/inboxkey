@@ -1,0 +1,14 @@
+{
+  "id": "zoom-alert-001",
+  "type": "security-alert",
+  "category": "security",
+  "from": "security@zoom.com",
+  "subject": "Login from new location",
+  "body": "We detected a login from new location to your Zoom account.\n\nLocation: Austin, TX\nDevice: Zoom Desktop\nTime: 2025-10-15T14:31:44Z\n\nIf this was you, you can ignore this email. If not, secure your account immediately.",
+  "extracted": {
+    "alertType": "Login from new location",
+    "location": "Austin, TX",
+    "device": "Zoom Desktop",
+    "requiresAction": false
+  }
+}

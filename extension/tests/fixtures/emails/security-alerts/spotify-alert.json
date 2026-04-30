@@ -1,0 +1,14 @@
+{
+  "id": "spotify-alert-001",
+  "type": "security-alert",
+  "category": "security",
+  "from": "security@spotify.com",
+  "subject": "Account access",
+  "body": "We detected a account access to your Spotify account.\n\nLocation: Boston, MA\nDevice: Spotify Desktop\nTime: 2025-10-15T14:31:44Z\n\nIf this was you, you can ignore this email. If not, secure your account immediately.",
+  "extracted": {
+    "alertType": "Account access",
+    "location": "Boston, MA",
+    "device": "Spotify Desktop",
+    "requiresAction": false
+  }
+}

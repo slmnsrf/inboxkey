@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Verify your identity - Square</title>
+</head>
+<body>
+    <div class="sq-auth-page">
+        <div class="sq-auth-card">
+            <h1 class="sq-title">Verify your identity</h1>
+            <p class="sq-subtitle">
+                We sent a code to your phone ending in 8888. Enter it to continue.
+            </p>
+            <form method="POST" action="/login/verify">
+                <div class="sq-input-group">
+                    <!-- Detection signals: autocomplete="one-time-code", inputmode="numeric", name="verification_code" -->
+                    <label for="verification_code">Verification code</label>
+                    <input
+                        type="tel"
+                        id="verification_code"
+                        name="verification_code"
+                        class="sq-input"
+                        autocomplete="one-time-code"
+                        inputmode="numeric"
+                        maxlength="6"
+                        required
+                    >
+                </div>
+                <button type="submit" class="sq-btn-primary">Continue</button>
+            </form>
+            <div class="sq-footer">
+                <a href="/login/resend">Resend code</a> |
+                <a href="/login/help">Get help</a>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

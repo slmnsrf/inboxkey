@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Verify Identity - Exodus</title>
+</head>
+<body>
+    <div class="exodus-layout">
+        <div class="exodus-auth-card">
+            <h1>Verify Your Identity</h1>
+            <p class="exodus-description">
+                We sent a verification code to your email. Enter it below.
+            </p>
+            <form method="POST" action="/verify">
+                <div class="exodus-input-group">
+                    <!-- Detection signals: autocomplete="one-time-code", inputmode="numeric", name="verificationCode" -->
+                    <label for="verificationCode">Verification Code</label>
+                    <input
+                        type="text"
+                        id="verificationCode"
+                        name="verificationCode"
+                        class="exodus-input"
+                        autocomplete="one-time-code"
+                        inputmode="numeric"
+                        maxlength="6"
+                        placeholder="Enter code"
+                        required
+                    >
+                </div>
+                <button type="submit" class="exodus-btn-primary">Verify</button>
+            </form>
+            <div class="exodus-footer">
+                <a href="/resend">Didn't receive code? Resend</a>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

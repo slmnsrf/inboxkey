@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>InboxKey - Service Worker Lifecycle Prototype Test</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #1a73e8;
+            margin-top: 0;
+        }
+        .test-section {
+            margin: 30px 0;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 4px;
+            border-left: 4px solid #1a73e8;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+        }
+        input[type="text"] {
+            width: 100%;
+            padding: 12px;
+            font-size: 16px;
+            border: 2px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+            transition: border-color 0.3s;
+        }
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #1a73e8;
+        }
+        button {
+            background: #1a73e8;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            font-size: 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        button:hover {
+            background: #1557b0;
+        }
+        button:active {
+            background: #0d47a1;
+        }
+        .results {
+            margin-top: 20px;
+            padding: 15px;
+            background: white;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+            min-height: 100px;
+        }
+        .status {
+            padding: 8px 12px;
+            border-radius: 4px;
+            margin: 5px 0;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+        }
+        .status.pending {
+            background: #fff3cd;
+            color: #856404;
+        }
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+        }
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        .instructions {
+            background: #e8f5e9;
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+        }
+        .instructions ol {
+            margin: 10px 0;
+            padding-left: 20px;
+        }
+        .instructions li {
+            margin: 5px 0;
+        }
+        code {
+            background: #f5f5f5;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+        }
+        .timer {
+            font-weight: bold;
+            color: #1a73e8;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>InboxKey - Service Worker Lifecycle Test</h1>
+
+        <div class="instructions">
+            <strong>Test Instructions:</strong>
+            <ol>
+                <li>Click the "Trigger Watch" button below</li>
+                <li>The verification field will be focused automatically</li>
+                <li>Watch the console for detailed logging</li>
+                <li>The field should autofill with "TEST123" after 10 seconds (on 3rd poll)</li>
+                <li>Check the results panel for status updates</li>
+                <li>For aggressive GC testing, launch Chrome with: <code>chrome --aggressive-extension-gc</code></li>
+            </ol>
+        </div>
+
+        <div class="test-section">
+            <label for="verification-code">Verification Code:</label>
+            <input
+                type="text"
+                id="verification-code"
+                name="verification-code"
+                placeholder="Enter verification code"
+                autocomplete="one-time-code"
+                data-testid="verification-input"
+            />
+
+            <button id="trigger-watch" onclick="triggerWatch()">Trigger Watch</button>
+            <button id="reset" onclick="resetTest()">Reset Test</button>
+
+            <div class="results">
+                <strong>Test Results:</strong>
+                <div id="status-display">
+                    <div class="status pending">Waiting for test to start...</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h3>Test Metrics</h3>
+            <p><strong>Test Started:</strong> <span id="test-start-time">-</span></p>
+            <p><strong>Watch Triggered:</strong> <span id="watch-trigger-time">-</span></p>
+            <p><strong>Code Received:</strong> <span id="code-received-time">-</span></p>
+            <p><strong>Total Duration:</strong> <span id="total-duration" class="timer">-</span></p>
+            <p><strong>Field Value:</strong> <code id="field-value">-</code></p>
+        </div>
+    </div>
+
+    <script>
+        let testStartTime = null;
+        let watchTriggerTime = null;
+        let statusDisplay = document.getElementById('status-display');
+        let field = document.getElementById('verification-code');
+
+        // Listen for field value changes
+        let fieldObserver = new MutationObserver(() => {
+            updateFieldValue();
+        });
+
+        field.addEventListener('input', updateFieldValue);
+        field.addEventListener('change', updateFieldValue);
+
+        function updateFieldValue() {
+            const value = field.value;
+            document.getElementById('field-value').textContent = value || '-';
+
+            if (value === 'TEST123') {
+                const codeReceivedTime = Date.now();
+                const duration = codeReceivedTime - testStartTime;
+
+                document.getElementById('code-received-time').textContent = new Date(codeReceivedTime).toISOString();
+                document.getElementById('total-duration').textContent = duration + 'ms';
+
+                addStatus('success', `✓ Test PASSED - Code autofilled in ${duration}ms`);
+
+                // Set test result for Playwright
+                window.testResult = {
+                    success: true,
+                    duration: duration,
+                    code: value
+                };
+            }
+        }
+
+        function triggerWatch() {
+            console.log('[Test] Triggering watch session');
+
+            testStartTime = Date.now();
+            watchTriggerTime = Date.now();
+
+            document.getElementById('test-start-time').textContent = new Date(testStartTime).toISOString();
+            document.getElementById('watch-trigger-time').textContent = new Date(watchTriggerTime).toISOString();
+
+            statusDisplay.innerHTML = '';
+            addStatus('pending', 'Watch triggered - waiting for polls...');
+            addStatus('pending', 'Poll #1: t=0s (expecting null)');
+            addStatus('pending', 'Poll #2: t=5s (expecting null)');
+            addStatus('pending', 'Poll #3: t=10s (expecting TEST123)');
+
+            // Focus the field to trigger the content script
+            field.focus();
+
+            // Set timeout to check for failure
+            setTimeout(() => {
+                if (field.value !== 'TEST123') {
+                    addStatus('error', '✗ Test FAILED - Code not received after 15 seconds');
+                    window.testResult = {
+                        success: false,
+                        error: 'Timeout - code not received'
+                    };
+                }
+            }, 15000);
+        }
+
+        function resetTest() {
+            console.log('[Test] Resetting test');
+
+            field.value = '';
+            testStartTime = null;
+            watchTriggerTime = null;
+            window.testResult = null;
+
+            document.getElementById('test-start-time').textContent = '-';
+            document.getElementById('watch-trigger-time').textContent = '-';
+            document.getElementById('code-received-time').textContent = '-';
+            document.getElementById('total-duration').textContent = '-';
+            document.getElementById('field-value').textContent = '-';
+
+            statusDisplay.innerHTML = '<div class="status pending">Waiting for test to start...</div>';
+        }
+
+        function addStatus(type, message) {
+            const statusEl = document.createElement('div');
+            statusEl.className = `status ${type}`;
+            statusEl.textContent = `[${new Date().toISOString()}] ${message}`;
+            statusDisplay.appendChild(statusEl);
+        }
+
+        // Initialize
+        window.testResult = null;
+        console.log('[Test] Test page loaded');
+    </script>
+</body>
+</html>

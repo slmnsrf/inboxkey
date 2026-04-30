@@ -1,0 +1,13 @@
+{
+  "id": "planetscale-magic-001",
+  "type": "magic-link",
+  "category": "tech",
+  "from": "noreply@planetscale.com",
+  "subject": "Sign in to Planetscale",
+  "body": "Click the link below to sign in:\n\nhttps://planetscale.com/auth/login?token=86dc5a80e7fd59247f5a2589af368ad9\n\nThis link expires in 15 minutes.",
+  "extracted": {
+    "link": "https://planetscale.com/auth/login?token=86dc5a80e7fd59247f5a2589af368ad9",
+    "token": "86dc5a80e7fd59247f5a2589af368ad9",
+    "confidence": "high"
+  }
+}

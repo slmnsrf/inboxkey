@@ -1,0 +1,14 @@
+{
+  "id": "linkedin-reset-001",
+  "type": "password-reset",
+  "category": "security",
+  "from": "noreply@linkedin.com",
+  "subject": "LinkedIn Password Reset",
+  "body": "You requested a password reset for your LinkedIn.\n\nClick here to reset: https://linkedin.com/reset?token=4f8c49f0ec27fb7eea398824691a4245bcc53f5e\n\nIf you didn't request this, please ignore this email.",
+  "extracted": {
+    "link": "https://linkedin.com/reset?token=4f8c49f0ec27fb7eea398824691a4245bcc53f5e",
+    "token": "4f8c49f0ec27fb7eea398824691a4245bcc53f5e",
+    "type": "password-reset",
+    "confidence": "high"
+  }
+}

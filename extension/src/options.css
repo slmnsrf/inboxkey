@@ -1,0 +1,17 @@
+@import './styles/tokens.css';
+@import './styles/focus.css';
+
+/**
+ * InboxKey Options Page Styles
+ *
+ * This file composes the options page CSS from focused per-tab modules.
+ * Each module is self-contained and can be edited independently.
+ */
+
+@import './styles/options-shared.css';
+@import './styles/options-accounts.css';
+@import './styles/options-security.css';
+@import './styles/options-settings.css';
+@import './styles/options-about.css';
+@import './styles/options-faqs.css';
+@import './styles/options-dialogs.css';

@@ -1,0 +1,50 @@
+# Gitleaks config for InboxKey
+# Extends the default ruleset (api keys, tokens, private keys, etc.) and adds
+# project-specific rules for the leaks that hurt this repo in the past.
+title = "InboxKey gitleaks rules"
+
+[extend]
+useDefault = true
+
+# --- Custom rule: personal-domain email addresses ---
+# Catches the original incident where a personal gmail address ended up in
+# author fields and a UI fixture. Test placeholders and the project contact
+# are allowlisted below.
+[[rules]]
+id = "personal-domain-email"
+description = "Personal-domain email address (gmail/outlook/hotmail/yahoo/protonmail/icloud)"
+regex = '''[a-zA-Z0-9._-]+@(gmail|outlook|hotmail|yahoo|protonmail|icloud)\.com'''
+tags = ["pii", "email"]
+
+[[rules.allowlists]]
+description = "Project contact email + clearly synthetic test placeholders"
+regexes = [
+    '''inboxbridge\.extension@gmail\.com''',
+    '''(user|test|alice|bob|fake|example|existing|other|test\d+)@(gmail|outlook|hotmail|yahoo|protonmail|icloud)\.com''',
+]
+
+# --- Custom rule: hardcoded local user paths ---
+# Generic devcontainer paths like /home/dev/ are tolerated; per-user paths are not.
+[[rules]]
+id = "hardcoded-local-path"
+description = "Hardcoded per-user local filesystem path"
+regex = '''(C:\\Users\\[A-Za-z0-9._-]+|/home/(?!dev/|runner/)[a-z0-9._-]+/|/Users/[a-z0-9._-]+/)'''
+tags = ["pii", "path"]
+
+# --- Global allowlist ---
+[allowlist]
+description = "Paths and commits that should never be scanned"
+paths = [
+    '''node_modules/''',
+    '''(^|/)pnpm-lock\.yaml$''',
+    '''(^|/)Cargo\.lock$''',
+    '''(^|/)package-lock\.json$''',
+    '''(^|/)yarn\.lock$''',
+    '''(^|/)\.pnpm-store/''',
+    '''(^|/)\.next/''',
+    '''(^|/)build/''',
+    '''(^|/)dist/''',
+    '''(^|/)target/''',
+    '''(^|/)\.plasmo/''',
+    '''marketing/public/.*\.(gif|png|jpg|jpeg|svg|webp|mp4|webm)$''',
+]

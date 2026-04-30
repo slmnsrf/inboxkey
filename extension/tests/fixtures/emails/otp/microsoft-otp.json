@@ -1,0 +1,18 @@
+{
+  "id": "microsoft-otp-001",
+  "type": "otp",
+  "category": "tech",
+  "from": "account-security-noreply@accountprotection.microsoft.com",
+  "subject": "Microsoft account security code",
+  "body": "Microsoft account security code\n\nYour security code is: 405816\n\nUse this code to verify your identity. This code will expire in 15 minutes.",
+  "extracted": {
+    "code": "405816",
+    "pattern": "numeric-6",
+    "confidence": "high"
+  },
+  "metadata": {
+    "sent": "2025-10-15T10:42:55Z",
+    "expiresIn": "15 minutes",
+    "provider": "Microsoft"
+  }
+}

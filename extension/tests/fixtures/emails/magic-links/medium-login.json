@@ -1,0 +1,13 @@
+{
+  "id": "medium-magic-001",
+  "type": "magic-link",
+  "category": "publishing",
+  "from": "noreply@medium.com",
+  "subject": "Sign in to Medium",
+  "body": "Click the link below to sign in:\n\nhttps://medium.com/auth/login?token=e0221df68dff99072a073cc01ac4deca\n\nThis link expires in 15 minutes.",
+  "extracted": {
+    "link": "https://medium.com/auth/login?token=e0221df68dff99072a073cc01ac4deca",
+    "token": "e0221df68dff99072a073cc01ac4deca",
+    "confidence": "high"
+  }
+}

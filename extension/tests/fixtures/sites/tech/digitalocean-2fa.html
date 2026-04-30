@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DigitalOcean - Two-Factor Authentication</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background: #f3f5f9; margin: 0; padding: 20px; }
+        .do-container { max-width: 460px; margin: 50px auto; background: white; border-radius: 8px; box-shadow: 0 2px 12px rgba(0,0,0,0.08); padding: 40px; }
+        .do-logo { text-align: center; margin-bottom: 30px; font-size: 28px; font-weight: 700; color: #0080ff; }
+        .do-title { color: #0d0c22; font-size: 24px; margin-bottom: 12px; font-weight: 600; }
+        .do-text { color: #4a5568; line-height: 1.7; margin-bottom: 25px; }
+        .do-form-group { margin-bottom: 20px; }
+        .do-label { display: block; color: #0d0c22; margin-bottom: 8px; font-weight: 600; font-size: 14px; }
+        .do-input { width: 100%; padding: 12px; border: 1px solid #cbd5e0; border-radius: 6px; font-size: 16px; box-sizing: border-box; }
+        .do-input:focus { border-color: #0080ff; outline: none; box-shadow: 0 0 0 3px rgba(0, 128, 255, 0.1); }
+        .do-button { width: 100%; padding: 14px; background: #0080ff; color: white; border: none; border-radius: 6px; font-size: 16px; font-weight: 600; cursor: pointer; }
+        .do-button:hover { background: #006dd6; }
+    </style>
+</head>
+<body>
+    <!-- Detection Signals: Tech domain: digitalocean, cloud hosting -->
+    <div class="do-container">
+        <div class="do-logo">DigitalOcean</div>
+        <h1 class="do-title">Two-Factor Authentication</h1>
+        <p class="do-text">Enter the 6-digit code from your authenticator app.</p>
+        <form id="tfaForm" action="/auth/2fa/verify" method="POST">
+            <div class="do-form-group">
+                <label for="tfaCode" class="do-label">Authentication Code</label>
+                <input type="tel" id="tfaCode" name="tfa_code" class="do-input" placeholder="000000" maxlength="6" pattern="[0-9]{6}" inputmode="numeric" autocomplete="one-time-code" required />
+            </div>
+            <button type="submit" class="do-button">Verify</button>
+        </form>
+    </div>
+</body>
+</html>

@@ -1,0 +1,15 @@
+{
+  "id": "edge-code-url-001",
+  "type": "otp",
+  "category": "edge-case",
+  "from": "noreply@example.com",
+  "subject": "Verification Link",
+  "body": "Click to verify: https://example.com/verify?code=485739 or enter code manually: 485739",
+  "extracted": {
+    "code": "485739",
+    "link": "https://example.com/verify?code=485739",
+    "pattern": "numeric-6",
+    "confidence": "high",
+    "note": "Code appears in both URL and text"
+  }
+}

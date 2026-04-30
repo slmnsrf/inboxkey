@@ -1,0 +1,14 @@
+{
+  "id": "microsoft-alert-001",
+  "type": "security-alert",
+  "category": "security",
+  "from": "security@microsoft.com",
+  "subject": "Unusual sign-in",
+  "body": "We detected a unusual sign-in to your Microsoft account.\n\nLocation: Seattle, WA\nDevice: Edge on Windows\nTime: 2025-10-15T14:31:44Z\n\nIf this was you, you can ignore this email. If not, secure your account immediately.",
+  "extracted": {
+    "alertType": "Unusual sign-in",
+    "location": "Seattle, WA",
+    "device": "Edge on Windows",
+    "requiresAction": false
+  }
+}

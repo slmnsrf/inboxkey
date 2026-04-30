@@ -1,0 +1,15 @@
+{
+  "id": "edge-formatted-001",
+  "type": "otp",
+  "category": "edge-case",
+  "from": "auth@example.com",
+  "subject": "Verification Code",
+  "body": "Your code is: 123-456. Please enter it as 123456 (without dashes).",
+  "extracted": {
+    "code": "123456",
+    "originalFormat": "123-456",
+    "pattern": "numeric-6",
+    "confidence": "high",
+    "note": "Code with formatting that should be normalized"
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "id": "monday-magic-001",
+  "type": "magic-link",
+  "category": "productivity",
+  "from": "noreply@monday.com",
+  "subject": "Sign in to Monday",
+  "body": "Click the link below to sign in:\n\nhttps://monday.com/auth/login?token=22ace364f4a7dc91af943e4a0cf2d461\n\nThis link expires in 15 minutes.",
+  "extracted": {
+    "link": "https://monday.com/auth/login?token=22ace364f4a7dc91af943e4a0cf2d461",
+    "token": "22ace364f4a7dc91af943e4a0cf2d461",
+    "confidence": "high"
+  }
+}

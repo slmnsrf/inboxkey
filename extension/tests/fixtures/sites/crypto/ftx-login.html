@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FTX - Login Verification</title>
+    <style>
+        body { font-family: 'Roboto', sans-serif; background: #02042b; color: #fff; margin: 0; padding: 0; min-height: 100vh; display: flex; align-items: center; justify-content: center; }
+        .ftx-wrapper { max-width: 440px; width: 100%; padding: 20px; }
+        .ftx-card { background: #0d0e2d; border-radius: 16px; padding: 45px; box-shadow: 0 10px 40px rgba(0,0,0,0.5); }
+        .ftx-logo { text-align: center; margin-bottom: 35px; }
+        .ftx-logo-text { font-size: 36px; font-weight: 900; background: linear-gradient(90deg, #5fcbce 0%, #2eaaad 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .ftx-heading { font-size: 22px; margin-bottom: 12px; text-align: center; }
+        .ftx-description { color: #8b8fa3; text-align: center; margin-bottom: 30px; font-size: 14px; line-height: 1.5; }
+        .ftx-form-field { margin-bottom: 20px; }
+        .ftx-label { display: block; color: #a3a6ba; margin-bottom: 10px; font-size: 13px; font-weight: 500; }
+        .ftx-input { width: 100%; padding: 15px; background: #02042b; border: 1px solid #2a2d4a; border-radius: 8px; color: #fff; font-size: 16px; box-sizing: border-box; }
+        .ftx-input:focus { border-color: #5fcbce; outline: none; box-shadow: 0 0 0 3px rgba(95, 203, 206, 0.15); }
+        .ftx-btn { width: 100%; padding: 16px; background: linear-gradient(90deg, #5fcbce 0%, #2eaaad 100%); color: #02042b; border: none; border-radius: 8px; font-size: 16px; font-weight: 700; cursor: pointer; margin-top: 10px; }
+        .ftx-btn:hover { opacity: 0.9; }
+    </style>
+</head>
+<body>
+    <!-- Detection Signals:
+         - Crypto domain: ftx, cryptocurrency exchange
+         - Security keywords: login verification, 2FA, authentication
+         - Input patterns: 6-digit code, dark theme, gradient accents
+         - Form structure: card with gradient logo, dark background
+         - Brand colors: #5fcbce, #2eaaad (FTX teal gradient)
+         - Common IDs: otpCode, authenticationCode, loginCode
+    -->
+    <div class="ftx-wrapper">
+        <div class="ftx-card">
+            <div class="ftx-logo">
+                <div class="ftx-logo-text">FTX</div>
+            </div>
+
+            <h2 class="ftx-heading">Login Verification</h2>
+            <p class="ftx-description">
+                Enter the 6-digit code from your authenticator app or SMS to complete your login.
+            </p>
+
+            <form id="loginVerificationForm" action="/api/auth/verify-2fa" method="POST">
+                <div class="ftx-form-field">
+                    <label for="otpCode" class="ftx-label">Authentication Code</label>
+                    <input
+                        type="text"
+                        id="otpCode"
+                        name="otp_code"
+                        class="ftx-input"
+                        placeholder="000000"
+                        maxlength="6"
+                        pattern="[0-9]{6}"
+                        inputmode="numeric"
+                        autocomplete="one-time-code"
+                        required
+                    />
+                </div>
+
+                <button type="submit" class="ftx-btn">Verify</button>
+            </form>
+
+            <p style="text-align: center; margin-top: 25px; font-size: 13px; color: #8b8fa3;">
+                <a href="#" style="color: #5fcbce; text-decoration: none;">Use backup code</a>
+            </p>
+        </div>
+    </div>
+</body>
+</html>

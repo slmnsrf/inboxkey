@@ -1,0 +1,34 @@
+[package]
+name = "inboxbridge"
+version = "1.1.0"
+edition = "2021"
+authors = ["InboxKey Contributors"]
+description = "Native messaging host for InboxKey IMAP support"
+license = "PolyForm-Noncommercial-1.0.0"
+repository = "https://github.com/slmnsrf/inboxkey"
+
+[dependencies]
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "io-util", "io-std", "time", "net"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+keyring = "2"
+anyhow = "1"
+thiserror = "1"
+async-imap = "0.9"
+async-std = "1"
+async-native-tls = "0.5"
+native-tls = "0.2"
+tokio-util = { version = "0.7", features = ["codec"] }
+chrono = "0.4"
+uuid = { version = "1", features = ["v4"] }
+dirs = "5"
+fs2 = "0.4"
+
+[dev-dependencies]
+tokio-test = "0.4"
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+strip = true
