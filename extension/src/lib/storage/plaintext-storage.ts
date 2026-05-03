@@ -19,6 +19,7 @@ import type {
 } from "./schema"
 import {
   DEFAULT_SETTINGS,
+  STORAGE_KEYS,
   isMailbox,
   isSessionState,
   isSettings,
@@ -124,11 +125,61 @@ async function ensureGmailMigrationRan(): Promise<void> {
         PLAINTEXT_STORAGE_KEYS.MAILBOXES
       )
       const raw = (result[PLAINTEXT_STORAGE_KEYS.MAILBOXES] || []) as unknown[]
-      const cleaned = raw.filter((m) => !isLegacyGmailRecord(m))
+      const removedIds = new Set<string>()
+      const cleaned = raw.filter((m) => {
+        if (isLegacyGmailRecord(m)) {
+          const id = (m as { id?: unknown }).id
+          if (typeof id === 'string') removedIds.add(id)
+          return false
+        }
+        return true
+      })
       if (cleaned.length !== raw.length) {
         await chrome.storage.local.set({
           [PLAINTEXT_STORAGE_KEYS.MAILBOXES]: cleaned,
         })
+
+        // Scrub any sync_error_state entries that belong to the removed
+        // gmail mailboxes. Otherwise the popup error banner / badge can
+        // keep showing reconnect-required for an account GET_MAILBOXES
+        // no longer returns. Mirrors the existing post-disconnect cleanup
+        // (errorStateManager.removeMailboxErrors), but inlined to keep
+        // this migration shim self-contained without importing from
+        // src/background/.
+        if (removedIds.size > 0) {
+          try {
+            const errorState = await chrome.storage.local.get(
+              STORAGE_KEYS.SYNC_ERROR_STATE
+            )
+            const state = errorState[STORAGE_KEYS.SYNC_ERROR_STATE] as
+              | { currentErrors?: { mailboxId?: string }[]; consecutiveFailures?: number; lastErrorTime?: number | null }
+              | undefined
+            if (state && Array.isArray(state.currentErrors)) {
+              const before = state.currentErrors.length
+              const filteredErrors = state.currentErrors.filter(
+                (e) => !(e && typeof e.mailboxId === 'string' && removedIds.has(e.mailboxId))
+              )
+              if (filteredErrors.length < before) {
+                const updated = {
+                  ...state,
+                  currentErrors: filteredErrors,
+                  ...(filteredErrors.length === 0
+                    ? { consecutiveFailures: 0, lastErrorTime: null }
+                    : {}),
+                }
+                await chrome.storage.local.set({
+                  [STORAGE_KEYS.SYNC_ERROR_STATE]: updated,
+                })
+              }
+            }
+          } catch (errorScrubFailure) {
+            // Non-fatal: a stale error entry is annoying but not corrupting.
+            console.warn(
+              '[PlaintextStorage] Failed to scrub sync_error_state for removed gmail mailboxes:',
+              errorScrubFailure
+            )
+          }
+        }
       }
     })().catch((err) => {
       // Silently swallow: the migration is a one-time defensive shim.
