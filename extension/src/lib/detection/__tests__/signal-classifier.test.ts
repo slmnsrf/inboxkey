@@ -499,12 +499,17 @@ describe('signal-classifier', () => {
     })
 
     it('Steam Guard: email + authenticator → email', () => {
+      // Updated 2026-05-04: bare `uygulama` is no longer a sufficient
+      // authenticator anchor (FP-prone in Turkish — "uygulamayı indir"
+      // means "download the app"). Real Steam-style Turkish copy includes
+      // a strong anchor like `doğrulayıcı`. The hybrid intent is preserved.
       const result = classifyDeliveryChannel(
-        createSources('Doğrulama kodunu e-posta veya uygulama')
+        createSources('Doğrulama kodunu e-posta veya doğrulayıcı uygulama')
       )
       expect(result.channel).toBe('email')
       expect(result.confidence).toBe(0.85)
       expect(result.allChannels).toContain('email')
+      expect(result.allChannels).toContain('authenticator')
     })
 
     it('Banking: SMS only (Turkish) → reject', () => {
@@ -515,6 +520,108 @@ describe('signal-classifier', () => {
       expect(result.confidence).toBe(1.0)
       expect(result.allChannels).toEqual(['sms'])
       expect(result.allChannels).not.toContain('email')
+    })
+  })
+
+  // ═══════════════════════════════════════════════════════════════
+  // Twitter/X TOTP challenge — captured real-site copy
+  // (regression: instrumental construction, accusative app form,
+  // generic "code generator app" phrasing missed by prior patterns)
+  // ═══════════════════════════════════════════════════════════════
+
+  describe('Twitter/X TOTP challenge (captured copy)', () => {
+    it('rejects English X TOTP prompt as authenticator (verb=generate, noun=code generator app)', () => {
+      const text = 'Enter verification code. Generate a code using your code generator app and enter it below.'
+      const result = classifyDeliveryChannel(createSources(text))
+      expect(result.channel).toBe('authenticator')
+      expect(result.matchedKeywords.length).toBeGreaterThan(0)
+    })
+
+    it('rejects Turkish X TOTP prompt as authenticator (instrumental construction, accusative)', () => {
+      const text = 'Onaylama kodunu gir. Kod oluşturucu uygulamanı kullanarak bir kod oluştur ve aşağıya gir.'
+      const result = classifyDeliveryChannel(createSources(text))
+      expect(result.channel).toBe('authenticator')
+      expect(result.matchedKeywords.length).toBeGreaterThan(0)
+    })
+
+    it('does not classify "QR code generator app" as authenticator', () => {
+      // Phrase includes `app` so the regex actually attempts to match —
+      // exercises the (?<!qr\s) lookbehind guard.
+      const result = classifyDeliveryChannel(
+        createSources('Try our free QR code generator app to make QR codes from any URL.')
+      )
+      expect(result.channel).not.toBe('authenticator')
+    })
+
+    it('does not classify "promo code generator app" as authenticator', () => {
+      // Exercises the (?<!promo\s) lookbehind guard.
+      const result = classifyDeliveryChannel(
+        createSources('Generate discounts with our promo code generator app.')
+      )
+      expect(result.channel).not.toBe('authenticator')
+    })
+
+    it('does not classify "coupon-code generator app" as authenticator', () => {
+      // Exercises the (?<!coupon-) lookbehind guard.
+      const result = classifyDeliveryChannel(
+        createSources('Create offers with our coupon-code generator app.')
+      )
+      expect(result.channel).not.toBe('authenticator')
+    })
+
+    it('does not classify "source-code generator app" as authenticator', () => {
+      // Exercises the (?<!source-) lookbehind guard.
+      const result = classifyDeliveryChannel(
+        createSources('Try our source-code generator app for boilerplate.')
+      )
+      expect(result.channel).not.toBe('authenticator')
+    })
+
+    // Note: a regression test for the (?<!barcode\s) lookbehind would need
+    // a phrase like "barcode code generator app" — but that wording trips
+    // a long-standing FP in the French pattern at line 220
+    // (`code.*(?:de|dans).*(?:application|app)/i`) because `de` lives
+    // inside the `code` letters. Leaving the lookbehind defensive but
+    // untested; fixing the French pattern is out of scope for this PR.
+
+    it('does not classify "low-code generator app" as authenticator', () => {
+      // Exercises the `(?<!low-)` lookbehind: the text contains the exact
+      // `code generator app` substring the regex looks for, but preceded
+      // by `low-` it must be rejected.
+      const result = classifyDeliveryChannel(
+        createSources('Try our low-code generator app for visual development.')
+      )
+      expect(result.channel).not.toBe('authenticator')
+    })
+
+    it('does not classify bare "code generator" without app as authenticator', () => {
+      // `app` is required after `code generator`. Bare phrases like
+      // "AI code generator" / "free code generator" are common dev-tool
+      // marketing copy and must not trigger the auth gate.
+      const result = classifyDeliveryChannel(
+        createSources('Use our AI code generator to write boilerplate.')
+      )
+      expect(result.channel).not.toBe('authenticator')
+    })
+
+    it('does not classify Turkish QR code generator page as authenticator', () => {
+      // Real Turkish QR generator sites use this phrasing — must not match
+      // because the auth-anchor co-occurrence requires `uygulama` nearby.
+      const result = classifyDeliveryChannel(
+        createSources("Ücretsiz QR Kod Oluşturucu — herhangi bir URL'den QR kod oluşturun.")
+      )
+      expect(result.channel).not.toBe('authenticator')
+    })
+
+    it('does not classify Turkish App Store QR generator app title as authenticator', () => {
+      // Codex round 3 P1: real App Store title "Me QR - QR Kod Oluşturucu
+      // Uygulaması" was matching because `Kod Oluşturucu` + `Uygulaması`
+      // co-occurred. The QR-prefix lookbehind on the `kod oluşturucu` arm
+      // rejects this case.
+      const result = classifyDeliveryChannel(
+        createSources('Me QR - QR Kod Oluşturucu Uygulaması')
+      )
+      expect(result.channel).not.toBe('authenticator')
     })
   })
 })
