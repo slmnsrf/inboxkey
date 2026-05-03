@@ -499,8 +499,12 @@ describe('signal-classifier', () => {
     })
 
     it('Steam Guard: email + authenticator → email', () => {
+      // Updated 2026-05-04: bare `uygulama` is no longer a sufficient
+      // authenticator anchor (FP-prone in Turkish — "uygulamayı indir"
+      // means "download the app"). Real Steam-style Turkish copy includes
+      // a strong anchor like `doğrulayıcı`. The hybrid intent is preserved.
       const result = classifyDeliveryChannel(
-        createSources('Doğrulama kodunu e-posta veya uygulama')
+        createSources('Doğrulama kodunu e-posta veya doğrulayıcı uygulama')
       )
       expect(result.channel).toBe('email')
       expect(result.confidence).toBe(0.85)
@@ -515,6 +519,68 @@ describe('signal-classifier', () => {
       expect(result.confidence).toBe(1.0)
       expect(result.allChannels).toEqual(['sms'])
       expect(result.allChannels).not.toContain('email')
+    })
+  })
+
+  // ═══════════════════════════════════════════════════════════════
+  // Twitter/X TOTP challenge — captured real-site copy
+  // (regression: instrumental construction, accusative app form,
+  // generic "code generator app" phrasing missed by prior patterns)
+  // ═══════════════════════════════════════════════════════════════
+
+  describe('Twitter/X TOTP challenge (captured copy)', () => {
+    it('rejects English X TOTP prompt as authenticator (verb=generate, noun=code generator app)', () => {
+      const text = 'Enter verification code. Generate a code using your code generator app and enter it below.'
+      const result = classifyDeliveryChannel(createSources(text))
+      expect(result.channel).toBe('authenticator')
+      expect(result.matchedKeywords.length).toBeGreaterThan(0)
+    })
+
+    it('rejects Turkish X TOTP prompt as authenticator (instrumental construction, accusative)', () => {
+      const text = 'Onaylama kodunu gir. Kod oluşturucu uygulamanı kullanarak bir kod oluştur ve aşağıya gir.'
+      const result = classifyDeliveryChannel(createSources(text))
+      expect(result.channel).toBe('authenticator')
+      expect(result.matchedKeywords.length).toBeGreaterThan(0)
+    })
+
+    it('does not classify "QR code generator" as authenticator', () => {
+      const result = classifyDeliveryChannel(
+        createSources('Try our free QR code generator to make a QR code from any URL.')
+      )
+      expect(result.channel).not.toBe('authenticator')
+    })
+
+    it('does not classify "promo code generator" as authenticator', () => {
+      const result = classifyDeliveryChannel(
+        createSources('Generate a discount with our promo code generator.')
+      )
+      expect(result.channel).not.toBe('authenticator')
+    })
+
+    it('does not classify "barcode generator" as authenticator', () => {
+      const result = classifyDeliveryChannel(
+        createSources('Use the barcode generator to create EAN-13 codes.')
+      )
+      expect(result.channel).not.toBe('authenticator')
+    })
+
+    it('does not classify "low-code app" as authenticator', () => {
+      // The `(?<!low-)` lookbehind blocks `low-code` from matching the
+      // `code[-\s]?generator` pattern. Test exercises that guard directly
+      // without introducing a separate unguarded `code generator` mention.
+      const result = classifyDeliveryChannel(
+        createSources('Build apps with our low-code app builder.')
+      )
+      expect(result.channel).not.toBe('authenticator')
+    })
+
+    it('does not classify Turkish QR code generator page as authenticator', () => {
+      // Real Turkish QR generator sites use this phrasing — must not match
+      // because the auth-anchor co-occurrence requires `uygulama` nearby.
+      const result = classifyDeliveryChannel(
+        createSources("Ücretsiz QR Kod Oluşturucu — herhangi bir URL'den QR kod oluşturun.")
+      )
+      expect(result.channel).not.toBe('authenticator')
     })
   })
 })

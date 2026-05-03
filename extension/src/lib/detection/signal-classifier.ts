@@ -192,6 +192,10 @@ const AUTHENTICATOR_PATTERNS = [
   /\bauth(?:entication)?\s*application\b/i,
   /code\s*(?:from|in).*(?:authenticat|auth\s*app)/i,
   /(?:open|use|check).*(?:authenticat|auth\s*app)/i,
+  // English: "code generator app" with FP guard.
+  // Matches X TOTP copy ("Generate a code using your code generator app")
+  // while blocking known FP qualifiers via fixed-length negative lookbehinds.
+  /(?<!qr\s)(?<!qr-)(?<!barcode\s)(?<!barcode-)(?<!promo\s)(?<!promo-)(?<!coupon\s)(?<!coupon-)(?<!source\s)(?<!source-)(?<!low-)(?<!no-)\bcode[-\s]?generator(?:[-\s]?app)?\b/i,
 
   // Spanish
   /\b(?:aplicaci[oó]n\s*de\s*autenticaci[oó]n|app\s*de\s*autenticaci[oó]n)\b/i,
@@ -223,10 +227,18 @@ const AUTHENTICATOR_PATTERNS = [
   /authenticatie[-\s]?applicatie/i,
   /code.*(?:van|in).*app/i,
 
-  // Turkish (uygulama = app, kimlik doğrulayıcı = authenticator)
-  /\b(?:kimlik\s*doğrulayıcı|doğrulayıcı\s*uygulama)\b/i,
-  /\buygulama(?:nız(?:da|dan)?|dan)?\b/i,
-  /kod.*(?:uygulamadan|uygulamanızdan)/i,
+  // Turkish — agglutinative grammar makes \b-bounded stems unreliable.
+  // JS \b is ASCII-only; Turkish dotless ı is a non-word char, breaking
+  // boundaries on words like `doğrulayıcı`. Strategy: require co-occurrence
+  // of `uygulama*` (prefix) within ~60 chars of an authentication anchor.
+  // Anchors:
+  //   kod oluşturucu (X's exact phrasing), doğrulayıcı, kimlik doğrulama
+  //   (bigram, NOT bare `kimlik` which also means "identity"), 2FA, TOTP,
+  //   generic English `authenticator` (used in Turkish login UIs), and
+  //   brand names. Standalone `kod oluşturucu` is intentionally excluded —
+  //   Turkish QR-code generator pages use it outside auth contexts.
+  /(?:kod\s*oluşturucu|doğrulayıcı|kimlik\s*doğrulama|2fa|totp|authenticator|google\s*authenticator|microsoft\s*authenticator|authy|duo\s*mobile)[\s\S]{0,60}uygulama/i,
+  /uygulama[\s\S]{0,60}(?:kod\s*oluşturucu|doğrulayıcı|kimlik\s*doğrulama|2fa|totp|authenticator|google\s*authenticator|microsoft\s*authenticator|authy|duo\s*mobile)/i,
 
   // Polish
   /\b(?:aplikacja\s*uwierzytelniaj[aą]ca|aplikacja\s*do\s*uwierzytelniania)\b/i,
