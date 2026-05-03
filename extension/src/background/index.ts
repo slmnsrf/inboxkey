@@ -46,6 +46,14 @@ interface StartSessionMessage {
   }
   timeoutSeconds?: number
   detectedChannels?: Array<'email' | 'sms'>
+  /**
+   * Phase 2 — quality of the channel signal. 'positive' when the field-
+   * level classifier returned a known channel; 'unknown' when defaulted.
+   * Optional for backward compat — absent values are treated as
+   * 'positive' (preserves pre-Phase-2 behavior for any in-flight or
+   * cross-version sessions).
+   */
+  channelEvidence?: 'positive' | 'unknown'
 }
 
 interface StopSessionMessage {
@@ -633,6 +641,7 @@ async function handleWatchPortMessage(
       expected,
       timeoutSeconds: message.timeoutSeconds,
       detectedChannels: message.detectedChannels,
+      channelEvidence: message.channelEvidence,
     })
 
     // Replace existing session mapping if necessary

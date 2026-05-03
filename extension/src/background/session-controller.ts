@@ -25,6 +25,8 @@ import { createAdaptersFromMailboxes } from "@/lib/services/provider-adapter"
 import { SeenMessageStore } from "@/lib/services/seen-message-store"
 import { SessionPoller } from "./session-poller"
 import { extractETLD } from "@/lib/matching/domain-affinity"
+import { shouldSuppressMatch } from "@/lib/matching/eligibility"
+import { POSITIVE_SIGNAL_GATE_ENABLED } from "@/lib/constants"
 import { getMessagesTabManager } from "@/lib/providers/google-messages/tab-manager"
 import { WATCH_SESSION_SCORING } from "@/lib/matching/scoring-config"
 import type { ExpectedShape } from "@/lib/matching/shape-matcher"
@@ -86,6 +88,14 @@ interface SessionState {
    * @since SMS support
    */
   detectedChannels: SessionChannel[]
+  /**
+   * Phase 2 — quality of the channel signal. 'positive' when the field-
+   * level classifier returned a known channel; 'unknown' when defaulted.
+   * Optional for backward compat — absent values are treated as
+   * 'positive' (preserves pre-Phase-2 behavior for restored sessions).
+   * @since Phase 2
+   */
+  channelEvidence?: 'positive' | 'unknown'
   /**
    * Effective session timeout in seconds, after channel-specific capping.
    * Sent back to content script for chip timer. Default 45s for all session types.
@@ -169,8 +179,14 @@ export class SessionController {
     expected: SessionExpected
     timeoutSeconds?: number
     detectedChannels?: SessionChannel[]
+    /**
+     * Phase 2 — channel evidence quality. 'positive' when the field-level
+     * classifier returned a known channel; 'unknown' when defaulted.
+     * Absent → treated as 'positive' (backward compat).
+     */
+    channelEvidence?: 'positive' | 'unknown'
   }): Promise<SessionState> {
-    const { tabId, url, expected, timeoutSeconds, detectedChannels } = params
+    const { tabId, url, expected, timeoutSeconds, detectedChannels, channelEvidence } = params
 
     // Cancel existing session for tab
     for (const existing of this.sessions.values()) {
@@ -224,6 +240,7 @@ export class SessionController {
       expectedShape,         // V2: Store shape for v2 matching
       sessionStart: now,     // V2: Store session start for sessionBoost
       detectedChannels: channels,  // SMS: Channel-aware adapter filtering
+      channelEvidence,             // Phase 2: undefined means treat as 'positive'
       effectiveTimeout,            // SMS: Capped timeout sent back to content script
       startedAt: now,
       status: "active",
@@ -571,6 +588,33 @@ export class SessionController {
       )
 
       if (!best) {
+        return null
+      }
+
+      // Phase 2: positive-signal eligibility gate. Suppresses matches
+      // for sessions that started without positive channel evidence
+      // unless the matched code's sender strictly matches the page
+      // domain. See shouldSuppressMatch for the full predicate.
+      const pageHost = new URL(session.url).hostname
+      const senderETLD = best.senderETLD || extractETLD(best.siteMatch || '')
+      if (
+        shouldSuppressMatch(
+          POSITIVE_SIGNAL_GATE_ENABLED,
+          session.channelEvidence,
+          session.detectedChannels,
+          pageHost,
+          senderETLD,
+        )
+      ) {
+        // Never log code material — only metadata.
+        console.log(
+          '[SessionController] Phase 2 gate: suppressing match for unknown-channel session',
+          {
+            pageHost,
+            senderETLD: senderETLD || '(unknown)',
+            sessionId: session.id,
+          }
+        )
         return null
       }
 
