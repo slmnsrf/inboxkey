@@ -514,8 +514,15 @@ export function AccountsPanel() {
             // the install guide and go straight to "add a mailbox via
             // IMAP." Falling through to the bridge install wizard would
             // be a dead-end loop.
+            //
+            // Route through handleProviderSelect rather than setting
+            // showAddImapModal directly so reconnectingMailboxId and
+            // imapPrefillData get reset — otherwise stale state from a
+            // previously-cancelled edit/reconnect flow would carry over
+            // and handleImapAdded would try to remove a non-existent
+            // mailbox.
             if (bridgeStatus === 'connected') {
-              setShowAddImapModal(true)
+              void handleProviderSelect('imap-bridge')
             } else {
               setShowBridgeGuide(true)
             }
