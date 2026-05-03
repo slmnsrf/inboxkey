@@ -364,6 +364,10 @@ export interface Tier2Result {
   reason: string
   /** Detected delivery channels from signal classifier. Absent = ['email'] (default). */
   detectedChannels?: Array<'email' | 'sms' | 'authenticator'>
+  /**
+   * Phase 2 — see Tier1Result.channelEvidence.
+   */
+  channelEvidence?: 'positive' | 'unknown'
   /** Detection metadata for debugging */
   metadata?: {
     labelMatch?: string
@@ -750,6 +754,8 @@ export function detectTier2(
     score,
     reason: `Tier2 match (${scoreBreakdown.join(', ')})`,
     detectedChannels: channelResult.allChannels ?? ['email'],
+    // Phase 2: positive iff classifier resolved to a known channel.
+    channelEvidence: channelResult.channel === 'unknown' ? 'unknown' : 'positive',
     metadata: {
       layer: 'label',
       labelMatch: labelMatch || undefined,

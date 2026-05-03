@@ -23,6 +23,7 @@ import { hasEmailContext } from '@/lib/detection/email-context-guard'
 import { smsFeatureEnabledCache } from '@/lib/detection/sms-feature-cache'
 import { AUTOCOMPLETE_VALUES } from '@/lib/detection/patterns'
 import { getMatchingAutocompleteToken } from '@/lib/detection/detection-utils'
+import { POSITIVE_SIGNAL_GATE_ENABLED } from '@/lib/constants'
 
 /**
  * Google deliberately hides its own SMS codes from messages.google.com web.
@@ -68,6 +69,18 @@ export class WatchSession {
   private keepAliveTimer: number | null = null
   private completed = false
   private chipHandle: ChipHandle | null = null
+  /**
+   * Phase 2 — when true, SESSION_STARTED skips creating the listening
+   * chip. The chip is created lazily on SESSION_CODE_FOUND if a code
+   * arrives that survives the background-side strict-affinity gate.
+   * Set during the START_SESSION setup based on session-level
+   * channelEvidence + email-only check.
+   */
+  private suppressListeningChip = false
+  /** Cached close callback for lazy chip creation (Phase 2). */
+  private chipCloseHandler: (() => Promise<void>) | null = null
+  /** Cached chip timeout for lazy chip creation (Phase 2). */
+  private chipTimeoutSeconds: number = 60
 
   constructor(
     private readonly field: HTMLInputElement,
@@ -181,6 +194,29 @@ export class WatchSession {
       return
     }
 
+    // Phase 2: derive session-level channel evidence and decide whether
+    // to suppress the listening chip. Evidence is 'positive' when the
+    // field-level classifier returned a known channel OR when GM bypass
+    // injected SMS (intentional SMS use). 'unknown' otherwise.
+    //
+    // The listening chip is suppressed only when (a) feature flag is on,
+    // (b) evidence is 'unknown', AND (c) the session is email-only
+    // (preserves SMS / hybrid / GM-bypass UX). On TOTP screens this
+    // hides the listening UI entirely; if a strict-matching code later
+    // arrives the background gate will pass and the chip is lazily
+    // created in SESSION_CODE_FOUND.
+    const detectionEvidence = this.detectionResult.channelEvidence ?? 'positive'
+    const sessionChannels: Array<'email' | 'sms'> =
+      actionableChannels.length > 0 ? actionableChannels : ['email']
+    const sessionChannelEvidence: 'positive' | 'unknown' =
+      detectionEvidence === 'positive' || gmBypassFired ? 'positive' : 'unknown'
+    const isEmailOnly =
+      sessionChannels.length === 1 && sessionChannels[0] === 'email'
+    this.suppressListeningChip =
+      POSITIVE_SIGNAL_GATE_ENABLED &&
+      sessionChannelEvidence === 'unknown' &&
+      isEmailOnly
+
     try {
       this.port = chrome.runtime.connect({ name: "watch-session" })
     } catch (error) {
@@ -215,7 +251,9 @@ export class WatchSession {
         url: window.location.href,
         expected,
         timeoutSeconds,
-        detectedChannels: actionableChannels.length > 0 ? actionableChannels : ['email'],
+        detectedChannels: sessionChannels,
+        // Phase 2: explicit channel evidence — see computation above.
+        channelEvidence: sessionChannelEvidence,
       })
     } catch (error) {
       console.warn("[WatchSession] Failed to send START_SESSION:", error)
@@ -291,24 +329,33 @@ export class WatchSession {
           const settings = await storage.getSettings()
           chipTimeout = settings.sessionTimeoutSeconds ?? 60
         }
-        // V2: Show chip in "listening" state with timeout and close callback
-        this.chipHandle = await showSessionChip(
-          this.field,
-          chipTimeout,
-          {
-            onClose: async () => {
-              console.log('[WatchSession] User closed session chip, adding URL to blacklist')
-              const currentUrl = window.location.href
-              const result = await addBlacklistedUrl(currentUrl)
-              if (result.success) {
-                console.log('[WatchSession] URL successfully blacklisted:', currentUrl)
-              } else {
-                console.warn('[WatchSession] Failed to blacklist URL:', result.errorMessage)
-              }
-              this.stop()
-            }
+
+        // Phase 2: cache chip parameters for lazy creation in
+        // SESSION_CODE_FOUND when listening was suppressed.
+        this.chipTimeoutSeconds = chipTimeout
+        this.chipCloseHandler = async () => {
+          console.log('[WatchSession] User closed session chip, adding URL to blacklist')
+          const currentUrl = window.location.href
+          const result = await addBlacklistedUrl(currentUrl)
+          if (result.success) {
+            console.log('[WatchSession] URL successfully blacklisted:', currentUrl)
+          } else {
+            console.warn('[WatchSession] Failed to blacklist URL:', result.errorMessage)
           }
-        )
+          this.stop()
+        }
+
+        // Phase 2: skip listening UI for unknown-channel email-only
+        // sessions. Chip will be created lazily on SESSION_CODE_FOUND if
+        // the strict-affinity gate passes. For positive-evidence and
+        // SMS / hybrid / GM-bypass sessions, show the listening chip.
+        if (!this.suppressListeningChip) {
+          this.chipHandle = await showSessionChip(
+            this.field,
+            chipTimeout,
+            { onClose: this.chipCloseHandler }
+          )
+        }
         this.updateBadge('listening')
 
         this.callbacks.onSessionStarted?.(session.session.id)
@@ -330,6 +377,18 @@ export class WatchSession {
         }
 
         this.completed = true
+
+        // Phase 2: lazy-create the chip if listening was suppressed.
+        // The chip starts in 'listening' state and is updated to 'filled'
+        // by tryAutofill — a brief flash is acceptable for the rare case
+        // of an unknown-channel session that survived the gate.
+        if (!this.chipHandle && this.suppressListeningChip && this.chipCloseHandler) {
+          this.chipHandle = await showSessionChip(
+            this.field,
+            this.chipTimeoutSeconds,
+            { onClose: this.chipCloseHandler }
+          )
+        }
 
         // Try to autofill if callback provided
         if (this.callbacks.onAutofill) {

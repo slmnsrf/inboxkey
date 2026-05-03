@@ -85,5 +85,10 @@ export interface DetectionResult {
   executionTime: number // ms
   /** Detected delivery channels from signal classifier. Absent = ['email'] (default). */
   detectedChannels?: Array<'email' | 'sms' | 'authenticator'>
+  /**
+   * Phase 2 — whether the channel set came from a positive classifier
+   * signal or was implicitly defaulted. See tier1-fast.ts Tier1Result.
+   */
+  channelEvidence?: 'positive' | 'unknown'
 }
 

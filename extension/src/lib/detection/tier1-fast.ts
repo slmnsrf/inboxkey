@@ -51,6 +51,13 @@ export interface Tier1Result {
   reason: string
   /** Detected delivery channels from signal classifier. Absent = ['email'] (default). */
   detectedChannels?: Array<'email' | 'sms' | 'authenticator'>
+  /**
+   * Phase 2 — whether the channel set came from a positive classifier
+   * signal ('positive') or was implicitly defaulted from an unknown
+   * classification ('unknown'). Optional for backward compat —
+   * absent = treat as 'positive' (preserves pre-Phase-2 behavior).
+   */
+  channelEvidence?: 'positive' | 'unknown'
   /** Detection metadata for debugging */
   metadata?: {
     /** Matched HTML attribute (name, id, autocomplete) */
@@ -170,7 +177,7 @@ function getNearbyText(input: HTMLInputElement): string {
 function validateFieldContext(
   input: HTMLInputElement,
   cooldown: CooldownRegistry
-): { pass: true; textSources: TextSources; allChannels?: Array<'email' | 'sms' | 'authenticator'> } | { pass: false; result: Tier1Result } {
+): { pass: true; textSources: TextSources; allChannels?: Array<'email' | 'sms' | 'authenticator'>; channelEvidence: 'positive' | 'unknown' } | { pass: false; result: Tier1Result } {
   const labelText = getLabelText(input)
   const nearbyText = getNearbyText(input)
   const textSources: TextSources = {
@@ -252,7 +259,14 @@ function validateFieldContext(
     }
   }
 
-  return { pass: true, textSources, allChannels: signalClassification.allChannels }
+  // Phase 2: derive channelEvidence from the classifier verdict. Anything
+  // other than 'unknown' (i.e. 'email', 'sms', or hybrid resolved to 'email')
+  // counts as a positive signal — the classifier had enough evidence to
+  // commit to a channel.
+  const channelEvidence: 'positive' | 'unknown' =
+    signalClassification.channel === 'unknown' ? 'unknown' : 'positive'
+
+  return { pass: true, textSources, allChannels: signalClassification.allChannels, channelEvidence }
 }
 
 /**
@@ -438,6 +452,7 @@ export function detectTier1(
       confidence: 1.0,
       reason: `autocomplete="${autocomplete}"`,
       detectedChannels: validation.allChannels ?? ['email'],
+      channelEvidence: validation.channelEvidence,
       metadata: {
         layer: 'autocomplete',
         matchedAttribute: 'autocomplete',
@@ -456,6 +471,7 @@ export function detectTier1(
       confidence: 0.95,
       reason: `name/id="${identifier}" (exact match)`,
       detectedChannels: validation.allChannels ?? ['email'],
+      channelEvidence: validation.channelEvidence,
       metadata: {
         layer: 'attribute',
         matchedAttribute: name ? 'name' : 'id',
@@ -474,6 +490,7 @@ export function detectTier1(
       confidence: 0.9,
       reason: `name/id="${identifier}" (contains match)`,
       detectedChannels: validation.allChannels ?? ['email'],
+      channelEvidence: validation.channelEvidence,
       metadata: {
         layer: 'attribute',
         matchedAttribute: name ? 'name' : 'id',
@@ -498,6 +515,7 @@ export function detectTier1(
       confidence: 0.85,
       reason: `inputmode="${inputmode}" + maxlength=${maxLength}`,
       detectedChannels: validation.allChannels ?? ['email'],
+      channelEvidence: validation.channelEvidence,
       metadata: {
         layer: 'attribute',
         matchedAttribute: 'inputmode',

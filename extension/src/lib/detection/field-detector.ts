@@ -93,6 +93,7 @@ function tier1ToDetectionResult(
     signals: [result.reason],
     executionTime,
     detectedChannels: result.detectedChannels,
+    channelEvidence: result.channelEvidence,
   }
 }
 
@@ -119,6 +120,7 @@ function tier2ToDetectionResult(
     signals: [result.reason],
     executionTime,
     detectedChannels: result.detectedChannels,
+    channelEvidence: result.channelEvidence,
   }
 }
 
