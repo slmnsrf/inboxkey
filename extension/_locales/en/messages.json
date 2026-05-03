@@ -225,7 +225,7 @@
     "description": "Empty state: no mailboxes title"
   },
   "empty_no_mailboxes_message": {
-    "message": "Connect Gmail to get started.",
+    "message": "Connect a mailbox to get started.",
     "description": "Empty state: no mailboxes message"
   },
   "button_connect_mailbox": {
@@ -326,11 +326,11 @@
     "description": "FAQ answer about Google sign-in SMS limitation"
   },
   "faqs_q3": {
-    "message": "Why do I need InboxBridge for Outlook, iCloud, Yahoo, or ProtonMail?",
+    "message": "Why does InboxKey need the InboxBridge helper?",
     "description": "FAQ question about InboxBridge requirement"
   },
   "faqs_a3": {
-    "message": "Chrome's built-in sign-in API only supports Google accounts. Every other email provider needs IMAP, which browsers cannot speak directly for security reasons.\n\nInboxBridge is a small companion app that runs on your device and handles the IMAP connection locally. Your credentials stay in your operating system's keychain, and no email data leaves your computer.\n\nIf you only use Gmail, you never need InboxBridge.",
+    "message": "Browsers cannot speak IMAP directly for security reasons. InboxBridge is a small companion app that runs on your device and handles the IMAP connection locally. Your credentials stay in your operating system's keychain, and no email data leaves your computer.\n\nInboxBridge is required for every email provider, including Gmail. For Gmail, you connect with an App Password (Google requires 2-Step Verification first); for Outlook, Yahoo, Fastmail, ProtonMail Bridge, and other IMAP providers, you connect with normal IMAP credentials.",
     "description": "FAQ answer about InboxBridge requirement"
   },
   "faqs_q4": {
@@ -338,7 +338,7 @@
     "description": "FAQ question about privacy"
   },
   "faqs_a4": {
-    "message": "No. Everything parses on your device. There are no InboxKey servers, no analytics, no telemetry.\n\nEmails are fetched directly from your provider (Gmail API or IMAP), SMS messages are read from Google Messages for web, and code detection happens entirely in your browser.\n\nThe Security tab has a full architecture breakdown if you want to verify this yourself.",
+    "message": "No. Everything parses on your device. There are no InboxKey servers, no analytics, no telemetry.\n\nEmails are fetched directly from your provider via IMAP (through the local InboxBridge helper), SMS messages are read from Google Messages for web, and code detection happens entirely in your browser.\n\nThe Security tab has a full architecture breakdown if you want to verify this yourself.",
     "description": "FAQ answer about privacy"
   },
   "faqs_q5": {
@@ -898,10 +898,6 @@
     "message": "Offline - Token expired",
     "description": "Account status: OAuth token expired (legacy, use warning instead)"
   },
-  "status_warning_token_expired": {
-    "message": "Access expired - Reconnect needed",
-    "description": "Account status: OAuth token expired, warning level (amber dot)"
-  },
   "status_offline_connection_failed": {
     "message": "Offline - Connection failed",
     "description": "Account status: sync error"
@@ -1246,61 +1242,9 @@
     "message": "IMAP account",
     "description": "Generic IMAP account label when server unknown"
   },
-  "aria_reconnect_gmail": {
-    "message": "Reconnect Gmail account",
-    "description": "ARIA label for reconnect Gmail button"
-  },
-  "aria_connect_gmail": {
-    "message": "Connect Gmail account",
-    "description": "ARIA label for connect Gmail button"
-  },
-  "accounts_connect_gmail": {
-    "message": "Connect Gmail",
-    "description": "Connect Gmail button text"
-  },
-  "aria_disconnect_gmail": {
-    "message": "Disconnect Gmail account",
-    "description": "ARIA label for disconnect Gmail button"
-  },
   "accounts_disconnect": {
     "message": "Disconnect",
     "description": "Disconnect button text"
-  },
-  "accounts_provider_gmail": {
-    "message": "Gmail",
-    "description": "Gmail provider name in accounts panel"
-  },
-  "accounts_microcopy_gmail": {
-    "message": "Read-only access. Only verification emails are scanned, nothing else. Gmail is limited to one account per browser profile due to a Chrome API restriction.",
-    "description": "Gmail section description with trust signal and limit explanation"
-  },
-  "accounts_microcopy_gmail_limit": {
-    "message": "One account per browser profile",
-    "description": "Gmail single-account constraint for row design"
-  },
-  "accounts_gmail_limit_learn_why": {
-    "message": "Learn more.",
-    "description": "Link to open Gmail limitation explanation modal"
-  },
-  "accounts_gmail_limit_learn_why_aria": {
-    "message": "Learn why Gmail is limited to one account",
-    "description": "Accessible label for Gmail limitation link"
-  },
-  "accounts_gmail_limit_modal_title": {
-    "message": "Why one Gmail account?",
-    "description": "Modal title explaining Gmail single-account limitation"
-  },
-  "accounts_gmail_limit_modal_body": {
-    "message": "Chrome provides a built-in sign-in API that extensions use to access Gmail. This API only allows one Google account per browser profile. It is a browser-level restriction, not a choice.\n\nTo support multiple accounts, a backend server would be needed to handle Google's authentication. That would mean your email data passes through someone else's server. That is not something this extension will ever do.\n\nIf Google changes their API to support multiple accounts without a server (like Microsoft already does for Outlook), this limitation will be removed.\n\nIn the meantime, multiple Gmail accounts can be used by creating separate Chrome profiles, or by connecting additional accounts via IMAP through InboxBridge.",
-    "description": "Detailed explanation of Gmail single-account technical limitation"
-  },
-  "accounts_gmail_reconnect_mismatch": {
-    "message": "The signed-in Google account does not match the connected account. Please sign in with the correct account to reconnect.",
-    "description": "Error when Gmail reconnect authenticates with a different email"
-  },
-  "accounts_empty_gmail": {
-    "message": "Verification codes from Gmail can be detected and filled automatically. Nothing leaves this device.",
-    "description": "Gmail empty/disconnected state with trust signal"
   },
   "automation_heading": {
     "message": "Automation Level",
@@ -1891,7 +1835,7 @@
     "description": "Generic IMAP connection error"
   },
   "accounts_imap_error_auth": {
-    "message": "Authentication failed. For Gmail, Yahoo, and Outlook, an app-specific password is required.",
+    "message": "Authentication failed. Verify your username and app password. For Gmail, you must enable 2-Step Verification first, then create an app password at myaccount.google.com/apppasswords.",
     "description": "IMAP authentication error"
   },
   "accounts_imap_error_timeout": {
@@ -1913,10 +1857,6 @@
   "accounts_imap_error_network": {
     "message": "Connection failed. Check the server address and network.",
     "description": "IMAP network/connection error shown in account row"
-  },
-  "accounts_gmail_token_expired": {
-    "message": "Token expired. Sign in again to reconnect.",
-    "description": "Gmail token expiry message shown in account row"
   },
   "accounts_imap_privacy_reassurance": {
     "message": "Credentials stored in OS keychain • Local-only • No servers",
@@ -2033,10 +1973,6 @@
   "toast_connect_failed": {
     "message": "Failed to connect account. Please try again.",
     "description": "Toast message when account connection fails"
-  },
-  "toast_gmail_connected": {
-    "message": "Gmail account connected successfully",
-    "description": "Toast message when Gmail account is connected"
   },
   "toast_account_disconnected": {
     "message": "Account disconnected successfully",
@@ -2320,10 +2256,6 @@
     "message": "Every permission requested, and why",
     "description": "Security section: permissions subtitle"
   },
-  "security_perm_identity_reason": {
-    "message": "Signs in with your Google account so verification emails can be read.",
-    "description": "Permission reason: identity"
-  },
   "security_perm_tabs_reason": {
     "message": "Detects login and verification pages so codes can be offered for autofill.",
     "description": "Permission reason: tabs"
@@ -2548,10 +2480,6 @@
   "aria_dismiss_alert": {
     "message": "Dismiss alert",
     "description": "ARIA label for inline alert dismiss button"
-  },
-  "aria_connect_gmail_account": {
-    "message": "Connect Gmail account",
-    "description": "ARIA label for connect Gmail button in empty state"
   },
   "aria_reconnect_account": {
     "message": "Reconnect $ACCOUNT$",
@@ -2965,14 +2893,6 @@
     "message": "Connect an email account to autofill verification codes from your inbox. All processing happens on your device.",
     "description": "First-run welcome subtitle"
   },
-  "firstrun_gmail_title": {
-    "message": "Get started with Gmail",
-    "description": "First-run Gmail card title"
-  },
-  "firstrun_gmail_detail": {
-    "message": "One-click setup with Google sign-in. The recommended path for most users.",
-    "description": "First-run Gmail card detail"
-  },
   "firstrun_alt_heading": {
     "message": "Or choose another provider",
     "description": "First-run alternatives section heading"
@@ -2993,14 +2913,22 @@
     "message": "SMS verification codes captured from your Android phone via Google Messages pairing. Android only.",
     "description": "First-run Google Messages card detail"
   },
+  "firstrun_bridge_title": {
+    "message": "Install the InboxBridge helper",
+    "description": "First-run primary action title"
+  },
+  "firstrun_bridge_detail": {
+    "message": "InboxKey runs locally. The InboxBridge helper connects directly to your mailbox over IMAP — no InboxKey servers, no relays, no third parties beyond your own mail provider. Works with Gmail, Outlook, Yahoo, ProtonMail, Fastmail, and any IMAP server.",
+    "description": "First-run primary action body"
+  },
+  "firstrun_bridge_cta": {
+    "message": "Install InboxBridge",
+    "description": "First-run primary action button"
+  },
 
   "add_account": {
     "message": "Add account",
     "description": "Add account button label"
-  },
-  "add_account_gmail_detail": {
-    "message": "Read verification codes from your Gmail inbox.",
-    "description": "Add account dropdown Gmail description"
   },
   "add_account_imap_title": {
     "message": "Other email providers",
@@ -3018,17 +2946,9 @@
     "message": "Capture SMS verification codes via Google Messages on your Android phone.",
     "description": "Add account dropdown GM description"
   },
-  "add_account_recommended": {
-    "message": "Recommended",
-    "description": "Recommended tag on Gmail option"
-  },
   "add_account_connected": {
     "message": "Connected",
     "description": "Tag shown when provider is already at max connections"
-  },
-  "add_account_gmail_limit_hint": {
-    "message": "Limited to one account per profile.",
-    "description": "Short explanation shown on disabled Gmail option"
   },
   "add_account_why": {
     "message": "Why?",
@@ -3185,7 +3105,7 @@
     "description": "Security fact: messages scanned"
   },
   "security_read_scan_detail": {
-    "message": "The extension asks your provider for recent unread messages (Gmail uses the search query is:unread newer_than:Nd). Each message is parsed in browser memory. Only messages containing a verification code or magic link are kept in the ephemeral cache. Everything else is discarded immediately.",
+    "message": "The extension asks your provider for recent unread messages via IMAP (InboxBridge fetches messages from the server and passes them to the extension). Each message is parsed in browser memory. Only messages containing a verification code or magic link are kept in the ephemeral cache. Everything else is discarded immediately.",
     "description": "Security fact: scan detail"
   },
   "security_store_tokens_title": {
@@ -3193,7 +3113,7 @@
     "description": "Security fact: auth tokens stored"
   },
   "security_store_tokens_detail": {
-    "message": "If you connect Gmail, the OAuth access and refresh tokens are saved to chrome.storage.local in plaintext, protected by Chrome's profile sandbox. Encryption at rest is planned but not yet implemented. IMAP credentials are held by InboxBridge in your operating system's keychain, not by the extension itself.",
+    "message": "IMAP passwords are held by InboxBridge in your operating system's keychain, not by the extension itself. The extension stores account metadata (email address, provider type) and the IMAP connection settings needed to ask the bridge to fetch messages (server hostname, port, and the local account ID that points at the keychain entry) in chrome.storage.local. No passwords or message contents are persisted there.",
     "description": "Security fact: token storage detail"
   },
   "security_store_cache_title": {

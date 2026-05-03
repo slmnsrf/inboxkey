@@ -103,7 +103,7 @@ vi.mock('../../background/token-refresh', () => ({
   refreshExpiringTokens: vi.fn(async () => {}),
 }))
 
-// Stub chrome.runtime, chrome.storage, chrome.identity, chrome.tabs, chrome.alarms
+// Stub chrome.runtime, chrome.storage, chrome.tabs, chrome.alarms
 const sessionStore = new Map<string, unknown>()
 
 function buildChromeMock() {

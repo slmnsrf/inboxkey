@@ -106,8 +106,12 @@ describe("SessionController", () => {
     // Setup default mailbox mock (required for polling to work)
     mockGetMailboxes.mockResolvedValue([{
       id: "mailbox-1",
-      providerId: "gmail",
-      email: "test@gmail.com",
+      providerId: "imap-bridge",
+      email: "test@example.com",
+      imapServer: "imap.example.com",
+      imapPort: 993,
+      imapAccountId: "acc_test",
+      addedAt: Date.now(),
       lastSyncedAt: Date.now() - 60000
     }])
 
@@ -1119,12 +1123,12 @@ describe("SessionController", () => {
       const { createAdaptersFromMailboxes } = await import("../../src/lib/services/provider-adapter")
       const { EmailPollingService } = await import("../../src/lib/services/email-polling-service")
 
-      const gmailAdapter = { id: "gmail" }
+      const imapAdapter = { id: "imap-bridge" }
       const googleMessagesAdapter = { id: "google-messages" }
       const pollOnce = vi.fn(() => Promise.resolve({ candidates: [], adapterResults: [] }))
 
       ;(createAdaptersFromMailboxes as any).mockResolvedValueOnce([
-        gmailAdapter,
+        imapAdapter,
         googleMessagesAdapter,
       ])
       ;(EmailPollingService as any).mockImplementationOnce((adapters: unknown[]) => ({
@@ -1133,7 +1137,7 @@ describe("SessionController", () => {
       }))
 
       mockGetMailboxes.mockResolvedValue([
-        { id: "gmail-1", providerId: "gmail", email: "user@gmail.com" },
+        { id: "imap-1", providerId: "imap-bridge", email: "user@example.com", imapServer: "imap.example.com", imapPort: 993, imapAccountId: "acc_1", addedAt: Date.now(), lastSyncedAt: 0 },
         { id: "gm-1", providerId: "google-messages", email: "sms@google-messages.local" },
       ])
 
@@ -1151,7 +1155,7 @@ describe("SessionController", () => {
       await vi.advanceTimersByTimeAsync(1)
 
       expect(EmailPollingService).toHaveBeenCalledWith(
-        [gmailAdapter],
+        [imapAdapter],
         expect.anything()
       )
       expect(pollOnce).toHaveBeenCalled()
@@ -1232,14 +1236,15 @@ describe("SessionController", () => {
       })
       await controller.initialize()
 
-      // Setup: both Gmail and GM mailboxes
+      // Setup: both IMAP-bridge and GM mailboxes
       mockGetMailboxes.mockResolvedValue([
         {
-          id: "gmail-1",
-          providerId: "gmail",
-          email: "user@gmail.com",
-          accessToken: "token",
-          tokenExpiresAt: Date.now() + 3600000,
+          id: "imap-1",
+          providerId: "imap-bridge",
+          email: "user@example.com",
+          imapServer: "imap.example.com",
+          imapPort: 993,
+          imapAccountId: "acc_1",
           addedAt: Date.now(),
           lastSyncedAt: 0,
         },
@@ -1267,20 +1272,20 @@ describe("SessionController", () => {
             code: "777666",
             source: "Fresh email code",
             receivedAt: Date.now() - 2000,
-            providerId: "gmail",
-            mailboxId: "gmail-1",
+            providerId: "imap-bridge",
+            mailboxId: "imap-1",
           },
         ],
         links: [],
       })
 
-      // GM adapter fails with session_expired, Gmail adapter succeeds
+      // GM adapter fails with session_expired, IMAP adapter succeeds
       const { EmailPollingService } = await import("../../src/lib/services/email-polling-service")
       ;(EmailPollingService as any).mockImplementationOnce(() => ({
         pollOnce: vi.fn(() => Promise.resolve({
           candidates: [],
           adapterResults: [
-            { mailboxId: "gmail-1", success: true },
+            { mailboxId: "imap-1", success: true },
             { mailboxId: "gm-1", success: false, error: "session_expired" },
           ],
         })),

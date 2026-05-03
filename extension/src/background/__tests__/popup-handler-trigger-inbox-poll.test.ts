@@ -107,14 +107,6 @@ vi.mock('@/lib/services/seen-message-store', () => ({
   SeenMessageStore: vi.fn().mockImplementation(() => ({})),
 }))
 
-vi.mock('@/lib/providers/gmail/gmail-api', () => ({
-  GmailAPIClient: vi.fn(),
-}))
-
-vi.mock('@/lib/providers/gmail/gmail-auth', () => ({
-  GmailAuth: vi.fn(),
-}))
-
 vi.mock('@/lib/providers/imap-bridge/imap-bridge-adapter', () => ({
   IMAPBridgeAdapter: vi.fn(),
 }))
@@ -145,11 +137,14 @@ import { StorageFactory } from '@/lib/storage/storage-factory'
 // Helpers
 // ---------------------------------------------------------------------------
 
-function makeMailbox(id: string, providerId = 'gmail') {
+function makeMailbox(id: string, providerId = 'imap-bridge') {
   return {
     id,
     providerId,
     email: `${id}@example.com`,
+    imapServer: 'imap.example.com',
+    imapPort: 993,
+    imapAccountId: 'acc_test',
     addedAt: Date.now() - 10000,
     lastSyncedAt: Date.now() - 5000,
   }

@@ -48,12 +48,6 @@ export function FAQsSection() {
       </header>
 
       <div className="faqs__list">
-        {/*
-          FAQ #1 reuses accounts_gmail_limit_modal_body. The same key is rendered
-          inside the Gmail-limit modal triggered from AddAccountDropdown. Keep the
-          string context-neutral if you edit it.
-        */}
-        <FAQItem qKey="faqs_q1" aKey="accounts_gmail_limit_modal_body" />
         <FAQItem qKey="faqs_q2" aKey="faqs_a2" />
         <FAQItem qKey="faqs_q3" aKey="faqs_a3" />
         <FAQItem qKey="faqs_q4" aKey="faqs_a4" />

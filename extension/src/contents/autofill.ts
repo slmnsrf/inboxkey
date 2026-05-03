@@ -4,7 +4,7 @@
  */
 
 export const config = {
-  matches: ["https://*/*", "http://*/*"],
+  matches: ["https://*/*"],
 }
 
 import { extractDomain, isDomainEnabled } from '@/lib/utils/domain'

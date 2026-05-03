@@ -17,7 +17,7 @@
 /**
  * Provider type
  */
-export type ProviderId = 'gmail' | 'imap-bridge' | 'google-messages'
+export type ProviderId = 'imap-bridge' | 'google-messages'
 
 /**
  * Base properties shared by all popup items
@@ -86,7 +86,7 @@ export interface PopupCacheCode {
   receivedAt: number // Unix timestamp (ms)
   usedAt?: number // If autofilled
   seenAt?: number // When user opened popup and saw this code (for unread count)
-  providerId?: 'gmail' | 'google-messages' // Provider ID
+  providerId?: 'google-messages' // Provider ID
   providerName?: string // Display name (e.g., "Gmail")
   from?: string // Parsed sender email/name
   to?: string // Intended recipient (mailbox email)
@@ -109,7 +109,7 @@ export interface PopupCacheMagicLink {
   source: string
   receivedAt: number
   openedAt?: number
-  providerId?: 'gmail' | 'google-messages' // Provider ID
+  providerId?: 'google-messages' // Provider ID
   providerName?: string // Display name (e.g., "Gmail")
   from?: string
   to?: string
@@ -151,14 +151,12 @@ export type UnifiedPopupCache = PopupCache
  */
 export interface MailboxInfo {
   id: string
-  providerId: 'gmail' | 'imap-bridge' | 'google-messages'
+  providerId: 'imap-bridge' | 'google-messages'
   email: string
   addedAt: number
   lastSyncedAt: number
   /** Last sync error message (undefined = no error) */
   lastSyncError?: string
-  /** OAuth token expiry (undefined for IMAP and Google Messages providers) */
-  tokenExpiresAt?: number
   /** Phone number for Google Messages provider (international format) */
   gmPhoneNumber?: string
 }

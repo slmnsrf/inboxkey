@@ -5,18 +5,6 @@ import { ToastProvider } from '../../contexts/ToastContext'
 
 // --- Module mocks (hoisted) ---
 
-vi.mock('@/lib/providers/gmail/chrome-auth', () => ({
-  authenticateGmail: vi.fn(),
-}))
-
-vi.mock('@/lib/providers/gmail/profile', () => ({
-  fetchGmailProfile: vi.fn(),
-}))
-
-vi.mock('@/lib/providers/gmail/config', () => ({
-  isGmailConfigured: () => true,
-}))
-
 vi.mock('@/lib/native-messaging', () => ({
   getNativeClient: () => ({
     ping: () => Promise.reject(new Error('not connected')),
@@ -99,10 +87,11 @@ describe('AccountsPanel (v2)', () => {
           const translations: Record<string, string> = {
             firstrun_headline: 'Welcome to InboxKey',
             firstrun_sub: 'Connect your first email account to get started.',
-            firstrun_gmail_title: 'Gmail',
-            firstrun_gmail_detail: 'Connect with one click via Chrome Identity API.',
-            firstrun_alt_heading: 'Other providers',
-            firstrun_imap_title: 'IMAP',
+            firstrun_bridge_title: 'Install the InboxBridge helper',
+            firstrun_bridge_detail: 'InboxKey runs locally. The InboxBridge helper connects securely to your mailbox.',
+            firstrun_bridge_cta: 'Get InboxBridge',
+            firstrun_alt_heading: 'Or choose another provider',
+            firstrun_imap_title: 'Other email providers',
             firstrun_imap_detail: 'Connect via InboxBridge.',
             firstrun_gm_title: 'Google Messages',
             firstrun_gm_detail: 'Receive SMS codes via Google Messages pairing.',
@@ -162,11 +151,11 @@ describe('AccountsPanel (v2)', () => {
       expect(screen.getByText('Welcome to InboxKey')).toBeInTheDocument()
     })
 
-    // Gmail provider card is visible
-    expect(screen.getByRole('heading', { name: /gmail/i })).toBeInTheDocument()
+    // InboxBridge primary card is visible
+    expect(screen.getByRole('heading', { name: /install the inboxbridge helper/i })).toBeInTheDocument()
 
-    // IMAP and Google Messages secondary cards are visible
-    expect(screen.getByRole('heading', { name: /imap/i })).toBeInTheDocument()
+    // Secondary provider cards are visible
+    expect(screen.getByRole('heading', { name: /other email providers/i })).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: /google messages/i })).toBeInTheDocument()
   })
 })

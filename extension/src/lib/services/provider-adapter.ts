@@ -6,125 +6,13 @@
  */
 
 import type { IStorage } from '@/lib/storage/storage-interface'
-import type { IEmailProvider } from '@/lib/providers/provider-interface'
-import { GmailProvider } from '@/lib/providers/gmail/gmail-provider'
 import { IMAPBridgeAdapter } from '@/lib/providers/imap-bridge/imap-bridge-adapter'
 import { MessagesProviderAdapter } from '@/lib/providers/google-messages/adapter'
 import { getMessagesTabManager } from '@/lib/providers/google-messages/tab-manager'
-import type { Mailbox } from '@/lib/storage/schema'
 import { type ProviderAdapter, type EmailLike, type ProviderId } from './email-polling-service'
 
 // Re-export for consumers that import from this module
 export type { ProviderAdapter, EmailLike, ProviderId }
-
-/**
- * Adapter that bridges v1 mailbox/provider/storage architecture
- * with v2 EmailPollingService's adapter interface.
- */
-export class StorageProviderAdapter implements ProviderAdapter {
-  public readonly mailboxId: string
-
-  constructor(
-    private storage: IStorage,
-    private provider: IEmailProvider,
-    private mailbox: Mailbox
-  ) {
-    this.mailboxId = mailbox.id
-  }
-
-  get id(): ProviderId {
-    return this.mailbox.providerId as ProviderId
-  }
-
-  async listRecent(params: {
-    sinceEpochMs: number
-    max: number
-    keywordHint?: string
-  }): Promise<EmailLike[]> {
-    // Token refresh logic (from v1)
-    const now = Date.now()
-    const REFRESH_BUFFER_MS = 5 * 60 * 1000
-    let accessToken = this.mailbox.accessToken
-
-    if (now >= this.mailbox.tokenExpiresAt - REFRESH_BUFFER_MS) {
-      console.log(`[StorageProviderAdapter] Token expiring soon for ${this.mailbox.id}, refreshing...`)
-      try {
-        accessToken = await this.refreshToken()
-      } catch (error) {
-        throw new Error(
-          `Token refresh failed: ${error instanceof Error ? error.message : 'Unknown error'}`
-        )
-      }
-    }
-
-    // Fetch emails using v1 provider interface
-    console.log(`[StorageProviderAdapter] Fetching emails for ${this.mailbox.id}`)
-
-    let emails
-    try {
-      emails = await this.provider.fetchEmails(accessToken, {
-        newerThan: new Date(params.sinceEpochMs),
-        maxResults: params.max,
-      })
-    } catch (error) {
-      // Check for 401 authentication error and retry with refreshed token
-      const errorMessage = error instanceof Error ? error.message : String(error)
-      if (errorMessage.includes('401') || errorMessage.includes('UNAUTHENTICATED')) {
-        console.log(`[StorageProviderAdapter] Got 401 error, forcing token refresh for ${this.mailbox.id}`)
-        accessToken = await this.refreshToken()
-
-        // Retry with new token
-        emails = await this.provider.fetchEmails(accessToken, {
-          newerThan: new Date(params.sinceEpochMs),
-          maxResults: params.max,
-        })
-      } else {
-        throw error
-      }
-    }
-
-    // Convert to EmailLike format that v2 expects
-    return emails.map(email => ({
-      id: email.id,
-      provider: this.id,
-      mailboxId: this.mailboxId,
-      subject: email.subject,
-      from: email.from.email,
-      receivedEpochMs: email.date.getTime(),
-      text: email.bodyText,
-      html: email.bodyHtml,
-    }))
-  }
-
-  private async refreshToken(): Promise<string> {
-    // For Gmail, pass the old access token so it can be removed from cache
-    // For other providers, pass the refresh token
-    const tokenToPass = this.id === 'gmail'
-      ? this.mailbox.accessToken
-      : (this.mailbox.refreshToken || '')
-
-    const tokens = await this.provider.refreshTokens(tokenToPass)
-    const expiresAt = Date.now() + tokens.expiresIn * 1000
-
-    // Update mailbox with new tokens
-    await this.storage.updateMailbox(this.mailbox.id, {
-      accessToken: tokens.accessToken,
-      refreshToken: tokens.refreshToken || this.mailbox.refreshToken, // Keep old refresh token if new one is empty (Gmail)
-      tokenExpiresAt: expiresAt,
-    })
-
-    // Update in-memory mailbox to prevent stale data within same adapter lifecycle
-    this.mailbox = {
-      ...this.mailbox,
-      accessToken: tokens.accessToken,
-      refreshToken: tokens.refreshToken || this.mailbox.refreshToken,
-      tokenExpiresAt: expiresAt,
-    }
-
-    console.log(`[StorageProviderAdapter] Token refreshed for ${this.mailbox.id}`)
-    return tokens.accessToken
-  }
-}
 
 /**
  * Factory function to create adapters from all configured mailboxes.
@@ -160,10 +48,15 @@ export async function createAdaptersFromMailboxes(
         )
       }
 
-      // OAuth provider: use StorageProviderAdapter with Gmail provider
-      const provider = new GmailProvider()
-
-      return new StorageProviderAdapter(storage, provider, mailbox)
+      // Unknown provider — should be unreachable after the migration shim
+      // strips legacy 'gmail' records (Task 1) and the ProviderId union is
+      // narrowed (commit 2). Returning null follows the existing factory
+      // pattern (see line 150 for the google-messages session-skip case)
+      // rather than throwing inside Promise.all, which would fail-loud the
+      // entire sync over a single corrupt record. The null filter on line 170
+      // drops it silently after a console.warn for diagnostics.
+      console.warn('[provider-adapter] Unknown providerId, skipping mailbox:', mailbox.providerId, mailbox.id)
+      return null
     })
   )
 

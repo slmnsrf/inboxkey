@@ -452,7 +452,7 @@ export class PopupCacheManager {
    */
   private convertStoredCodeToPopupItem(stored: StoredCode): PopupItem {
     // Get provider info from mailbox cache
-    let providerId: ProviderId = 'gmail' // Default
+    let providerId: ProviderId = 'imap-bridge' // Default
     let domain: string | undefined
 
     if (stored.mailboxId) {
@@ -536,8 +536,6 @@ export class PopupCacheManager {
    */
   private getProviderName(providerId: ProviderId): string | undefined {
     switch (providerId) {
-      case 'gmail':
-        return 'Gmail'
       case 'google-messages':
         return 'Google Messages'
       case 'imap-bridge':

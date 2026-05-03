@@ -9,7 +9,7 @@ InboxKey is a Manifest V3 Chrome/Chromium extension that keeps verification-code
 ## Repository Structure (Monorepo)
 
 ```
-/home/dev/work/inboxkey/
+inboxkey/
 ├── extension/                    # Main InboxKey extension (production)
 │   ├── src/
 │   │   ├── contents/            # Content scripts (injected into web pages)
@@ -47,7 +47,6 @@ InboxKey is a Manifest V3 Chrome/Chromium extension that keeps verification-code
 │   │   │   │   └── scoring-config.ts    # Scoring thresholds
 │   │   │   ├── providers/       # Email provider adapters
 │   │   │   │   ├── provider-interface.ts
-│   │   │   │   ├── gmail/           # Gmail API + PKCE OAuth
 │   │   │   │   └── imap-bridge/     # IMAP Bridge (native messaging)
 │   │   │   ├── services/        # Application services
 │   │   │   │   ├── email-polling-service.ts
@@ -132,7 +131,7 @@ InboxKey is a Manifest V3 Chrome/Chromium extension that keeps verification-code
 ### Domain Layer
 - **Extraction Core (`@inboxkey/extraction-core`):** Pure TypeScript package with OTP/magic-link detection logic and matching utilities (shape-matcher, domain-affinity, recency-scorer). Shared between main extension and Reviewer. Contains the v2.3 extraction algorithm migrated from production (2025-10-21).
 - Detection (`lib/detection`) scores candidate fields on the page. Matching (`lib/matching`) contains extension-specific code like code-matcher.ts used by session-controller and popup-cache.
-- Provider adapters (`lib/providers/gmail`, `lib/providers/imap-bridge`) normalize mail APIs into a single polling contract. InboxBridge (IMAP) is implemented and protocol-tested as of 2025-10-20.
+- Provider adapters (`lib/providers/imap-bridge`) normalize mail access into a single polling contract. All email providers use the InboxBridge native messaging host. Credentials are stored in the OS keychain.
 - The watch-session controller coordinates timing windows, cache hydration, confidence scoring, and manual fallback data.
 
 ### Infrastructure Layer
@@ -243,12 +242,11 @@ Integrated within Tier 1 (<0.05ms), distinguishes email-based codes (InboxKey ca
 
 - **Local-only data path.** No InboxKey-operated backend. Parsing, matching, and autofill decisions stay on device; network traffic goes directly to the selected mail provider.
 - **Storage.** Connected mailbox state and settings live in `chrome.storage.local` (plaintext). Recent codes, links, and session caches live in `chrome.storage.session`. IMAP credentials are stored in the OS keychain by InboxBridge. Additional encryption at rest is planned for a future release.
-- **Permissions.** Current manifest permissions include Gmail `gmail.readonly`, `storage`, `alarms`, `tabs`, `identity`, `notifications`, `nativeMessaging`, `scripting`, and `https://*/*` host permissions.
+- **Permissions.** Current manifest permissions include `storage`, `alarms`, `tabs`, `notifications`, `nativeMessaging`, `scripting`, and `https://*/*` host permissions.
 - **Safety blocks.** The extension never auto-launches password reset links, warns on risky actions, and preserves focus-visible keyboard navigation throughout.
 
 ## Provider Integrations
 
-- **Gmail.** Chrome Identity API with managed OAuth (PKCE, no client secret), message queries `newer_than:10m`. Tokens cached by Chrome; worker retries via exponential backoff on quota issues.
 - **InboxBridge (IMAP).** ✅ **Implemented and hardened (2026-03-14).** Native Rust app communicates over Chrome Native Messaging using JSON-RPC v1 protocol. Provides IMAP support for Yahoo Mail, ProtonMail Bridge, custom mail servers, and other IMAP providers. Account state persisted to disk-backed JSON (`accounts.json`) with `fs2` cross-process file locking and self-repairing corruption recovery. IMAP client supports both TLS (port 993) and plaintext connections via `ImapSession` enum; plaintext restricted to loopback addresses only (security guard for local bridges like ProtonMail Bridge). Credentials stored in OS keychain keyed by `(accountId, host:port)` to prevent collisions. Full uninstall cleanup (keychain wipe + `accounts.json` deletion) is exposed via both the `bridge.uninstall` RPC and the `--cleanup` CLI flag, sharing a single `cleanup::run_full_cleanup` implementation. `bridge.ping` also returns an optional `installInfo` field (executable path, kind, uninstall target) so the uninstall modal can render install-kind-aware instructions without guessing. Extension uses a single consolidated native messaging client (`lib/native-messaging/`). See `/inboxbridge/PROTOCOL.md` for specification.
 
 - **Google Messages (SMS).** ✅ **Implemented (2026-03-23).** DOM scraping of Google Messages for Web (`messages.google.com`) for SMS verification codes. No API -- opens the web UI in a browser tab and reads conversation list previews via `chrome.scripting.executeScript()`. Reactive tab lifecycle: opens on demand when an SMS field is detected, polls up to 5 times, closes if extension-owned. Selectors target stable `data-e2e-*` attributes and `mws-*` custom elements. SMS-only sessions capped at 20s. Channel-aware detection: signal classifier identifies SMS fields via 21-language keyword patterns; detection conditional on Google Messages account being connected. Settings UI communicates with tab manager via `chrome.runtime` message passing (MV3 context boundary). One account per browser profile. Phone number stored locally for display and field classification.
@@ -296,7 +294,6 @@ A companion dev tool extension for improving extraction accuracy through manual 
 
 ## Risks & Future Work
 
-- Reliance on Chrome Identity keeps Gmail auth simple but limits cross-browser portability.
 - MV3 service-worker lifespan remains fragile; continued monitoring of keep-alive patterns is required.
 - Storage quotas (10 MB `chrome.storage.local`) demand aggressive cleanup and telemetry-free operation.
 - Detection false positives need ongoing tuning with design-approved UX mitigations (Reviewer tool addresses this).

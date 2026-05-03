@@ -42,8 +42,7 @@ Network traffic goes directly between the device and the selected mail provider.
 
 ### Provider access
 
-- **Gmail:** uses `chrome.identity.getAuthToken()` with the `gmail.readonly` scope. Read-only access. Chrome manages OAuth tokens via PKCE with no client secret stored in the extension.
-- **IMAP (via InboxBridge):** a local Native Messaging companion app connects directly to the mail server. Credentials are stored in the operating system keychain (Windows Credential Manager, macOS Keychain, or Linux Secret Service), not in the browser.
+- **IMAP (via InboxBridge):** a local Native Messaging companion app connects directly to the mail server for all providers, including Gmail. Credentials are stored in the operating system keychain (Windows Credential Manager, macOS Keychain, or Linux Secret Service), not in the browser.
 - **Google Messages (SMS):** reads conversation list previews from the Google Messages for Web tab (`messages.google.com`) via `chrome.scripting.executeScript()`. No Google Messages API is used.
 
 ### Storage
@@ -65,7 +64,6 @@ The extension manifest requests:
 | `storage` | Local settings and cached state |
 | `alarms` | MV3 service-worker keepalive and session polling timers |
 | `tabs` | Opening Google Messages tab for SMS, opening settings pages |
-| `identity` | Chrome OAuth for Gmail authentication |
 | `notifications` | Extension state notifications (e.g., after an update) |
 | `nativeMessaging` | Communication with InboxBridge for IMAP support |
 | `scripting` | Reading Google Messages conversation previews for SMS codes |
@@ -106,10 +104,6 @@ The extension does not ship a password or lock screen feature. On shared machine
 ### Development builds may log more detail
 
 Development builds and local debugging may log more operational detail than production builds. Do not use development builds for sensitive everyday browsing.
-
-### Gmail limited to one account per Chrome profile
-
-Gmail authentication uses the Chrome Identity API, which is scoped to the active Chrome profile. This is a platform limitation, not an InboxKey decision. Multiple Gmail accounts require separate Chrome profiles.
 
 ## Security Updates
 

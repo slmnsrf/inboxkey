@@ -36,19 +36,12 @@ export interface StorageSchema {
 /**
  * Provider types supported by InboxKey
  */
-export type ProviderId = "gmail" | "imap-bridge" | "google-messages"
+export type ProviderId = "imap-bridge" | "google-messages"
 
 /**
- * Mailbox account with OAuth tokens or IMAP credentials
- *
- * Gmail OAuth provider:
- * - accessToken: Required (stored in plaintext; encryption planned)
- * - refreshToken: Optional (stored in plaintext; Chrome Identity API handles refresh for Gmail)
- * - tokenExpiresAt: Required
- * - IMAP fields: Must be undefined
+ * Mailbox account with IMAP credentials or Google Messages configuration
  *
  * IMAP provider (imap-bridge):
- * - OAuth fields: Must be undefined (credentials stored in OS keychain by native app)
  * - imapServer, imapPort, imapAccountId: Required
  * - imapUsername: Optional (defaults to email)
  */
@@ -57,12 +50,7 @@ export interface Mailbox {
   providerId: ProviderId
   email: string // Email address
 
-  // OAuth fields (required for 'gmail'; must be undefined for 'imap-bridge')
-  accessToken?: string // Stored in plaintext; encryption planned
-  refreshToken?: string // Stored in plaintext; encryption planned (optional for Gmail)
-  tokenExpiresAt?: number // Unix timestamp (ms)
-
-  // IMAP fields (required for 'imap-bridge'; must be undefined for OAuth providers)
+  // IMAP fields (required for 'imap-bridge'; must be undefined for other providers)
   /** IMAP server hostname (e.g., "imap.mail.yahoo.com") */
   imapServer?: string
   /** IMAP server port (e.g., 993 for TLS) */
@@ -353,7 +341,7 @@ export function isValidUUID(uuid: string): boolean {
 }
 
 export function isValidProviderId(id: string): id is ProviderId {
-  return id === "gmail" || id === "imap-bridge" || id === "google-messages"
+  return id === "imap-bridge" || id === "google-messages"
 }
 
 export function isValidTimestamp(timestamp: number): boolean {
@@ -395,12 +383,22 @@ export function isMailbox(obj: unknown): obj is Mailbox {
 
   if (!basicValid) return false
 
+  // Defensive runtime check: OAuth token fields must not be present.
+  // The TypeScript Mailbox interface no longer declares them, but a
+  // legacy record on disk might still carry them; reject those records
+  // here so they never round-trip through the storage layer.
+  const rawMaybeOAuth = obj as Record<string, unknown>
+  if (
+    'accessToken' in rawMaybeOAuth ||
+    'refreshToken' in rawMaybeOAuth ||
+    'tokenExpiresAt' in rawMaybeOAuth
+  ) {
+    return false
+  }
+
   // Provider-specific validation
   if (m.providerId === 'google-messages') {
     return (
-      m.accessToken === undefined &&
-      m.refreshToken === undefined &&
-      m.tokenExpiresAt === undefined &&
       m.imapServer === undefined &&
       m.imapPort === undefined &&
       m.imapUsername === undefined &&
@@ -411,11 +409,8 @@ export function isMailbox(obj: unknown): obj is Mailbox {
   }
 
   if (m.providerId === "imap-bridge") {
-    // IMAP provider: require IMAP fields, OAuth fields must be undefined
+    // IMAP provider: require IMAP fields
     return (
-      m.accessToken === undefined &&
-      m.refreshToken === undefined &&
-      m.tokenExpiresAt === undefined &&
       typeof m.imapServer === "string" &&
       m.imapServer.length > 0 &&
       typeof m.imapPort === "number" &&
@@ -426,18 +421,9 @@ export function isMailbox(obj: unknown): obj is Mailbox {
       m.imapAccountId.length > 0
     )
   } else {
-    // OAuth provider: require accessToken and tokenExpiresAt, IMAP fields must be undefined
-    return (
-      typeof m.accessToken === "string" &&
-      m.accessToken.length > 0 &&
-      (m.refreshToken === undefined || typeof m.refreshToken === "string") &&
-      typeof m.tokenExpiresAt === "number" &&
-      isValidTimestamp(m.tokenExpiresAt) &&
-      m.imapServer === undefined &&
-      m.imapPort === undefined &&
-      m.imapUsername === undefined &&
-      m.imapAccountId === undefined
-    )
+    // Unrecognized providerId — should be unreachable after Task 1's
+    // migration shim strips legacy 'gmail' records.
+    return false
   }
 }
 

@@ -20,10 +20,21 @@ export function validateMailboxBeforeWrite(mailbox: Mailbox): void {
     throw new ValidationError('Invalid mailbox schema: missing required fields');
   }
 
+  // Defensive runtime check: OAuth token fields must not be present on
+  // any mailbox we persist. The TypeScript Mailbox interface no longer
+  // declares accessToken/refreshToken/tokenExpiresAt, but a malformed
+  // legacy record reaching this validator at runtime should be rejected
+  // rather than passed through silently. This is the storage equivalent
+  // of "no OAuth tokens are persisted in extension storage."
+  const m = mailbox as unknown as Record<string, unknown>;
+  if ('accessToken' in m || 'refreshToken' in m || 'tokenExpiresAt' in m) {
+    throw new ValidationError(
+      'Mailboxes cannot have OAuth token fields (accessToken, refreshToken, tokenExpiresAt)',
+      'accessToken'
+    );
+  }
+
   if (mailbox.providerId === 'google-messages') {
-    if (mailbox.accessToken || mailbox.refreshToken || mailbox.tokenExpiresAt) {
-      throw new ValidationError('Google Messages mailboxes cannot have OAuth tokens');
-    }
     if (mailbox.imapServer || mailbox.imapPort || mailbox.imapAccountId) {
       throw new ValidationError('Google Messages mailboxes cannot have IMAP fields');
     }
@@ -31,26 +42,11 @@ export function validateMailboxBeforeWrite(mailbox: Mailbox): void {
       throw new ValidationError('Google Messages mailboxes require gmPhoneNumber');
     }
   } else if (mailbox.providerId === 'imap-bridge') {
-    // IMAP mailboxes must NOT have OAuth tokens
-    if (mailbox.accessToken || mailbox.refreshToken || mailbox.tokenExpiresAt) {
-      throw new ValidationError('IMAP mailboxes cannot have OAuth tokens');
-    }
-
     // IMAP mailboxes MUST have IMAP-specific fields
     if (!mailbox.imapAccountId || !mailbox.imapServer || !mailbox.imapPort) {
       throw new ValidationError('IMAP mailboxes require imapAccountId, imapServer, and imapPort');
     }
   } else {
-    // Gmail OAuth provider
-
-    // Gmail mailboxes must NOT have IMAP fields
-    if (mailbox.imapServer || mailbox.imapPort || mailbox.imapAccountId) {
-      throw new ValidationError('Gmail mailboxes cannot have IMAP fields');
-    }
-
-    // Gmail mailboxes MUST have tokens
-    if (!mailbox.accessToken || !mailbox.tokenExpiresAt) {
-      throw new ValidationError('Gmail mailboxes require accessToken and tokenExpiresAt');
-    }
+    throw new ValidationError(`Unsupported providerId: ${mailbox.providerId}`, 'providerId');
   }
 }

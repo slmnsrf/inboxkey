@@ -5,7 +5,7 @@
  * Each provider implements OAuth authentication and email fetching.
  */
 
-export type ProviderId = 'gmail' | 'imap-bridge'
+export type ProviderId = 'imap-bridge'
 
 export interface ProviderConfig {
   clientId: string
@@ -106,18 +106,6 @@ export interface IPKCEProvider extends IEmailProvider {
     codeVerifier: string
     state: string
   }): Promise<OAuthTokens>
-}
-
-/**
- * Chrome Identity Provider Interface
- *
- * For providers that use Chrome's managed OAuth (chrome.identity.getAuthToken)
- * Chrome handles the OAuth flow automatically - no startAuth/completeAuth needed.
- *
- * Used by: Gmail
- */
-export interface IChromeIdentityProvider extends IEmailProvider {
-  // No additional methods needed - Chrome manages auth flow
 }
 
 /**

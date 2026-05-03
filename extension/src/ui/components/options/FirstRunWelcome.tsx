@@ -1,43 +1,44 @@
 import React from 'react'
-import { ArrowRight, KeyRound, Server } from 'lucide-react'
+import { ArrowRight, Server } from 'lucide-react'
 
 import { t } from '@/lib/i18n'
 import { ProviderLogo } from './ProviderLogo'
 
-type Provider = 'gmail' | 'imap-bridge' | 'google-messages'
+type Provider = 'imap-bridge' | 'google-messages'
 
 interface FirstRunWelcomeProps {
   onProviderSelect: (provider: Provider) => void
+  onInstallBridge: () => void
 }
 
-export function FirstRunWelcome({ onProviderSelect }: FirstRunWelcomeProps) {
+export function FirstRunWelcome({ onProviderSelect, onInstallBridge }: FirstRunWelcomeProps) {
   return (
     <section className="firstrun">
       {/* Hero */}
       <header className="firstrun__hero">
         <div className="firstrun__icon">
-          <KeyRound size={28} aria-hidden="true" />
+          <Server size={28} aria-hidden="true" />
         </div>
         <h2 className="firstrun__headline">{t('firstrun_headline')}</h2>
         <p className="firstrun__sub">{t('firstrun_sub')}</p>
       </header>
 
-      {/* Primary: Gmail */}
+      {/* Primary: InboxBridge install */}
       <div className="firstrun__providers">
         <button
           className="provider-card provider-card--primary"
-          onClick={() => onProviderSelect('gmail')}
+          onClick={onInstallBridge}
           type="button"
         >
-          <span className="provider-card__icon provider-card__icon--gmail">
-            <ProviderLogo provider="gmail" size={30} />
+          <span className="provider-card__icon provider-card__icon--imap">
+            <Server size={28} aria-hidden="true" />
           </span>
           <div className="provider-card__body">
-            <h3 className="provider-card__title">{t('firstrun_gmail_title')}</h3>
-            <p className="provider-card__detail">{t('firstrun_gmail_detail')}</p>
+            <h3 className="provider-card__title">{t('firstrun_bridge_title')}</h3>
+            <p className="provider-card__detail">{t('firstrun_bridge_detail')}</p>
           </div>
           <span className="provider-card__arrow" aria-hidden="true">
-            <ArrowRight size={20} />
+            <ArrowRight size={18} />
           </span>
         </button>
       </div>

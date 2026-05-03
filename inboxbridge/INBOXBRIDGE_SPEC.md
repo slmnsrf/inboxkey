@@ -661,7 +661,7 @@ async fn connect_with_retry(config: &ImapConfig) -> Result<ImapClient> {
 - Extension prompts user to re-enter credentials
 
 **Graceful Degradation:**
-- If IMAP connection fails, extension continues working with Gmail/Outlook
+- The extension contract with InboxBridge is provider-agnostic; any IMAP server with valid credentials works
 - Native app crash should not crash the extension
 - Extension detects native app unavailable and shows "InboxBridge not installed" message
 

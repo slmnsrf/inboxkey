@@ -12,7 +12,7 @@
  */
 
 export const config = {
-  matches: ["https://*/*", "http://*/*"],
+  matches: ["https://*/*"],
 }
 
 import { generateShadowCSS, generateEnhancedKeyframes } from '@/contents/field-feedback-styles'

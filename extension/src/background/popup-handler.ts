@@ -18,8 +18,6 @@ import { setBadgeCount, setBadgeSyncError, clearBadge } from '@/contents/badge-m
 import { BADGE_EXPIRY_MS } from '@/lib/popup/popup-config'
 import { sortByPriority } from '@/lib/popup/popup-priority'
 import { countBadgeEligible, separateItems } from '@/lib/popup/popup-filters'
-import { GmailAPIClient } from '@/lib/providers/gmail/gmail-api'
-import { GmailAuth } from '@/lib/providers/gmail/gmail-auth'
 import { IMAPBridgeAdapter } from '@/lib/providers/imap-bridge/imap-bridge-adapter'
 import { getMessagesTabManager } from '@/lib/providers/google-messages/tab-manager'
 
@@ -355,27 +353,6 @@ export class PopupMessageHandler {
           }
 
           try {
-            if (mailbox.providerId === 'gmail') {
-              if (!mailbox.accessToken) {
-                const err = 'No access token. Please reconnect your Gmail account.'
-                await recordResult(false, err)
-                return { success: false, error: err }
-              }
-              // Refresh token before testing (Chrome manages token lifecycle via
-              // chrome.identity; refreshTokens removes cached token and gets fresh one)
-              const auth = new GmailAuth()
-              const freshTokens = await auth.refreshTokens(mailbox.accessToken)
-              await storage.updateMailbox(mailboxId, {
-                accessToken: freshTokens.accessToken,
-                tokenExpiresAt: Date.now() + freshTokens.expiresIn * 1000,
-              })
-              const api = new GmailAPIClient()
-              await api.getUserProfile(freshTokens.accessToken)
-              await recordResult(true)
-              await this.errorManager.recordSuccess(mailboxId)
-              return { success: true }
-            }
-
             if (mailbox.providerId === 'imap-bridge') {
               const adapter = new IMAPBridgeAdapter(
                 mailbox.imapAccountId || '',
@@ -465,7 +442,6 @@ export class PopupMessageHandler {
                 addedAt: m.addedAt,
                 lastSyncedAt: m.lastSyncedAt,
                 lastSyncError: m.lastSyncError,
-                tokenExpiresAt: m.tokenExpiresAt,
                 ...(m.providerId === 'imap-bridge' ? {
                   imapServer: m.imapServer,
                   imapPort: m.imapPort,

@@ -22,7 +22,7 @@ import type { LinkItem } from '@/shared/popup-messages'
 const link = (overrides: Partial<LinkItem> = {}): LinkItem => ({
   kind: 'link',
   id: 'l',
-  providerId: 'gmail',
+  providerId: 'imap-bridge',
   source: 'noreply@example.com - Magic link',
   receivedAt: 1_700_000_000_000,
   score: 0.7,

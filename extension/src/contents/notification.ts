@@ -4,7 +4,7 @@
  */
 
 export const config = {
-  matches: ["https://*/*", "http://*/*"],
+  matches: ["https://*/*"],
 }
 
 import { COLOR_SUCCESS, COLOR_ERROR, COLOR_PRIMARY } from '@/lib/design-tokens'

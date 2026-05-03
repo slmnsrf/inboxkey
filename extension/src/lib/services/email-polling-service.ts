@@ -24,7 +24,7 @@ import { SeenMessageStore, HIT_TTL_MS, MISS_TTL_MS } from './seen-message-store'
 
 // ---------------- Types ----------------
 
-export type ProviderId = 'gmail' | 'imap' | 'imap-bridge' | 'google-messages'
+export type ProviderId = 'imap' | 'imap-bridge' | 'google-messages'
 
 export interface EmailLike {
   id: string
@@ -215,8 +215,9 @@ export class EmailPollingService {
               pageDomain: ctx.pageDomain,
               brandHints: ctx.brandHints,
               meta: {
-                // Cast: google-messages adapters don't use extractFromEmail (SMS has its own pipeline)
-                provider: msg.provider as 'gmail' | 'imap' | 'imap-bridge',
+                // Map google-messages to imap-bridge: extractFromEmail does not accept 'google-messages'.
+                // SMS messages have their own pipeline and should not reach here in practice.
+                provider: (msg.provider === 'google-messages' ? 'imap-bridge' : msg.provider) as 'imap' | 'imap-bridge',
                 sender: msg.from,
                 subject,
                 received: msg.receivedEpochMs

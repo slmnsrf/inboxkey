@@ -18,7 +18,7 @@ test.describe('Popup Performance', () => {
     await setupPopupCache(
       setupPage,
       [
-        { code: '123456', source: 'gmail:test@example.com', receivedAt: Date.now() }
+        { code: '123456', source: 'imap-bridge:test@example.com', receivedAt: Date.now() }
       ],
       []
     )
@@ -80,7 +80,7 @@ test.describe('Popup Performance', () => {
     await setupPopupCache(
       setupPage,
       [
-        { code: '123456', source: 'gmail:test@example.com', receivedAt: Date.now() }
+        { code: '123456', source: 'imap-bridge:test@example.com', receivedAt: Date.now() }
       ],
       []
     )
@@ -111,8 +111,8 @@ test.describe('Popup Performance', () => {
     await setupPopupCache(
       setupPage,
       [
-        { code: '111111', source: 'gmail:test@example.com', receivedAt: Date.now() },
-        { code: '222222', source: 'gmail:test@example.com', receivedAt: Date.now() - 60000 },
+        { code: '111111', source: 'imap-bridge:test@example.com', receivedAt: Date.now() },
+        { code: '222222', source: 'imap-bridge:test@example.com', receivedAt: Date.now() - 60000 },
       ],
       []
     )
@@ -163,8 +163,8 @@ test.describe('Popup Performance', () => {
     await setupPopupCache(
       setupPage,
       [
-        { code: '111111', source: 'gmail:test@example.com', receivedAt: Date.now() },
-        { code: '222222', source: 'gmail:test@example.com', receivedAt: Date.now() },
+        { code: '111111', source: 'imap-bridge:test@example.com', receivedAt: Date.now() },
+        { code: '222222', source: 'imap-bridge:test@example.com', receivedAt: Date.now() },
       ],
       []
     )
@@ -268,7 +268,7 @@ test.describe('Popup Performance', () => {
     await setupPopupCache(
       setupPage,
       [
-        { code: '123456', source: 'gmail:test@example.com', receivedAt: Date.now() }
+        { code: '123456', source: 'imap-bridge:test@example.com', receivedAt: Date.now() }
       ],
       []
     )

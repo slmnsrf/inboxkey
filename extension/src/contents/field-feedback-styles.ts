@@ -14,7 +14,7 @@
  */
 
 export const config = {
-  matches: ["https://*/*", "http://*/*"],
+  matches: ["https://*/*"],
 }
 
 import { FONT_FAMILY_UI } from '@/lib/design-tokens'

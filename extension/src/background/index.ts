@@ -76,27 +76,90 @@ const popupMessageHandler = new PopupMessageHandler(
   errorStateManager
 )
 
-// One-time migration: remove legacy Outlook OAuth mailboxes (Outlook now uses IMAP only).
-// Reads raw storage to bypass schema validation (outlook is no longer a valid ProviderId).
-// MUST complete before serving any storage-backed requests (GET_MAILBOXES, TRIGGER_SYNC, etc.)
-// to prevent race where validated getMailboxes() rejects stale 'outlook' rows.
+// One-time migration: remove legacy OAuth-Gmail and OAuth-Outlook mailboxes
+// in a single read-filter-write pass so they can't race each other and
+// resurrect each other's records. Both providers now use IMAP only.
+// Reads raw storage to bypass schema validation (neither 'gmail' nor
+// 'outlook' is a valid ProviderId after the union narrowing).
+// MUST complete before serving any storage-backed requests (GET_MAILBOXES,
+// TRIGGER_SYNC, etc.) to prevent the race where validated getMailboxes()
+// rejects stale legacy rows.
+//
+// For legacy Gmail rows, we ALSO best-effort POST to Google's OAuth revoke
+// endpoint to invalidate the upstream grant so the user's Google account
+// stops listing this app under "Apps with access." This requires the
+// access token still in the legacy record (we capture it before the write
+// and never persist it again). The revoke endpoint is a public Google
+// endpoint and does not require chrome.identity (which has been removed).
+// Failures are swallowed: storage cleanup happens regardless, and the
+// follow-up of deleting the OAuth client itself in Google Cloud Console
+// remains the authoritative way to invalidate every grant for every user.
 const outlookMigrationDone = (async () => {
   try {
     const raw = await chrome.storage.local.get('mailboxes_plain')
-    const all: Array<{ id: string; providerId: string; email?: string }> =
-      raw['mailboxes_plain'] || []
-    const outlookIds = all.filter(m => m.providerId === 'outlook')
-    if (outlookIds.length === 0) return
+    const all: Array<{
+      id: string
+      providerId: string
+      email?: string
+      accessToken?: string
+      refreshToken?: string
+    }> = raw['mailboxes_plain'] || []
+    const isLegacy = (m: { providerId: string }) =>
+      m.providerId === 'outlook' || m.providerId === 'gmail'
+    const removed = all.filter(isLegacy)
+    if (removed.length === 0) return
 
-    const kept = all.filter(m => m.providerId !== 'outlook')
+    const kept = all.filter(m => !isLegacy(m))
     await chrome.storage.local.set({ mailboxes_plain: kept })
 
-    for (const mb of outlookIds) {
+    for (const mb of removed) {
+      // Best-effort revoke for Gmail rows so the upstream grant is invalidated.
+      // Fire-and-forget so a slow or blocked oauth2.googleapis.com cannot
+      // delay this IIFE, which gates GET_MAILBOXES / GET_POPUP_DATA
+      // responses. Storage cleanup has already happened above.
+      if (mb.providerId === 'gmail') {
+        const token = mb.accessToken || mb.refreshToken
+        if (typeof token === 'string' && token.length > 0) {
+          const ctrl = new AbortController()
+          const timeoutId = setTimeout(() => ctrl.abort(), 3000)
+          const labelForLog = mb.email ?? mb.id
+          fetch(
+            `https://oauth2.googleapis.com/revoke?token=${encodeURIComponent(token)}`,
+            {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+              signal: ctrl.signal,
+            }
+          )
+            .then((response) => {
+              if (response.ok) {
+                console.log(`[Background] Revoked legacy Gmail OAuth grant for ${labelForLog}`)
+              } else {
+                // 400 commonly means token was already invalidated; treat
+                // 4xx as best-effort and log without escalating.
+                console.warn(
+                  `[Background] Gmail revoke returned HTTP ${response.status} for ${labelForLog}`
+                )
+              }
+            })
+            .catch((revokeError) => {
+              console.warn(
+                `[Background] Best-effort Gmail revoke failed for ${labelForLog}:`,
+                revokeError
+              )
+            })
+            .finally(() => {
+              clearTimeout(timeoutId)
+            })
+        }
+      }
+
       await errorStateManager.removeMailboxErrors(mb.id)
-      console.log(`[Background] Removed legacy Outlook OAuth mailbox: ${mb.email ?? mb.id}`)
+      const label = mb.providerId === 'gmail' ? 'Gmail' : 'Outlook'
+      console.log(`[Background] Removed legacy ${label} OAuth mailbox: ${mb.email ?? mb.id}`)
     }
   } catch (e) {
-    console.warn('[Background] Outlook migration cleanup failed:', e)
+    console.warn('[Background] Legacy OAuth migration cleanup failed:', e)
   }
 })()
 
@@ -161,10 +224,6 @@ let messageCount = 0
 let lastMessageTimestamp = 0
 
 console.log("[InboxKey] Service worker started at", new Date().toISOString())
-if (typeof chrome.identity !== "undefined" && chrome.identity?.getRedirectURL) {
-  const resolvedRedirect = chrome.identity.getRedirectURL("oauth2")
-  console.log("[InboxKey] OAuth redirect URI:", resolvedRedirect)
-}
 
 // Auto-open options page on first install
 chrome.runtime.onInstalled.addListener(async (details) => {
@@ -375,11 +434,6 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   }
 
   // Handle mailbox management
-  if (msg.type === "STORE_MAILBOX") {
-    handleStoreMailbox(msg, sendResponse)
-    return true
-  }
-
   if (msg.type === "REMOVE_MAILBOX") {
     handleRemoveMailbox(msg, sendResponse)
     return true
@@ -750,49 +804,6 @@ function getOrCreateContext(tabId: number): WatchPortContext {
 }
 
 /**
- * Handle STORE_MAILBOX requests.
- */
-function handleStoreMailbox(msg: any, sendResponse: (response: any) => void) {
-  ;(async () => {
-    try {
-      // Use StorageFactory to get appropriate storage
-      const storage = await StorageFactory.create()
-
-      // Create mailbox record
-      const mailbox: Mailbox = {
-        id: crypto.randomUUID(),
-        providerId: msg.provider, // 'gmail'
-        email: msg.email,
-        accessToken: msg.tokens.accessToken,
-        refreshToken: msg.tokens.refreshToken,
-        tokenExpiresAt: Date.now() + msg.tokens.expiresIn * 1000,
-        addedAt: Date.now(),
-        lastSyncedAt: 0,
-      }
-
-      await storage.addMailbox(mailbox)
-
-      // Update popup cache with new mailbox count
-      const mailboxes = await storage.getMailboxes()
-      await popupCacheManager.warmCache([], mailboxes.length, mailboxes)
-
-      sendResponse({
-        success: true,
-        mailbox: { id: mailbox.id, email: mailbox.email },
-      })
-    } catch (error) {
-      console.warn("[Background] Failed to store mailbox:", error)
-      sendResponse({
-        success: false,
-        error: error instanceof Error ? error.message : String(error),
-      })
-    }
-  })().catch((error) => {
-    console.error("[Background] handleStoreMailbox unhandled rejection:", error)
-  })
-}
-
-/**
  * Handle REMOVE_MAILBOX requests.
  */
 function handleRemoveMailbox(msg: any, sendResponse: (response: any) => void) {
@@ -811,24 +822,6 @@ function handleRemoveMailbox(msg: any, sendResponse: (response: any) => void) {
 
       // Clean up any error entries for this mailbox
       await errorStateManager.removeMailboxErrors(msg.mailboxId)
-
-      // Revoke Gmail token AFTER successful removal (best-effort).
-      // Skip if msg.skipRevoke is true (reconnect flow: same token is about to be re-stored).
-      if (mailbox?.providerId === 'gmail' && mailbox.accessToken && !msg.skipRevoke) {
-        try {
-          const { GmailAuth } = await import('@/lib/providers/gmail/gmail-auth')
-          const auth = new GmailAuth()
-          await auth.revokeTokens(mailbox.accessToken)
-        } catch (e) {
-          console.warn('[Background] Gmail token revocation failed (best-effort):', e)
-          // revokeTokens throws if Google endpoint fails, skipping Chrome cache clear.
-          // Fallback: clear Chrome cache directly so account picker shows on next Connect.
-          try {
-            const { clearGmailToken } = await import('@/lib/providers/gmail/chrome-auth')
-            await clearGmailToken(mailbox.accessToken)
-          } catch { /* best effort */ }
-        }
-      }
 
       // Also remove from InboxBridge native app if IMAP.
       //

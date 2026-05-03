@@ -41,6 +41,31 @@ const PLAINTEXT_STORAGE_KEYS = {
 } as const
 
 /**
+ * Predicate identifying a legacy Gmail-OAuth mailbox record.
+ *
+ * Uses the literal string 'gmail' even though it is no longer a member of
+ * the ProviderId union — that's the whole point: the predicate matches
+ * stored records that pre-date the union narrowing. Used by `getMailboxes`
+ * to filter such records in-memory before validation, in case any context
+ * reads storage before the background SW's startup migration in
+ * `background/index.ts` has had a chance to persist a cleaned list.
+ *
+ * The persistent migration write (storage cleanup + sync_error_state
+ * scrub for removed records) lives in `background/index.ts` alongside the
+ * pre-existing legacy-Outlook cleanup, so both legacy providers are
+ * removed in one serialized read-filter-write pass and can't race each
+ * other.
+ */
+function isLegacyGmailRecord(m: unknown): boolean {
+  return (
+    typeof m === 'object' &&
+    m !== null &&
+    (m as { providerId?: string }).providerId === 'gmail'
+  )
+}
+
+
+/**
  * Mutex for preventing concurrent storage operations
  */
 export class AsyncMutex {
@@ -120,8 +145,16 @@ export class PlaintextStorage {
       const result = await chrome.storage.local.get(
         PLAINTEXT_STORAGE_KEYS.MAILBOXES
       )
-      const mailboxes = (result[PLAINTEXT_STORAGE_KEYS.MAILBOXES] ||
-        []) as Mailbox[]
+      const raw = (result[PLAINTEXT_STORAGE_KEYS.MAILBOXES] || []) as unknown[]
+
+      // Always filter legacy 'gmail' records in-memory before validation.
+      // The persistent migration above only runs in the background SW; in
+      // popup/options/content-script contexts a stale legacy record could
+      // still be present in storage if those contexts read before the SW
+      // has had a chance to persist the cleaned list. Filtering here keeps
+      // validation from throwing on legacy data while leaving the
+      // persistence decision to the SW.
+      const mailboxes = raw.filter((m) => !isLegacyGmailRecord(m)) as Mailbox[]
 
       // Validate each mailbox
       for (const mailbox of mailboxes) {
@@ -209,10 +242,7 @@ export class PlaintextStorage {
 
     // Provider-specific validation
     if (mailbox.providerId === 'google-messages') {
-      // Google Messages mailbox validation: no OAuth, no IMAP, require gmPhoneNumber
-      if (mailbox.accessToken || mailbox.refreshToken || mailbox.tokenExpiresAt) {
-        throw new ValidationError("Google Messages mailboxes cannot have OAuth tokens", "accessToken")
-      }
+      // Google Messages mailbox validation: no IMAP, require gmPhoneNumber
       if (mailbox.imapServer || mailbox.imapPort || mailbox.imapAccountId) {
         throw new ValidationError("Google Messages mailboxes cannot have IMAP fields", "imapServer")
       }
@@ -231,14 +261,7 @@ export class PlaintextStorage {
         throw new ValidationError("IMAP account ID cannot be empty", "imapAccountId")
       }
     } else {
-      // Gmail OAuth mailbox validation
-      if (!mailbox.accessToken || mailbox.accessToken.length === 0) {
-        throw new ValidationError("Access token cannot be empty", "accessToken")
-      }
-      // Gmail uses chrome.identity; refresh token is optional
-      if (!isValidTimestamp(mailbox.tokenExpiresAt)) {
-        throw new ValidationError("Invalid token expiration timestamp", "tokenExpiresAt")
-      }
+      throw new ValidationError(`Unsupported providerId: ${mailbox.providerId}`, 'providerId')
     }
     if (!isValidTimestamp(mailbox.addedAt)) {
       throw new ValidationError("Invalid addedAt timestamp", "addedAt")

@@ -1,7 +1,7 @@
 {
   "name": "inboxkey",
   "displayName": "InboxKey",
-  "version": "0.0.1",
+  "version": "1.0.0",
   "description": "Privacy-first email code autofill and magic-link opener for Chrome",
   "author": "SelmanSeref",
   "license": "PolyForm-Noncommercial-1.0.0",
@@ -66,17 +66,10 @@
     "host_permissions": [
       "https://*/*"
     ],
-    "oauth2": {
-      "client_id": "63223580830-n7gddqh5fdl1hip8m47f4eud9c239i3c.apps.googleusercontent.com",
-      "scopes": [
-        "https://www.googleapis.com/auth/gmail.readonly"
-      ]
-    },
     "permissions": [
       "storage",
       "alarms",
       "tabs",
-      "identity",
       "notifications",
       "nativeMessaging",
       "scripting"

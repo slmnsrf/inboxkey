@@ -4,7 +4,7 @@
  */
 
 export const config = {
-  matches: ["https://*/*", "http://*/*"],
+  matches: ["https://*/*"],
 }
 
 import { showFieldFeedback } from './field-feedback'

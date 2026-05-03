@@ -28,13 +28,13 @@ const PLAINTEXT_STORAGE_KEYS = {
 function createTestMailbox(overrides?: Partial<Mailbox>): Mailbox {
   return {
     id: crypto.randomUUID(),
-    providerId: "gmail",
+    providerId: "imap-bridge",
     email: "test@example.com",
-    accessToken: "test-access-token",
-    refreshToken: "test-refresh-token",
-    tokenExpiresAt: Date.now() + 3600000,
+    imapServer: "imap.example.com",
+    imapPort: 993,
+    imapAccountId: "acc_test",
     addedAt: Date.now(),
-    lastSyncedAt: Date.now(),
+    lastSyncedAt: 0,
     ...overrides,
   }
 }
@@ -146,19 +146,6 @@ describe("PlaintextStorage", () => {
       expect(mailboxes[0].id).toBe(mailbox.id)
     })
 
-    it("should store tokens in plaintext", async () => {
-      const mailbox = createTestMailbox({
-        accessToken: "plain-access-token",
-        refreshToken: "plain-refresh-token",
-      })
-      await storage.addMailbox(mailbox)
-
-      // Verify tokens are stored as-is
-      const stored = mockLocalStorage[PLAINTEXT_STORAGE_KEYS.MAILBOXES][0]
-      expect(stored.accessToken).toBe("plain-access-token")
-      expect(stored.refreshToken).toBe("plain-refresh-token")
-    })
-
     it("should prevent duplicate IDs", async () => {
       const mailbox = createTestMailbox()
       await storage.addMailbox(mailbox)
@@ -207,34 +194,6 @@ describe("PlaintextStorage", () => {
       )
     })
 
-    it("should validate access token is not empty", async () => {
-      const invalidMailbox = createTestMailbox({ accessToken: "" })
-      await expect(storage.addMailbox(invalidMailbox)).rejects.toThrow(
-        ValidationError
-      )
-      await expect(storage.addMailbox(invalidMailbox)).rejects.toThrow(
-        "Invalid mailbox schema"
-      )
-    })
-
-    it("should allow Gmail without refresh token", async () => {
-      const gmailMailbox = createTestMailbox({
-        providerId: "gmail",
-        refreshToken: undefined,
-      })
-      await storage.addMailbox(gmailMailbox)
-
-      const retrieved = await storage.getMailboxes()
-      expect(retrieved).toHaveLength(1)
-    })
-
-    it("should validate timestamps", async () => {
-      const invalidMailbox = createTestMailbox({ tokenExpiresAt: -1 })
-      await expect(storage.addMailbox(invalidMailbox)).rejects.toThrow(
-        ValidationError
-      )
-    })
-
     it("should send change notification", async () => {
       const mailbox = createTestMailbox()
       await storage.addMailbox(mailbox)
@@ -257,18 +216,6 @@ describe("PlaintextStorage", () => {
 
       const mailboxes = await storage.getMailboxes()
       expect(mailboxes).toHaveLength(2)
-    })
-
-    it("should return tokens in plaintext", async () => {
-      const mailbox = createTestMailbox({
-        accessToken: "plain-access",
-        refreshToken: "plain-refresh",
-      })
-      await storage.addMailbox(mailbox)
-
-      const mailboxes = await storage.getMailboxes()
-      expect(mailboxes[0].accessToken).toBe("plain-access")
-      expect(mailboxes[0].refreshToken).toBe("plain-refresh")
     })
 
     it("should handle empty storage", async () => {
@@ -319,11 +266,10 @@ describe("PlaintextStorage", () => {
       const mailbox = createTestMailbox()
       await storage.addMailbox(mailbox)
 
-      const newToken = "updated-access-token"
-      await storage.updateMailbox(mailbox.id, { accessToken: newToken })
+      await storage.updateMailbox(mailbox.id, { imapServer: "imap.updated.com" })
 
       const updated = await storage.getMailbox(mailbox.id)
-      expect(updated?.accessToken).toBe(newToken)
+      expect(updated?.imapServer).toBe("imap.updated.com")
     })
 
     it("should preserve other mailboxes", async () => {
@@ -333,7 +279,7 @@ describe("PlaintextStorage", () => {
       await storage.addMailbox(mailbox1)
       await storage.addMailbox(mailbox2)
 
-      await storage.updateMailbox(mailbox1.id, { accessToken: "new-token" })
+      await storage.updateMailbox(mailbox1.id, { imapServer: "imap.updated.com" })
 
       const mailboxes = await storage.getMailboxes()
       expect(mailboxes).toHaveLength(2)
@@ -341,10 +287,10 @@ describe("PlaintextStorage", () => {
 
     it("should throw if mailbox not found", async () => {
       await expect(
-        storage.updateMailbox(crypto.randomUUID(), { accessToken: "new" })
+        storage.updateMailbox(crypto.randomUUID(), { imapServer: "imap.new.com" })
       ).rejects.toThrow(ValidationError)
       await expect(
-        storage.updateMailbox(crypto.randomUUID(), { accessToken: "new" })
+        storage.updateMailbox(crypto.randomUUID(), { imapServer: "imap.new.com" })
       ).rejects.toThrow("not found")
     })
 
@@ -362,7 +308,7 @@ describe("PlaintextStorage", () => {
       await storage.addMailbox(mailbox)
 
       vi.mocked(chrome.runtime.sendMessage).mockClear()
-      await storage.updateMailbox(mailbox.id, { accessToken: "new" })
+      await storage.updateMailbox(mailbox.id, { imapServer: "imap.updated.com" })
 
       expect(chrome.runtime.sendMessage).toHaveBeenCalledWith({
         type: "storage-changed",
@@ -481,15 +427,7 @@ describe("PlaintextStorage", () => {
     })
 
     it("should validate provider IDs", async () => {
-      // Gmail: OAuth without refresh token (chrome.identity handles refresh)
-      const gmailMailbox = createTestMailbox({
-        providerId: "gmail",
-        email: "gmail@example.com",
-        id: crypto.randomUUID(),
-      })
-      await expect(storage.addMailbox(gmailMailbox)).resolves.not.toThrow()
-
-      // IMAP Bridge: requires IMAP-specific fields, no OAuth fields
+      // IMAP Bridge: requires IMAP-specific fields
       const imapMailbox: Mailbox = {
         id: crypto.randomUUID(),
         providerId: "imap-bridge",
@@ -541,18 +479,8 @@ describe("PlaintextStorage", () => {
     })
 
     it("should validate timestamps are within reasonable range", async () => {
-      const validTimestamp = Date.now()
-      const mailbox = createTestMailbox({ tokenExpiresAt: validTimestamp })
+      const mailbox = createTestMailbox({ addedAt: Date.now() })
       await expect(storage.addMailbox(mailbox)).resolves.not.toThrow()
-    })
-
-    it("should reject invalid timestamps", async () => {
-      const invalidTimestamps = [-1, 1000]
-
-      for (const timestamp of invalidTimestamps) {
-        const mailbox = createTestMailbox({ tokenExpiresAt: timestamp })
-        await expect(storage.addMailbox(mailbox)).rejects.toThrow()
-      }
     })
   })
 
