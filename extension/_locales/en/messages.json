@@ -313,10 +313,6 @@
     "message": "Short answers to the things people ask most.",
     "description": "FAQ tab page intro line under heading"
   },
-  "faqs_q1": {
-    "message": "Why can I only add one Gmail account?",
-    "description": "FAQ question about Gmail single-account limit"
-  },
   "faqs_q2": {
     "message": "Why don't Google's own 2FA codes auto-fill from SMS?",
     "description": "FAQ question about Google sign-in SMS limitation"
@@ -330,7 +326,7 @@
     "description": "FAQ question about InboxBridge requirement"
   },
   "faqs_a3": {
-    "message": "Browsers cannot speak IMAP directly for security reasons. InboxBridge is a small companion app that runs on your device and handles the IMAP connection locally. Your credentials stay in your operating system's keychain, and no email data leaves your computer.\n\nInboxBridge is required for every email provider, including Gmail. For Gmail, you connect with an App Password (Google requires 2-Step Verification first); for Outlook, Yahoo, Fastmail, ProtonMail Bridge, and other IMAP providers, you connect with normal IMAP credentials.",
+    "message": "IMAP is not an HTTP protocol, and Chrome doesn't expose raw network sockets to extensions. InboxBridge is a small companion app that runs on your device and handles the IMAP connection locally. Your credentials stay in your operating system's keychain (macOS Keychain, Windows Credential Manager, or libsecret on Linux), and no email data leaves your computer.\n\nInboxBridge is required for every email provider, including Gmail. For Gmail, you connect with an App Password (Google requires 2-Step Verification first); for Outlook, Yahoo, Fastmail, ProtonMail Bridge, and other IMAP providers, you connect with normal IMAP credentials.",
     "description": "FAQ answer about InboxBridge requirement"
   },
   "faqs_q4": {
@@ -346,7 +342,7 @@
     "description": "FAQ question about unsigned installer warning"
   },
   "faqs_a5": {
-    "message": "InboxBridge is not digitally signed. Microsoft and Apple both show a warning for unsigned software.\n\nSigning requires a code certificate that costs roughly $200 to $500 per year (Windows) or $99 per year (macOS Developer ID). InboxKey is a source-available project without funding for one, so the warning is unavoidable.\n\nTo proceed: on Windows, click More info then Run anyway. On macOS, right-click the .pkg file and click Open, then click Open again in the dialog.\n\nDon't take our word that it's safe. Read the source on GitHub or compare the SHA-256 checksum of what you downloaded against the published one.",
+    "message": "InboxBridge is not digitally signed. Microsoft and Apple both show a warning for unsigned software.\n\nSigning requires a code certificate that costs roughly $200 to $500 per year (Windows) or $99 per year (macOS Developer ID). InboxKey is a source-available project without funding for one, so the warning is unavoidable.\n\nTo proceed: on Windows, click More info then Run anyway. On macOS, the installer may be blocked at first launch; open System Settings → Privacy & Security and click Open Anyway next to the InboxBridge entry.\n\nThe source is on GitHub. The SHA-256 checksum of every release is published alongside the installer; verify it against your download to confirm nothing was tampered with.",
     "description": "FAQ answer about unsigned installer warnings"
   },
   "faqs_q6": {
@@ -356,6 +352,22 @@
   "faqs_a6": {
     "message": "Google Messages for web uses a device-paired session, tied to one phone number and one browser profile. Google's web interface does not support pairing more than one phone at a time.\n\nIf you need a second phone, create a separate Chrome profile and pair it there.",
     "description": "FAQ answer about GM single-phone limit"
+  },
+  "faqs_q7": {
+    "message": "Can I add more than one email account?",
+    "description": "FAQ question about multiple email account support"
+  },
+  "faqs_a7": {
+    "message": "Yes. InboxKey supports multiple IMAP accounts — connect Gmail, Outlook, Yahoo, work mailboxes, or any other IMAP provider side by side. Each account is configured separately through InboxBridge with its own credentials. Codes from every account appear together in the popup, sorted by recency.",
+    "description": "FAQ answer about multiple email account support"
+  },
+  "faqs_q8": {
+    "message": "Which email providers does InboxKey work with?",
+    "description": "FAQ question about supported email providers"
+  },
+  "faqs_a8": {
+    "message": "Anything that speaks IMAP. That includes Gmail (with an App Password — Google requires 2-Step Verification first), Outlook / Hotmail / Live, Yahoo Mail, iCloud Mail (with an app-specific password), Fastmail, AOL, GMX, Zoho, and self-hosted IMAP servers. ProtonMail works through ProtonMail Bridge, the desktop app Proton ships for IMAP access. If your provider gives you IMAP host, port, username, and password, InboxKey can read it.",
+    "description": "FAQ answer about supported email providers"
   },
 
   "security_setup_title": {

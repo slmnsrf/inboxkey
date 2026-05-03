@@ -48,10 +48,12 @@ export function FAQsSection() {
       </header>
 
       <div className="faqs__list">
-        <FAQItem qKey="faqs_q2" aKey="faqs_a2" />
-        <FAQItem qKey="faqs_q3" aKey="faqs_a3" />
         <FAQItem qKey="faqs_q4" aKey="faqs_a4" />
+        <FAQItem qKey="faqs_q3" aKey="faqs_a3" />
+        <FAQItem qKey="faqs_q8" aKey="faqs_a8" />
+        <FAQItem qKey="faqs_q7" aKey="faqs_a7" />
         <FAQItem qKey="faqs_q5" aKey="faqs_a5" />
+        <FAQItem qKey="faqs_q2" aKey="faqs_a2" />
         <FAQItem qKey="faqs_q6" aKey="faqs_a6" />
       </div>
     </article>
