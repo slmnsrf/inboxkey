@@ -19,7 +19,6 @@ import type {
 } from "./schema"
 import {
   DEFAULT_SETTINGS,
-  STORAGE_KEYS,
   isMailbox,
   isSessionState,
   isSettings,
@@ -45,8 +44,17 @@ const PLAINTEXT_STORAGE_KEYS = {
  * Predicate identifying a legacy Gmail-OAuth mailbox record.
  *
  * Uses the literal string 'gmail' even though it is no longer a member of
- * the ProviderId union — that's the whole point: the shim matches stored
- * records that pre-date the union narrowing.
+ * the ProviderId union — that's the whole point: the predicate matches
+ * stored records that pre-date the union narrowing. Used by `getMailboxes`
+ * to filter such records in-memory before validation, in case any context
+ * reads storage before the background SW's startup migration in
+ * `background/index.ts` has had a chance to persist a cleaned list.
+ *
+ * The persistent migration write (storage cleanup + sync_error_state
+ * scrub for removed records) lives in `background/index.ts` alongside the
+ * pre-existing legacy-Outlook cleanup, so both legacy providers are
+ * removed in one serialized read-filter-write pass and can't race each
+ * other.
  */
 function isLegacyGmailRecord(m: unknown): boolean {
   return (
@@ -56,155 +64,6 @@ function isLegacyGmailRecord(m: unknown): boolean {
   )
 }
 
-/**
- * Test-only override for `isBackgroundServiceWorker()`. Production code
- * leaves this `null`; the migration test sets it to `true` to simulate a
- * SW context (happy-dom defines `window`, so the runtime check below
- * would otherwise classify the test environment as non-SW).
- */
-let __testBackgroundSWOverride: boolean | null = null
-
-/**
- * Detect whether the current execution context is the background service
- * worker (the singleton write-side of the extension). MV3 has exactly one
- * service worker per extension, so confining migration writes to this
- * context eliminates the cross-context race where two contexts could each
- * compute a stale cleaned list and race-write, dropping mailboxes added
- * between their reads. Popup, options, and content-script contexts all
- * have a `window` object; the SW does not.
- */
-function isBackgroundServiceWorker(): boolean {
-  if (__testBackgroundSWOverride !== null) return __testBackgroundSWOverride
-  return typeof globalThis !== 'undefined' && typeof (globalThis as { window?: unknown }).window === 'undefined'
-}
-
-/**
- * One-time migration shim: silently drop legacy 'gmail' OAuth records left
- * over from pre-1.0.0 dev installs. The Gmail OAuth path was removed before
- * the first public release, so any record with providerId === 'gmail' is
- * unreachable code from a previous build.
- *
- * Persistence is gated to the background service worker — popup, options,
- * and content-script contexts will read storage and filter legacy records
- * in-memory inside `getMailboxes()` (see below) but will not write them
- * back. Combined with the codebase invariant that all storage writes are
- * background-only (verified by grep across `addMailbox`/`updateMailbox`/
- * `removeMailbox` call sites), this means at most one writer races at a
- * time, and that writer is serialized by the per-instance mutex used by
- * the public mutating methods.
- *
- * Module-level memoized promise so every call site (including ones inside
- * `mutex.runExclusive`) safely awaits the same in-flight migration without
- * re-entering a mutex. Errors are swallowed and the memo reset so a stale
- * record never breaks mailbox reads.
- *
- * Note on Google OAuth grants: this shim deletes the local mailbox record
- * but does NOT call Google's revoke endpoint to invalidate the underlying
- * OAuth grant on the user's Google account. The canonical revoke is to
- * delete the OAuth client itself in Google Cloud Console; that operation
- * atomically invalidates every grant for every user. Re-introducing
- * OAuth-revoke code in this shim was rejected because (a) the entire
- * chrome.identity surface is removed in this same change, (b) pre-launch
- * the only "user" is the developer who can clean up at
- * myaccount.google.com/permissions, and (c) the OAuth-client-deletion
- * follow-up is the canonical fix.
- *
- * Remove planned for the version after CWS launch.
- */
-let gmailMigrationPromise: Promise<void> | null = null
-
-async function ensureGmailMigrationRan(): Promise<void> {
-  // Non-SW contexts skip the persistent migration entirely. They still get
-  // legacy records filtered in-memory inside `getMailboxes()` so validation
-  // doesn't choke on them.
-  if (!isBackgroundServiceWorker()) return
-
-  if (!gmailMigrationPromise) {
-    gmailMigrationPromise = (async () => {
-      const result = await chrome.storage.local.get(
-        PLAINTEXT_STORAGE_KEYS.MAILBOXES
-      )
-      const raw = (result[PLAINTEXT_STORAGE_KEYS.MAILBOXES] || []) as unknown[]
-      const removedIds = new Set<string>()
-      const cleaned = raw.filter((m) => {
-        if (isLegacyGmailRecord(m)) {
-          const id = (m as { id?: unknown }).id
-          if (typeof id === 'string') removedIds.add(id)
-          return false
-        }
-        return true
-      })
-      if (cleaned.length !== raw.length) {
-        await chrome.storage.local.set({
-          [PLAINTEXT_STORAGE_KEYS.MAILBOXES]: cleaned,
-        })
-
-        // Scrub any sync_error_state entries that belong to the removed
-        // gmail mailboxes. Otherwise the popup error banner / badge can
-        // keep showing reconnect-required for an account GET_MAILBOXES
-        // no longer returns. Mirrors the existing post-disconnect cleanup
-        // (errorStateManager.removeMailboxErrors), but inlined to keep
-        // this migration shim self-contained without importing from
-        // src/background/.
-        if (removedIds.size > 0) {
-          try {
-            const errorState = await chrome.storage.local.get(
-              STORAGE_KEYS.SYNC_ERROR_STATE
-            )
-            const state = errorState[STORAGE_KEYS.SYNC_ERROR_STATE] as
-              | { currentErrors?: { mailboxId?: string }[]; consecutiveFailures?: number; lastErrorTime?: number | null }
-              | undefined
-            if (state && Array.isArray(state.currentErrors)) {
-              const before = state.currentErrors.length
-              const filteredErrors = state.currentErrors.filter(
-                (e) => !(e && typeof e.mailboxId === 'string' && removedIds.has(e.mailboxId))
-              )
-              if (filteredErrors.length < before) {
-                const updated = {
-                  ...state,
-                  currentErrors: filteredErrors,
-                  ...(filteredErrors.length === 0
-                    ? { consecutiveFailures: 0, lastErrorTime: null }
-                    : {}),
-                }
-                await chrome.storage.local.set({
-                  [STORAGE_KEYS.SYNC_ERROR_STATE]: updated,
-                })
-              }
-            }
-          } catch (errorScrubFailure) {
-            // Non-fatal: a stale error entry is annoying but not corrupting.
-            console.warn(
-              '[PlaintextStorage] Failed to scrub sync_error_state for removed gmail mailboxes:',
-              errorScrubFailure
-            )
-          }
-        }
-      }
-    })().catch((err) => {
-      // Silently swallow: the migration is a one-time defensive shim.
-      // If it fails (storage quota, transient chrome.storage error), the
-      // legacy record stays put — that's strictly better than breaking
-      // all mailbox reads. Reset the memo so a later call retries.
-      console.warn('[PlaintextStorage] Gmail migration shim failed:', err)
-      gmailMigrationPromise = null
-    })
-  }
-  return gmailMigrationPromise
-}
-
-// Test-only: reset the migration memo between unit tests. Never call
-// this from production code; the underscore prefix flags that intent.
-export function __resetGmailMigrationForTests(): void {
-  gmailMigrationPromise = null
-}
-
-// Test-only: force `isBackgroundServiceWorker()` to return `value` so
-// tests can exercise the SW-only persistence branch even though happy-dom
-// defines `window`. Pass `null` to revert to the runtime check.
-export function __setBackgroundSWOverrideForTests(value: boolean | null): void {
-  __testBackgroundSWOverride = value
-}
 
 /**
  * Mutex for preventing concurrent storage operations
@@ -282,11 +141,6 @@ export class PlaintextStorage {
   }
 
   async getMailboxes(): Promise<Mailbox[]> {
-    // In the background SW, this triggers a one-time persistent migration
-    // that drops legacy 'gmail' records from storage. In other contexts,
-    // it's a no-op (those contexts must not write storage to avoid
-    // cross-context races).
-    await ensureGmailMigrationRan()
     try {
       const result = await chrome.storage.local.get(
         PLAINTEXT_STORAGE_KEYS.MAILBOXES

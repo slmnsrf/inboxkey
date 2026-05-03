@@ -76,27 +76,34 @@ const popupMessageHandler = new PopupMessageHandler(
   errorStateManager
 )
 
-// One-time migration: remove legacy Outlook OAuth mailboxes (Outlook now uses IMAP only).
-// Reads raw storage to bypass schema validation (outlook is no longer a valid ProviderId).
-// MUST complete before serving any storage-backed requests (GET_MAILBOXES, TRIGGER_SYNC, etc.)
-// to prevent race where validated getMailboxes() rejects stale 'outlook' rows.
+// One-time migration: remove legacy OAuth-Gmail and OAuth-Outlook mailboxes
+// in a single read-filter-write pass so they can't race each other and
+// resurrect each other's records. Both providers now use IMAP only.
+// Reads raw storage to bypass schema validation (neither 'gmail' nor
+// 'outlook' is a valid ProviderId after the union narrowing).
+// MUST complete before serving any storage-backed requests (GET_MAILBOXES,
+// TRIGGER_SYNC, etc.) to prevent the race where validated getMailboxes()
+// rejects stale legacy rows.
 const outlookMigrationDone = (async () => {
   try {
     const raw = await chrome.storage.local.get('mailboxes_plain')
     const all: Array<{ id: string; providerId: string; email?: string }> =
       raw['mailboxes_plain'] || []
-    const outlookIds = all.filter(m => m.providerId === 'outlook')
-    if (outlookIds.length === 0) return
+    const isLegacy = (m: { providerId: string }) =>
+      m.providerId === 'outlook' || m.providerId === 'gmail'
+    const removed = all.filter(isLegacy)
+    if (removed.length === 0) return
 
-    const kept = all.filter(m => m.providerId !== 'outlook')
+    const kept = all.filter(m => !isLegacy(m))
     await chrome.storage.local.set({ mailboxes_plain: kept })
 
-    for (const mb of outlookIds) {
+    for (const mb of removed) {
       await errorStateManager.removeMailboxErrors(mb.id)
-      console.log(`[Background] Removed legacy Outlook OAuth mailbox: ${mb.email ?? mb.id}`)
+      const label = mb.providerId === 'gmail' ? 'Gmail' : 'Outlook'
+      console.log(`[Background] Removed legacy ${label} OAuth mailbox: ${mb.email ?? mb.id}`)
     }
   } catch (e) {
-    console.warn('[Background] Outlook migration cleanup failed:', e)
+    console.warn('[Background] Legacy OAuth migration cleanup failed:', e)
   }
 })()
 
