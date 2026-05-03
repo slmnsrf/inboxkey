@@ -544,26 +544,45 @@ describe('signal-classifier', () => {
       expect(result.matchedKeywords.length).toBeGreaterThan(0)
     })
 
-    it('does not classify "QR code generator" as authenticator', () => {
+    it('does not classify "QR code generator app" as authenticator', () => {
+      // Phrase includes `app` so the regex actually attempts to match —
+      // exercises the (?<!qr\s) lookbehind guard.
       const result = classifyDeliveryChannel(
-        createSources('Try our free QR code generator to make a QR code from any URL.')
+        createSources('Try our free QR code generator app to make QR codes from any URL.')
       )
       expect(result.channel).not.toBe('authenticator')
     })
 
-    it('does not classify "promo code generator" as authenticator', () => {
+    it('does not classify "promo code generator app" as authenticator', () => {
+      // Exercises the (?<!promo\s) lookbehind guard.
       const result = classifyDeliveryChannel(
-        createSources('Generate a discount with our promo code generator.')
+        createSources('Generate discounts with our promo code generator app.')
       )
       expect(result.channel).not.toBe('authenticator')
     })
 
-    it('does not classify "barcode generator" as authenticator', () => {
+    it('does not classify "coupon-code generator app" as authenticator', () => {
+      // Exercises the (?<!coupon-) lookbehind guard.
       const result = classifyDeliveryChannel(
-        createSources('Use the barcode generator to create EAN-13 codes.')
+        createSources('Create offers with our coupon-code generator app.')
       )
       expect(result.channel).not.toBe('authenticator')
     })
+
+    it('does not classify "source-code generator app" as authenticator', () => {
+      // Exercises the (?<!source-) lookbehind guard.
+      const result = classifyDeliveryChannel(
+        createSources('Try our source-code generator app for boilerplate.')
+      )
+      expect(result.channel).not.toBe('authenticator')
+    })
+
+    // Note: a regression test for the (?<!barcode\s) lookbehind would need
+    // a phrase like "barcode code generator app" — but that wording trips
+    // a long-standing FP in the French pattern at line 220
+    // (`code.*(?:de|dans).*(?:application|app)/i`) because `de` lives
+    // inside the `code` letters. Leaving the lookbehind defensive but
+    // untested; fixing the French pattern is out of scope for this PR.
 
     it('does not classify "low-code generator app" as authenticator', () => {
       // Exercises the `(?<!low-)` lookbehind: the text contains the exact
