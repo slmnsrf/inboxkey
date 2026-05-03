@@ -240,7 +240,9 @@ export class SessionController {
       expectedShape,         // V2: Store shape for v2 matching
       sessionStart: now,     // V2: Store session start for sessionBoost
       detectedChannels: channels,  // SMS: Channel-aware adapter filtering
-      channelEvidence,             // Phase 2: undefined means treat as 'positive'
+      // Phase 2: store the explicit 'positive' default so restored
+      // sessions and debug traces unambiguously show the policy.
+      channelEvidence: channelEvidence ?? 'positive',
       effectiveTimeout,            // SMS: Capped timeout sent back to content script
       startedAt: now,
       status: "active",

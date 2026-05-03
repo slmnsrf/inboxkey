@@ -66,6 +66,7 @@ import { detectSplitInputGroup } from "../../src/lib/detection/split-input-detec
 import { hasEmailContext } from "../../src/lib/detection/email-context-guard"
 import { StorageFactory } from "../../src/lib/storage/storage-factory"
 import * as smsCache from "../../src/lib/detection/sms-feature-cache"
+import { showSessionChip } from "../../src/contents/session-chip"
 
 interface MockPort {
   name: string
@@ -1029,6 +1030,170 @@ describe("WatchSession", () => {
     emitDisconnect()
 
     expect(getActiveWatch()).toBe(null)
+  })
+
+  // ─────────────────────────────────────────────────────────────────
+  // Phase 2 — listening-chip suppression for unknown-channel sessions
+  // ─────────────────────────────────────────────────────────────────
+
+  describe("Phase 2 listening chip gate", () => {
+    it("suppresses showSessionChip on SESSION_STARTED when channelEvidence is unknown and email-only", async () => {
+      const field = documentRef.createElement("input")
+      documentRef.body.appendChild(field)
+      const detection: DetectionResult = {
+        field,
+        confidence: 95,
+        tier: 1,
+        signals: ["test"],
+        executionTime: 0.5,
+        channelEvidence: "unknown",
+      }
+
+      const session = new WatchSession(field, detection, { onCodeFound: vi.fn() })
+      await session.start()
+
+      vi.mocked(showSessionChip).mockClear()
+
+      await emitPortMessage({
+        type: "SESSION_STARTED",
+        session: { id: "phase2-suppressed" },
+      })
+
+      // Phase 2: chip is NOT created on listening for unknown email-only.
+      expect(showSessionChip).not.toHaveBeenCalled()
+    })
+
+    it("creates showSessionChip on SESSION_STARTED when channelEvidence is positive", async () => {
+      const field = documentRef.createElement("input")
+      documentRef.body.appendChild(field)
+      const detection: DetectionResult = {
+        field,
+        confidence: 95,
+        tier: 1,
+        signals: ["test"],
+        executionTime: 0.5,
+        channelEvidence: "positive",
+      }
+
+      const session = new WatchSession(field, detection, { onCodeFound: vi.fn() })
+      await session.start()
+
+      vi.mocked(showSessionChip).mockClear()
+
+      await emitPortMessage({
+        type: "SESSION_STARTED",
+        session: { id: "phase2-positive" },
+      })
+
+      expect(showSessionChip).toHaveBeenCalledTimes(1)
+    })
+
+    it("creates showSessionChip on SESSION_STARTED when channelEvidence is absent (backward-compat)", async () => {
+      const field = documentRef.createElement("input")
+      documentRef.body.appendChild(field)
+      const detection: DetectionResult = {
+        field,
+        confidence: 95,
+        tier: 1,
+        signals: ["test"],
+        executionTime: 0.5,
+        // channelEvidence absent — backward-compat default = positive.
+      }
+
+      const session = new WatchSession(field, detection, { onCodeFound: vi.fn() })
+      await session.start()
+
+      vi.mocked(showSessionChip).mockClear()
+
+      await emitPortMessage({
+        type: "SESSION_STARTED",
+        session: { id: "phase2-absent" },
+      })
+
+      expect(showSessionChip).toHaveBeenCalledTimes(1)
+    })
+
+    it("lazy-creates chip on SESSION_CODE_FOUND when listening was suppressed", async () => {
+      const field = documentRef.createElement("input")
+      documentRef.body.appendChild(field)
+      const detection: DetectionResult = {
+        field,
+        confidence: 95,
+        tier: 1,
+        signals: ["test"],
+        executionTime: 0.5,
+        channelEvidence: "unknown",
+      }
+
+      const session = new WatchSession(field, detection, {
+        onCodeFound: vi.fn(),
+        onAutofill: vi.fn().mockResolvedValue(true),
+      })
+      await session.start()
+
+      vi.mocked(showSessionChip).mockClear()
+
+      await emitPortMessage({
+        type: "SESSION_STARTED",
+        session: { id: "phase2-lazy" },
+      })
+
+      expect(showSessionChip).not.toHaveBeenCalled()
+
+      await emitPortMessage({
+        type: "SESSION_CODE_FOUND",
+        code: { code: "123456", source: "UnitTest", timestamp: Date.now() },
+      })
+
+      // Lazy creation: chip is created when the gate-passed code arrives.
+      expect(showSessionChip).toHaveBeenCalledTimes(1)
+    })
+
+    it("emits channelEvidence in START_SESSION (positive case)", async () => {
+      const field = documentRef.createElement("input")
+      documentRef.body.appendChild(field)
+      const detection: DetectionResult = {
+        field,
+        confidence: 95,
+        tier: 1,
+        signals: ["test"],
+        executionTime: 0.5,
+        channelEvidence: "positive",
+      }
+
+      const session = new WatchSession(field, detection, { onCodeFound: vi.fn() })
+      await session.start()
+
+      expect(port.postMessage).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: "START_SESSION",
+          channelEvidence: "positive",
+        })
+      )
+    })
+
+    it("emits channelEvidence in START_SESSION (unknown case)", async () => {
+      const field = documentRef.createElement("input")
+      documentRef.body.appendChild(field)
+      const detection: DetectionResult = {
+        field,
+        confidence: 95,
+        tier: 1,
+        signals: ["test"],
+        executionTime: 0.5,
+        channelEvidence: "unknown",
+      }
+
+      const session = new WatchSession(field, detection, { onCodeFound: vi.fn() })
+      await session.start()
+
+      expect(port.postMessage).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: "START_SESSION",
+          channelEvidence: "unknown",
+        })
+      )
+    })
   })
 })
 
