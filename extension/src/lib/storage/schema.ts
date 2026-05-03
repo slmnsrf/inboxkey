@@ -36,7 +36,7 @@ export interface StorageSchema {
 /**
  * Provider types supported by InboxKey
  */
-export type ProviderId = "gmail" | "imap-bridge" | "google-messages"
+export type ProviderId = "imap-bridge" | "google-messages"
 
 /**
  * Mailbox account with IMAP credentials or Google Messages configuration
@@ -341,7 +341,7 @@ export function isValidUUID(uuid: string): boolean {
 }
 
 export function isValidProviderId(id: string): id is ProviderId {
-  return id === "gmail" || id === "imap-bridge" || id === "google-messages"
+  return id === "imap-bridge" || id === "google-messages"
 }
 
 export function isValidTimestamp(timestamp: number): boolean {

@@ -1,4 +1,4 @@
-export type ProviderKey = 'gmail' | 'google-messages'
+export type ProviderKey = 'google-messages'
 
 export type ProviderStatus = 'connected' | 'disconnected' | 'connecting' | 'locked'
 
@@ -32,7 +32,7 @@ export type RecentItemKind = 'code' | 'link'
 export interface RecentItem {
   id: string
   kind: RecentItemKind
-  provider?: 'gmail' | 'imap'
+  provider?: 'imap'
   from?: string
   subject?: string
   receivedAt: number

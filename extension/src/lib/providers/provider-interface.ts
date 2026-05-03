@@ -5,7 +5,7 @@
  * Each provider implements OAuth authentication and email fetching.
  */
 
-export type ProviderId = 'gmail' | 'imap-bridge'
+export type ProviderId = 'imap-bridge'
 
 export interface ProviderConfig {
   clientId: string

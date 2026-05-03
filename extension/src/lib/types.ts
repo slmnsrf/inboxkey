@@ -2,7 +2,7 @@
  * Core type definitions for InboxKey
  */
 
-export type ProviderId = "gmail" | "imap-bridge" | "google-messages"
+export type ProviderId = "imap-bridge" | "google-messages"
 
 export interface WatchSession {
   id: string

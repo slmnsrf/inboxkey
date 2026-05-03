@@ -49,9 +49,9 @@ const PLAINTEXT_STORAGE_KEYS = {
  * the same in-flight migration without re-entering a mutex. Errors are
  * swallowed and the memo reset so a stale record never breaks mailbox reads.
  *
- * Note: `'gmail'` remains in the ProviderId union and isValidProviderId
- * during Phase 1 — Phase 2 (the type-narrowing commit) removes it. Don't
- * try to narrow the union here; it will cascade-break the rest of Phase 1.
+ * The runtime check below uses the literal string 'gmail' even though it is
+ * no longer a member of the ProviderId union — that's the whole point: the
+ * shim matches stored records that pre-date the union narrowing.
  *
  * Remove planned for the version after CWS launch.
  */
