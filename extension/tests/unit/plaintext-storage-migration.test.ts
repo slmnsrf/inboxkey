@@ -1,10 +1,20 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { PlaintextStorage, __resetGmailMigrationForTests } from '@/lib/storage/plaintext-storage'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
+import {
+  PlaintextStorage,
+  __resetGmailMigrationForTests,
+  __setBackgroundSWOverrideForTests,
+} from '@/lib/storage/plaintext-storage'
 
 // Stub chrome.storage.local; vitest globals are set by happy-dom in this repo
 const storage: Record<string, unknown> = {}
 beforeEach(() => {
   __resetGmailMigrationForTests()
+  // Simulate the background service worker context: in production the
+  // migration shim only persists from the SW (single-writer invariant),
+  // but happy-dom defines `window` so the runtime detection would
+  // classify the test as a non-SW context. Force it on here to exercise
+  // the persistence path.
+  __setBackgroundSWOverrideForTests(true)
   Object.keys(storage).forEach((k) => delete storage[k])
   global.chrome = {
     storage: {
@@ -16,6 +26,10 @@ beforeEach(() => {
       },
     },
   } as unknown as typeof chrome
+})
+
+afterEach(() => {
+  __setBackgroundSWOverrideForTests(null)
 })
 
 describe('Gmail OAuth migration shim', () => {

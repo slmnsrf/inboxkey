@@ -3113,7 +3113,7 @@
     "description": "Security fact: auth tokens stored"
   },
   "security_store_tokens_detail": {
-    "message": "IMAP credentials are held by InboxBridge in your operating system's keychain, not by the extension itself. The extension stores only account metadata (email address, provider type) in chrome.storage.local.",
+    "message": "IMAP passwords are held by InboxBridge in your operating system's keychain, not by the extension itself. The extension stores account metadata (email address, provider type) and the IMAP connection settings needed to ask the bridge to fetch messages (server hostname, port, and the local account ID that points at the keychain entry) in chrome.storage.local. No passwords or message contents are persisted there.",
     "description": "Security fact: token storage detail"
   },
   "security_store_cache_title": {
