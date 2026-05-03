@@ -326,11 +326,11 @@
     "description": "FAQ answer about Google sign-in SMS limitation"
   },
   "faqs_q3": {
-    "message": "Why do I need InboxBridge for Outlook, iCloud, Yahoo, or ProtonMail?",
+    "message": "Why does InboxKey need the InboxBridge helper?",
     "description": "FAQ question about InboxBridge requirement"
   },
   "faqs_a3": {
-    "message": "Chrome's built-in sign-in API only supports Google accounts. Every other email provider needs IMAP, which browsers cannot speak directly for security reasons.\n\nInboxBridge is a small companion app that runs on your device and handles the IMAP connection locally. Your credentials stay in your operating system's keychain, and no email data leaves your computer.\n\nIf you only use Gmail, you never need InboxBridge.",
+    "message": "Browsers cannot speak IMAP directly for security reasons. InboxBridge is a small companion app that runs on your device and handles the IMAP connection locally. Your credentials stay in your operating system's keychain, and no email data leaves your computer.\n\nInboxBridge is required for every email provider, including Gmail. For Gmail, you connect with an App Password (Google requires 2-Step Verification first); for Outlook, Yahoo, Fastmail, ProtonMail Bridge, and other IMAP providers, you connect with normal IMAP credentials.",
     "description": "FAQ answer about InboxBridge requirement"
   },
   "faqs_q4": {
@@ -338,7 +338,7 @@
     "description": "FAQ question about privacy"
   },
   "faqs_a4": {
-    "message": "No. Everything parses on your device. There are no InboxKey servers, no analytics, no telemetry.\n\nEmails are fetched directly from your provider (Gmail API or IMAP), SMS messages are read from Google Messages for web, and code detection happens entirely in your browser.\n\nThe Security tab has a full architecture breakdown if you want to verify this yourself.",
+    "message": "No. Everything parses on your device. There are no InboxKey servers, no analytics, no telemetry.\n\nEmails are fetched directly from your provider via IMAP (through the local InboxBridge helper), SMS messages are read from Google Messages for web, and code detection happens entirely in your browser.\n\nThe Security tab has a full architecture breakdown if you want to verify this yourself.",
     "description": "FAQ answer about privacy"
   },
   "faqs_q5": {

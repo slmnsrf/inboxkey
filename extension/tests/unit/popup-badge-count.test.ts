@@ -22,7 +22,7 @@ const NOW = 1_700_000_000_000
 const code = (overrides: Partial<CodeItem> = {}): CodeItem => ({
   kind: 'code',
   id: 'c1',
-  providerId: 'gmail',
+  providerId: 'imap-bridge',
   source: 'noreply@example.com - Code',
   receivedAt: NOW - 60_000,
   score: 0.9,
@@ -34,7 +34,7 @@ const code = (overrides: Partial<CodeItem> = {}): CodeItem => ({
 const link = (overrides: Partial<LinkItem> = {}): LinkItem => ({
   kind: 'link',
   id: 'l1',
-  providerId: 'gmail',
+  providerId: 'imap-bridge',
   source: 'noreply@example.com - Magic link',
   receivedAt: NOW - 60_000,
   score: 0.7,

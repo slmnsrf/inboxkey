@@ -32,12 +32,12 @@ import { SeenMessageStore } from '../../src/lib/services/seen-message-store'
 describe('mailboxId propagation', () => {
   it('should skip adapters without mailboxId and log warning', async () => {
     const adapterWithoutMailboxId = {
-      id: 'gmail' as const,
+      id: 'imap-bridge' as const,
       // mailboxId intentionally omitted
       listRecent: vi.fn().mockResolvedValue([]),
     }
     const adapterWithMailboxId: ProviderAdapter = {
-      id: 'gmail',
+      id: 'imap-bridge',
       mailboxId: 'mbx-123',
       listRecent: vi.fn().mockResolvedValue([]),
     }
@@ -58,11 +58,11 @@ describe('mailboxId propagation', () => {
 
   it('should set mailboxId on all CandidateRecords', async () => {
     const adapter: ProviderAdapter = {
-      id: 'gmail',
+      id: 'imap-bridge',
       mailboxId: 'mbx-456',
       listRecent: vi.fn().mockResolvedValue([{
         id: 'msg-1',
-        provider: 'gmail',
+        provider: 'imap-bridge',
         mailboxId: 'mbx-456',
         subject: 'Your code is 123456',
         from: 'noreply@example.com',
@@ -85,12 +85,12 @@ describe('freshness floor', () => {
   it('should filter out messages older than the time window', async () => {
     const now = Date.now()
     const adapter: ProviderAdapter = {
-      id: 'gmail',
+      id: 'imap-bridge',
       mailboxId: 'mbx-1',
       listRecent: vi.fn().mockResolvedValue([
         {
           id: 'fresh-msg',
-          provider: 'gmail',
+          provider: 'imap-bridge',
           mailboxId: 'mbx-1',
           subject: 'Your code is 111222',
           from: 'noreply@test.com',
@@ -99,7 +99,7 @@ describe('freshness floor', () => {
         },
         {
           id: 'stale-msg',
-          provider: 'gmail',
+          provider: 'imap-bridge',
           mailboxId: 'mbx-1',
           subject: 'Your code is 333444',
           from: 'noreply@test.com',
@@ -121,7 +121,7 @@ describe('freshness floor', () => {
 describe('per-adapter result tracking', () => {
   it('should return adapterResults with success/failure per mailbox', async () => {
     const goodAdapter: ProviderAdapter = {
-      id: 'gmail',
+      id: 'imap-bridge',
       mailboxId: 'mbx-good',
       listRecent: vi.fn().mockResolvedValue([]),
     }
@@ -154,7 +154,7 @@ describe('IMAP adapter error propagation (Finding #3)', () => {
       listRecent: vi.fn().mockRejectedValue(new Error('IMAP auth failed')),
     }
     const gmailAdapter: ProviderAdapter = {
-      id: 'gmail',
+      id: 'imap-bridge',
       mailboxId: 'mbx-gmail',
       listRecent: vi.fn().mockResolvedValue([]),
     }
@@ -177,7 +177,7 @@ describe('duplicate suppression persistence', () => {
     const store = new SeenMessageStore()
     const email = {
       id: 'msg-dup-1',
-      provider: 'gmail' as const,
+      provider: 'imap-bridge' as const,
       mailboxId: 'mbx-1',
       subject: 'Your code is 999888',
       from: 'noreply@test.com',
@@ -185,7 +185,7 @@ describe('duplicate suppression persistence', () => {
       text: 'Your verification code is 999888',
     }
     const adapter: ProviderAdapter = {
-      id: 'gmail',
+      id: 'imap-bridge',
       mailboxId: 'mbx-1',
       listRecent: vi.fn().mockResolvedValue([email]),
     }
