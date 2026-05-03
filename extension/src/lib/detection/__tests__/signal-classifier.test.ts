@@ -509,6 +509,7 @@ describe('signal-classifier', () => {
       expect(result.channel).toBe('email')
       expect(result.confidence).toBe(0.85)
       expect(result.allChannels).toContain('email')
+      expect(result.allChannels).toContain('authenticator')
     })
 
     it('Banking: SMS only (Turkish) → reject', () => {
@@ -564,12 +565,22 @@ describe('signal-classifier', () => {
       expect(result.channel).not.toBe('authenticator')
     })
 
-    it('does not classify "low-code app" as authenticator', () => {
-      // The `(?<!low-)` lookbehind blocks `low-code` from matching the
-      // `code[-\s]?generator` pattern. Test exercises that guard directly
-      // without introducing a separate unguarded `code generator` mention.
+    it('does not classify "low-code generator app" as authenticator', () => {
+      // Exercises the `(?<!low-)` lookbehind: the text contains the exact
+      // `code generator app` substring the regex looks for, but preceded
+      // by `low-` it must be rejected.
       const result = classifyDeliveryChannel(
-        createSources('Build apps with our low-code app builder.')
+        createSources('Try our low-code generator app for visual development.')
+      )
+      expect(result.channel).not.toBe('authenticator')
+    })
+
+    it('does not classify bare "code generator" without app as authenticator', () => {
+      // `app` is required after `code generator`. Bare phrases like
+      // "AI code generator" / "free code generator" are common dev-tool
+      // marketing copy and must not trigger the auth gate.
+      const result = classifyDeliveryChannel(
+        createSources('Use our AI code generator to write boilerplate.')
       )
       expect(result.channel).not.toBe('authenticator')
     })
@@ -579,6 +590,17 @@ describe('signal-classifier', () => {
       // because the auth-anchor co-occurrence requires `uygulama` nearby.
       const result = classifyDeliveryChannel(
         createSources("Ücretsiz QR Kod Oluşturucu — herhangi bir URL'den QR kod oluşturun.")
+      )
+      expect(result.channel).not.toBe('authenticator')
+    })
+
+    it('does not classify Turkish App Store QR generator app title as authenticator', () => {
+      // Codex round 3 P1: real App Store title "Me QR - QR Kod Oluşturucu
+      // Uygulaması" was matching because `Kod Oluşturucu` + `Uygulaması`
+      // co-occurred. The QR-prefix lookbehind on the `kod oluşturucu` arm
+      // rejects this case.
+      const result = classifyDeliveryChannel(
+        createSources('Me QR - QR Kod Oluşturucu Uygulaması')
       )
       expect(result.channel).not.toBe('authenticator')
     })

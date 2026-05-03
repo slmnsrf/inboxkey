@@ -195,7 +195,9 @@ const AUTHENTICATOR_PATTERNS = [
   // English: "code generator app" with FP guard.
   // Matches X TOTP copy ("Generate a code using your code generator app")
   // while blocking known FP qualifiers via fixed-length negative lookbehinds.
-  /(?<!qr\s)(?<!qr-)(?<!barcode\s)(?<!barcode-)(?<!promo\s)(?<!promo-)(?<!coupon\s)(?<!coupon-)(?<!source\s)(?<!source-)(?<!low-)(?<!no-)\bcode[-\s]?generator(?:[-\s]?app)?\b/i,
+  // `app` is REQUIRED — bare "code generator" is a common non-auth phrase
+  // ("AI code generator", "visual code generator", "free code generator").
+  /(?<!qr\s)(?<!qr-)(?<!barcode\s)(?<!barcode-)(?<!promo\s)(?<!promo-)(?<!coupon\s)(?<!coupon-)(?<!source\s)(?<!source-)(?<!low-)(?<!no-)\bcode[-\s]?generator[-\s]+app\b/i,
 
   // Spanish
   /\b(?:aplicaci[oó]n\s*de\s*autenticaci[oó]n|app\s*de\s*autenticaci[oó]n)\b/i,
@@ -231,14 +233,22 @@ const AUTHENTICATOR_PATTERNS = [
   // JS \b is ASCII-only; Turkish dotless ı is a non-word char, breaking
   // boundaries on words like `doğrulayıcı`. Strategy: require co-occurrence
   // of `uygulama*` (prefix) within ~60 chars of an authentication anchor.
-  // Anchors:
-  //   kod oluşturucu (X's exact phrasing), doğrulayıcı, kimlik doğrulama
-  //   (bigram, NOT bare `kimlik` which also means "identity"), 2FA, TOTP,
-  //   generic English `authenticator` (used in Turkish login UIs), and
-  //   brand names. Standalone `kod oluşturucu` is intentionally excluded —
-  //   Turkish QR-code generator pages use it outside auth contexts.
-  /(?:kod\s*oluşturucu|doğrulayıcı|kimlik\s*doğrulama|2fa|totp|authenticator|google\s*authenticator|microsoft\s*authenticator|authy|duo\s*mobile)[\s\S]{0,60}uygulama/i,
-  /uygulama[\s\S]{0,60}(?:kod\s*oluşturucu|doğrulayıcı|kimlik\s*doğrulama|2fa|totp|authenticator|google\s*authenticator|microsoft\s*authenticator|authy|duo\s*mobile)/i,
+  // Anchors split into two groups:
+  //   (A) safe anchors: doğrulayıcı, kimlik doğrulama (bigram, NOT bare
+  //       `kimlik` which also means "identity"), 2FA, TOTP, generic English
+  //       `authenticator` (used in Turkish login UIs), and brand names.
+  //   (B) FP-prone anchor `kod oluşturucu` — used by Turkish QR/promo/coupon
+  //       generator apps (e.g. App Store title "Me QR - QR Kod Oluşturucu
+  //       Uygulaması"). Guarded with negative lookbehinds for QR / karekod /
+  //       barkod / promosyon / kupon qualifiers.
+
+  // Group A (safe anchors, bidirectional)
+  /(?:doğrulayıcı|kimlik\s*doğrulama|2fa|totp|authenticator|google\s*authenticator|microsoft\s*authenticator|authy|duo\s*mobile)[\s\S]{0,60}uygulama/i,
+  /uygulama[\s\S]{0,60}(?:doğrulayıcı|kimlik\s*doğrulama|2fa|totp|authenticator|google\s*authenticator|microsoft\s*authenticator|authy|duo\s*mobile)/i,
+
+  // Group B (kod oluşturucu, guarded against QR/promo/coupon contexts)
+  /(?<!qr\s)(?<!qr-)(?<!karekod\s)(?<!karekod-)(?<!barkod\s)(?<!barkod-)(?<!promosyon\s)(?<!promosyon-)(?<!kupon\s)(?<!kupon-)kod\s*oluşturucu[\s\S]{0,60}uygulama/i,
+  /uygulama[\s\S]{0,60}(?<!qr\s)(?<!qr-)(?<!karekod\s)(?<!karekod-)(?<!barkod\s)(?<!barkod-)(?<!promosyon\s)(?<!promosyon-)(?<!kupon\s)(?<!kupon-)kod\s*oluşturucu/i,
 
   // Polish
   /\b(?:aplikacja\s*uwierzytelniaj[aą]ca|aplikacja\s*do\s*uwierzytelniania)\b/i,
