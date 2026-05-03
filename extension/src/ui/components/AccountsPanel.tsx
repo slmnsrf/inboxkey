@@ -505,7 +505,22 @@ export function AccountsPanel() {
   if (mailboxes && mailboxes.length === 0) {
     return (
       <>
-        <FirstRunWelcome onProviderSelect={handleProviderSelect} onInstallBridge={() => setShowBridgeGuide(true)} />
+        <FirstRunWelcome
+          onProviderSelect={handleProviderSelect}
+          onInstallBridge={() => {
+            // If the bridge helper is already installed and reachable
+            // (e.g., a returning dev profile that removed its only account
+            // but kept the bridge running), the primary CTA should skip
+            // the install guide and go straight to "add a mailbox via
+            // IMAP." Falling through to the bridge install wizard would
+            // be a dead-end loop.
+            if (bridgeStatus === 'connected') {
+              setShowAddImapModal(true)
+            } else {
+              setShowBridgeGuide(true)
+            }
+          }}
+        />
         <AddImapAccountModal
           isOpen={showAddImapModal}
           onConfirm={handleImapAdded}
