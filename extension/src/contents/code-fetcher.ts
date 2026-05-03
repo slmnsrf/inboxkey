@@ -4,7 +4,7 @@
  */
 
 export const config = {
-  matches: ["https://*/*", "http://*/*"],
+  matches: ["https://*/*"],
 }
 
 import type { StoredCode } from '@/lib/storage/schema'

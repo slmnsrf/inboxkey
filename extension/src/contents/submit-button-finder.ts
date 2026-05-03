@@ -10,7 +10,7 @@
  */
 
 export const config = {
-  matches: ["https://*/*", "http://*/*"],
+  matches: ["https://*/*"],
 }
 
 import { matchesSafePattern, matchesDangerousPattern } from '@/lib/i18n/submit-button-patterns'

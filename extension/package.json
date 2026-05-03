@@ -1,7 +1,7 @@
 {
   "name": "inboxkey",
   "displayName": "InboxKey",
-  "version": "0.0.1",
+  "version": "1.0.0",
   "description": "Privacy-first email code autofill and magic-link opener for Chrome",
   "author": "SelmanSeref",
   "license": "PolyForm-Noncommercial-1.0.0",
