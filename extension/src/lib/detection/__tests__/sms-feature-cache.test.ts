@@ -61,10 +61,11 @@ describe('sms-feature-cache', () => {
       mockGetMailboxes.mockResolvedValue([
         {
           id: '22222222-2222-4222-a222-222222222222',
-          providerId: 'gmail',
-          email: 'user@gmail.com',
-          accessToken: 'tok',
-          tokenExpiresAt: Date.now() + 3600000,
+          providerId: 'imap-bridge',
+          email: 'user@example.com',
+          imapServer: 'imap.example.com',
+          imapPort: 993,
+          imapAccountId: 'acc_test',
           addedAt: Date.now(),
           lastSyncedAt: 0,
         },
@@ -88,10 +89,11 @@ describe('sms-feature-cache', () => {
       mockGetMailboxes.mockResolvedValue([
         {
           id: '44444444-4444-4444-a444-444444444444',
-          providerId: 'gmail',
-          email: 'user@gmail.com',
-          accessToken: 'tok',
-          tokenExpiresAt: Date.now() + 3600000,
+          providerId: 'imap-bridge',
+          email: 'user@example.com',
+          imapServer: 'imap.example.com',
+          imapPort: 993,
+          imapAccountId: 'acc_test',
           addedAt: Date.now(),
           lastSyncedAt: 0,
         },

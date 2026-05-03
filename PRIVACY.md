@@ -1,6 +1,6 @@
 # Privacy Policy
 
-**Last Updated: April 12, 2026**
+**Last Updated: 2026-05-03**
 
 InboxKey is a local-only browser extension. No servers are operated, no data is collected, and no information leaves the device. This document describes what data is accessed, where it is stored, and how it can be removed.
 
@@ -8,15 +8,9 @@ InboxKey is a local-only browser extension. No servers are operated, no data is 
 
 InboxKey accesses email and SMS data solely to detect verification codes and magic links. All processing happens on the device. Nothing is transmitted externally.
 
-### Gmail (read-only)
-
-When a Gmail account is connected, InboxKey uses Chrome's built-in OAuth system (`chrome.identity.getAuthToken()`) to request read-only access under the `gmail.readonly` scope. Only recent messages (approximately the last 20 minutes) are queried. InboxKey cannot send, delete, or modify emails, and does not access contacts, calendar, or files.
-
-Authentication is handled entirely by Chrome via the Identity API with PKCE. No client secrets are stored in the extension. Token caching and refresh are managed by Chrome automatically.
-
 ### IMAP (via InboxBridge)
 
-For providers like Yahoo Mail, ProtonMail Bridge, Yandex Mail, and custom IMAP servers, InboxKey communicates with InboxBridge, a separate companion app that runs locally on the device. InboxBridge connects directly to the mail server. There is no relay, proxy, or backend operated by InboxKey.
+InboxKey communicates with InboxBridge, a separate companion app that runs locally on the device. InboxBridge connects directly to the mail server using IMAP. All email providers, including Gmail, connect through this path. There is no relay, proxy, or backend operated by InboxKey.
 
 IMAP credentials are stored in the operating system keychain (Windows Credential Manager, macOS Keychain, or Linux Secret Service), not in the browser.
 
@@ -60,11 +54,9 @@ InboxKey requests the following Chrome permissions:
 
 | Permission | Purpose |
 |-----------|---------|
-| `gmail.readonly` | Read-only access to Gmail messages for code detection |
 | `storage` | Local extension settings and cached state |
 | `alarms` | Session polling timers (MV3 service worker keepalive) |
 | `tabs` | Opening Google Messages tab for SMS, opening settings pages |
-| `identity` | Chrome OAuth for Gmail authentication |
 | `notifications` | Informing the user about extension state (e.g., after an update) |
 | `nativeMessaging` | Communication with InboxBridge for IMAP support |
 | `scripting` | Reading Google Messages conversation previews for SMS codes |

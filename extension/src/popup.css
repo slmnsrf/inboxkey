@@ -620,10 +620,6 @@ body {
   white-space: nowrap;
 }
 
-.badge-gmail {
-  background: var(--color-gmail);
-}
-
 .badge-active {
   background: var(--color-success);
 }
@@ -642,11 +638,6 @@ body {
   background: var(--color-bg-secondary);
   color: var(--color-text-secondary);
   white-space: nowrap;
-}
-
-.provider-badge[data-provider="gmail"] {
-  background: var(--color-gmail);
-  color: white;
 }
 
 /* ===========================
@@ -720,21 +711,6 @@ body {
 
 .btn-danger:focus-visible {
   outline: var(--focus-ring-width) solid var(--color-error);
-  outline-offset: var(--focus-ring-offset);
-}
-
-/* Provider-specific buttons */
-.btn-gmail {
-  background: var(--color-gmail);
-  color: white;
-}
-
-.btn-gmail:hover:not(:disabled) {
-  background: var(--color-gmail-hover);
-}
-
-.btn-gmail:focus-visible {
-  outline: var(--focus-ring-width) solid var(--color-gmail);
   outline-offset: var(--focus-ring-offset);
 }
 

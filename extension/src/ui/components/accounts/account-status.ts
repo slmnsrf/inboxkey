@@ -12,30 +12,19 @@ export interface AccountStatusResult {
 }
 
 interface AccountData {
-  tokenExpiresAt?: number
   lastSyncedAt?: number
   lastSyncError?: string
   isSyncing?: boolean
 }
 
 /**
- * Determine account status based on token expiry and sync errors
+ * Determine account status based on sync errors
  *
  * Binary status system:
- * 1. Offline (token expired or sync error)
+ * 1. Offline (sync error)
  * 2. Online (healthy state)
  */
 export function getAccountStatus(account: AccountData): AccountStatusResult {
-  const now = Date.now()
-
-  // Warning condition (AMBER - predictable, not a failure)
-  if (account.tokenExpiresAt && account.tokenExpiresAt < now) {
-    return {
-      status: 'warning',
-      label: t('status_warning_token_expired'),
-    }
-  }
-
   // Offline condition (RED - sync failures)
   if (account.lastSyncError) {
     return {

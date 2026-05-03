@@ -1,45 +1,44 @@
 import React from 'react'
-import { ArrowRight, KeyRound, Server } from 'lucide-react'
+import { ArrowRight, Server } from 'lucide-react'
 
 import { t } from '@/lib/i18n'
 import { ProviderLogo } from './ProviderLogo'
 
-type Provider = 'gmail' | 'imap-bridge' | 'google-messages'
+type Provider = 'imap-bridge' | 'google-messages'
 
 interface FirstRunWelcomeProps {
   onProviderSelect: (provider: Provider) => void
+  onInstallBridge: () => void
 }
 
-export function FirstRunWelcome({ onProviderSelect }: FirstRunWelcomeProps) {
+export function FirstRunWelcome({ onProviderSelect, onInstallBridge }: FirstRunWelcomeProps) {
   return (
     <section className="firstrun">
       {/* Hero */}
       <header className="firstrun__hero">
         <div className="firstrun__icon">
-          <KeyRound size={28} aria-hidden="true" />
+          <Server size={28} aria-hidden="true" />
         </div>
         <h2 className="firstrun__headline">{t('firstrun_headline')}</h2>
         <p className="firstrun__sub">{t('firstrun_sub')}</p>
       </header>
 
-      {/* Primary: Gmail */}
+      {/* Primary: InboxBridge install */}
       <div className="firstrun__providers">
-        <button
-          className="provider-card provider-card--primary"
-          onClick={() => onProviderSelect('gmail')}
-          type="button"
-        >
-          <span className="provider-card__icon provider-card__icon--gmail">
-            <ProviderLogo provider="gmail" size={30} />
-          </span>
-          <div className="provider-card__body">
-            <h3 className="provider-card__title">{t('firstrun_gmail_title')}</h3>
-            <p className="provider-card__detail">{t('firstrun_gmail_detail')}</p>
+        <div className="firstrun-card firstrun-card--primary">
+          <div className="firstrun-card__icon">
+            <Server size={48} aria-hidden="true" />
           </div>
-          <span className="provider-card__arrow" aria-hidden="true">
-            <ArrowRight size={20} />
-          </span>
-        </button>
+          <h3 className="firstrun-card__title">{t('firstrun_bridge_title')}</h3>
+          <p className="firstrun-card__detail">{t('firstrun_bridge_detail')}</p>
+          <button
+            type="button"
+            className="firstrun-card__cta"
+            onClick={onInstallBridge}
+          >
+            {t('firstrun_bridge_cta')}
+          </button>
+        </div>
       </div>
 
       {/* Alternatives heading */}

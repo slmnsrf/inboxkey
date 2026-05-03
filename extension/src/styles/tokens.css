@@ -100,8 +100,6 @@
      COLORS - Provider Badges (WCAG AA)
      ======================================== */
 
-  --color-gmail: #ea4335;  /* Gmail red - Contrast: 4.5:1 on white (WCAG AA compliant) */
-  --color-gmail-hover: #d53a2d;
   --color-imap: var(--color-gray-600);  /* Future IMAP neutral */
 
   /* ========================================

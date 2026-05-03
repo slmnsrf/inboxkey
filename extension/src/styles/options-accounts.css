@@ -816,75 +816,6 @@
   text-decoration: underline;
 }
 
-/* Gmail limit explanation modal */
-.gmail-limit-overlay {
-  position: fixed;
-  inset: 0;
-  background: var(--color-bg-overlay);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: var(--z-modal);
-}
-
-.gmail-limit-modal {
-  background: var(--surface-card);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-xl);
-  width: 440px;
-  max-width: 90vw;
-  max-height: 80vh;
-  overflow-y: auto;
-}
-
-.gmail-limit-modal__header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: var(--space-5) var(--space-5) var(--space-3);
-}
-
-.gmail-limit-modal__title {
-  margin: 0;
-  font-size: var(--font-size-lg);
-  font-weight: var(--font-weight-semibold);
-  color: var(--color-text-primary);
-}
-
-.gmail-limit-modal__close {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  border: none;
-  background: transparent;
-  color: var(--color-text-tertiary);
-  cursor: pointer;
-  border-radius: var(--radius-md);
-}
-
-.gmail-limit-modal__close:hover {
-  background: var(--color-bg-secondary);
-  color: var(--color-text-primary);
-}
-
-.gmail-limit-modal__body {
-  padding: 0 var(--space-5) var(--space-5);
-}
-
-.gmail-limit-modal__body p {
-  margin: 0 0 var(--space-3);
-  font-size: var(--font-size-sm);
-  color: var(--color-text-secondary);
-  line-height: var(--line-height-relaxed);
-}
-
-.gmail-limit-modal__body p:last-child {
-  margin-bottom: 0;
-}
-
 /* ===========================
    REMOVE CONFIRMATION MODAL
    =========================== */
@@ -969,11 +900,6 @@
   height: 32px;
   border-radius: var(--radius-md);
   flex-shrink: 0;
-}
-
-.add-account__option-icon--gmail {
-  background: rgba(234, 67, 53, 0.06);
-  color: var(--color-gmail);
 }
 
 .add-account__option-icon--imap {
@@ -1182,11 +1108,6 @@
   flex-shrink: 0;
 }
 
-.provider-card__icon--gmail {
-  background: rgba(234, 67, 53, 0.06);
-  color: var(--color-gmail);
-}
-
 .provider-card__icon--imap {
   background: var(--color-bg-secondary);
   color: var(--color-text-secondary);
@@ -1341,10 +1262,6 @@
   width: 8px;
   height: 8px;
   border-radius: var(--radius-full);
-}
-
-.recent-row__provider-dot--gmail {
-  background: var(--color-gmail);
 }
 
 .recent-row__provider-dot--imap {

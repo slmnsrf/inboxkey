@@ -333,27 +333,6 @@ describe('Background Service Worker - Message Routing', () => {
       expect(result).toBe(true) // Async response
     })
 
-    it('should route STORE_MAILBOX to handleStoreMailbox', async () => {
-      await import('../../src/background/index')
-
-      const listener = mockOnMessageListeners[0]
-      const msg = {
-        type: 'STORE_MAILBOX',
-        provider: 'gmail',
-        email: 'test@gmail.com',
-        tokens: {
-          accessToken: 'access-token',
-          refreshToken: 'refresh-token',
-          expiresIn: 3600,
-        },
-      }
-      const sender = { tab: { id: 1 } }
-
-      const result = listener(msg, sender, sendResponseSpy)
-
-      expect(result).toBe(true)
-    })
-
     it('should route REMOVE_MAILBOX to handleRemoveMailbox', async () => {
       await import('../../src/background/index')
 
@@ -403,112 +382,6 @@ describe('Background Service Worker - Message Routing', () => {
         error: 'FETCH_CODE_DEPRECATED',
         codes: [],
       })
-    })
-  })
-
-  describe('STORE_MAILBOX Handler', () => {
-    it('should store a gmail mailbox successfully', async () => {
-      await import('../../src/background/index')
-
-      const listener = mockOnMessageListeners[0]
-      const msg = {
-        type: 'STORE_MAILBOX',
-        provider: 'gmail',
-        email: 'user@gmail.com',
-        tokens: {
-          accessToken: 'access-123',
-          refreshToken: 'refresh-456',
-          expiresIn: 3600,
-        },
-      }
-      const sender = { tab: { id: 1 } }
-
-      const result = listener(msg, sender, sendResponseSpy)
-      expect(result).toBe(true) // Async response
-
-      await new Promise(resolve => setTimeout(resolve, 50))
-
-      expect(sendResponseSpy).toHaveBeenCalledWith(
-        expect.objectContaining({
-          success: true,
-          mailbox: expect.objectContaining({ email: 'user@gmail.com' }),
-        })
-      )
-    })
-
-    it('should store an IMAP mailbox via STORE_IMAP_MAILBOX', async () => {
-      await import('../../src/background/index')
-
-      const listener = mockOnMessageListeners[0]
-      const msg = {
-        type: 'STORE_IMAP_MAILBOX',
-        email: 'user@example.com',
-        server: 'imap.example.com',
-        port: 993,
-        accountId: 'acct-1',
-      }
-      const sender = { tab: { id: 1 } }
-
-      const result = listener(msg, sender, sendResponseSpy)
-      expect(result).toBe(true)
-
-      await new Promise(resolve => setTimeout(resolve, 50))
-
-      expect(sendResponseSpy).toHaveBeenCalledWith(
-        expect.objectContaining({
-          success: true,
-          mailbox: expect.objectContaining({ email: 'user@example.com' }),
-        })
-      )
-    })
-
-    it('should remove a mailbox via REMOVE_MAILBOX', async () => {
-      await import('../../src/background/index')
-
-      const listener = mockOnMessageListeners[0]
-      const msg = { type: 'REMOVE_MAILBOX', mailboxId: 'mailbox-abc' }
-      const sender = { tab: { id: 1 } }
-
-      const result = listener(msg, sender, sendResponseSpy)
-      expect(result).toBe(true)
-
-      await new Promise(resolve => setTimeout(resolve, 50))
-
-      expect(sendResponseSpy).toHaveBeenCalledWith({ success: true })
-    })
-
-    it('should handle storage errors during STORE_MAILBOX', async () => {
-      mockStorageFactory.create.mockReturnValueOnce({
-        getMailboxes: vi.fn().mockResolvedValue([]),
-        getRecentCodes: vi.fn().mockResolvedValue([]),
-        addMailbox: vi.fn().mockRejectedValue(new Error('Storage full')),
-        removeMailbox: vi.fn(),
-        clearAllCodes: vi.fn(),
-        getSettings: vi.fn().mockResolvedValue({}),
-        setDomainPreference: vi.fn(),
-      })
-
-      await import('../../src/background/index')
-
-      const listener = mockOnMessageListeners[0]
-      const msg = {
-        type: 'STORE_MAILBOX',
-        provider: 'gmail',
-        email: 'test@gmail.com',
-        tokens: { accessToken: 'a', refreshToken: 'r', expiresIn: 3600 },
-      }
-      const sender = { tab: { id: 1 } }
-
-      listener(msg, sender, sendResponseSpy)
-
-      await new Promise(resolve => setTimeout(resolve, 50))
-
-      expect(sendResponseSpy).toHaveBeenCalledWith(
-        expect.objectContaining({
-          success: false,
-          error: 'Storage full',
-        })
-      )
     })
   })
 
@@ -622,7 +495,7 @@ describe('Background Service Worker - Message Routing', () => {
 
   describe('Error Boundaries', () => {
     it('should not crash worker on message handler error', async () => {
-      // Make StorageFactory.create throw for STORE_MAILBOX
+      // Make StorageFactory.create throw for REMOVE_MAILBOX
       mockStorageFactory.create.mockImplementationOnce(() => {
         throw new Error('Storage error')
       })
@@ -631,10 +504,8 @@ describe('Background Service Worker - Message Routing', () => {
 
       const listener = mockOnMessageListeners[0]
       const msg = {
-        type: 'STORE_MAILBOX',
-        provider: 'gmail',
-        email: 'test@gmail.com',
-        tokens: { accessToken: 'a', refreshToken: 'r', expiresIn: 3600 },
+        type: 'REMOVE_MAILBOX',
+        mailboxId: 'mailbox-abc',
       }
       const sender = { tab: { id: 1 } }
 
@@ -757,19 +628,16 @@ describe('Background Service Worker - Message Routing', () => {
   })
 
   describe('Mailbox Management', () => {
-    it('should store mailbox and respond with id and email', async () => {
+    it('should store IMAP mailbox and respond with id and email', async () => {
       await import('../../src/background/index')
 
       const listener = mockOnMessageListeners[0]
       const msg = {
-        type: 'STORE_MAILBOX',
-        provider: 'gmail',
-        email: 'test@gmail.com',
-        tokens: {
-          accessToken: 'token',
-          refreshToken: 'refresh',
-          expiresIn: 3600,
-        },
+        type: 'STORE_IMAP_MAILBOX',
+        email: 'test@example.com',
+        server: 'imap.example.com',
+        port: 993,
+        accountId: 'acct-1',
       }
       const sender = { tab: { id: 1 } }
 
@@ -780,7 +648,7 @@ describe('Background Service Worker - Message Routing', () => {
       expect(sendResponseSpy).toHaveBeenCalledWith(
         expect.objectContaining({
           success: true,
-          mailbox: expect.objectContaining({ email: 'test@gmail.com' }),
+          mailbox: expect.objectContaining({ email: 'test@example.com' }),
         })
       )
     })

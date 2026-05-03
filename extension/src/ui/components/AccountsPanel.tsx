@@ -18,14 +18,10 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useToast } from '@/ui/contexts/ToastContext'
 import { t, timeAgo } from '@/lib/i18n'
 import type { PopupCacheCode } from '@/shared/popup-messages'
-import { authenticateGmail } from '@/lib/providers/gmail/chrome-auth'
-import { fetchGmailProfile } from '@/lib/providers/gmail/profile'
-import { isGmailConfigured } from '@/lib/providers/gmail/config'
 import { getNativeClient } from '@/lib/native-messaging'
 import { checkCompatibility, getUpdateUrl, type CompatibilityStatus } from '@/lib/native-messaging/version-check'
 import { RECOMMENDED_INBOXBRIDGE_VERSION } from '@/lib/constants'
 import { getAccountStatus } from './accounts/account-status'
-import { getConnectionErrorMessage } from './accounts/shared/connection-errors'
 import { AddImapAccountModal } from './accounts/AddImapAccountModal'
 import { GoogleMessagesPairingModal } from './accounts/GoogleMessagesPairingModal'
 import { BridgeInstallGuide } from './accounts/BridgeInstallGuide'
@@ -34,7 +30,6 @@ import { PageBanner } from './options/PageBanner'
 import { AddAccountDropdown } from './options/AddAccountDropdown'
 import { FirstRunWelcome } from './options/FirstRunWelcome'
 import { AccountRowUnified } from './options/AccountRowUnified'
-import { ProviderLogo } from './options/ProviderLogo'
 import { RecentActivity, type RecentCode } from './options/RecentActivity'
 
 /* ---------------------------------------------------------------
@@ -45,18 +40,17 @@ import { RecentActivity, type RecentCode } from './options/RecentActivity'
 
 interface MailboxInfo {
   id: string
-  providerId: 'gmail' | 'imap-bridge' | 'google-messages'
+  providerId: 'imap-bridge' | 'google-messages'
   email: string
   addedAt: number
   lastSyncedAt: number
   lastSyncError?: string
-  tokenExpiresAt?: number
   imapServer?: string
   imapPort?: number
   gmPhoneNumber?: string
 }
 
-type Provider = 'gmail' | 'imap-bridge' | 'google-messages'
+type Provider = 'imap-bridge' | 'google-messages'
 
 /* ---------------------------------------------------------------
    Helper: compute HealthMode from mailbox list
@@ -65,7 +59,6 @@ type Provider = 'gmail' | 'imap-bridge' | 'google-messages'
 function computeHealthMode(mailboxes: MailboxInfo[]): HealthMode {
   const problems = mailboxes.filter((m) => {
     const s = getAccountStatus({
-      tokenExpiresAt: m.tokenExpiresAt,
       lastSyncedAt: m.lastSyncedAt,
       lastSyncError: m.lastSyncError,
     })
@@ -99,12 +92,10 @@ function sortByHealth(mailboxes: MailboxInfo[]): MailboxInfo[] {
   const priority: Record<string, number> = { offline: 0, warning: 1, online: 2 }
   return [...mailboxes].sort((a, b) => {
     const sa = getAccountStatus({
-      tokenExpiresAt: a.tokenExpiresAt,
       lastSyncedAt: a.lastSyncedAt,
       lastSyncError: a.lastSyncError,
     })
     const sb = getAccountStatus({
-      tokenExpiresAt: b.tokenExpiresAt,
       lastSyncedAt: b.lastSyncedAt,
       lastSyncError: b.lastSyncError,
     })
@@ -118,7 +109,6 @@ function sortByHealth(mailboxes: MailboxInfo[]): MailboxInfo[] {
 
 function buildMetaText(mailbox: MailboxInfo): string {
   const providerLabel =
-    mailbox.providerId === 'gmail' ? 'Gmail' :
     mailbox.providerId === 'google-messages' ? 'Google Messages' :
     mailbox.providerId === 'imap-bridge' ? `${mailbox.imapServer || 'IMAP'} (IMAP)` :
     mailbox.providerId
@@ -147,12 +137,6 @@ function getErrorDetail(mailbox: MailboxInfo): string {
   }
 
   // Provider-specific auth errors
-  if (mailbox.providerId === 'gmail') {
-    if (err.includes('auth') || err.includes('401') || err.includes('token') || err.includes('credentials')) {
-      return t('accounts_gmail_token_expired')
-    }
-    return mailbox.lastSyncError || t('toast_connect_failed')
-  }
   if (mailbox.providerId === 'google-messages') {
     return t('accounts_gm_session_expired_meta')
   }
@@ -186,7 +170,7 @@ function mapToRecentCode(c: PopupCacheCode): RecentCode {
     code: c.code,
     domain: c.senderETLD || c.source.split('@').pop()?.split(' ')[0] || '',
     email: c.to || c.from || '',
-    provider: c.providerId || 'gmail',
+    provider: c.providerId || 'imap-bridge',
     timeAgo: c.receivedAt ? timeAgo(c.receivedAt) : '',
   }
 }
@@ -231,9 +215,6 @@ export function AccountsPanel() {
 
   /* ---- Bridge install guide state (shown as inline section) ---- */
   const [showBridgeGuide, setShowBridgeGuide] = useState(false)
-
-  /* ---- Gmail connecting state ---- */
-  const [gmailConnecting, setGmailConnecting] = useState(false)
 
   /* ---- Bridge state (for IMAP provider) ---- */
   const [bridgeStatus, setBridgeStatus] = useState<'checking' | 'connected' | 'disconnected'>('checking')
@@ -334,65 +315,13 @@ export function AccountsPanel() {
     return sortByHealth(mailboxes)
   }, [mailboxes])
 
-  const gmailConnected = mailboxes?.some(m => m.providerId === 'gmail') ?? false
   const gmConnected = mailboxes?.some(m => m.providerId === 'google-messages') ?? false
   const imapBlocked = bridgeCompat !== null && !bridgeCompat.compatible
 
   /* ==================== Provider handlers ==================== */
 
-  /* ---- Gmail connect ---- */
-  const handleConnectGmail = useCallback(async () => {
-    try {
-      if (!isGmailConfigured()) {
-        showToast(t('toast_connect_failed'), 'error')
-        return
-      }
-
-      setGmailConnecting(true)
-      const tokens = await authenticateGmail()
-      const email = await fetchGmailProfile(tokens.accessToken)
-
-      // Check if Gmail is already connected (single-slot)
-      const existing = mailboxes?.find((m) => m.providerId === 'gmail')
-      if (existing) {
-        if (email !== existing.email) {
-          showToast(t('accounts_gmail_reconnect_mismatch'), 'error')
-          setGmailConnecting(false)
-          return
-        }
-        await chrome.runtime.sendMessage({
-          type: 'REMOVE_MAILBOX',
-          mailboxId: existing.id,
-          skipRevoke: true,
-        })
-      }
-
-      const storeResponse = await chrome.runtime.sendMessage({
-        type: 'STORE_MAILBOX',
-        provider: 'gmail',
-        email,
-        tokens,
-      })
-
-      if (storeResponse.success) {
-        await loadMailboxes()
-      } else {
-        showToast(storeResponse.error || t('toast_connect_failed'), 'error')
-      }
-    } catch (error) {
-      const msg = getConnectionErrorMessage(error)
-      if (msg === t('toast_oauth_cancelled')) {
-        setOauthCancelled(true)
-      }
-    } finally {
-      setGmailConnecting(false)
-    }
-  }, [mailboxes, loadMailboxes])
-
   const handleProviderSelect = useCallback(async (provider: Provider) => {
-    if (provider === 'gmail') {
-      await handleConnectGmail()
-    } else if (provider === 'imap-bridge') {
+    if (provider === 'imap-bridge') {
       // Always open IMAP modal first; it shows bridge-required banner if needed
       setReconnectingMailboxId(null)
       setImapPrefillData(undefined)
@@ -401,7 +330,7 @@ export function AccountsPanel() {
       setGmPairingPhone(undefined)
       setShowGMPairing(true)
     }
-  }, [handleConnectGmail])
+  }, [])
 
   /* ---- Bridge setup from IMAP modal ---- */
   const handleBridgeSetup = useCallback(() => {
@@ -412,9 +341,7 @@ export function AccountsPanel() {
 
   /* ---- Reconnect handler ---- */
   const handleReconnect = useCallback((mailbox: MailboxInfo) => {
-    if (mailbox.providerId === 'gmail') {
-      void handleConnectGmail()
-    } else if (mailbox.providerId === 'imap-bridge') {
+    if (mailbox.providerId === 'imap-bridge') {
       setReconnectingMailboxId(mailbox.id)
       setImapPrefillData({
         email: mailbox.email,
@@ -427,7 +354,7 @@ export function AccountsPanel() {
       setGmPairingPhone(mailbox.gmPhoneNumber)
       setShowGMPairing(true)
     }
-  }, [handleConnectGmail])
+  }, [])
 
   /* ---- Test connection ---- */
   const handleTest = useCallback(async (mailbox: MailboxInfo) => {
@@ -483,11 +410,7 @@ export function AccountsPanel() {
 
   /* ---- Edit / Change account ---- */
   const handleEdit = useCallback(async (mailbox: MailboxInfo) => {
-    if (mailbox.providerId === 'gmail') {
-      // Gmail: disconnect current, then re-auth to allow picking a different Google account
-      await handleRemove(mailbox)
-      await handleConnectGmail()
-    } else if (mailbox.providerId === 'google-messages') {
+    if (mailbox.providerId === 'google-messages') {
       // GM: open pairing modal pre-filled with existing phone (reconnect flow, keeps entry)
       setGmPairingPhone(mailbox.gmPhoneNumber)
       setShowGMPairing(true)
@@ -502,7 +425,7 @@ export function AccountsPanel() {
       })
       setShowAddImapModal(true)
     }
-  }, [handleConnectGmail, handleRemove])
+  }, [])
 
   /* ---- IMAP modal confirm ---- */
   const handleImapAdded = useCallback(async (accountData: {
@@ -582,7 +505,7 @@ export function AccountsPanel() {
   if (mailboxes && mailboxes.length === 0) {
     return (
       <>
-        <FirstRunWelcome onProviderSelect={handleProviderSelect} />
+        <FirstRunWelcome onProviderSelect={handleProviderSelect} onInstallBridge={() => setShowBridgeGuide(true)} />
         <AddImapAccountModal
           isOpen={showAddImapModal}
           onConfirm={handleImapAdded}
@@ -684,32 +607,14 @@ export function AccountsPanel() {
           onSelect={handleProviderSelect}
           imapDisabled={imapBlocked}
           imapDisabledReason={imapBlocked ? t('bridge_update_required') : undefined}
-          gmailConnected={gmailConnected}
           gmConnected={gmConnected}
         />
       </div>
 
       {/* Unified accounts list */}
       <div className="accounts-list">
-        {/* Gmail connecting row (shown during OAuth flow) */}
-        {gmailConnecting && (
-          <div className="account-row account-row--connecting">
-            <span className="account-row__dot" aria-label={t('health_connecting')} />
-            <span className="account-row__icon">
-              <ProviderLogo provider="gmail" size={18} />
-            </span>
-            <div className="account-row__info">
-              <span className="account-row__email">{t('health_connecting')}</span>
-              <span className="account-row__meta">
-                <span className="connecting-stage">Authenticating</span>
-              </span>
-            </div>
-          </div>
-        )}
-
         {sortedMailboxes.map((mailbox) => {
           const status = getAccountStatus({
-            tokenExpiresAt: mailbox.tokenExpiresAt,
             lastSyncedAt: mailbox.lastSyncedAt,
             lastSyncError: mailbox.lastSyncError,
           })
@@ -739,7 +644,7 @@ export function AccountsPanel() {
               showReconnect={effectiveStatus !== 'online'}
               testing={testingId === mailbox.id}
               testResult={testResult[mailbox.id]}
-              editLabel={mailbox.providerId === 'gmail' ? t('row_change_account') : t('row_edit_credentials')}
+              editLabel={t('row_edit_credentials')}
               onReconnect={() => handleReconnect(mailbox)}
               onTest={() => handleTest(mailbox)}
               onEdit={mailbox.providerId !== 'google-messages' ? () => handleEdit(mailbox) : undefined}

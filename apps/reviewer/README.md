@@ -12,7 +12,7 @@
    - Go to `chrome://extensions/`
    - Enable "Developer mode"
    - Click "Load unpacked"
-   - Select: `/home/dev/work/inboxkey/apps/reviewer/build/chrome-mv3-prod/`
+   - Select: `apps/reviewer/build/chrome-mv3-prod/` (path relative to repo root)
 
 2. **Connect Account:**
    - Click extension icon or go to Settings
@@ -31,6 +31,16 @@
    - Click emails in list to review
    - Label as TRUE/FALSE/MISSED
    - Click "Export JSONL" when done
+
+---
+
+## OAuth Notice (Internal Dev Tool)
+
+This dev tool uses Google OAuth via its own unverified Cloud client. The first time you connect a Google account you will see a "Google hasn't verified this app" warning. That's expected behavior for an internal-only OAuth client and **not** a sign of compromise.
+
+To proceed: click `Advanced` → `Go to InboxKey Reviewer (unsafe)`. The wording is Google's, not ours; the link is safe because the OAuth client_id and the extension itself are open-source and you can verify the source you're running.
+
+This dev tool is not shipped to the Chrome Web Store and intentionally remains unverified to avoid the cost of an annual security assessment for a tool only used internally.
 
 ---
 
@@ -58,7 +68,7 @@ JSONL file format (one JSON object per line):
 ## Building from Source
 
 ```bash
-cd /home/dev/work/inboxkey/apps/reviewer
+cd apps/reviewer
 pnpm install
 pnpm run build
 ```

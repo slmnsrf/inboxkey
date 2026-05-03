@@ -21,9 +21,6 @@ export function validateMailboxBeforeWrite(mailbox: Mailbox): void {
   }
 
   if (mailbox.providerId === 'google-messages') {
-    if (mailbox.accessToken || mailbox.refreshToken || mailbox.tokenExpiresAt) {
-      throw new ValidationError('Google Messages mailboxes cannot have OAuth tokens');
-    }
     if (mailbox.imapServer || mailbox.imapPort || mailbox.imapAccountId) {
       throw new ValidationError('Google Messages mailboxes cannot have IMAP fields');
     }
@@ -31,26 +28,11 @@ export function validateMailboxBeforeWrite(mailbox: Mailbox): void {
       throw new ValidationError('Google Messages mailboxes require gmPhoneNumber');
     }
   } else if (mailbox.providerId === 'imap-bridge') {
-    // IMAP mailboxes must NOT have OAuth tokens
-    if (mailbox.accessToken || mailbox.refreshToken || mailbox.tokenExpiresAt) {
-      throw new ValidationError('IMAP mailboxes cannot have OAuth tokens');
-    }
-
     // IMAP mailboxes MUST have IMAP-specific fields
     if (!mailbox.imapAccountId || !mailbox.imapServer || !mailbox.imapPort) {
       throw new ValidationError('IMAP mailboxes require imapAccountId, imapServer, and imapPort');
     }
   } else {
-    // Gmail OAuth provider
-
-    // Gmail mailboxes must NOT have IMAP fields
-    if (mailbox.imapServer || mailbox.imapPort || mailbox.imapAccountId) {
-      throw new ValidationError('Gmail mailboxes cannot have IMAP fields');
-    }
-
-    // Gmail mailboxes MUST have tokens
-    if (!mailbox.accessToken || !mailbox.tokenExpiresAt) {
-      throw new ValidationError('Gmail mailboxes require accessToken and tokenExpiresAt');
-    }
+    throw new ValidationError(`Unsupported providerId: ${mailbox.providerId}`, 'providerId');
   }
 }

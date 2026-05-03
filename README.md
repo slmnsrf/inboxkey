@@ -49,15 +49,14 @@ Load it in Chrome:
 
 ## Email Support
 
-| Option | Best for | Notes |
-| --- | --- | --- |
-| Gmail | Most users | Direct read-only access. Gmail is limited to one account per Chrome profile because of the Chrome Identity API. |
-| Forward other providers to Gmail | People who already use Yahoo, Outlook, ProtonMail, or similar | Simplest setup if you want everything in one inbox. Filter verification emails and forward them into Gmail. |
-| InboxBridge | Direct IMAP access | Optional local companion app for Yahoo, Fastmail, Outlook IMAP, ProtonMail Bridge, and custom IMAP servers. No remote server is involved. |
+| Provider | Setup |
+| --- | --- |
+| Gmail | InboxBridge + App Password (requires 2-Step Verification enabled). Connect via Add Account → IMAP. |
+| Outlook, Yahoo, Fastmail, ProtonMail Bridge, custom IMAP | InboxBridge + IMAP credentials. |
 
 ## How It Works
 
-1. Connect Gmail, or install InboxBridge if you want direct IMAP access.
+1. Install InboxBridge, then connect your mailbox via IMAP.
 2. Visit a site that asks for a verification code or magic link.
 3. InboxKey detects the field, checks recent verification emails locally, and fills or opens the best match.
 
@@ -68,7 +67,7 @@ Load it in Chrome:
 ## Privacy And Trust
 
 - Local-only processing. InboxKey does not use a backend server.
-- Read-focused email access. Gmail uses the `gmail.readonly` scope, and InboxKey is implemented to scan recent verification emails rather than send or modify mail.
+- Read-only IMAP access. Credentials are stored in the OS keychain by the InboxBridge helper, not in the browser.
 - No analytics, telemetry, ads, or third-party scripts.
 - Source-available under PolyForm Noncommercial 1.0.0. Full source code is public for transparency.
 - Local state uses Chrome `storage.local` and `storage.session`. Additional encryption at rest is planned and not yet shipped.
@@ -87,7 +86,7 @@ No pressure. The extension stays free either way.
 <details>
 <summary><strong>InboxBridge</strong></summary>
 
-InboxBridge is a small companion app for direct IMAP access. Most users do not need it, but it is useful if you want to connect non-Gmail providers without forwarding.
+InboxBridge is the local helper that connects to your mailbox via IMAP. It's required for all email providers including Gmail.
 
 It:
 

@@ -41,6 +41,61 @@ const PLAINTEXT_STORAGE_KEYS = {
 } as const
 
 /**
+ * One-time migration shim: silently drop legacy 'gmail' OAuth records left
+ * over from pre-1.0.0 dev installs. The Gmail OAuth path was removed before
+ * the first public release, so any record with providerId === 'gmail' is
+ * unreachable code from a previous build. Module-level memoized promise so
+ * every call site (including ones inside `mutex.runExclusive`) safely awaits
+ * the same in-flight migration without re-entering a mutex. Errors are
+ * swallowed and the memo reset so a stale record never breaks mailbox reads.
+ *
+ * Note: `'gmail'` remains in the ProviderId union and isValidProviderId
+ * during Phase 1 — Phase 2 (the type-narrowing commit) removes it. Don't
+ * try to narrow the union here; it will cascade-break the rest of Phase 1.
+ *
+ * Remove planned for the version after CWS launch.
+ */
+let gmailMigrationPromise: Promise<void> | null = null
+
+async function ensureGmailMigrationRan(): Promise<void> {
+  if (!gmailMigrationPromise) {
+    gmailMigrationPromise = (async () => {
+      const result = await chrome.storage.local.get(
+        PLAINTEXT_STORAGE_KEYS.MAILBOXES
+      )
+      const raw = (result[PLAINTEXT_STORAGE_KEYS.MAILBOXES] || []) as unknown[]
+      const cleaned = raw.filter(
+        (m) =>
+          !(
+            typeof m === 'object' &&
+            m !== null &&
+            (m as { providerId?: string }).providerId === 'gmail'
+          )
+      )
+      if (cleaned.length !== raw.length) {
+        await chrome.storage.local.set({
+          [PLAINTEXT_STORAGE_KEYS.MAILBOXES]: cleaned,
+        })
+      }
+    })().catch((err) => {
+      // Silently swallow: the migration is a one-time defensive shim.
+      // If it fails (storage quota, transient chrome.storage error), the
+      // legacy record stays put — that's strictly better than breaking
+      // all mailbox reads. Reset the memo so a later call retries.
+      console.warn('[PlaintextStorage] Gmail migration shim failed:', err)
+      gmailMigrationPromise = null
+    })
+  }
+  return gmailMigrationPromise
+}
+
+// Test-only: reset the migration memo between unit tests. Never call
+// this from production code; the underscore prefix flags that intent.
+export function __resetGmailMigrationForTests(): void {
+  gmailMigrationPromise = null
+}
+
+/**
  * Mutex for preventing concurrent storage operations
  */
 export class AsyncMutex {
@@ -116,6 +171,7 @@ export class PlaintextStorage {
   }
 
   async getMailboxes(): Promise<Mailbox[]> {
+    await ensureGmailMigrationRan()
     try {
       const result = await chrome.storage.local.get(
         PLAINTEXT_STORAGE_KEYS.MAILBOXES
@@ -209,10 +265,7 @@ export class PlaintextStorage {
 
     // Provider-specific validation
     if (mailbox.providerId === 'google-messages') {
-      // Google Messages mailbox validation: no OAuth, no IMAP, require gmPhoneNumber
-      if (mailbox.accessToken || mailbox.refreshToken || mailbox.tokenExpiresAt) {
-        throw new ValidationError("Google Messages mailboxes cannot have OAuth tokens", "accessToken")
-      }
+      // Google Messages mailbox validation: no IMAP, require gmPhoneNumber
       if (mailbox.imapServer || mailbox.imapPort || mailbox.imapAccountId) {
         throw new ValidationError("Google Messages mailboxes cannot have IMAP fields", "imapServer")
       }
@@ -231,14 +284,7 @@ export class PlaintextStorage {
         throw new ValidationError("IMAP account ID cannot be empty", "imapAccountId")
       }
     } else {
-      // Gmail OAuth mailbox validation
-      if (!mailbox.accessToken || mailbox.accessToken.length === 0) {
-        throw new ValidationError("Access token cannot be empty", "accessToken")
-      }
-      // Gmail uses chrome.identity; refresh token is optional
-      if (!isValidTimestamp(mailbox.tokenExpiresAt)) {
-        throw new ValidationError("Invalid token expiration timestamp", "tokenExpiresAt")
-      }
+      throw new ValidationError(`Unsupported providerId: ${mailbox.providerId}`, 'providerId')
     }
     if (!isValidTimestamp(mailbox.addedAt)) {
       throw new ValidationError("Invalid addedAt timestamp", "addedAt")

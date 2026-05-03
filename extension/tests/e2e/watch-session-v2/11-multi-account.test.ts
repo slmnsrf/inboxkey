@@ -40,7 +40,7 @@ test.describe('Watch Session V2 - Multi-Account', () => {
         subject: 'Verification',
         code: '111111',
         receivedAt: Date.now() - 5000,
-        provider: 'gmail'
+        provider: 'imap-bridge'
       }),
       // Account 2: Exact match, newer
       createExactDomainEmail('github.com', '222222', 'GitHub verification')
@@ -61,7 +61,7 @@ test.describe('Watch Session V2 - Multi-Account', () => {
 
     // Two exact match codes from different accounts
     const email1 = createExactDomainEmail('github.com', '333333')
-    email1.provider = 'gmail'
+    email1.provider = 'imap-bridge'
     email1.receivedAt = Date.now() - 10000 // 10s ago
 
     const email2 = createExactDomainEmail('github.com', '444444')
@@ -87,7 +87,7 @@ test.describe('Watch Session V2 - Multi-Account', () => {
         from: 'noreply@example.com',
         subject: 'Code from Gmail account',
         code: '555555',
-        provider: 'gmail'
+        provider: 'imap-bridge'
       }),
       createMockEmail({
         from: 'noreply@example.com',

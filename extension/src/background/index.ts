@@ -161,10 +161,6 @@ let messageCount = 0
 let lastMessageTimestamp = 0
 
 console.log("[InboxKey] Service worker started at", new Date().toISOString())
-if (typeof chrome.identity !== "undefined" && chrome.identity?.getRedirectURL) {
-  const resolvedRedirect = chrome.identity.getRedirectURL("oauth2")
-  console.log("[InboxKey] OAuth redirect URI:", resolvedRedirect)
-}
 
 // Auto-open options page on first install
 chrome.runtime.onInstalled.addListener(async (details) => {
@@ -375,11 +371,6 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   }
 
   // Handle mailbox management
-  if (msg.type === "STORE_MAILBOX") {
-    handleStoreMailbox(msg, sendResponse)
-    return true
-  }
-
   if (msg.type === "REMOVE_MAILBOX") {
     handleRemoveMailbox(msg, sendResponse)
     return true
@@ -750,49 +741,6 @@ function getOrCreateContext(tabId: number): WatchPortContext {
 }
 
 /**
- * Handle STORE_MAILBOX requests.
- */
-function handleStoreMailbox(msg: any, sendResponse: (response: any) => void) {
-  ;(async () => {
-    try {
-      // Use StorageFactory to get appropriate storage
-      const storage = await StorageFactory.create()
-
-      // Create mailbox record
-      const mailbox: Mailbox = {
-        id: crypto.randomUUID(),
-        providerId: msg.provider, // 'gmail'
-        email: msg.email,
-        accessToken: msg.tokens.accessToken,
-        refreshToken: msg.tokens.refreshToken,
-        tokenExpiresAt: Date.now() + msg.tokens.expiresIn * 1000,
-        addedAt: Date.now(),
-        lastSyncedAt: 0,
-      }
-
-      await storage.addMailbox(mailbox)
-
-      // Update popup cache with new mailbox count
-      const mailboxes = await storage.getMailboxes()
-      await popupCacheManager.warmCache([], mailboxes.length, mailboxes)
-
-      sendResponse({
-        success: true,
-        mailbox: { id: mailbox.id, email: mailbox.email },
-      })
-    } catch (error) {
-      console.warn("[Background] Failed to store mailbox:", error)
-      sendResponse({
-        success: false,
-        error: error instanceof Error ? error.message : String(error),
-      })
-    }
-  })().catch((error) => {
-    console.error("[Background] handleStoreMailbox unhandled rejection:", error)
-  })
-}
-
-/**
  * Handle REMOVE_MAILBOX requests.
  */
 function handleRemoveMailbox(msg: any, sendResponse: (response: any) => void) {
@@ -811,24 +759,6 @@ function handleRemoveMailbox(msg: any, sendResponse: (response: any) => void) {
 
       // Clean up any error entries for this mailbox
       await errorStateManager.removeMailboxErrors(msg.mailboxId)
-
-      // Revoke Gmail token AFTER successful removal (best-effort).
-      // Skip if msg.skipRevoke is true (reconnect flow: same token is about to be re-stored).
-      if (mailbox?.providerId === 'gmail' && mailbox.accessToken && !msg.skipRevoke) {
-        try {
-          const { GmailAuth } = await import('@/lib/providers/gmail/gmail-auth')
-          const auth = new GmailAuth()
-          await auth.revokeTokens(mailbox.accessToken)
-        } catch (e) {
-          console.warn('[Background] Gmail token revocation failed (best-effort):', e)
-          // revokeTokens throws if Google endpoint fails, skipping Chrome cache clear.
-          // Fallback: clear Chrome cache directly so account picker shows on next Connect.
-          try {
-            const { clearGmailToken } = await import('@/lib/providers/gmail/chrome-auth')
-            await clearGmailToken(mailbox.accessToken)
-          } catch { /* best effort */ }
-        }
-      }
 
       // Also remove from InboxBridge native app if IMAP.
       //

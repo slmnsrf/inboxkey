@@ -109,18 +109,6 @@ export interface IPKCEProvider extends IEmailProvider {
 }
 
 /**
- * Chrome Identity Provider Interface
- *
- * For providers that use Chrome's managed OAuth (chrome.identity.getAuthToken)
- * Chrome handles the OAuth flow automatically - no startAuth/completeAuth needed.
- *
- * Used by: Gmail
- */
-export interface IChromeIdentityProvider extends IEmailProvider {
-  // No additional methods needed - Chrome manages auth flow
-}
-
-/**
  * Provider Factory
  */
 export interface IProviderFactory {

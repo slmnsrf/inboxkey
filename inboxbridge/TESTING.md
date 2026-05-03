@@ -44,7 +44,7 @@
 
 ### Build
 ```bash
-cd /home/dev/work/inboxkey/inboxbridge
+cd inboxbridge
 cargo build --release
 ```
 

@@ -157,8 +157,6 @@ export interface MailboxInfo {
   lastSyncedAt: number
   /** Last sync error message (undefined = no error) */
   lastSyncError?: string
-  /** OAuth token expiry (undefined for IMAP and Google Messages providers) */
-  tokenExpiresAt?: number
   /** Phone number for Google Messages provider (international format) */
   gmPhoneNumber?: string
 }

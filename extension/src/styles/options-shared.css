@@ -585,15 +585,6 @@ body {
   outline-offset: 2px;
 }
 
-.btn-gmail {
-  background: var(--color-gmail);
-  color: white;
-}
-
-.btn-gmail:hover {
-  background: var(--color-gmail-hover);
-}
-
 /* ===========================
    LOADING SPINNER
    =========================== */
@@ -825,10 +816,6 @@ textarea.input {
   border-radius: 3px;
   vertical-align: middle;
   line-height: 1.2;
-}
-
-.badge-gmail {
-  background: var(--color-gmail);
 }
 
 .badge-active {

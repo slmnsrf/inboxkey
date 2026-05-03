@@ -212,20 +212,11 @@
   "accounts_disconnect": {
     "message": "[Ðîsåññëçt one two three]"
   },
-  "accounts_provider_gmail": {
-    "message": "[Ğmåîl one two]"
-  },
-  "accounts_microcopy_gmail": {
-    "message": "[Õñlý õñë Ğmåîl åççõûñt çåñ bë çõññëçtëð. one two three]"
-  },
   "accounts_provider_outlook": {
     "message": "[Õûtløõƙ one two]"
   },
   "accounts_microcopy_outlook": {
     "message": "[Õñlý õñë Õûtløõƙ åççõûñt çåñ bë çõññëçtëð. one two three]"
-  },
-  "accounts_empty_gmail": {
-    "message": "[Çõññëçt ýöûr Ğõõğlë åççõûñt tø ðëtëçt çõðës åñð måğîç lïñƙs ìñ Ğmåîl. one two three]"
   },
   "accounts_empty_outlook": {
     "message": "[Çõññëçt ýöûr Mîçrõsõft åççõûñt tø ðëtëçt çõðës åñð måğîç lïñƙs ìñ Õûtløõƙ. one two three]"
@@ -306,5 +297,14 @@
         "content": "$1"
       }
     }
+  },
+  "firstrun_bridge_title": {
+    "message": "[Îñståll thë ÎñbõxBrîðğë hëlþër one two three]"
+  },
+  "firstrun_bridge_detail": {
+    "message": "[ÎñbõxKëý rüñs lõçållý. Thë ÎñbõxBrîðğë hëlþër çõññëçts sëçürëlý tõ ýõür måîlbõx wîthõüt sëñðîñğ ðåtå åñýwhërë. Wõrƙs wîth Gmåîl, Õütlõõƙ, Yåhõõ, ÞrõtõñMåîl, Fåstmåîl, åñð åñý ÎMÅÞ sërvër. one two three]"
+  },
+  "firstrun_bridge_cta": {
+    "message": "[Îñståll ÎñbõxBrîðğë one two three]"
   }
 }

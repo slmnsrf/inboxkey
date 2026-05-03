@@ -32,7 +32,7 @@ test.describe('Popup Actions E2E', () => {
     await setupPopupCache(
       setupPage,
       [
-        { code: '123456', source: 'gmail:test@example.com', receivedAt: Date.now() }
+        { code: '123456', source: 'imap-bridge:test@example.com', receivedAt: Date.now() }
       ],
       [
         {
@@ -64,7 +64,7 @@ test.describe('Popup Actions E2E', () => {
     await setupPopupCache(
       setupPage,
       [
-        { code: '999888', source: 'gmail:user@test.com', receivedAt: Date.now() }
+        { code: '999888', source: 'imap-bridge:user@test.com', receivedAt: Date.now() }
       ],
       []
     )
@@ -252,9 +252,9 @@ test.describe('Popup Actions E2E', () => {
     await setupPopupCache(
       setupPage,
       [
-        { code: '111111', source: 'gmail:user1@test.com', receivedAt: now },
-        { code: '222222', source: 'gmail:user2@test.com', receivedAt: now - 60000 },
-        { code: '333333', source: 'gmail:user3@test.com', receivedAt: now - 120000 },
+        { code: '111111', source: 'imap-bridge:user1@test.com', receivedAt: now },
+        { code: '222222', source: 'imap-bridge:user2@test.com', receivedAt: now - 60000 },
+        { code: '333333', source: 'imap-bridge:user3@test.com', receivedAt: now - 120000 },
       ],
       [
         {
@@ -332,9 +332,9 @@ test.describe('Popup Actions E2E', () => {
     await setupPopupCache(
       setupPage,
       [
-        { code: '111111', source: 'gmail:test@example.com', receivedAt: now - 30000 }, // 30s ago
-        { code: '222222', source: 'gmail:test@example.com', receivedAt: now - 300000 }, // 5m ago
-        { code: '333333', source: 'gmail:test@example.com', receivedAt: now - 7200000 }, // 2h ago
+        { code: '111111', source: 'imap-bridge:test@example.com', receivedAt: now - 30000 }, // 30s ago
+        { code: '222222', source: 'imap-bridge:test@example.com', receivedAt: now - 300000 }, // 5m ago
+        { code: '333333', source: 'imap-bridge:test@example.com', receivedAt: now - 7200000 }, // 2h ago
       ],
       []
     )
@@ -358,8 +358,8 @@ test.describe('Popup Actions E2E', () => {
     await setupPopupCache(
       setupPage,
       [
-        { code: '111111', source: 'gmail:test1@example.com', receivedAt: Date.now() },
-        { code: '222222', source: 'gmail:test2@example.com', receivedAt: Date.now() - 60000 },
+        { code: '111111', source: 'imap-bridge:test1@example.com', receivedAt: Date.now() },
+        { code: '222222', source: 'imap-bridge:test2@example.com', receivedAt: Date.now() - 60000 },
       ],
       []
     )
@@ -391,7 +391,7 @@ test.describe('Popup Actions E2E', () => {
     await setupPopupCache(
       setupPage,
       [
-        { code: '123456', source: 'gmail:user@example.com', receivedAt: Date.now() },
+        { code: '123456', source: 'imap-bridge:user@example.com', receivedAt: Date.now() },
       ],
       []
     )

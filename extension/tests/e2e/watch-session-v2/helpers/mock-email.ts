@@ -15,7 +15,7 @@ export interface MockEmail {
   code?: string
   link?: string
   receivedAt: number
-  provider: 'gmail' | 'outlook'
+  provider: 'imap-bridge' | 'outlook'
 }
 
 export interface MockEmailOptions {
@@ -24,7 +24,7 @@ export interface MockEmailOptions {
   code?: string
   link?: string
   receivedAt?: number
-  provider?: 'gmail' | 'outlook'
+  provider?: 'imap-bridge' | 'outlook'
 }
 
 /**
@@ -45,7 +45,7 @@ export function createMockEmail(options: MockEmailOptions): MockEmail {
     code: options.code,
     link: options.link,
     receivedAt: options.receivedAt ?? Date.now(),
-    provider: options.provider ?? 'gmail',
+    provider: options.provider ?? 'imap-bridge',
   }
 }
 
