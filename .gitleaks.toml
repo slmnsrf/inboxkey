@@ -24,12 +24,20 @@ regexes = [
 ]
 
 # --- Custom rule: hardcoded local user paths ---
-# Generic devcontainer paths like /home/dev/ are tolerated; per-user paths are not.
+# Generic devcontainer paths like /home/dev/ and CI runner paths are tolerated;
+# per-user paths are not. Implemented as a broad regex with a per-rule allowlist
+# because gitleaks v8's RE2 engine does not support negative lookaheads.
 [[rules]]
 id = "hardcoded-local-path"
 description = "Hardcoded per-user local filesystem path"
-regex = '''(C:\\Users\\[A-Za-z0-9._-]+|/home/(?!dev/|runner/)[a-z0-9._-]+/|/Users/[a-z0-9._-]+/)'''
+regex = '''(C:\\Users\\[A-Za-z0-9._-]+|/home/[a-z0-9._-]+/|/Users/[a-z0-9._-]+/)'''
 tags = ["pii", "path"]
+
+[[rules.allowlists]]
+description = "Generic devcontainer and CI runner paths"
+regexes = [
+    '''/home/(dev|runner)/''',
+]
 
 # --- Global allowlist ---
 [allowlist]
