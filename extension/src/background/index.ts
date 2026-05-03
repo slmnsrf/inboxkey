@@ -84,11 +84,26 @@ const popupMessageHandler = new PopupMessageHandler(
 // MUST complete before serving any storage-backed requests (GET_MAILBOXES,
 // TRIGGER_SYNC, etc.) to prevent the race where validated getMailboxes()
 // rejects stale legacy rows.
+//
+// For legacy Gmail rows, we ALSO best-effort POST to Google's OAuth revoke
+// endpoint to invalidate the upstream grant so the user's Google account
+// stops listing this app under "Apps with access." This requires the
+// access token still in the legacy record (we capture it before the write
+// and never persist it again). The revoke endpoint is a public Google
+// endpoint and does not require chrome.identity (which has been removed).
+// Failures are swallowed: storage cleanup happens regardless, and the
+// follow-up of deleting the OAuth client itself in Google Cloud Console
+// remains the authoritative way to invalidate every grant for every user.
 const outlookMigrationDone = (async () => {
   try {
     const raw = await chrome.storage.local.get('mailboxes_plain')
-    const all: Array<{ id: string; providerId: string; email?: string }> =
-      raw['mailboxes_plain'] || []
+    const all: Array<{
+      id: string
+      providerId: string
+      email?: string
+      accessToken?: string
+      refreshToken?: string
+    }> = raw['mailboxes_plain'] || []
     const isLegacy = (m: { providerId: string }) =>
       m.providerId === 'outlook' || m.providerId === 'gmail'
     const removed = all.filter(isLegacy)
@@ -98,6 +113,30 @@ const outlookMigrationDone = (async () => {
     await chrome.storage.local.set({ mailboxes_plain: kept })
 
     for (const mb of removed) {
+      // Best-effort revoke for Gmail rows so the upstream grant is invalidated.
+      if (mb.providerId === 'gmail') {
+        const token = mb.accessToken || mb.refreshToken
+        if (typeof token === 'string' && token.length > 0) {
+          try {
+            await fetch(
+              `https://oauth2.googleapis.com/revoke?token=${encodeURIComponent(token)}`,
+              {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+              }
+            )
+            console.log(`[Background] Revoked legacy Gmail OAuth grant for ${mb.email ?? mb.id}`)
+          } catch (revokeError) {
+            // Non-fatal: storage cleanup still happens. The OAuth-client
+            // deletion follow-up (out-of-band) is the authoritative revoke.
+            console.warn(
+              `[Background] Best-effort Gmail revoke failed for ${mb.email ?? mb.id}:`,
+              revokeError
+            )
+          }
+        }
+      }
+
       await errorStateManager.removeMailboxErrors(mb.id)
       const label = mb.providerId === 'gmail' ? 'Gmail' : 'Outlook'
       console.log(`[Background] Removed legacy ${label} OAuth mailbox: ${mb.email ?? mb.id}`)

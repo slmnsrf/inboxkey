@@ -383,6 +383,19 @@ export function isMailbox(obj: unknown): obj is Mailbox {
 
   if (!basicValid) return false
 
+  // Defensive runtime check: OAuth token fields must not be present.
+  // The TypeScript Mailbox interface no longer declares them, but a
+  // legacy record on disk might still carry them; reject those records
+  // here so they never round-trip through the storage layer.
+  const rawMaybeOAuth = obj as Record<string, unknown>
+  if (
+    'accessToken' in rawMaybeOAuth ||
+    'refreshToken' in rawMaybeOAuth ||
+    'tokenExpiresAt' in rawMaybeOAuth
+  ) {
+    return false
+  }
+
   // Provider-specific validation
   if (m.providerId === 'google-messages') {
     return (
