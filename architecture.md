@@ -47,7 +47,6 @@ inboxkey/
 │   │   │   │   └── scoring-config.ts    # Scoring thresholds
 │   │   │   ├── providers/       # Email provider adapters
 │   │   │   │   ├── provider-interface.ts
-│   │   │   │   ├── gmail/           # Gmail-via-IMAP adapter
 │   │   │   │   └── imap-bridge/     # IMAP Bridge (native messaging)
 │   │   │   ├── services/        # Application services
 │   │   │   │   ├── email-polling-service.ts
@@ -132,7 +131,7 @@ inboxkey/
 ### Domain Layer
 - **Extraction Core (`@inboxkey/extraction-core`):** Pure TypeScript package with OTP/magic-link detection logic and matching utilities (shape-matcher, domain-affinity, recency-scorer). Shared between main extension and Reviewer. Contains the v2.3 extraction algorithm migrated from production (2025-10-21).
 - Detection (`lib/detection`) scores candidate fields on the page. Matching (`lib/matching`) contains extension-specific code like code-matcher.ts used by session-controller and popup-cache.
-- Provider adapters (`lib/providers/gmail`, `lib/providers/imap-bridge`) normalize mail access into a single polling contract. All email providers use the InboxBridge native messaging host. Credentials are stored in the OS keychain.
+- Provider adapters (`lib/providers/imap-bridge`) normalize mail access into a single polling contract. All email providers use the InboxBridge native messaging host. Credentials are stored in the OS keychain.
 - The watch-session controller coordinates timing windows, cache hydration, confidence scoring, and manual fallback data.
 
 ### Infrastructure Layer

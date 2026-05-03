@@ -53,6 +53,17 @@ const PLAINTEXT_STORAGE_KEYS = {
  * no longer a member of the ProviderId union — that's the whole point: the
  * shim matches stored records that pre-date the union narrowing.
  *
+ * Note on Google OAuth grants: this shim deletes the local mailbox record
+ * but does NOT call Google's revoke endpoint to invalidate the underlying
+ * OAuth grant on the user's Google account. The clean way to revoke ALL
+ * grants for the now-unused OAuth client is to delete the OAuth client
+ * itself in Google Cloud Console; that operation atomically invalidates
+ * every grant for every user. Re-introducing OAuth-revoke code in this
+ * shim was rejected because (a) the entire chrome.identity surface is
+ * being removed in this same change, (b) pre-launch the only "user" is
+ * the developer who can manually clean up at myaccount.google.com/permissions,
+ * and (c) the OAuth-client-deletion follow-up is the canonical fix.
+ *
  * Remove planned for the version after CWS launch.
  */
 let gmailMigrationPromise: Promise<void> | null = null

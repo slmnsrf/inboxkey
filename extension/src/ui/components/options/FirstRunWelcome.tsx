@@ -25,20 +25,22 @@ export function FirstRunWelcome({ onProviderSelect, onInstallBridge }: FirstRunW
 
       {/* Primary: InboxBridge install */}
       <div className="firstrun__providers">
-        <div className="firstrun-card firstrun-card--primary">
-          <div className="firstrun-card__icon">
-            <Server size={48} aria-hidden="true" />
+        <button
+          className="provider-card provider-card--primary"
+          onClick={onInstallBridge}
+          type="button"
+        >
+          <span className="provider-card__icon provider-card__icon--imap">
+            <Server size={28} aria-hidden="true" />
+          </span>
+          <div className="provider-card__body">
+            <h3 className="provider-card__title">{t('firstrun_bridge_title')}</h3>
+            <p className="provider-card__detail">{t('firstrun_bridge_detail')}</p>
           </div>
-          <h3 className="firstrun-card__title">{t('firstrun_bridge_title')}</h3>
-          <p className="firstrun-card__detail">{t('firstrun_bridge_detail')}</p>
-          <button
-            type="button"
-            className="firstrun-card__cta"
-            onClick={onInstallBridge}
-          >
-            {t('firstrun_bridge_cta')}
-          </button>
-        </div>
+          <span className="provider-card__arrow" aria-hidden="true">
+            <ArrowRight size={18} />
+          </span>
+        </button>
       </div>
 
       {/* Alternatives heading */}
