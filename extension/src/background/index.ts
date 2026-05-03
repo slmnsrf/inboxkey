@@ -114,26 +114,43 @@ const outlookMigrationDone = (async () => {
 
     for (const mb of removed) {
       // Best-effort revoke for Gmail rows so the upstream grant is invalidated.
+      // Fire-and-forget so a slow or blocked oauth2.googleapis.com cannot
+      // delay this IIFE, which gates GET_MAILBOXES / GET_POPUP_DATA
+      // responses. Storage cleanup has already happened above.
       if (mb.providerId === 'gmail') {
         const token = mb.accessToken || mb.refreshToken
         if (typeof token === 'string' && token.length > 0) {
-          try {
-            await fetch(
-              `https://oauth2.googleapis.com/revoke?token=${encodeURIComponent(token)}`,
-              {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          const ctrl = new AbortController()
+          const timeoutId = setTimeout(() => ctrl.abort(), 3000)
+          const labelForLog = mb.email ?? mb.id
+          fetch(
+            `https://oauth2.googleapis.com/revoke?token=${encodeURIComponent(token)}`,
+            {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+              signal: ctrl.signal,
+            }
+          )
+            .then((response) => {
+              if (response.ok) {
+                console.log(`[Background] Revoked legacy Gmail OAuth grant for ${labelForLog}`)
+              } else {
+                // 400 commonly means token was already invalidated; treat
+                // 4xx as best-effort and log without escalating.
+                console.warn(
+                  `[Background] Gmail revoke returned HTTP ${response.status} for ${labelForLog}`
+                )
               }
-            )
-            console.log(`[Background] Revoked legacy Gmail OAuth grant for ${mb.email ?? mb.id}`)
-          } catch (revokeError) {
-            // Non-fatal: storage cleanup still happens. The OAuth-client
-            // deletion follow-up (out-of-band) is the authoritative revoke.
-            console.warn(
-              `[Background] Best-effort Gmail revoke failed for ${mb.email ?? mb.id}:`,
-              revokeError
-            )
-          }
+            })
+            .catch((revokeError) => {
+              console.warn(
+                `[Background] Best-effort Gmail revoke failed for ${labelForLog}:`,
+                revokeError
+              )
+            })
+            .finally(() => {
+              clearTimeout(timeoutId)
+            })
         }
       }
 
