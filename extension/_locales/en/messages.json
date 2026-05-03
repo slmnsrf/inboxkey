@@ -2918,7 +2918,7 @@
     "description": "First-run primary action title"
   },
   "firstrun_bridge_detail": {
-    "message": "InboxKey runs locally. The InboxBridge helper connects securely to your mailbox without sending data anywhere. Works with Gmail, Outlook, Yahoo, ProtonMail, Fastmail, and any IMAP server.",
+    "message": "InboxKey runs locally. The InboxBridge helper connects directly to your mailbox over IMAP — no InboxKey servers, no relays, no third parties beyond your own mail provider. Works with Gmail, Outlook, Yahoo, ProtonMail, Fastmail, and any IMAP server.",
     "description": "First-run primary action body"
   },
   "firstrun_bridge_cta": {
