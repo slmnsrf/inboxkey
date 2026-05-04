@@ -173,3 +173,54 @@ export function sanitizeLinkForLog(href: string): { domain: string; pathPreview?
     return { domain: 'invalid-url' }
   }
 }
+
+/**
+ * Redact occurrences of an OTP code from a context snippet before
+ * persisting. The OTP extractor builds snippets around the matched
+ * code, so the raw value lives inside the surrounding text by default;
+ * the user-visible eye toggle only hides it from the screen, not from
+ * storage.
+ *
+ * Replaces both `raw` (original matched form, may contain spaces or
+ * hyphens) and `code` (post-normalization) with the redacted form.
+ */
+export function redactCodeFromSnippet(snippet: string, code: string, raw?: string): string {
+  if (!snippet) return snippet
+  const redacted = redactOtpCode(code)
+  let out = snippet
+  if (raw && raw.length > 0) {
+    out = out.split(raw).join(redacted)
+  }
+  if (code && code !== raw && code.length > 0) {
+    out = out.split(code).join(redacted)
+  }
+  return out
+}
+
+/**
+ * Cross-context message contract for clearing the log. The service
+ * worker's `extractionDebugLog` writes (appendEntries) flow through
+ * the module-scoped queue in this file; for serialization to actually
+ * hold, the clear must execute in the same context. Options-page UI
+ * therefore sends this message instead of calling `clearLog` directly.
+ */
+export const EXTRACTION_DEBUG_LOG_CLEAR_MESSAGE = 'EXTRACTION_DEBUG_LOG_CLEAR' as const
+
+export interface ExtractionDebugLogClearMessage {
+  type: typeof EXTRACTION_DEBUG_LOG_CLEAR_MESSAGE
+}
+
+export interface ExtractionDebugLogClearResponse {
+  ok: boolean
+  error?: string
+}
+
+/** Client helper for non-SW contexts: ask the SW to clear the log. */
+export async function requestClearLog(): Promise<void> {
+  const response: ExtractionDebugLogClearResponse = await chrome.runtime.sendMessage({
+    type: EXTRACTION_DEBUG_LOG_CLEAR_MESSAGE,
+  } satisfies ExtractionDebugLogClearMessage)
+  if (!response?.ok) {
+    throw new Error(response?.error ?? 'Failed to clear extraction debug log')
+  }
+}

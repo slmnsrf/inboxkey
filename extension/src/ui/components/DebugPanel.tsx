@@ -16,11 +16,12 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react'
 import { Bug, RefreshCw, Trash2, ChevronRight, AlertCircle, CheckCircle2, Eye, EyeOff } from 'lucide-react'
 import { StorageFactory } from '@/lib/storage/storage-factory'
+import { sendSettingsMutation } from '@/lib/storage/settings-rpc'
 import { useToast } from '@/ui/contexts/ToastContext'
 import { STORAGE_KEYS } from '@/lib/storage/schema'
 import {
   getEntries,
-  clearLog,
+  requestClearLog,
   EXTRACTION_DEBUG_LOG_CAP,
   type ExtractionLogEntry,
   type ExtractionLogOtp,
@@ -96,11 +97,17 @@ export function DebugPanel() {
   }, [loadEnabled, loadEntries])
 
   const handleToggle = async () => {
+    const newValue = !enabled
+    setEnabled(newValue)
     try {
-      const newValue = !enabled
-      setEnabled(newValue)
-      const storage = await StorageFactory.create()
-      await storage.updateSettings({ extractionDebugLogEnabled: newValue })
+      // Route through settings-rpc so the SW's PlaintextStorage mutex
+      // is the single serializer for this write. A direct
+      // updateSettings here from the options context would race with
+      // any other settings mutation issued from the SW or popup.
+      await sendSettingsMutation({
+        kind: 'patch',
+        updates: { extractionDebugLogEnabled: newValue },
+      })
       showToast(
         newValue
           ? 'Extraction debug log enabled'
@@ -109,14 +116,17 @@ export function DebugPanel() {
       )
     } catch (err) {
       console.warn('[DebugPanel] toggle failed:', err)
-      setEnabled(!enabled)
+      setEnabled(!newValue)
       showToast('Failed to update setting', 'error')
     }
   }
 
   const handleClear = async () => {
     try {
-      await clearLog()
+      // Route through the SW so append (in SW) and clear share the
+      // same module-scoped write queue. A direct chrome.storage write
+      // from the options context would race in-flight appends.
+      await requestClearLog()
       setEntries([])
       setExpanded(new Set())
       setConfirmingClear(false)
@@ -173,7 +183,7 @@ export function DebugPanel() {
             Extraction debug log
           </label>
           <p className="setting-row__description">
-            Record how each polled email is processed (scores, gate decisions, redacted code candidates). Stored locally only. OTP codes redacted; magic-link query strings stripped.
+            Record how each polled email is processed: subject, sender, scores, gate decisions, and redacted code candidates. Stored only on this device. OTP code values are redacted; magic-link query strings are stripped before storage.
           </p>
         </div>
         <div className="setting-row__control">
@@ -411,10 +421,10 @@ function DebugEntryDetails({ entry }: { entry: ExtractionLogEntry }) {
 }
 
 function OtpRow({ otp }: { otp: ExtractionLogOtp }) {
-  const [revealed, setRevealed] = useState(false)
+  const [snippetShown, setSnippetShown] = useState(false)
   return (
     <div className="advanced-debug-panel__otp">
-      <code>{revealed ? '(redacted-only by design)' : otp.codeRedacted}</code>
+      <code>{otp.codeRedacted}</code>
       <span className="advanced-debug-panel__muted">
         · {otp.charset} · conf {otp.confidence.toFixed(3)}
         {otp.keyword && ` · keyword "${otp.keyword}"`}
@@ -424,14 +434,14 @@ function OtpRow({ otp }: { otp: ExtractionLogOtp }) {
         <button
           type="button"
           className="advanced-debug-panel__icon-btn"
-          onClick={() => setRevealed(!revealed)}
+          onClick={() => setSnippetShown(!snippetShown)}
           aria-label="Toggle context snippet"
-          title={revealed ? 'Hide snippet' : 'Show snippet'}
+          title={snippetShown ? 'Hide snippet' : 'Show snippet (code already redacted)'}
         >
-          {revealed ? <EyeOff size={11} /> : <Eye size={11} />}
+          {snippetShown ? <EyeOff size={11} /> : <Eye size={11} />}
         </button>
       )}
-      {revealed && otp.snippet && (
+      {snippetShown && otp.snippet && (
         <div className="advanced-debug-panel__snippet">{otp.snippet}</div>
       )}
     </div>

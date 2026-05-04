@@ -19,6 +19,11 @@ import { ErrorStateManager } from "./error-state-manager"
 import { StorageFactory } from "@/lib/storage/storage-factory"
 import { AsyncMutex } from "@/lib/storage/plaintext-storage"
 import {
+  clearLog as clearExtractionDebugLog,
+  EXTRACTION_DEBUG_LOG_CLEAR_MESSAGE,
+  type ExtractionDebugLogClearResponse,
+} from "@/lib/services/extraction-debug-log"
+import {
   SETTINGS_MUTATE_MESSAGE_TYPE,
   settingsMutationToTransform,
   type SettingsMutateMessage,
@@ -364,6 +369,27 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   if (msg.type === "UPDATE_BADGE") {
     handleBadgeUpdate(msg)
     return false
+  }
+
+  // Cross-context clear for the extraction debug log. The SW owns
+  // appendEntries; routing clear through the SW keeps both writes on
+  // the same module-scoped queue and avoids racing an in-flight
+  // append from a concurrent options-page click.
+  if (msg.type === EXTRACTION_DEBUG_LOG_CLEAR_MESSAGE) {
+    ;(async () => {
+      try {
+        await clearExtractionDebugLog()
+        const resp: ExtractionDebugLogClearResponse = { ok: true }
+        sendResponse(resp)
+      } catch (error) {
+        const resp: ExtractionDebugLogClearResponse = {
+          ok: false,
+          error: error instanceof Error ? error.message : String(error),
+        }
+        sendResponse(resp)
+      }
+    })()
+    return true
   }
 
   // Cross-context settings mutation funnel. Callers anywhere in the

@@ -23,6 +23,7 @@ import { SCORE_POPUP } from '@/lib/popup/popup-config'
 import { SeenMessageStore, HIT_TTL_MS, MISS_TTL_MS } from './seen-message-store'
 import {
   appendEntries as appendDebugEntries,
+  redactCodeFromSnippet,
   redactOtpCode,
   sanitizeLinkForLog,
   type ExtractionLogEntry,
@@ -337,7 +338,9 @@ export class EmailPollingService {
           debugLogBatch.push({
             ts: Date.now(),
             extractorVersion: EXTRACTOR_VERSION,
-            provider: 'imap-bridge', // adapter ID lost here; provider unknown without msg
+            // Use the adapter's actual provider id; per-message info
+            // is intentionally absent (this is an adapter-level error).
+            provider: ad.id,
             mailboxId: ad.mailboxId,
             message: { id: '', bodyTextLen: 0, bodyHtmlLen: 0 },
             outcome: { kind: 'provider-error', error: errMsg },
@@ -450,13 +453,20 @@ function buildLogEntry(
   }
 }
 
-function toLogOtp(otp: { code: string; charset: 'digits' | 'alnum'; confidence: number; keyword?: string; context?: { snippet?: string; keywordDistance?: number } }): ExtractionLogOtp {
+function toLogOtp(otp: { code: string; raw?: string; charset: 'digits' | 'alnum'; confidence: number; keyword?: string; context?: { snippet?: string; keywordDistance?: number } }): ExtractionLogOtp {
+  // Redact the OTP code value out of the surrounding snippet before
+  // persisting. The extractor builds snippets *around* the matched
+  // code, so the raw value lives inside the snippet text itself; UI
+  // hiding alone is insufficient because storage is what matters.
+  const snippet = otp.context?.snippet
+    ? redactCodeFromSnippet(otp.context.snippet, otp.code, otp.raw)
+    : undefined
   return {
     codeRedacted: redactOtpCode(otp.code),
     charset: otp.charset,
     confidence: otp.confidence,
     keyword: otp.keyword,
-    snippet: otp.context?.snippet,
+    snippet,
     keywordDistance: otp.context?.keywordDistance,
   }
 }
