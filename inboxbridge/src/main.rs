@@ -7,6 +7,7 @@ mod cleanup;
 mod install_info;
 
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
+use tokio::time::{timeout, Duration};
 use protocol::Request;
 use std::sync::Arc;
 
@@ -76,11 +77,12 @@ async fn run_async() -> anyhow::Result<()> {
     let mut stdout = tokio::io::stdout();
 
     loop {
-        // Read 4-byte length prefix
+        // Read 4-byte length prefix.
+        // Stdin EOF here means Chrome closed the native-messaging port; exit hard
+        // so we can never become a zombie holding the port handle open.
         let mut len_bytes = [0u8; 4];
         if stdin.read_exact(&mut len_bytes).await.is_err() {
-            // Extension disconnected (normal exit)
-            break;
+            std::process::exit(0);
         }
 
         let len = u32::from_le_bytes(len_bytes) as usize;
@@ -89,13 +91,30 @@ async fn run_async() -> anyhow::Result<()> {
             return Err(anyhow::anyhow!("Message exceeds 1MB limit"));
         }
 
-        // Read JSON payload
+        // Read JSON payload. EOF mid-message is also a port disconnect; exit hard.
         let mut buf = vec![0u8; len];
-        stdin.read_exact(&mut buf).await?;
+        if stdin.read_exact(&mut buf).await.is_err() {
+            std::process::exit(0);
+        }
 
-        // Parse and dispatch
+        // Parse and dispatch with a 60s upper bound. The extension already times
+        // out pending requests at 30s; on bridge timeout we drop the response so
+        // we don't race the extension with a stale reply.
         let response = match serde_json::from_slice::<Request>(&buf) {
-            Ok(request) => dispatcher::dispatch(request, state.clone(), keychain.clone()).await,
+            Ok(request) => {
+                match timeout(
+                    Duration::from_secs(60),
+                    dispatcher::dispatch(request, state.clone(), keychain.clone()),
+                )
+                .await
+                {
+                    Ok(response) => response,
+                    Err(_) => {
+                        eprintln!("InboxBridge: dispatch timed out after 60s");
+                        continue;
+                    }
+                }
+            }
             Err(e) => {
                 protocol::Response {
                     v: 1,
@@ -118,5 +137,8 @@ async fn run_async() -> anyhow::Result<()> {
         stdout.flush().await?;
     }
 
+    // Loop only exits via std::process::exit on stdin EOF or via Err propagation;
+    // reaching here would mean a logic bug above.
+    #[allow(unreachable_code)]
     Ok(())
 }
