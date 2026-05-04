@@ -212,7 +212,7 @@ jobs:
           cat > release-notes.md <<EOF
           ## InboxBridge v${VERSION}
 
-          Companion app for the [InboxKey](https://github.com/slmnsrf/inboxkey) Chrome extension. Enables IMAP email connections for verification code detection. Entirely optional. Most users only need Gmail.
+          Companion app for the [InboxKey](https://github.com/slmnsrf/inboxkey) Chrome extension. Required for every IMAP mailbox InboxKey connects to (Gmail via App Password, Outlook, Yahoo, Fastmail, ProtonMail Bridge, self-hosted, and others). Runs locally on the device. No data leaves the machine.
 
           ### Download
 
