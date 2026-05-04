@@ -34,7 +34,7 @@ export const EXTENSION_MAX_PROTOCOL = 1
  * Recommended InboxBridge app version
  * Shows non-blocking "update available" if native app is older (but protocol-compatible)
  */
-export const RECOMMENDED_INBOXBRIDGE_VERSION = '1.1.2'
+export const RECOMMENDED_INBOXBRIDGE_VERSION = '1.1.3'
 
 /**
  * Phase 2 — Positive-Signal Channel Eligibility Gate (2026-05-04).
