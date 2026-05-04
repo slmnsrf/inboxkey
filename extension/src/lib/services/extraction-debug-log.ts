@@ -181,19 +181,38 @@ export function sanitizeLinkForLog(href: string): { domain: string; pathPreview?
  * the user-visible eye toggle only hides it from the screen, not from
  * storage.
  *
- * Replaces both `raw` (original matched form, may contain spaces or
- * hyphens) and `code` (post-normalization) with the redacted form.
+ * Three-pass redaction:
+ *   1. Exact `raw` (original matched form, may contain spaces/hyphens).
+ *   2. Exact `code` (post-normalization, no separators).
+ *   3. Separator-tolerant regex over the normalized `code` characters.
+ *      The OTP extractor normalizes by stripping whitespace, hyphens,
+ *      and underscores; the snippet builder collapses whitespace
+ *      independently. A code like "12 34 56" can therefore appear in
+ *      the snippet even though `raw` is "12-34-56" and `code` is
+ *      "123456" — exact-string replacement would miss it. The tolerant
+ *      regex catches every surface form by allowing zero-or-more
+ *      separator characters between each code character. Case-insensitive
+ *      to handle alnum codes that were uppercased during normalization.
  */
 export function redactCodeFromSnippet(snippet: string, code: string, raw?: string): string {
-  if (!snippet) return snippet
+  if (!snippet || !code) return snippet
   const redacted = redactOtpCode(code)
   let out = snippet
+
+  // Pass 1: exact raw match (if extractor preserved the original form)
   if (raw && raw.length > 0) {
     out = out.split(raw).join(redacted)
   }
-  if (code && code !== raw && code.length > 0) {
+  // Pass 2: exact normalized code match
+  if (code !== raw) {
     out = out.split(code).join(redacted)
   }
+  // Pass 3: separator-tolerant match over normalized chars
+  const escapedChars = code.split('').map(c => c.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
+  const SEPARATOR_CLASS = '[\\s\\u00A0\\u200B\\u200C\\u200D_\\-]*'
+  const tolerantRegex = new RegExp(escapedChars.join(SEPARATOR_CLASS), 'gi')
+  out = out.replace(tolerantRegex, redacted)
+
   return out
 }
 
