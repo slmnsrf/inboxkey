@@ -220,8 +220,8 @@ export function DebugPanel() {
             <Bug size={14} aria-hidden="true" style={{ marginRight: 6, verticalAlign: 'text-bottom' }} />
             Extraction debug log
           </label>
-          <p className="setting-row__description">
-            Record how each polled email is processed: subject, sender, scores, gate decisions, and redacted code candidates. Stored only on this device. OTP code values are redacted; magic-link query strings are stripped before storage.
+            <p className="setting-row__description">
+            Record how each polled email is processed: subject, sender, scores, gate decisions, redacted code candidates, and a 4&nbsp;KB body preview with OTP codes redacted. Stored only on this device, never transmitted. Magic-link query strings are stripped before storage.
           </p>
         </div>
         <div className="setting-row__control">
@@ -436,6 +436,8 @@ function DebugEntryDetails({ entry }: { entry: ExtractionLogEntry }) {
         )}
       </DetailRow>
 
+      {entry.message.bodyPreview && <BodyPreviewSection preview={entry.message.bodyPreview} />}
+
       <div className="setting-divider" />
 
       {o.kind === 'extracted' && (
@@ -491,6 +493,31 @@ function DebugEntryDetails({ entry }: { entry: ExtractionLogEntry }) {
           <code className="advanced-debug-panel__error">{o.error}</code>
         </DetailRow>
       )}
+    </div>
+  )
+}
+
+function BodyPreviewSection({ preview }: { preview: NonNullable<ExtractionLogEntry['message']['bodyPreview']> }) {
+  const [shown, setShown] = useState(false)
+  const charCount = preview.preview.length
+  return (
+    <div className="advanced-debug-panel__sub">
+      <div className="advanced-debug-panel__body-header">
+        <strong>Body preview ({preview.kind})</strong>
+        <span className="advanced-debug-panel__muted">
+          {charCount.toLocaleString()} chars{preview.truncated ? ' (truncated)' : ''} · OTP codes redacted
+        </span>
+        <button
+          type="button"
+          className="advanced-debug-panel__icon-btn"
+          onClick={() => setShown(!shown)}
+          aria-label={shown ? 'Hide body preview' : 'Show body preview'}
+          title={shown ? 'Hide body' : 'Show body'}
+        >
+          {shown ? <EyeOff size={11} /> : <Eye size={11} />}
+        </button>
+      </div>
+      {shown && <pre className="advanced-debug-panel__body-pre">{preview.preview}</pre>}
     </div>
   )
 }

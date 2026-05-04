@@ -23,6 +23,7 @@ import { SCORE_POPUP } from '@/lib/popup/popup-config'
 import { SeenMessageStore, HIT_TTL_MS, MISS_TTL_MS } from './seen-message-store'
 import {
   appendEntries as appendDebugEntries,
+  buildBodyPreview,
   redactCodeFromSnippet,
   redactOtpCode,
   sanitizeLinkForLog,
@@ -293,14 +294,19 @@ export class EmailPollingService {
           }
 
           if (debugLogEnabled) {
-            debugLogBatch.push(buildLogEntry(msg, ad.mailboxId, {
-              kind: 'extracted',
-              topScore,
-              minScore,
-              passed: passesGate,
-              otps: (ext.otps ?? []).slice(0, 3).map(toLogOtp),
-              links: (ext.links ?? []).slice(0, 3).map(toLogLink),
-            }))
+            debugLogBatch.push(buildLogEntry(
+              msg,
+              ad.mailboxId,
+              {
+                kind: 'extracted',
+                topScore,
+                minScore,
+                passed: passesGate,
+                otps: (ext.otps ?? []).slice(0, 3).map(toLogOtp),
+                links: (ext.links ?? []).slice(0, 3).map(toLogLink),
+              },
+              ext.otps ?? [],
+            ))
           }
 
           // Gate by minScore; ignore everything else
@@ -434,7 +440,14 @@ async function isDebugLogEnabled(): Promise<boolean> {
 function buildLogEntry(
   msg: EmailLike,
   mailboxId: string,
-  outcome: ExtractionLogEntry['outcome']
+  outcome: ExtractionLogEntry['outcome'],
+  // Optional: when the outcome includes extracted OTPs, pass them so
+  // their code values can be redacted out of the persisted body
+  // preview. Skipped/error outcomes have no extracted candidates and
+  // pass an empty array; in those cases the body preview shows the
+  // raw email text (intentional — the user is debugging WHY extraction
+  // missed it, so seeing the text is the whole point).
+  extractedOtps: ReadonlyArray<{ code: string; raw?: string }> = []
 ): ExtractionLogEntry {
   return {
     ts: Date.now(),
@@ -448,6 +461,7 @@ function buildLogEntry(
       receivedEpochMs: msg.receivedEpochMs,
       bodyTextLen: (msg.text ?? '').length,
       bodyHtmlLen: (msg.html ?? '').length,
+      bodyPreview: buildBodyPreview(msg.text, msg.html, extractedOtps),
     },
     outcome,
   }
