@@ -399,10 +399,94 @@ async fn handle_mail_fetch_recent(
 
     let _ = client.disconnect().await;
 
+    // Response budget: Chrome's native messaging response cap is 1 MB total.
+    // Going over that silently truncates the wire and the extension never sees
+    // a result. Decoded text/html bodies can be up to 32 KiB each per message,
+    // so a worst-case 15-message poll could in theory grow large. Trim from the
+    // tail (oldest) until the serialized payload fits under the budget.
+    let messages = enforce_response_budget(messages);
+
     Response {
         v: 1,
         id,
         result: Some(json!({"messages": messages})),
         error: None,
+    }
+}
+
+/// Conservative ceiling on the JSON payload we hand to the native-messaging
+/// host. Chrome enforces 1 MB host->extension; we leave headroom for the
+/// outer Response envelope and any framing slack.
+const RESPONSE_BUDGET_BYTES: usize = 900 * 1024;
+
+/// Trim messages from the tail (oldest) until the serialized payload fits
+/// within RESPONSE_BUDGET_BYTES. Newer messages are favored because they
+/// are more likely to contain the user's currently-needed verification code.
+fn enforce_response_budget(
+    mut messages: Vec<crate::imap_client::EmailMessage>,
+) -> Vec<crate::imap_client::EmailMessage> {
+    while !messages.is_empty() {
+        let payload = json!({ "messages": &messages });
+        let size = serde_json::to_vec(&payload).map(|v| v.len()).unwrap_or(0);
+        if size <= RESPONSE_BUDGET_BYTES {
+            break;
+        }
+        messages.pop();
+    }
+    messages
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::imap_client::EmailMessage;
+
+    fn fat_msg(uid: u32, body_chars: usize) -> EmailMessage {
+        EmailMessage {
+            uid,
+            date: "2026-05-04T00:00:00Z".to_string(),
+            from: "sender@example.com".to_string(),
+            subject: "test".to_string(),
+            snippet: "x".repeat(200),
+            text: Some("X".repeat(body_chars)),
+            html: Some("X".repeat(body_chars)),
+        }
+    }
+
+    #[test]
+    fn budget_keeps_small_payloads_intact() {
+        // 3 small messages should fit comfortably.
+        let msgs = vec![fat_msg(1, 100), fat_msg(2, 100), fat_msg(3, 100)];
+        let trimmed = enforce_response_budget(msgs);
+        assert_eq!(trimmed.len(), 3);
+    }
+
+    #[test]
+    fn budget_trims_oldest_when_oversize() {
+        // Each message ~64 KiB of body in two fields = ~128 KiB. 15 messages
+        // would be ~1.9 MiB, well over the 900 KiB cap. Newest (smallest uid
+        // popped last because we pop from the tail) survive.
+        let msgs: Vec<_> = (0..15).map(|i| fat_msg(i, 32 * 1024)).collect();
+        let trimmed = enforce_response_budget(msgs);
+        let payload = json!({ "messages": &trimmed });
+        let size = serde_json::to_vec(&payload).unwrap().len();
+        assert!(
+            size <= RESPONSE_BUDGET_BYTES,
+            "trimmed payload should fit: {} bytes",
+            size
+        );
+        assert!(
+            trimmed.len() < 15,
+            "should have trimmed at least one message"
+        );
+        // First message (newest, by convention -- list_recent sorts UIDs desc)
+        // must always survive trimming.
+        assert!(trimmed.iter().any(|m| m.uid == 0));
+    }
+
+    #[test]
+    fn budget_handles_empty_input() {
+        let trimmed = enforce_response_budget(Vec::new());
+        assert!(trimmed.is_empty());
     }
 }
