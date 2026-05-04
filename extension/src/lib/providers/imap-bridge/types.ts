@@ -79,7 +79,9 @@ export interface FetchOptions {
 /**
  * Email message from IMAP server
  *
- * Simplified schema matching InboxBridge protocol (PROTOCOL.md § 3.8)
+ * Simplified schema matching InboxBridge protocol (PROTOCOL.md § 3.8).
+ * `text` / `html` were added in InboxBridge 1.1.4 (MIME-parsed bodies);
+ * `snippet` is retained for backward compatibility.
  */
 export interface EmailMessage {
   /** IMAP UID (unique within mailbox) */
@@ -88,8 +90,16 @@ export interface EmailMessage {
   date: string
   /** Sender email address */
   from: string
-  /** Email subject */
+  /** Email subject (RFC2047-decoded on bridge 1.1.4+) */
   subject: string
-  /** First ~200 chars of plain text body */
-  snippet: string
+  /**
+   * Decoded plaintext preview. ~500 chars on bridge 1.1.4+; ~200 chars
+   * of raw RFC822 envelope on older bridges. Optional because future
+   * bridges may drop it.
+   */
+  snippet?: string
+  /** Decoded text/plain body (bridge 1.1.4+). */
+  text?: string
+  /** Decoded text/html body (bridge 1.1.4+). */
+  html?: string
 }

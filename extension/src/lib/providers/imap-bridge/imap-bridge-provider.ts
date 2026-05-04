@@ -62,7 +62,17 @@ export class IMAPBridgeProvider implements IIMAPProvider {
       ? Math.ceil((Date.now() - options.newerThan.getTime()) / 60000)
       : 10;
 
-    const result = await this.client.call<{ messages: Array<{ uid: number; date: string; from: string; subject: string; snippet: string }> }>('mail.fetchRecent', {
+    const result = await this.client.call<{
+      messages: Array<{
+        uid: number
+        date: string
+        from: string
+        subject: string
+        snippet?: string
+        text?: string
+        html?: string
+      }>
+    }>('mail.fetchRecent', {
       accountId,
       sinceMinutes,
       limit: options?.maxResults || 15
@@ -73,7 +83,9 @@ export class IMAPBridgeProvider implements IIMAPProvider {
       date: msg.date,
       from: msg.from,
       subject: msg.subject,
-      snippet: msg.snippet
+      snippet: msg.snippet,
+      text: msg.text,
+      html: msg.html
     }));
   }
 }
