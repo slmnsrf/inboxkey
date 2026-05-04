@@ -80,8 +80,11 @@ async fn run_async() -> anyhow::Result<()> {
     // Writer task owns stdout. Each dispatch task sends its response through
     // this channel; the writer serializes them on the wire so the binary
     // length-prefixed protocol stays well-formed under concurrent dispatch.
-    // Capacity 64 = at most 64 responses queued before dispatch tasks back-
-    // pressure on send. Multi-account fanouts are typically <10.
+    //
+    // Capacity 64 bounds the response-queue depth (completed responses
+    // waiting for stdout). It does NOT bound in-flight dispatch concurrency,
+    // which is intentionally unbounded for a single-user native-messaging
+    // host where the extension fans out at most a few requests at a time.
     let (tx, mut rx) = mpsc::channel::<Response<Value>>(64);
     tokio::spawn(async move {
         let mut stdout = tokio::io::stdout();
@@ -98,8 +101,11 @@ async fn run_async() -> anyhow::Result<()> {
                 || stdout.write_all(&body).await.is_err()
                 || stdout.flush().await.is_err()
             {
-                eprintln!("InboxBridge: stdout write failed; writer task exiting");
-                return;
+                // Stdout is gone -- Chrome closed the native-messaging port.
+                // Exit immediately so we don't keep accepting requests we
+                // can't answer. Mirrors stdin-EOF handling on the read side.
+                eprintln!("InboxBridge: stdout write failed; exiting");
+                std::process::exit(0);
             }
         }
     });
