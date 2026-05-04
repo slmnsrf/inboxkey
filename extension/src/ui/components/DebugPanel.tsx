@@ -38,11 +38,20 @@ const FILTERS: { kind: FilterKind; label: string }[] = [
   { kind: 'errors', label: 'Errors' },
 ]
 
+/**
+ * Show entries in chunks of this size; "Load more" reveals the next page.
+ * 20 is small enough that the panel never dominates the page on first
+ * render but big enough that most short debugging sessions don't need
+ * to click at all.
+ */
+const PAGE_SIZE = 20
+
 export function DebugPanel() {
   const { showToast } = useToast()
   const [enabled, setEnabled] = useState<boolean>(false)
   const [entries, setEntries] = useState<ExtractionLogEntry[]>([])
   const [filter, setFilter] = useState<FilterKind>('all')
+  const [visibleCount, setVisibleCount] = useState<number>(PAGE_SIZE)
   const [expanded, setExpanded] = useState<Set<number>>(new Set())
   const [loading, setLoading] = useState<boolean>(true)
   const [confirmingClear, setConfirmingClear] = useState<boolean>(false)
@@ -175,6 +184,15 @@ export function DebugPanel() {
     })
   }, [entries, filter])
 
+  // Reset pagination back to the first page whenever the filter set
+  // changes; otherwise switching filters could leave a stale offset
+  // pointing at entries that no longer match.
+  useEffect(() => {
+    setVisibleCount(PAGE_SIZE)
+  }, [filter])
+
+  const visible = useMemo(() => filtered.slice(0, visibleCount), [filtered, visibleCount])
+
   const toggleExpand = (i: number) => {
     setExpanded((prev) => {
       const next = new Set(prev)
@@ -294,9 +312,19 @@ export function DebugPanel() {
       </div>
 
       <div className="advanced-debug-panel__count">
-        {filtered.length === entries.length
-          ? `${entries.length} entries`
-          : `${filtered.length} of ${entries.length} entries`}
+        {(() => {
+          const shown = visible.length
+          const total = filtered.length
+          if (total === 0) return '0 entries'
+          if (filter === 'all') {
+            return total <= shown
+              ? `${total} entries`
+              : `Showing ${shown} of ${total} entries`
+          }
+          return total <= shown
+            ? `${total} of ${entries.length} entries`
+            : `Showing ${shown} of ${total} (filtered from ${entries.length})`
+        })()}
       </div>
 
       {filtered.length === 0 ? (
@@ -308,16 +336,32 @@ export function DebugPanel() {
             : 'No entries match this filter.'}
         </div>
       ) : (
-        <ul className="advanced-debug-panel__list" role="list">
-          {filtered.map((entry, i) => (
-            <DebugEntryRow
-              key={entry.ts + ':' + entry.message.id + ':' + i}
-              entry={entry}
-              expanded={expanded.has(i)}
-              onToggle={() => toggleExpand(i)}
-            />
-          ))}
-        </ul>
+        <>
+          <ul className="advanced-debug-panel__list" role="list">
+            {visible.map((entry, i) => (
+              <DebugEntryRow
+                key={entry.ts + ':' + entry.message.id + ':' + i}
+                entry={entry}
+                expanded={expanded.has(i)}
+                onToggle={() => toggleExpand(i)}
+              />
+            ))}
+          </ul>
+          {visible.length < filtered.length && (
+            <div className="advanced-debug-panel__load-more">
+              <button
+                type="button"
+                className="btn btn--secondary btn--sm"
+                onClick={() => setVisibleCount((c) => Math.min(c + PAGE_SIZE, filtered.length))}
+              >
+                Load {Math.min(PAGE_SIZE, filtered.length - visible.length)} more
+                <span className="advanced-debug-panel__muted">
+                  ({filtered.length - visible.length} remaining)
+                </span>
+              </button>
+            </div>
+          )}
+        </>
       )}
     </div>
   )
