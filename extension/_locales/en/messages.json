@@ -1423,16 +1423,16 @@
     "description": "Step 1 title in the install wizard"
   },
   "bridge_install_step2_title": {
-    "message": "Run the installer and restart Chrome",
+    "message": "Run the installer",
     "description": "Step 2 title in the install wizard"
   },
   "bridge_install_step2_instr": {
-    "message": "Open the file you just downloaded and follow the installer. Then restart Chrome so the helper can register with your browser.",
+    "message": "Open the file you just downloaded and follow the installer to set up the helper.",
     "description": "Step 2 instruction text"
   },
   "bridge_install_step2_button": {
-    "message": "I've restarted Chrome",
-    "description": "Button to confirm Chrome has been restarted"
+    "message": "I completed installation",
+    "description": "Button to confirm InboxBridge has been installed"
   },
   "bridge_install_step3_title": {
     "message": "Connect",
