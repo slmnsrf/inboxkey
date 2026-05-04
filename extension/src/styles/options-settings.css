@@ -1577,17 +1577,19 @@
 /* ============================================================
    Extraction Debug Panel (Settings → Advanced → Debug)
    Power-user diagnostic surface; default-off feature, low visual weight.
+   Uses the global design tokens from tokens.css for theme parity.
    ============================================================ */
 
 .advanced-debug-panel {
   display: flex;
   flex-direction: column;
   gap: 10px;
+  color: var(--color-text-primary);
 }
 
 .advanced-debug-panel--loading {
   padding: 16px;
-  color: var(--text-muted, #888);
+  color: var(--color-text-tertiary);
   font-size: 13px;
 }
 
@@ -1607,23 +1609,32 @@
 
 .advanced-debug-panel__filter-btn {
   padding: 4px 10px;
-  border: 1px solid var(--border-color, #d4d4d4);
+  border: 1px solid var(--color-border);
   border-radius: 999px;
   background: transparent;
-  color: var(--text, #222);
+  color: var(--color-text-secondary);
   font-size: 12px;
+  font-weight: 500;
   cursor: pointer;
-  transition: background 120ms, border-color 120ms;
+  transition: background-color 120ms, border-color 120ms, color 120ms;
 }
 
 .advanced-debug-panel__filter-btn:hover {
-  background: var(--surface-hover, #f4f4f4);
+  background: var(--surface-card-muted);
+  color: var(--color-text-primary);
+  border-color: var(--color-border-hover);
 }
 
 .advanced-debug-panel__filter-btn--active {
-  background: var(--accent-soft, #1f1f1f);
-  color: var(--accent-on, #fff);
-  border-color: var(--accent-soft, #1f1f1f);
+  background: var(--color-primary);
+  color: var(--color-text-inverse);
+  border-color: var(--color-primary);
+}
+
+.advanced-debug-panel__filter-btn--active:hover {
+  background: var(--color-primary-hover);
+  color: var(--color-text-inverse);
+  border-color: var(--color-primary-hover);
 }
 
 .advanced-debug-panel__actions {
@@ -1634,14 +1645,14 @@
 
 .advanced-debug-panel__count {
   font-size: 12px;
-  color: var(--text-muted, #888);
+  color: var(--color-text-tertiary);
 }
 
 .advanced-debug-panel__empty {
   padding: 16px;
-  border: 1px dashed var(--border-color, #d4d4d4);
+  border: 1px dashed var(--color-border);
   border-radius: 8px;
-  color: var(--text-muted, #888);
+  color: var(--color-text-tertiary);
   font-size: 13px;
   text-align: center;
 }
@@ -1658,9 +1669,9 @@
 }
 
 .advanced-debug-panel__entry {
-  border: 1px solid var(--border-color, #e4e4e4);
+  border: 1px solid var(--color-border);
   border-radius: 8px;
-  background: var(--surface, #fff);
+  background: var(--surface-card);
   overflow: hidden;
 }
 
@@ -1673,18 +1684,18 @@
   padding: 8px 10px;
   background: transparent;
   border: 0;
-  color: inherit;
+  color: var(--color-text-primary);
   text-align: left;
   cursor: pointer;
   font-size: 12px;
 }
 
 .advanced-debug-panel__entry-summary:hover {
-  background: var(--surface-hover, #f7f7f7);
+  background: var(--surface-card-muted);
 }
 
 .advanced-debug-panel__entry-time {
-  color: var(--text-muted, #888);
+  color: var(--color-text-tertiary);
   font-variant-numeric: tabular-nums;
 }
 
@@ -1695,8 +1706,12 @@
   white-space: nowrap;
 }
 
+.advanced-debug-panel__entry-subject {
+  color: var(--color-text-primary);
+}
+
 .advanced-debug-panel__entry-from {
-  color: var(--text-muted, #888);
+  color: var(--color-text-secondary);
 }
 
 .advanced-debug-panel__badge {
@@ -1706,7 +1721,7 @@
   padding: 2px 8px;
   border-radius: 999px;
   font-size: 11px;
-  font-weight: 500;
+  font-weight: 600;
   letter-spacing: 0.02em;
   text-transform: lowercase;
   white-space: nowrap;
@@ -1714,27 +1729,48 @@
 }
 
 .advanced-debug-panel__badge--pass {
-  background: rgba(46, 160, 67, 0.12);
-  color: #1a7f37;
+  background: var(--color-success-light);
+  color: var(--color-success-hover);
 }
 
 .advanced-debug-panel__badge--fail {
-  background: rgba(207, 34, 46, 0.12);
-  color: #b21f2d;
+  background: var(--color-warning-light);
+  color: var(--color-warning-hover);
 }
 
 .advanced-debug-panel__badge--skip {
-  background: rgba(120, 120, 120, 0.12);
-  color: #555;
+  background: var(--color-gray-200);
+  color: var(--color-text-secondary);
 }
 
 .advanced-debug-panel__badge--error {
-  background: rgba(207, 34, 46, 0.18);
-  color: #b21f2d;
+  background: var(--color-error-light);
+  color: var(--color-error-hover);
+}
+
+/* Dark-mode badge tone adjustments — tinted backgrounds need higher
+   contrast text since the *-light tokens flip to deeper shades. */
+@media (prefers-color-scheme: dark) {
+  .advanced-debug-panel__badge--pass {
+    background: rgba(16, 185, 129, 0.18);
+    color: #34D399;
+  }
+  .advanced-debug-panel__badge--fail {
+    background: rgba(245, 158, 11, 0.18);
+    color: #FBBF24;
+  }
+  .advanced-debug-panel__badge--skip {
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--color-text-secondary);
+  }
+  .advanced-debug-panel__badge--error {
+    background: rgba(239, 68, 68, 0.18);
+    color: #F87171;
+  }
 }
 
 .advanced-debug-panel__entry-chev {
-  color: var(--text-muted, #888);
+  color: var(--color-text-tertiary);
   transition: transform 120ms ease;
 }
 
@@ -1744,12 +1780,13 @@
 
 .advanced-debug-panel__entry-details {
   padding: 10px 12px 12px 12px;
-  border-top: 1px solid var(--border-color, #e4e4e4);
-  background: var(--surface-subtle, #fafafa);
+  border-top: 1px solid var(--color-border);
+  background: var(--surface-card-muted);
   font-size: 12px;
   display: flex;
   flex-direction: column;
   gap: 4px;
+  color: var(--color-text-primary);
 }
 
 .advanced-debug-panel__detail-row {
@@ -1760,14 +1797,19 @@
 }
 
 .advanced-debug-panel__detail-label {
-  color: var(--text-muted, #666);
+  color: var(--color-text-secondary);
   font-weight: 500;
+}
+
+.advanced-debug-panel__detail-value {
+  color: var(--color-text-primary);
 }
 
 .advanced-debug-panel__detail-value code {
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   font-size: 11px;
   word-break: break-all;
+  color: var(--color-text-primary);
 }
 
 .advanced-debug-panel__sub {
@@ -1779,7 +1821,7 @@
 
 .advanced-debug-panel__sub strong {
   font-size: 12px;
-  color: var(--text, #222);
+  color: var(--color-text-primary);
 }
 
 .advanced-debug-panel__sub ul {
@@ -1797,47 +1839,56 @@
   flex-wrap: wrap;
   align-items: center;
   gap: 6px;
+  color: var(--color-text-primary);
+}
+
+.advanced-debug-panel__otp code,
+.advanced-debug-panel__link code {
+  color: var(--color-text-primary);
 }
 
 .advanced-debug-panel__muted {
-  color: var(--text-muted, #888);
+  color: var(--color-text-tertiary);
   font-size: 11px;
 }
 
 .advanced-debug-panel__warn {
-  color: #b21f2d;
-  font-weight: 500;
+  color: var(--color-warning-hover);
+  font-weight: 600;
 }
 
 .advanced-debug-panel__error {
-  color: #b21f2d;
+  color: var(--color-error);
 }
 
 .advanced-debug-panel__icon-btn {
   background: transparent;
-  border: 1px solid var(--border-color, #d4d4d4);
+  border: 1px solid var(--color-border);
   border-radius: 4px;
   padding: 2px 4px;
   cursor: pointer;
-  color: var(--text-muted, #666);
+  color: var(--color-text-tertiary);
   display: inline-flex;
   align-items: center;
+  transition: background-color 120ms, border-color 120ms, color 120ms;
 }
 
 .advanced-debug-panel__icon-btn:hover {
-  background: var(--surface-hover, #f4f4f4);
+  background: var(--surface-card-muted);
+  color: var(--color-text-primary);
+  border-color: var(--color-border-hover);
 }
 
 .advanced-debug-panel__snippet {
   flex: 1 1 100%;
   margin-top: 4px;
   padding: 6px 8px;
-  background: var(--surface-subtle, #fff);
-  border: 1px solid var(--border-color, #e4e4e4);
+  background: var(--surface-card);
+  border: 1px solid var(--color-border);
   border-radius: 4px;
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   font-size: 11px;
-  color: var(--text-muted, #555);
+  color: var(--color-text-secondary);
   white-space: pre-wrap;
   word-break: break-word;
 }
