@@ -77,7 +77,7 @@ export interface ExtractionLogEntry {
   provider: 'imap' | 'imap-bridge' | 'google-messages'
   /** Mailbox UUID. */
   mailboxId: string
-  /** Email metadata (no body, no full URLs). */
+  /** Email metadata + truncated body preview for debug-stage inspection. */
   message: {
     id: string
     from?: string
@@ -85,9 +85,24 @@ export interface ExtractionLogEntry {
     receivedEpochMs?: number
     bodyTextLen: number
     bodyHtmlLen: number
+    /**
+     * Truncated, code-redacted preview of whichever body the extractor
+     * preferred (text first, then html). Capped at BODY_PREVIEW_MAX_CHARS;
+     * redacted OTP code values are replaced with the same redaction
+     * token applied to the snippet so the body preview never persists
+     * a usable code.
+     */
+    bodyPreview?: {
+      kind: 'text' | 'html'
+      preview: string
+      truncated: boolean
+    }
   }
   outcome: ExtractionLogOutcome
 }
+
+/** Hard cap on how many chars of the email body we persist per entry. */
+export const BODY_PREVIEW_MAX_CHARS = 4000
 
 /** Maximum number of entries retained. ~500 bytes/entry → ~100 KB at full. */
 export const EXTRACTION_DEBUG_LOG_CAP = 200
@@ -242,4 +257,44 @@ export async function requestClearLog(): Promise<void> {
   if (!response?.ok) {
     throw new Error(response?.error ?? 'Failed to clear extraction debug log')
   }
+}
+
+/**
+ * Build a debug-safe body preview: prefer text body, fall back to html,
+ * cap at BODY_PREVIEW_MAX_CHARS, redact every known OTP code value out
+ * of the result.
+ *
+ * `extractedOtps` should be every OTP candidate the extractor returned
+ * for this message. Each one's `code` (and optional `raw` form) gets
+ * redacted via the same separator-tolerant pass used for snippets, so
+ * the persisted body preview never contains a usable code.
+ *
+ * Returns undefined when both bodies are empty.
+ */
+export function buildBodyPreview(
+  text: string | undefined,
+  html: string | undefined,
+  extractedOtps: ReadonlyArray<{ code: string; raw?: string }>
+): { kind: 'text' | 'html'; preview: string; truncated: boolean } | undefined {
+  let kind: 'text' | 'html'
+  let raw: string
+  if (text && text.length > 0) {
+    kind = 'text'
+    raw = text
+  } else if (html && html.length > 0) {
+    kind = 'html'
+    raw = html
+  } else {
+    return undefined
+  }
+
+  const truncated = raw.length > BODY_PREVIEW_MAX_CHARS
+  let preview = truncated ? raw.slice(0, BODY_PREVIEW_MAX_CHARS) : raw
+
+  for (const otp of extractedOtps) {
+    if (!otp.code) continue
+    preview = redactCodeFromSnippet(preview, otp.code, otp.raw)
+  }
+
+  return { kind, preview, truncated }
 }

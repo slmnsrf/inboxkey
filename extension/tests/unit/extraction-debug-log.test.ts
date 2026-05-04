@@ -11,6 +11,8 @@ import {
   redactOtpCode,
   redactCodeFromSnippet,
   sanitizeLinkForLog,
+  buildBodyPreview,
+  BODY_PREVIEW_MAX_CHARS,
 } from '@/lib/services/extraction-debug-log'
 
 describe('redactOtpCode', () => {
@@ -100,5 +102,52 @@ describe('sanitizeLinkForLog', () => {
 
   it('returns an invalid-url marker rather than throwing on bad input', () => {
     expect(sanitizeLinkForLog('not a url').domain).toBe('invalid-url')
+  })
+})
+
+describe('buildBodyPreview', () => {
+  it('prefers text body over html when both are present', () => {
+    const result = buildBodyPreview('plain text body', '<p>html body</p>', [])
+    expect(result?.kind).toBe('text')
+    expect(result?.preview).toBe('plain text body')
+  })
+
+  it('falls back to html when text is empty', () => {
+    const result = buildBodyPreview('', '<p>html only</p>', [])
+    expect(result?.kind).toBe('html')
+    expect(result?.preview).toBe('<p>html only</p>')
+  })
+
+  it('returns undefined when both bodies are empty', () => {
+    expect(buildBodyPreview('', '', [])).toBeUndefined()
+    expect(buildBodyPreview(undefined, undefined, [])).toBeUndefined()
+  })
+
+  it('truncates and flags when body exceeds the cap', () => {
+    const long = 'x'.repeat(BODY_PREVIEW_MAX_CHARS + 100)
+    const result = buildBodyPreview(long, '', [])
+    expect(result?.preview.length).toBe(BODY_PREVIEW_MAX_CHARS)
+    expect(result?.truncated).toBe(true)
+  })
+
+  it('redacts every supplied OTP code value out of the preview', () => {
+    const body = 'Your code is 123456. Reset is at 99-88-77.'
+    const result = buildBodyPreview(body, '', [
+      { code: '123456' },
+      { code: '998877', raw: '99-88-77' },
+    ])
+    expect(result?.preview).not.toContain('123456')
+    expect(result?.preview).not.toContain('99-88-77')
+    expect(result?.preview).not.toContain('998877')
+  })
+
+  it('preserves body content when no OTP candidates were extracted', () => {
+    // The "extraction missed it" case: extractor returned no OTPs, so
+    // we have no codes to redact. The persisted body is the raw email
+    // text — that's the whole point, the user wants to see what
+    // extraction missed.
+    const body = 'There is a code 123456 buried in here.'
+    const result = buildBodyPreview(body, '', [])
+    expect(result?.preview).toBe(body)
   })
 })
