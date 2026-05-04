@@ -93,7 +93,7 @@ export class WatchSession {
    */
   async start(): Promise<void> {
     if (this.port) {
-      console.warn("[WatchSession] Session already started")
+      console.log("[WatchSession] Session already started")
       return
     }
 
@@ -137,7 +137,7 @@ export class WatchSession {
         return
       }
     } catch (error) {
-      console.warn("[WatchSession] Failed to check mailboxes, proceeding (failure-open):", error)
+      console.log("[WatchSession] Failed to check mailboxes, proceeding (failure-open):", error)
     }
 
     // GUARDRAIL 3: Email context check
@@ -265,7 +265,7 @@ export class WatchSession {
       try {
         this.port?.postMessage({ type: "PING" })
       } catch (error) {
-        console.warn("[WatchSession] Failed to send keepalive ping:", error)
+        console.log("[WatchSession] Failed to send keepalive ping:", error)
       }
     }, KEEPALIVE_INTERVAL_MS)
   }
@@ -437,7 +437,7 @@ export class WatchSession {
       }
 
       default:
-        console.warn("[WatchSession] Unknown port message:", message)
+        console.log("[WatchSession] Unknown port message:", message)
         break
     }
   }
@@ -464,7 +464,7 @@ export class WatchSession {
       const result = await chrome.storage.local.get('settings')
       automationLevel = result.settings?.automationLevel || 'autofill'
     } catch (error) {
-      console.warn("[WatchSession] Failed to load automation level:", error)
+      console.log("[WatchSession] Failed to load automation level:", error)
     }
 
     console.log(`[WatchSession] Automation level: ${automationLevel}`)
@@ -596,7 +596,7 @@ export class WatchSession {
       type: 'UPDATE_BADGE',
       state
     }).catch((error) => {
-      console.warn('[WatchSession] Failed to update badge:', error)
+      console.log('[WatchSession] Failed to update badge:', error)
     })
   }
 
@@ -657,21 +657,21 @@ export function startWatch(
   // DEFENSE 1: Rate limiting (catches bugs that bypass other checks)
   const now = Date.now()
   if (now - lastSessionCreated < SESSION_CREATION_RATE_LIMIT_MS) {
-    console.warn('[WatchSession] 🚫 Rate limit exceeded - rejecting session creation')
-    console.warn(`[WatchSession] Last session created ${now - lastSessionCreated}ms ago (limit: ${SESSION_CREATION_RATE_LIMIT_MS}ms)`)
+    console.log('[WatchSession] Rate limit exceeded - rejecting session creation')
+    console.log(`[WatchSession] Last session created ${now - lastSessionCreated}ms ago (limit: ${SESSION_CREATION_RATE_LIMIT_MS}ms)`)
 
     // Return existing session or create dummy
     if (activeWatch) {
-      console.warn('[WatchSession] Reusing existing session due to rate limit')
+      console.log('[WatchSession] Reusing existing session due to rate limit')
       return activeWatch
     }
     // No active session but rate limit triggered - possible bug, log and allow
-    console.warn('[WatchSession] No active session but rate limit triggered - allowing this session')
+    console.log('[WatchSession] No active session but rate limit triggered - allowing this session')
   }
 
   // DEFENSE 2: Same field check
   if (activeWatch && activeWatch.getField() === field) {
-    console.warn('[WatchSession] Field already has active session, reusing existing session')
+    console.log('[WatchSession] Field already has active session, reusing existing session')
     return activeWatch
   }
 

@@ -265,7 +265,7 @@ export function clearProcessedFields(): void {
         return
       }
     } catch (error) {
-      console.warn('[InboxKey] Failed to check automation level:', error)
+      console.log('[InboxKey] Failed to check automation level:', error)
       // Continue with default behavior on error
     }
 
@@ -329,7 +329,7 @@ export function clearProcessedFields(): void {
             return
           }
         } catch (error) {
-          console.warn('[InboxKey] Failed to check automation level:', error)
+          console.log('[InboxKey] Failed to check automation level:', error)
         }
 
         // Process each batched field using the detection result passed from FieldDetector
