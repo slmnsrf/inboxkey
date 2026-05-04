@@ -271,13 +271,21 @@ export function BridgeInstallGuide({ onConnected }: BridgeInstallGuideProps) {
             <div className="step__body">
               <p className="step__instr">{t('bridge_install_step3_instr')}</p>
               <div className="step3__row">
-                {checkState !== 'success' && (
+                {/*
+                 * Button is only rendered when the user can act on it (idle
+                 * before the first check, or fail to retry). During
+                 * 'checking' the spinner status row below carries the
+                 * feedback (`role="status"` + `aria-live="polite"`); during
+                 * 'success' the success row replaces the action entirely.
+                 * Hiding rather than just disabling avoids the prior visual
+                 * redundancy where a greyed-out button sat next to the
+                 * spinner.
+                 */}
+                {(checkState === 'idle' || checkState === 'fail') && (
                   <button
                     type="button"
                     className="primary-btn"
                     onClick={handleCheck}
-                    disabled={checkState === 'checking'}
-                    aria-busy={checkState === 'checking'}
                   >
                     <Plug size={14} aria-hidden="true" />
                     {t('bridge_install_check')}
