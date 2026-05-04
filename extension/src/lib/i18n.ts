@@ -32,13 +32,13 @@ export function t(key: string, substitutions?: string | string[]): string {
 
     // If no message found, return key for debugging
     if (!message) {
-      console.warn(`[i18n] Missing translation for key: ${key}`)
+      console.log(`[i18n] Missing translation for key: ${key}`)
       return key
     }
 
     return message
   } catch (error) {
-    console.warn(`[i18n] Error getting message for key: ${key}`, error)
+    console.log(`[i18n] Error getting message for key: ${key}`, error)
     return key
   }
 }

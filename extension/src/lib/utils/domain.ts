@@ -44,7 +44,7 @@ export function extractDomain(url: string): string {
     const registrable = getDomain(hostname)
     return registrable ?? hostname
   } catch (error) {
-    console.warn('[Domain] Failed to extract domain from:', url, error)
+    console.log('[Domain] Failed to extract domain from:', url, error)
     return ''
   }
 }
@@ -95,7 +95,7 @@ export async function isExtensionEnabled(url: string): Promise<boolean> {
     // 4. Fall back to default setting
     return settings.domainsEnabledByDefault ?? true
   } catch (error) {
-    console.warn('[Domain] Failed to check extension state:', error)
+    console.log('[Domain] Failed to check extension state:', error)
     return true // Default to enabled on error
   }
 }
@@ -137,7 +137,7 @@ export async function isDomainEnabled(domain: string): Promise<boolean> {
     const domainsEnabledByDefault = settings.domainsEnabledByDefault ?? true
     return domainsEnabledByDefault
   } catch (error) {
-    console.warn('[Domain] Failed to check domain state:', error)
+    console.log('[Domain] Failed to check domain state:', error)
     return true // Default to enabled on error
   }
 }
