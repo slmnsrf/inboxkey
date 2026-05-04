@@ -1,7 +1,7 @@
 {
   "extension_name": {
-    "message": "InboxKey - Autofill Verification Codes",
-    "description": "Extension name (used as CWS listing title and Chrome-surface label)"
+    "message": "InboxKey",
+    "description": "Extension display name (in-app uses only; CWS title is sourced from package.json displayName via Plasmo)"
   },
   "extension_description": {
     "message": "Privacy-first email code autofill and magic-link opener. Local-only, no servers.",
