@@ -21,6 +21,15 @@
 import { extractFromEmail, EXTRACTOR_VERSION } from '@inboxkey/extraction-core'
 import { SCORE_POPUP } from '@/lib/popup/popup-config'
 import { SeenMessageStore, HIT_TTL_MS, MISS_TTL_MS } from './seen-message-store'
+import {
+  appendEntries as appendDebugEntries,
+  redactOtpCode,
+  sanitizeLinkForLog,
+  type ExtractionLogEntry,
+  type ExtractionLogOtp,
+  type ExtractionLogLink,
+} from './extraction-debug-log'
+import { StorageFactory } from '@/lib/storage/storage-factory'
 
 // ---------------- Types ----------------
 
@@ -176,6 +185,12 @@ export class EmailPollingService {
     const adapterResults: AdapterResult[] = []
     let processed = 0
 
+    // Debug-log batch buffer. Filled inline during the loop; flushed
+    // once at end of pollOnce so concurrent adapters don't race on
+    // chrome.storage read-modify-write.
+    const debugLogBatch: ExtractionLogEntry[] = []
+    const debugLogEnabled = await isDebugLogEnabled()
+
     // Fetch from providers in parallel but respect AbortSignal
     await Promise.all(this.adapters.map(async (ad) => {
       if (cfg.signal?.aborted) return
@@ -192,7 +207,16 @@ export class EmailPollingService {
 
           // Service-side freshness floor: reject messages outside time window
           // (compensates for Gmail's day-granularity newerThan rounding)
-          if (msg.receivedEpochMs && msg.receivedEpochMs < since) continue
+          if (msg.receivedEpochMs && msg.receivedEpochMs < since) {
+            if (debugLogEnabled) {
+              debugLogBatch.push(buildLogEntry(msg, ad.mailboxId, {
+                kind: 'skipped-too-old',
+                ageMs: now - msg.receivedEpochMs,
+                thresholdMs: now - since,
+              }))
+            }
+            continue
+          }
 
           // Skip messages already processed under the *current* extractor
           // version. Stamping EXTRACTOR_VERSION into the seen key means a
@@ -200,32 +224,50 @@ export class EmailPollingService {
           // an updated extractor takes effect on the next poll instead of
           // being shadowed by stale "no-candidate" entries from before.
           const seenKey = `${ad.mailboxId}:${msg.id}:v${EXTRACTOR_VERSION}`
-          if (this.seenStore) {
-            if (await this.seenStore.hasSeen(seenKey)) continue
-          } else {
-            // Fallback to in-memory set (backward compat for callers that don't pass store)
-            if (this.seenMessageIds.has(seenKey)) continue
+          const alreadySeen = this.seenStore
+            ? await this.seenStore.hasSeen(seenKey)
+            : this.seenMessageIds.has(seenKey)
+          if (alreadySeen) {
+            if (debugLogEnabled) {
+              debugLogBatch.push(buildLogEntry(msg, ad.mailboxId, { kind: 'skipped-seen' }))
+            }
+            continue
           }
 
           const subject = msg.subject || ''
-          const ext = extractFromEmail(
-            { subject: msg.subject, text: msg.text, html: msg.html },
-            {
-              expected: ctx.expected,
-              pageDomain: ctx.pageDomain,
-              brandHints: ctx.brandHints,
-              meta: {
-                // Map google-messages to imap-bridge: extractFromEmail does not accept 'google-messages'.
-                // SMS messages have their own pipeline and should not reach here in practice.
-                provider: (msg.provider === 'google-messages' ? 'imap-bridge' : msg.provider) as 'imap' | 'imap-bridge',
-                sender: msg.from,
-                subject,
-                received: msg.receivedEpochMs
-              }
-            },
-            // ExtractionOptions currently unused — reserved for future tuning
-            {}
-          )
+
+          // Per-message try/catch so an extraction throw is reported as
+          // an extraction-error in the log, distinct from adapter-level
+          // failures caught by the outer try.
+          let ext: ReturnType<typeof extractFromEmail>
+          try {
+            ext = extractFromEmail(
+              { subject: msg.subject, text: msg.text, html: msg.html },
+              {
+                expected: ctx.expected,
+                pageDomain: ctx.pageDomain,
+                brandHints: ctx.brandHints,
+                meta: {
+                  // Map google-messages to imap-bridge: extractFromEmail does not accept 'google-messages'.
+                  // SMS messages have their own pipeline and should not reach here in practice.
+                  provider: (msg.provider === 'google-messages' ? 'imap-bridge' : msg.provider) as 'imap' | 'imap-bridge',
+                  sender: msg.from,
+                  subject,
+                  received: msg.receivedEpochMs
+                }
+              },
+              // ExtractionOptions currently unused — reserved for future tuning
+              {}
+            )
+          } catch (err) {
+            if (debugLogEnabled) {
+              debugLogBatch.push(buildLogEntry(msg, ad.mailboxId, {
+                kind: 'extraction-error',
+                error: err instanceof Error ? err.message : String(err),
+              }))
+            }
+            continue
+          }
 
           // Choose the better of OTP or link by their own score
           const topOtp = ext.otps && ext.otps[0]
@@ -247,6 +289,17 @@ export class EmailPollingService {
             await this.seenStore.add(seenKey, passesGate ? HIT_TTL_MS : MISS_TTL_MS)
           } else {
             this.seenMessageIds.add(seenKey)
+          }
+
+          if (debugLogEnabled) {
+            debugLogBatch.push(buildLogEntry(msg, ad.mailboxId, {
+              kind: 'extracted',
+              topScore,
+              minScore,
+              passed: passesGate,
+              otps: (ext.otps ?? []).slice(0, 3).map(toLogOtp),
+              links: (ext.links ?? []).slice(0, 3).map(toLogLink),
+            }))
           }
 
           // Gate by minScore; ignore everything else
@@ -272,14 +325,36 @@ export class EmailPollingService {
         }
         adapterResults.push({ mailboxId: ad.mailboxId, success: true })
       } catch (err) {
-        // Swallow provider errors to keep other adapters running
+        // Adapter-level failure (listRecent threw, network down, etc.).
+        // Distinct from per-message extraction-error caught above.
+        const errMsg = err instanceof Error ? err.message : String(err)
         adapterResults.push({
           mailboxId: ad.mailboxId,
           success: false,
-          error: err instanceof Error ? err.message : String(err),
+          error: errMsg,
         })
+        if (debugLogEnabled) {
+          debugLogBatch.push({
+            ts: Date.now(),
+            extractorVersion: EXTRACTOR_VERSION,
+            provider: 'imap-bridge', // adapter ID lost here; provider unknown without msg
+            mailboxId: ad.mailboxId,
+            message: { id: '', bodyTextLen: 0, bodyHtmlLen: 0 },
+            outcome: { kind: 'provider-error', error: errMsg },
+          })
+        }
       }
     }))
+
+    // Flush debug log batch. Wrapped so a logging failure can never
+    // affect candidate results.
+    if (debugLogEnabled && debugLogBatch.length > 0) {
+      try {
+        await appendDebugEntries(debugLogBatch)
+      } catch (err) {
+        console.warn('[EmailPollingService] debug log flush failed:', err)
+      }
+    }
 
     // Merge with cache; dedupe by code value or link href (prefer newer & higher score)
     const merged = dedupeCandidates([...this.cache, ...results])
@@ -334,6 +409,66 @@ function clampInt(n: number, min: number, max: number): number {
 
 function clamp01(n: number): number {
   return n < 0 ? 0 : n > 1 ? 1 : +n.toFixed(4)
+}
+
+// ---------------- Debug log helpers ----------------
+
+/**
+ * Read the toggle once per pollOnce invocation. Cached locally to avoid
+ * a chrome.storage round-trip per message; the user flipping the toggle
+ * mid-poll just takes effect on the next poll.
+ */
+async function isDebugLogEnabled(): Promise<boolean> {
+  try {
+    const storage = await StorageFactory.create()
+    const settings = await storage.getSettings()
+    return settings.extractionDebugLogEnabled === true
+  } catch {
+    return false
+  }
+}
+
+function buildLogEntry(
+  msg: EmailLike,
+  mailboxId: string,
+  outcome: ExtractionLogEntry['outcome']
+): ExtractionLogEntry {
+  return {
+    ts: Date.now(),
+    extractorVersion: EXTRACTOR_VERSION,
+    provider: msg.provider,
+    mailboxId,
+    message: {
+      id: msg.id,
+      from: msg.from,
+      subject: msg.subject,
+      receivedEpochMs: msg.receivedEpochMs,
+      bodyTextLen: (msg.text ?? '').length,
+      bodyHtmlLen: (msg.html ?? '').length,
+    },
+    outcome,
+  }
+}
+
+function toLogOtp(otp: { code: string; charset: 'digits' | 'alnum'; confidence: number; keyword?: string; context?: { snippet?: string; keywordDistance?: number } }): ExtractionLogOtp {
+  return {
+    codeRedacted: redactOtpCode(otp.code),
+    charset: otp.charset,
+    confidence: otp.confidence,
+    keyword: otp.keyword,
+    snippet: otp.context?.snippet,
+    keywordDistance: otp.context?.keywordDistance,
+  }
+}
+
+function toLogLink(link: { href: string; domain: string; score: number; reasons: string[] }): ExtractionLogLink {
+  const sanitized = sanitizeLinkForLog(link.href)
+  return {
+    domain: sanitized.domain || link.domain,
+    pathPreview: sanitized.pathPreview,
+    score: link.score,
+    reasons: link.reasons,
+  }
 }
 
 // ---------------- Default export ----------------

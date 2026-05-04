@@ -11,6 +11,7 @@ import { t } from '@/lib/i18n'
 import { SlidersHorizontal, ChevronDown, RotateCcw } from 'lucide-react'
 import { WarningIcon } from '@/ui/components/icons/StatusIcons'
 import type { AutomationLevel } from '@/lib/storage/schema'
+import { DebugPanel } from '@/ui/components/DebugPanel'
 
 export function AdvancedSettings() {
   const { showToast } = useToast()
@@ -234,6 +235,9 @@ export function AdvancedSettings() {
               </p>
             </>
           )}
+
+          {/* Extraction debug log */}
+          <DebugPanel />
 
           {/* Reset Settings */}
           <div className="advanced-reset-section">
