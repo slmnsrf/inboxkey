@@ -3,8 +3,15 @@
  *
  * Steps:
  *   1. Download  (OS-specific button + security note)
- *   2. Restart   (instruction + "I've restarted Chrome" button)
- *   3. Connect   (check button + inline checking/success/fail states)
+ *   2. Install   (instruction + "I completed installation" button)
+ *   3. Connect   (auto-checks on entry + inline checking/success/fail states,
+ *                 with a manual "Check connection" retry on failure)
+ *
+ * Chrome does NOT need to be restarted -- native messaging hosts are
+ * discovered on every `connectNative()` call (verified against Chromium's
+ * `NativeMessageProcessHost` + `NativeProcessLauncherImpl` source). The
+ * old "restart Chrome" step was a conservative myth that cost users a
+ * browser cycle for no functional benefit.
  *
  * Detects user OS for download links, filenames, and unsigned-installer warnings.
  */
@@ -21,7 +28,7 @@ import { detectOS } from '@/lib/utils/detect-os'
 /*  Types                                                              */
 /* ------------------------------------------------------------------ */
 
-type Step = 'download' | 'restart' | 'check'
+type Step = 'download' | 'install' | 'check'
 type CheckState = 'idle' | 'checking' | 'success' | 'fail'
 
 type OSKey = 'windows' | 'macos' | 'linux'
@@ -60,7 +67,7 @@ const OS_CONFIGS: Record<OSKey, OSConfig> = {
 
 const STEP_INDEX: Record<Step, number> = {
   download: 0,
-  restart: 1,
+  install: 1,
   check: 2,
 }
 
@@ -138,13 +145,19 @@ export function BridgeInstallGuide({ onConnected }: BridgeInstallGuideProps) {
     }
   }, [onConnected])
 
-  const advanceToRestart = useCallback(() => {
-    setCurrentStep('restart')
+  const advanceToInstall = useCallback(() => {
+    setCurrentStep('install')
   }, [])
 
-  const advanceToCheck = useCallback(() => {
+  // Confirming installation auto-advances to the connect step AND fires the
+  // ping immediately. Chrome doesn't need to be restarted to discover the
+  // native host (per-connect manifest lookup), so making the user click a
+  // separate "Check connection" button afterwards added a click for no
+  // technical reason. Failure paths still expose the manual retry button.
+  const advanceToCheckAndPing = useCallback(() => {
     setCurrentStep('check')
-  }, [])
+    void handleCheck()
+  }, [handleCheck])
 
   return (
     <div
@@ -176,7 +189,7 @@ export function BridgeInstallGuide({ onConnected }: BridgeInstallGuideProps) {
                 href={`${INBOXBRIDGE_RELEASES_URL}/latest`}
                 target="_blank"
                 rel="noopener noreferrer"
-                onClick={advanceToRestart}
+                onClick={advanceToInstall}
               >
                 <span className="download-btn__icon">
                   <Download size={18} aria-hidden="true" />
@@ -237,7 +250,7 @@ export function BridgeInstallGuide({ onConnected }: BridgeInstallGuideProps) {
               <button
                 type="button"
                 className="primary-btn"
-                onClick={advanceToCheck}
+                onClick={advanceToCheckAndPing}
               >
                 {t('bridge_install_step2_button')}
               </button>
@@ -258,13 +271,21 @@ export function BridgeInstallGuide({ onConnected }: BridgeInstallGuideProps) {
             <div className="step__body">
               <p className="step__instr">{t('bridge_install_step3_instr')}</p>
               <div className="step3__row">
-                {checkState !== 'success' && (
+                {/*
+                 * Button is only rendered when the user can act on it (idle
+                 * before the first check, or fail to retry). During
+                 * 'checking' the spinner status row below carries the
+                 * feedback (`role="status"` + `aria-live="polite"`); during
+                 * 'success' the success row replaces the action entirely.
+                 * Hiding rather than just disabling avoids the prior visual
+                 * redundancy where a greyed-out button sat next to the
+                 * spinner.
+                 */}
+                {(checkState === 'idle' || checkState === 'fail') && (
                   <button
                     type="button"
                     className="primary-btn"
                     onClick={handleCheck}
-                    disabled={checkState === 'checking'}
-                    aria-busy={checkState === 'checking'}
                   >
                     <Plug size={14} aria-hidden="true" />
                     {t('bridge_install_check')}
