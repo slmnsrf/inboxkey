@@ -21,6 +21,13 @@ export const STORAGE_KEYS = {
   SESSION_STATE: "session_state", // chrome.storage.session only
   DOMAIN_PREFERENCES: "domain_preferences",
   SYNC_ERROR_STATE: "sync_error_state",
+  /**
+   * Opt-in extraction debug log. Owned by the service worker
+   * (EmailPollingService writes via extraction-debug-log helper). Lives
+   * outside `settings` so high-frequency appends don't trigger
+   * settings-change observers. Default: absent (disabled implies empty).
+   */
+  EXTRACTION_DEBUG_LOG: "extraction_debug_log",
 } as const
 
 /**
@@ -189,6 +196,13 @@ export interface Settings {
    * @default false
    */
   debugScoringEnabled?: boolean
+  /**
+   * Opt-in: record details of how each polled email is processed
+   * (extraction scores, gate decisions, redacted OTP candidates).
+   * Stored locally only. Toggling off does NOT auto-clear the log.
+   * @default false
+   */
+  extractionDebugLogEnabled?: boolean
   /**
    * Automation level for code detection and filling.
    * - 'manual': User must click icon to detect codes (no auto-detection)
@@ -459,6 +473,7 @@ export function isSettings(obj: unknown): obj is Settings {
     typeof s.notificationsEnabled === "boolean" &&
     (s.watchSessionV2Enabled === undefined || typeof s.watchSessionV2Enabled === "boolean") &&
     (s.debugScoringEnabled === undefined || typeof s.debugScoringEnabled === "boolean") &&
+    (s.extractionDebugLogEnabled === undefined || typeof s.extractionDebugLogEnabled === "boolean") &&
     (s.automationLevel === undefined || ['manual', 'clipboard', 'autofill', 'full-automation'].includes(s.automationLevel)) &&
     (s.domainsEnabledByDefault === undefined || typeof s.domainsEnabledByDefault === "boolean") &&
     (s.extendedButtonDetection === undefined || typeof s.extendedButtonDetection === "boolean") &&

@@ -1573,3 +1573,271 @@
     min-width: 0;
   }
 }
+
+/* ============================================================
+   Extraction Debug Panel (Settings → Advanced → Debug)
+   Power-user diagnostic surface; default-off feature, low visual weight.
+   ============================================================ */
+
+.advanced-debug-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.advanced-debug-panel--loading {
+  padding: 16px;
+  color: var(--text-muted, #888);
+  font-size: 13px;
+}
+
+.advanced-debug-panel__toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.advanced-debug-panel__filters {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.advanced-debug-panel__filter-btn {
+  padding: 4px 10px;
+  border: 1px solid var(--border-color, #d4d4d4);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text, #222);
+  font-size: 12px;
+  cursor: pointer;
+  transition: background 120ms, border-color 120ms;
+}
+
+.advanced-debug-panel__filter-btn:hover {
+  background: var(--surface-hover, #f4f4f4);
+}
+
+.advanced-debug-panel__filter-btn--active {
+  background: var(--accent-soft, #1f1f1f);
+  color: var(--accent-on, #fff);
+  border-color: var(--accent-soft, #1f1f1f);
+}
+
+.advanced-debug-panel__actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.advanced-debug-panel__count {
+  font-size: 12px;
+  color: var(--text-muted, #888);
+}
+
+.advanced-debug-panel__empty {
+  padding: 16px;
+  border: 1px dashed var(--border-color, #d4d4d4);
+  border-radius: 8px;
+  color: var(--text-muted, #888);
+  font-size: 13px;
+  text-align: center;
+}
+
+.advanced-debug-panel__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 480px;
+  overflow-y: auto;
+}
+
+.advanced-debug-panel__entry {
+  border: 1px solid var(--border-color, #e4e4e4);
+  border-radius: 8px;
+  background: var(--surface, #fff);
+  overflow: hidden;
+}
+
+.advanced-debug-panel__entry-summary {
+  display: grid;
+  grid-template-columns: 70px 90px 1fr 1fr 16px;
+  align-items: center;
+  width: 100%;
+  gap: 10px;
+  padding: 8px 10px;
+  background: transparent;
+  border: 0;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.advanced-debug-panel__entry-summary:hover {
+  background: var(--surface-hover, #f7f7f7);
+}
+
+.advanced-debug-panel__entry-time {
+  color: var(--text-muted, #888);
+  font-variant-numeric: tabular-nums;
+}
+
+.advanced-debug-panel__entry-subject,
+.advanced-debug-panel__entry-from {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.advanced-debug-panel__entry-from {
+  color: var(--text-muted, #888);
+}
+
+.advanced-debug-panel__badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  text-transform: lowercase;
+  white-space: nowrap;
+  justify-self: start;
+}
+
+.advanced-debug-panel__badge--pass {
+  background: rgba(46, 160, 67, 0.12);
+  color: #1a7f37;
+}
+
+.advanced-debug-panel__badge--fail {
+  background: rgba(207, 34, 46, 0.12);
+  color: #b21f2d;
+}
+
+.advanced-debug-panel__badge--skip {
+  background: rgba(120, 120, 120, 0.12);
+  color: #555;
+}
+
+.advanced-debug-panel__badge--error {
+  background: rgba(207, 34, 46, 0.18);
+  color: #b21f2d;
+}
+
+.advanced-debug-panel__entry-chev {
+  color: var(--text-muted, #888);
+  transition: transform 120ms ease;
+}
+
+.advanced-debug-panel__entry-chev--expanded {
+  transform: rotate(90deg);
+}
+
+.advanced-debug-panel__entry-details {
+  padding: 10px 12px 12px 12px;
+  border-top: 1px solid var(--border-color, #e4e4e4);
+  background: var(--surface-subtle, #fafafa);
+  font-size: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.advanced-debug-panel__detail-row {
+  display: grid;
+  grid-template-columns: 110px 1fr;
+  gap: 8px;
+  align-items: start;
+}
+
+.advanced-debug-panel__detail-label {
+  color: var(--text-muted, #666);
+  font-weight: 500;
+}
+
+.advanced-debug-panel__detail-value code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 11px;
+  word-break: break-all;
+}
+
+.advanced-debug-panel__sub {
+  margin-top: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.advanced-debug-panel__sub strong {
+  font-size: 12px;
+  color: var(--text, #222);
+}
+
+.advanced-debug-panel__sub ul {
+  list-style: none;
+  margin: 0;
+  padding: 0 0 0 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.advanced-debug-panel__otp,
+.advanced-debug-panel__link {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.advanced-debug-panel__muted {
+  color: var(--text-muted, #888);
+  font-size: 11px;
+}
+
+.advanced-debug-panel__warn {
+  color: #b21f2d;
+  font-weight: 500;
+}
+
+.advanced-debug-panel__error {
+  color: #b21f2d;
+}
+
+.advanced-debug-panel__icon-btn {
+  background: transparent;
+  border: 1px solid var(--border-color, #d4d4d4);
+  border-radius: 4px;
+  padding: 2px 4px;
+  cursor: pointer;
+  color: var(--text-muted, #666);
+  display: inline-flex;
+  align-items: center;
+}
+
+.advanced-debug-panel__icon-btn:hover {
+  background: var(--surface-hover, #f4f4f4);
+}
+
+.advanced-debug-panel__snippet {
+  flex: 1 1 100%;
+  margin-top: 4px;
+  padding: 6px 8px;
+  background: var(--surface-subtle, #fff);
+  border: 1px solid var(--border-color, #e4e4e4);
+  border-radius: 4px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 11px;
+  color: var(--text-muted, #555);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
