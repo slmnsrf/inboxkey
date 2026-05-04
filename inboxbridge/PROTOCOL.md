@@ -127,7 +127,7 @@ Healthcheck and connection validation.
   "id": "uuid-1",
   "result": {
     "ok": true,
-    "version": "1.1.3",
+    "version": "1.1.4",
     "protocolVersion": 1,
     "minProtocolVersion": 1,
     "features": {
@@ -184,7 +184,7 @@ Check if InboxBridge is installed and operational.
   "id": "uuid-2",
   "result": {
     "installed": true,
-    "version": "1.1.3",
+    "version": "1.1.4",
     "keychain": "macos"
   }
 }
@@ -392,12 +392,29 @@ Fetch recent messages (one-time query, no live connection).
         "date": "2025-10-20T15:30:00Z",
         "from": "noreply@service.com",
         "subject": "Your verification code",
-        "snippet": "Your code is 123456"
+        "snippet": "Your code is 123456",
+        "text": "Your code is 123456",
+        "html": "<p>Your code is <b>123456</b></p>"
       }
     ]
   }
 }
 ```
+
+**Message fields (since 1.1.4):**
+- `uid` — IMAP UID (unique within mailbox).
+- `date` — ISO 8601 receive time, sourced from `INTERNALDATE`.
+- `from` — RFC2047-decoded sender email address.
+- `subject` — RFC2047-decoded subject line.
+- `snippet` — Decoded plaintext preview, capped ~500 chars. Retained for backward compat with bridges and extensions that pre-date 1.1.4.
+- `text` *(optional)* — Decoded `text/plain` body, capped at ~32 000 Unicode characters. Auto-generated from html if the message is html-only.
+- `html` *(optional)* — Decoded `text/html` body, capped at ~32 000 Unicode characters. Auto-generated from text if the message is text-only.
+
+**Wire size:** the bridge enforces a ~900 KiB ceiling on the serialized response and will trim the oldest messages from the tail until the payload fits, to stay under Chrome's 1 MiB native-messaging cap.
+
+**Compatibility:**
+- Bridge 1.1.3 and earlier omit `text`/`html` and return only `snippet` containing the first ~200 chars of the raw RFC822 envelope (not MIME-decoded). Extensions running against an old bridge fall back to `snippet`.
+- Extensions older than the 1.1.4 release ignore unknown fields, so a new bridge talking to an old extension still works (the old extension simply does not benefit from MIME decoding).
 
 ### 3.9 `credentials.update`
 
@@ -598,14 +615,14 @@ Emitted when new message arrives during active watch.
     "date": "2025-10-20T15:30:00Z",
     "from": "noreply@service.com",
     "subject": "Your verification code",
-    "snippet": "Your code is 123456"
+    "snippet": "Your code is 123456",
+    "text": "Your code is 123456",
+    "html": "<p>Your code is <b>123456</b></p>"
   }
 }
 ```
 
-**Fields:**
-- `uid`: IMAP UID (unique within mailbox)
-- `snippet`: First ~200 chars of plain text body
+**Fields:** Same shape as `mail.fetchRecent` message objects (see § 3.8). `text` and `html` are MIME-decoded body parts added in 1.1.4 and are optional for backward compatibility. The `watch.*` family is currently unimplemented; the event shape is documented here for forward-compat planning.
 
 ### 4.2 `bridge.connectionLost`
 
@@ -693,7 +710,7 @@ The extension background worker maintains a **single Native Messaging port** for
 
 ```
 Extension → Native: {"v":1,"id":"ping-1","method":"bridge.ping"}
-Native → Extension:  {"v":1,"id":"ping-1","result":{"ok":true,"version":"1.1.3","protocolVersion":1,"minProtocolVersion":1}}
+Native → Extension:  {"v":1,"id":"ping-1","result":{"ok":true,"version":"1.1.4","protocolVersion":1,"minProtocolVersion":1}}
 ```
 
 ### 6.3 Ping Timeout Handling

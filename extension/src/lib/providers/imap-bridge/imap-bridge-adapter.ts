@@ -111,6 +111,15 @@ export class IMAPBridgeAdapter implements ProviderAdapter {
    * Maps InboxBridge protocol message format (PROTOCOL.md § 3.8) to
    * EmailLike interface used by email-polling-service.
    *
+   * Body source resolution:
+   *   - InboxBridge 1.1.4+ MIME-parses the message and returns decoded
+   *     `text` and `html` body parts -- prefer these.
+   *   - Older bridges only return `snippet` (first 200 chars of raw RFC822
+   *     envelope -- not extractable, but better than empty). Fall back to
+   *     it so new extensions paired with old bridges still surface
+   *     SOMETHING; users get nudged to upgrade via the recommended-version
+   *     check.
+   *
    * @param msg - Raw message from native app
    * @returns EmailLike object for internal use
    */
@@ -120,9 +129,12 @@ export class IMAPBridgeAdapter implements ProviderAdapter {
     date: string
     from: string
     subject: string
-    snippet: string
+    snippet?: string
+    text?: string
+    html?: string
   }): EmailLike {
     const mailbox = msg.mailbox || 'INBOX' // Default to INBOX if not specified
+    const text = msg.text ?? msg.snippet ?? ''
     return {
       id: `${this.accountId}:${mailbox}:${msg.uid}`, // Composite key: accountId:mailbox:uid (IMAP UIDs only unique per mailbox)
       provider: 'imap-bridge',
@@ -130,8 +142,8 @@ export class IMAPBridgeAdapter implements ProviderAdapter {
       subject: msg.subject,
       from: msg.from,
       receivedEpochMs: new Date(msg.date).getTime(),
-      text: msg.snippet, // Use snippet as text body (first ~200 chars)
-      html: undefined, // IMAP doesn't provide HTML in initial fetch
+      text,
+      html: msg.html,
     }
   }
 }

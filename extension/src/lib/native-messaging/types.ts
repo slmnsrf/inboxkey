@@ -131,7 +131,14 @@ export interface UninstallResult {
 }
 
 /**
- * IMAP message format from native app (mail.fetchRecent response)
+ * IMAP message format from native app (mail.fetchRecent response).
+ *
+ * Wire shape evolved in InboxBridge 1.1.4: the bridge now MIME-parses the
+ * message and returns decoded `text` / `html` body parts (replacing the
+ * old "first 200 chars of raw RFC822 envelope" `snippet`-only contract).
+ * `snippet` is still populated for backward compatibility with bridges
+ * that haven't been upgraded yet, and for old extension builds reading
+ * the v1.1.3 wire shape.
  */
 export interface IMAPMessage {
   /** IMAP UID (unique within mailbox) */
@@ -140,12 +147,30 @@ export interface IMAPMessage {
   mailbox?: string
   /** ISO 8601 date string */
   date: string
-  /** Sender email address */
+  /** Sender email address (decoded from MIME headers in 1.1.4+) */
   from: string
-  /** Email subject */
+  /** Email subject (RFC2047-decoded in 1.1.4+) */
   subject: string
-  /** First ~200 chars of plain text body */
-  snippet: string
+  /**
+   * Decoded plaintext preview (~500 chars in 1.1.4+, ~200 chars of raw
+   * RFC822 envelope in older bridges). Optional because new bridges may
+   * eventually drop it; today it is always present.
+   */
+  snippet?: string
+  /**
+   * Decoded text/plain body, capped at ~32 000 Unicode characters. Added in
+   * InboxBridge 1.1.4. Absent on older bridges -- the adapter falls back to
+   * `snippet`. mail-parser synthesizes a text body from html when missing,
+   * so this is usually present even for "html-only" messages.
+   */
+  text?: string
+  /**
+   * Decoded text/html body, capped at ~32 000 Unicode characters. Added in
+   * InboxBridge 1.1.4. mail-parser synthesizes an html body from text when
+   * missing, so this is usually present even for "text-only" messages on
+   * 1.1.4+ bridges. Absent only when neither path produces a body.
+   */
+  html?: string
 }
 
 /**
