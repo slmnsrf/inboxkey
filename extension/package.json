@@ -1,8 +1,8 @@
 {
   "name": "inboxkey",
-  "displayName": "InboxKey",
+  "displayName": "InboxKey - Autofill Verification Codes",
   "version": "1.0.0",
-  "description": "Privacy-first email code autofill and magic-link opener for Chrome",
+  "description": "Privacy-first email code autofill and magic-link opener. Local-only, no servers.",
   "author": "SelmanSeref",
   "license": "PolyForm-Noncommercial-1.0.0",
   "scripts": {
