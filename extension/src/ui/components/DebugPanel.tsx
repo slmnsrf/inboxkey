@@ -14,7 +14,7 @@
  */
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react'
-import { Bug, RefreshCw, Trash2, ChevronRight, AlertCircle, CheckCircle2, Eye, EyeOff } from 'lucide-react'
+import { Bug, RefreshCw, Trash2, ChevronRight, AlertCircle, CheckCircle2, Eye, EyeOff, Clipboard } from 'lucide-react'
 import { StorageFactory } from '@/lib/storage/storage-factory'
 import { sendSettingsMutation } from '@/lib/storage/settings-rpc'
 import { useToast } from '@/ui/contexts/ToastContext'
@@ -137,6 +137,26 @@ export function DebugPanel() {
     }
   }
 
+  const handleCopyRecent = async () => {
+    // 5-minute window matches typical "I just hit submit, what
+    // happened?" debugging use. Anything older than that is rarely
+    // relevant to the current code-detection flow under investigation.
+    const cutoff = Date.now() - 5 * 60 * 1000
+    const recent = entries.filter((e) => e.ts >= cutoff)
+    if (recent.length === 0) {
+      showToast('No entries from the last 5 minutes', 'error')
+      return
+    }
+    try {
+      const payload = JSON.stringify(recent, null, 2)
+      await navigator.clipboard.writeText(payload)
+      showToast(`Copied ${recent.length} entries (last 5 min) to clipboard`, 'success')
+    } catch (err) {
+      console.warn('[DebugPanel] copy failed:', err)
+      showToast('Failed to copy. Check clipboard permission.', 'error')
+    }
+  }
+
   const filtered = useMemo(() => {
     if (filter === 'all') return entries
     return entries.filter((e) => {
@@ -223,6 +243,17 @@ export function DebugPanel() {
           ))}
         </div>
         <div className="advanced-debug-panel__actions">
+          <button
+            type="button"
+            className="btn btn--secondary btn--sm"
+            onClick={handleCopyRecent}
+            disabled={entries.length === 0}
+            aria-label="Copy entries from the last 5 minutes to clipboard"
+            title="Copy JSON of entries received in the last 5 minutes"
+          >
+            <Clipboard size={12} />
+            Copy last 5 min
+          </button>
           <button
             type="button"
             className="btn btn--secondary btn--sm"

@@ -1660,12 +1660,41 @@
 .advanced-debug-panel__list {
   list-style: none;
   margin: 0;
-  padding: 0;
+  padding: 4px 6px 4px 0; /* right padding leaves room for scrollbar */
   display: flex;
   flex-direction: column;
   gap: 4px;
-  max-height: 480px;
+  /* Cap to ~7 collapsed rows so the panel stays bounded on the page;
+     internal scroll takes over after that. Viewport-relative ceiling
+     prevents the list from dominating short windows. */
+  max-height: min(50vh, 320px);
   overflow-y: auto;
+  /* Inset shadow hint at top/bottom so users know there's more above
+     or below the visible portion. Falls back gracefully when scroll
+     isn't engaged. */
+  scroll-behavior: smooth;
+}
+
+/* WebKit/Blink scrollbar styling. Visible enough to communicate
+   scrollability without dominating the surface. Falls back to default
+   on browsers that don't support these pseudo-elements (Firefox uses
+   `scrollbar-width` + `scrollbar-color` below). */
+.advanced-debug-panel__list::-webkit-scrollbar {
+  width: 8px;
+}
+.advanced-debug-panel__list::-webkit-scrollbar-track {
+  background: transparent;
+}
+.advanced-debug-panel__list::-webkit-scrollbar-thumb {
+  background: var(--color-border-strong);
+  border-radius: 4px;
+}
+.advanced-debug-panel__list::-webkit-scrollbar-thumb:hover {
+  background: var(--color-border-hover);
+}
+.advanced-debug-panel__list {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-border-strong) transparent;
 }
 
 .advanced-debug-panel__entry {
