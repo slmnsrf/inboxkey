@@ -443,7 +443,7 @@ export class WatchSession {
   }
 
   private handlePortDisconnect = (): void => {
-    console.log("[WatchSession] Port disconnected")
+    console.warn("[WatchSession] Port disconnected")
     this.cleanup()
   }
 
