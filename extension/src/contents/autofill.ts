@@ -35,24 +35,24 @@ export async function autofillCode(options: AutofillOptions): Promise<boolean> {
 
   // Validation checks
   if (!code || code.length === 0) {
-    console.warn('[Autofill] Cannot autofill empty code')
+    console.log('[Autofill] Cannot autofill empty code')
     return false
   }
 
   // Check if field still exists in DOM
   if (!document.contains(field)) {
-    console.warn('[Autofill] Field no longer exists in DOM')
+    console.log('[Autofill] Field no longer exists in DOM')
     return false
   }
 
   // Check if field is readonly or disabled
   if (field.readOnly) {
-    console.warn('[Autofill] Field is readonly, cannot autofill')
+    console.log('[Autofill] Field is readonly, cannot autofill')
     return false
   }
 
   if (field.disabled) {
-    console.warn('[Autofill] Field is disabled, cannot autofill')
+    console.log('[Autofill] Field is disabled, cannot autofill')
     return false
   }
 
@@ -69,13 +69,13 @@ export async function autofillCode(options: AutofillOptions): Promise<boolean> {
     style.opacity === '0' ||
     style.pointerEvents === 'none'
   ) {
-    console.warn('[Autofill] Field is not visible/interactive, cannot autofill')
+    console.log('[Autofill] Field is not visible/interactive, cannot autofill')
     return false
   }
 
   const rect = field.getBoundingClientRect()
   if (rect.width === 0 || rect.height === 0) {
-    console.warn('[Autofill] Field has zero size, cannot autofill')
+    console.log('[Autofill] Field has zero size, cannot autofill')
     return false
   }
 
@@ -141,7 +141,7 @@ async function autofillSplitInputs(
 
   // Strict shape contract: code length must exactly match fillable input count
   if (chars.length !== fillableInputs.length) {
-    console.warn(
+    console.log(
       `[Autofill] Shape mismatch: code has ${chars.length} chars but ${fillableInputs.length} fillable inputs`
     )
     return false
@@ -190,7 +190,7 @@ async function checkForAutoSubmit(_field: HTMLInputElement): Promise<boolean> {
 async function submitForm(field: HTMLInputElement): Promise<void> {
   const form = field.closest('form')
   if (!form) {
-    console.warn('[Autofill] No form found to submit')
+    console.log('[Autofill] No form found to submit')
     return
   }
 

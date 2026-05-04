@@ -131,7 +131,7 @@ function isActionApiAvailable(): boolean {
  */
 function setBadgeText(text: string): void {
   if (!isActionApiAvailable()) {
-    console.warn('[BadgeManager] chrome.action API not available')
+    console.log('[BadgeManager] chrome.action API not available')
     return
   }
 
@@ -149,7 +149,7 @@ function setBadgeText(text: string): void {
  */
 function setBadgeBackgroundColor(color: string): void {
   if (!isActionApiAvailable()) {
-    console.warn('[BadgeManager] chrome.action API not available')
+    console.log('[BadgeManager] chrome.action API not available')
     return
   }
 
@@ -193,7 +193,7 @@ export function setBadgeListening(): void {
   stopAnimation()
 
   if (!isActionApiAvailable()) {
-    console.warn('[BadgeManager] chrome.action API not available for listening badge')
+    console.log('[BadgeManager] chrome.action API not available for listening badge')
     return
   }
 
@@ -243,7 +243,7 @@ export function setBadgeSuccess(): void {
   isAnimating = false // Explicit flag clear
 
   if (!isActionApiAvailable()) {
-    console.warn('[BadgeManager] chrome.action API not available for success badge')
+    console.log('[BadgeManager] chrome.action API not available for success badge')
     return
   }
 
@@ -271,7 +271,7 @@ export function setBadgeNoCode(): void {
   isAnimating = false // Explicit flag clear
 
   if (!isActionApiAvailable()) {
-    console.warn('[BadgeManager] chrome.action API not available for no-code badge')
+    console.log('[BadgeManager] chrome.action API not available for no-code badge')
     return
   }
 
@@ -308,7 +308,7 @@ export function setBadgeCount(count: number): void {
   isAnimating = false // Explicit flag clear
 
   if (!isActionApiAvailable()) {
-    console.warn('[BadgeManager] chrome.action API not available for count badge')
+    console.log('[BadgeManager] chrome.action API not available for count badge')
     return
   }
 
@@ -335,7 +335,7 @@ export function setBadgeSyncError(): void {
   isAnimating = false // Explicit flag clear
 
   if (!isActionApiAvailable()) {
-    console.warn('[BadgeManager] chrome.action API not available for sync error badge')
+    console.log('[BadgeManager] chrome.action API not available for sync error badge')
     return
   }
 
@@ -368,7 +368,7 @@ export function clearBadge(): void {
   currentBadgePriority = BadgePriority.IDLE
 
   if (!isActionApiAvailable()) {
-    console.warn('[BadgeManager] chrome.action API not available for clearing badge')
+    console.log('[BadgeManager] chrome.action API not available for clearing badge')
     return
   }
 

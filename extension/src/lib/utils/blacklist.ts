@@ -111,7 +111,7 @@ export async function isBlacklisted(url: string): Promise<boolean> {
 
     return false
   } catch (error) {
-    console.warn('[Blacklist] Failed to check if URL is blacklisted:', url, error)
+    console.log('[Blacklist] Failed to check if URL is blacklisted:', url, error)
     return false // Default to not blacklisted on error
   }
 }
@@ -335,7 +335,7 @@ export async function getBlacklistedDomains(): Promise<string[]> {
     const settings: Settings = result[STORAGE_KEYS.SETTINGS]
     return settings?.blacklistedDomains || []
   } catch (error) {
-    console.warn('[Blacklist] Failed to get domains:', error)
+    console.log('[Blacklist] Failed to get domains:', error)
     return []
   }
 }
@@ -351,7 +351,7 @@ export async function getBlacklistedUrls(): Promise<string[]> {
     const settings: Settings = result[STORAGE_KEYS.SETTINGS]
     return settings?.blacklistedUrls || []
   } catch (error) {
-    console.warn('[Blacklist] Failed to get URLs:', error)
+    console.log('[Blacklist] Failed to get URLs:', error)
     return []
   }
 }

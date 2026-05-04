@@ -41,7 +41,7 @@ export function normalizeUrl(url: string): string | null {
 
     return urlObj.toString()
   } catch (error) {
-    console.warn('[URL] Failed to normalize URL:', url, error)
+    console.log('[URL] Failed to normalize URL:', url, error)
     return null
   }
 }
@@ -181,7 +181,7 @@ export function extractDomainFromUrl(url: string): string {
 
     return lastTwo
   } catch (error) {
-    console.warn('[URL] Failed to extract domain from URL:', url, error)
+    console.log('[URL] Failed to extract domain from URL:', url, error)
     return ''
   }
 }
