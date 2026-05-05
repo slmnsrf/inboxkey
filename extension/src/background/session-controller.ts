@@ -437,6 +437,16 @@ export class SessionController {
     try {
       const code = await this.pollForCode(session)
 
+      // Concurrent baseline capture short-circuited this poll. Don't
+      // mark the index completed -- if we did, pollsCompleted.length
+      // would advance against pollSchedule.length and the session
+      // could time out one tick early. Letting the index sit unmarked
+      // keeps `pollsRemaining` honest; the next scheduled poll runs
+      // normally once the in-flight baseline finishes.
+      if (code === 'skipped') {
+        return
+      }
+
       session.pollsCompleted.push(pollIndex)
       session.pollsCompleted.sort((a, b) => a - b)
       session.lastUpdated = Date.now()
@@ -521,7 +531,7 @@ export class SessionController {
    */
   private async pollForCode(
     session: SessionState
-  ): Promise<SessionCodeResult | null> {
+  ): Promise<SessionCodeResult | null | 'skipped'> {
     try {
       // Get appropriate storage for current mode (plaintext or encrypted)
       const storage = await StorageFactory.create()
@@ -563,11 +573,17 @@ export class SessionController {
       session.smsBaseline = session.smsBaseline ?? {}
       session.emailBaselineKeys = session.emailBaselineKeys ?? {}
       if (this.baselineCapturing.has(session.id)) {
-        // Another poll is already mid-capture; skip to avoid double writes.
+        // Another poll is already mid-capture; skip to avoid double
+        // writes. Return the 'skipped' sentinel so handlePoll does NOT
+        // mark this pollIndex completed — a `null` return would consume
+        // the poll slot and starve the schedule on slow networks where
+        // the in-flight poll takes longer than the next poll's offset.
+        // The next scheduled poll will fire at its normal time, and by
+        // then the in-flight baseline will have been captured.
         console.log(
-          `[SessionController] Baseline capture in progress for session ${session.id}; skipping concurrent poll`
+          `[SessionController] Baseline capture in progress for session ${session.id}; skipping concurrent poll (will retry on next tick)`
         )
-        return null
+        return 'skipped'
       }
       this.baselineCapturing.add(session.id)
 
@@ -895,21 +911,26 @@ export class SessionController {
           // provenanceKey classification.
           if (!isNewArrivalCandidate(candidate, session)) continue
           // SMS pre-session freshness gate. The snapshot-based baseline
-          // can miss conversations the user received outside any active
-          // session (e.g. a personal SMS that arrived 5 minutes before
-          // the current request). Such an SMS would diff "new" against
-          // the snapshot but its parsed timestamp would predate session
-          // start. Drop it here so it can't autofill. Candidates with no
-          // parsed timestamp pass through — the snapshot diff alone is
-          // the gate then, since we have no honest receipt time to
-          // enforce.
-          if (
-            candidate.provider === 'google-messages' &&
-            candidate.receivedEpochMs !== undefined &&
-            candidate.receivedEpochMs <
+          // diffs "newer than the snapshot" — not "newer than session
+          // start". An SMS that arrived between the previous session's
+          // end and this session's start is "new" relative to the
+          // snapshot but predates this session, so it must not autofill.
+          //
+          // We fail CLOSED for candidates with no parsed timestamp: an
+          // SMS the GM adapter couldn't date (clock-only / "today" /
+          // malformed text) cannot be proven fresh, and the snapshot
+          // diff alone is not a freshness gate (it's a "happened after
+          // the snapshot" gate, which spans the inter-session gap).
+          // The blast radius is narrow — most GM rows parse to an
+          // absolute timestamp; only ambiguous strings fall here.
+          if (candidate.provider === 'google-messages') {
+            if (candidate.receivedEpochMs === undefined) continue
+            if (
+              candidate.receivedEpochMs <
               session.sessionStart - SMS_CANDIDATE_PRESESSION_GRACE_MS
-          ) {
-            continue
+            ) {
+              continue
+            }
           }
         }
         const senderETLD = candidate.from
@@ -1144,6 +1165,29 @@ function smsSnapshotKey(mailboxId: string): string {
  *   - the snapshot's observedAt is in the future relative to sessionStart
  *     (clock skew / corrupted record; safer to ignore)
  */
+/**
+ * Validate a persisted snapshot's shape. A truthy non-conforming blob
+ * (e.g. partially-written record after a Chrome crash, schema drift, or
+ * an out-of-band write) reaching `mailboxBaseline.find()` would silently
+ * break SMS polling for the whole session. We fail closed: malformed
+ * snapshots are dropped and the session falls back to seeding the
+ * baseline from this poll's own batch.
+ */
+function isValidSnapshot(value: unknown): value is SmsConversationSnapshot {
+  if (!value || typeof value !== 'object') return false
+  const v = value as Partial<SmsConversationSnapshot>
+  if (typeof v.observedAt !== 'number' || !Number.isFinite(v.observedAt)) return false
+  if (!Array.isArray(v.entries)) return false
+  for (const e of v.entries) {
+    if (!e || typeof e !== 'object') return false
+    const entry = e as Partial<SmsBaselineEntry>
+    if (typeof entry.conversationHref !== 'string') return false
+    if (typeof entry.snippetHash !== 'string') return false
+    if (typeof entry.isUnread !== 'boolean') return false
+  }
+  return true
+}
+
 async function loadSmsSnapshot(
   mailboxId: string,
   sessionStart: number
@@ -1151,11 +1195,17 @@ async function loadSmsSnapshot(
   try {
     const key = smsSnapshotKey(mailboxId)
     const result = await chrome.storage.session.get(key)
-    const snapshot = result[key] as SmsConversationSnapshot | undefined
-    if (!snapshot) return null
-    if (snapshot.observedAt > sessionStart) return null
-    if (sessionStart - snapshot.observedAt > SMS_SNAPSHOT_TTL_MS) return null
-    return snapshot
+    const raw = result[key]
+    if (!raw) return null
+    if (!isValidSnapshot(raw)) {
+      console.warn(
+        `[SessionController] loadSmsSnapshot: malformed snapshot at ${key}, dropping`
+      )
+      return null
+    }
+    if (raw.observedAt > sessionStart) return null
+    if (sessionStart - raw.observedAt > SMS_SNAPSHOT_TTL_MS) return null
+    return raw
   } catch (err) {
     console.warn('[SessionController] loadSmsSnapshot failed:', err)
     return null

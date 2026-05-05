@@ -465,13 +465,22 @@ function isNonOtpKeywordMatch(text: string, match: RegExpExecArray): boolean {
  * SMS-style brand-prefix-code shape at the very start of the body.
  *
  * Matches the standard worldwide convention used by carriers and
- * brand-name SMS senders: "Amazon: 383931 ...", "Telegram:12345",
- * "Discord: 987654". Required components:
+ * brand-name SMS senders across scripts: "Amazon: 383931", "Яндекс: 12345",
+ * "微信: 987654", "Discord:777888". Required components:
  *
- *   - optional leading whitespace/punctuation (`^\W*`)
- *   - a 4-25 char alphabetic-led brand token (`[A-Za-z][\w&'-]{2,24}`)
+ *   - optional leading non-letter/non-digit chars (skips whitespace,
+ *     punctuation, emoji, etc., but stops before the first brand letter
+ *     in any script)
+ *   - a 3-25 char Unicode-letter-led brand token. Inner chars allow
+ *     letters, digits, underscore, and the common brand specials `&'-`.
  *   - mandatory colon, optionally surrounded by whitespace
  *   - a 4-10 digit run with a trailing word-boundary
+ *
+ * Unicode notes: uses the `u` flag with `\p{L}` / `\p{N}` so Cyrillic,
+ * Greek, CJK, Devanagari, Arabic and Turkish dotted-İ brand names all
+ * admit. JavaScript's `\w` / `\W` are explicitly NOT Unicode-aware even
+ * with `u`, so the original `^\W*[A-Za-z]` regex silently rejected
+ * every non-Latin brand name.
  *
  * Deliberate false-negatives (worth the precision):
  *   - bracket forms: "[Brand] 123456" (no colon)
@@ -484,7 +493,7 @@ function isNonOtpKeywordMatch(text: string, match: RegExpExecArray): boolean {
  *   - "Get 100000 points" (3-char first word fails brand-length minimum)
  *   - "$123456.00" (no leading alphabetic brand token)
  */
-const BRAND_PREFIX_OTP_SHAPE = /^\W*[A-Za-z][\w&'-]{2,24}\s*:\s*\d{4,10}\b/
+const BRAND_PREFIX_OTP_SHAPE = /^[^\p{L}\p{N}]*\p{L}[\p{L}\p{N}_&'\-]{2,24}\s*:\s*\d{4,10}\b/u
 
 function hasBrandPrefixCodeShape(text: string): boolean {
   return BRAND_PREFIX_OTP_SHAPE.test(text)

@@ -428,6 +428,33 @@ function getLabelText(input: HTMLInputElement): string {
  * @param isSplitInput - If true, allows longer text (250 chars) for split-input instructions
  * @returns Combined nearby text
  */
+/**
+ * Sibling-tag denylist for the deep split-input scan. Walking 8 levels
+ * up in heavy SPA layouts can put a sidebar / global header / footer
+ * inside the same wrapper as the form. A `<nav>` containing
+ * "Need help? support@example.com" would otherwise promote a
+ * keyword-only-once page to `channelEvidence: 'positive'`. Skipping
+ * these tags keeps the wider scan focused on the input's local form/
+ * dialog/section context.
+ */
+const SCAN_BLOCKED_TAGS = new Set([
+  'NAV',
+  'HEADER',
+  'FOOTER',
+  'ASIDE',
+  'SCRIPT',
+  'STYLE',
+])
+
+/**
+ * Cumulative text-content cap for the deep split-input scan. Per-chunk
+ * limits don't bound total accumulation across 8 ancestor levels, so a
+ * page sprinkling many short navigation snippets can still pull
+ * unrelated text into the classifier window. Once we cross this cap we
+ * stop walking — the local form context is captured by then.
+ */
+const SCAN_CUMULATIVE_CAP = 1200
+
 function getNearbyText(input: HTMLInputElement, isSplitInput: boolean = false): string {
   const texts: string[] = []
   let element: HTMLElement | null = input
@@ -443,8 +470,15 @@ function getNearbyText(input: HTMLInputElement, isSplitInput: boolean = false): 
   // still requires actual email/SMS text in the deeper scan to promote
   // evidence — TOTP-only 6-cell prompts (Authenticator app screens) stay
   // 'unknown' because no email/SMS pattern exists at any depth.
+  //
+  // Boundary stops: once we hit `<form>`, `<dialog>`, `<main>`, or
+  // `[role="dialog"]`, we stop walking — those are the natural scope of
+  // an OTP UI and any text outside them is unrelated chrome. Sibling
+  // `<nav>`/`<header>`/`<footer>`/`<aside>` are skipped per
+  // SCAN_BLOCKED_TAGS for the same reason.
   const maxLevels = isSplitInput ? 8 : 5
   let levels = 0
+  let cumulativeLength = 0
 
   while (element && levels < maxLevels) {
     // Get all text from siblings
@@ -456,20 +490,38 @@ function getNearbyText(input: HTMLInputElement, isSplitInput: boolean = false): 
         .join(' ')
       if (directText && directText.length < maxLength) {
         texts.push(directText)
+        cumulativeLength += directText.length
       }
 
       const siblings = Array.from(element.parentElement.children)
-      siblings.forEach((sibling) => {
-        if (sibling !== element && sibling instanceof HTMLElement) {
-          const text = sibling.textContent?.trim()
-          if (text && text.length > 0 && text.length < maxLength) {
-            texts.push(text)
-          }
+      for (const sibling of siblings) {
+        if (sibling === element || !(sibling instanceof HTMLElement)) continue
+        if (SCAN_BLOCKED_TAGS.has(sibling.tagName)) continue
+        if (sibling.getAttribute('role') === 'navigation') continue
+        const text = sibling.textContent?.trim()
+        if (text && text.length > 0 && text.length < maxLength) {
+          texts.push(text)
+          cumulativeLength += text.length
         }
-      })
+      }
     }
 
-    element = element.parentElement
+    if (cumulativeLength >= SCAN_CUMULATIVE_CAP) break
+
+    const next = element.parentElement
+    if (!next) break
+
+    // Stop at form/dialog/main boundaries — text outside these is
+    // page-level chrome, not OTP-related context.
+    const tag = next.tagName
+    if (tag === 'FORM' || tag === 'DIALOG' || tag === 'MAIN') {
+      // Include the boundary's own children (already done via siblings
+      // loop on this iteration), then stop.
+      break
+    }
+    if (next.getAttribute('role') === 'dialog') break
+
+    element = next
     levels++
   }
 

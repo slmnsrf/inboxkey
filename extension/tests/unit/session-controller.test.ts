@@ -1677,6 +1677,98 @@ describe("SessionController", () => {
           expect.objectContaining({ status: "timedout" })
         )
       })
+
+      describe("corrupt snapshot validation", () => {
+        // Locks in the loadSmsSnapshot() shape gate. A truthy non-conforming
+        // blob (Chrome crash mid-write, schema drift, out-of-band write)
+        // would otherwise reach `mailboxBaseline.find()` and silently break
+        // SMS polling for the whole session.
+        const corruptCases: Array<[string, unknown]> = [
+          ["entries is null", { observedAt: Date.now() - 60_000, entries: null }],
+          ["entries is a string", { observedAt: Date.now() - 60_000, entries: "not-an-array" }],
+          ["entries is an object", { observedAt: Date.now() - 60_000, entries: { 0: "fake" } }],
+          ["entries item missing snippetHash", {
+            observedAt: Date.now() - 60_000,
+            entries: [{ conversationHref: "/c/1", isUnread: false }],
+          }],
+          ["entries item with wrong type", {
+            observedAt: Date.now() - 60_000,
+            entries: [{ conversationHref: 7, snippetHash: "h", isUnread: true }],
+          }],
+          ["observedAt is not a number", { observedAt: "yesterday", entries: [] }],
+          ["observedAt is NaN", { observedAt: NaN, entries: [] }],
+          ["whole snapshot is a string", "corrupted-string-payload"],
+          ["whole snapshot is a number", 42],
+        ]
+
+        for (const [label, payload] of corruptCases) {
+          it(`drops snapshot when ${label}, falls back to (current) baseline`, async () => {
+            setupOneSmsMailbox()
+            const onCompleted = vi.fn()
+            const controller = createController({ onSessionCompleted: onCompleted })
+            await controller.initialize()
+
+            const now = Date.now()
+            const previewHash = "hash-fresh"
+
+            // Plant the corrupt blob.
+            await chrome.storage.session.set({ [SMS_SNAPSHOT_KEY]: payload })
+
+            mockPollOnce.mockImplementationOnce((_ctx, cfg) => {
+              cfg?.onAdapterBatch?.("gm-1", [
+                {
+                  id: "gm-msg-corrupt",
+                  provider: "google-messages",
+                  mailboxId: "gm-1",
+                  text: "Brand: 999000 ...",
+                  receivedEpochMs: now + FRESH_NOW_OFFSET,
+                  _meta: {
+                    conversationHref: "/conv/c",
+                    snippetHash: previewHash,
+                    isUnread: true,
+                  },
+                },
+              ])
+              return Promise.resolve({
+                candidates: [
+                  {
+                    provider: "google-messages" as const,
+                    mailboxId: "gm-1",
+                    messageId: "gm-msg-corrupt",
+                    from: "Brand",
+                    receivedEpochMs: now + FRESH_NOW_OFFSET,
+                    code: { value: "999000", kind: "digits" as const, score: 0.95 },
+                    score: 0.95,
+                    provenanceKey: "google-messages:gm-1:gm-msg-corrupt",
+                    meta: {
+                      conversationHref: "/conv/c",
+                      snippetHash: previewHash,
+                      isUnread: true,
+                    },
+                  },
+                ],
+                adapterResults: [{ mailboxId: "gm-1", success: true }],
+              })
+            })
+
+            await controller.startSession({
+              tabId: 1,
+              url: "https://brand.com",
+              expected: {},
+              timeoutSeconds: 0.2,
+            })
+
+            await vi.advanceTimersByTimeAsync(0)
+            await vi.advanceTimersByTimeAsync(200)
+
+            // Polling proceeds despite the corrupt blob (didn't throw).
+            // The corrupt snapshot was dropped, baseline took the
+            // (current) path, and the candidate was admitted via the
+            // pre-session-grace window.
+            expect(mockPollOnce).toHaveBeenCalled()
+          })
+        }
+      })
     })
 
     // TODO: Fix timing issue with fake timers - polls not executing in these edge cases

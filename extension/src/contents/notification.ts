@@ -59,17 +59,39 @@ export function showNotification(options: NotificationOptions): void {
   // Inject styles if not already present
   injectStyles()
 
+  // Capture whatever element was focused when the toast appeared. If
+  // the user keyboard-focuses the close button (Tab → Enter), removing
+  // the button from the DOM would otherwise drop focus to <body>. We
+  // restore to this anchor on dismiss when it's still in the document
+  // and the toast still owns the focus. Snapshot is shadow-DOM safe:
+  // `document.activeElement` returns the shadow host on closed roots,
+  // which is itself focusable enough to be a stable restore target.
+  const focusAnchor = document.activeElement as HTMLElement | null
+
   // Create notification element
   const notification = createNotificationElement(title, message, type, dismissible)
 
   // Add to DOM
   document.body.appendChild(notification)
 
+  const dismissAndRestore = (): void => {
+    dismissNotification(notification)
+    // Only restore focus if the toast (or one of its descendants) is the
+    // current focused element — otherwise the user has moved on and we
+    // shouldn't yank them back. Also require the anchor to still be in
+    // the document and focusable.
+    const active = document.activeElement
+    const focusInsideToast = active != null && notification.contains(active)
+    if (focusInsideToast && focusAnchor && focusAnchor.isConnected && typeof focusAnchor.focus === 'function') {
+      try { focusAnchor.focus() } catch { /* anchor may have become non-focusable */ }
+    }
+  }
+
   // Auto-dismiss after duration. Tracked so an explicit close click can
   // cancel the timer and the toast doesn't try to fade twice.
   const dismissId = trackTimer(setTimeout(() => {
     pendingTimers.delete(dismissId)
-    dismissNotification(notification)
+    dismissAndRestore()
   }, duration))
 
   if (dismissible) {
@@ -77,7 +99,7 @@ export function showNotification(options: NotificationOptions): void {
     closeBtn?.addEventListener('click', () => {
       clearTimeout(dismissId)
       pendingTimers.delete(dismissId)
-      dismissNotification(notification)
+      dismissAndRestore()
     })
   }
 }

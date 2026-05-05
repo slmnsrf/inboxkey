@@ -1346,6 +1346,79 @@ describe('tier2-deep helpers', () => {
         expect(result.detected).toBe(true)
         expect(result.channelEvidence).toBe('unknown')
       })
+
+      it('does not pull email text from a sibling <nav> into channel evidence', () => {
+        // Sibling <nav>/<header>/<footer>/<aside> are page chrome, not
+        // local form context. The 8-level scan must skip them; otherwise a
+        // dashboard navbar containing "support@example.com" would falsely
+        // promote a TOTP-only sign-in modal to channelEvidence='positive'
+        // and the listening chip would render on a screen that has no
+        // email-OTP flow at all.
+        container.innerHTML = `
+          <div>
+            <nav><a href="/help">Need help? Email support@example.com</a></nav>
+            <h1>Verify your identity</h1>
+            <p>Enter the 6-digit code below.</p>
+            <div>
+              <div>
+                <div data-testid="codeEntryField">
+                  <div data-testid="codeEntry">
+                    <div data-testid="codeInputWrapper"><span><input type="text" id="codeEntry-0" maxlength="1" inputmode="numeric" aria-label="Enter code digit 1" /></span></div>
+                    <div data-testid="codeInputWrapper"><span><input type="text" id="codeEntry-1" maxlength="1" inputmode="numeric" aria-label="Enter code digit 2" /></span></div>
+                    <div data-testid="codeInputWrapper"><span><input type="text" id="codeEntry-2" maxlength="1" inputmode="numeric" aria-label="Enter code digit 3" /></span></div>
+                    <div data-testid="codeInputWrapper"><span><input type="text" id="codeEntry-3" maxlength="1" inputmode="numeric" aria-label="Enter code digit 4" /></span></div>
+                    <div data-testid="codeInputWrapper"><span><input type="text" id="codeEntry-4" maxlength="1" inputmode="numeric" aria-label="Enter code digit 5" /></span></div>
+                    <div data-testid="codeInputWrapper"><span><input type="text" id="codeEntry-5" maxlength="1" inputmode="numeric" aria-label="Enter code digit 6" /></span></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        `
+        const input = container.querySelector<HTMLInputElement>('#codeEntry-0')!
+        const result = detectTier2(input, cooldown)
+        expect(result.detected).toBe(true)
+        // <nav>'s email is excluded; no other email/SMS text exists, so
+        // evidence stays 'unknown'.
+        expect(result.channelEvidence).toBe('unknown')
+      })
+
+      it('stops the upward walk at a <form> boundary (page chrome above is ignored)', () => {
+        // The form is the natural OTP scope. Anything above is page-level
+        // chrome — we must not walk into it even when isSplitInput is
+        // true. A page-level "Forgot password? send code to your email"
+        // marketing line living above the <form> must NOT promote
+        // evidence on a TOTP-only sign-in inside the form.
+        container.innerHTML = `
+          <div>
+            <p>Trouble signing in? We can email user@example.com a recovery code.</p>
+            <form>
+              <h1>Verify your identity</h1>
+              <p>Enter the 6-digit code below.</p>
+              <div>
+                <div>
+                  <div data-testid="codeEntryField">
+                    <div data-testid="codeEntry">
+                      <div data-testid="codeInputWrapper"><span><input type="text" id="codeEntry-0" maxlength="1" inputmode="numeric" aria-label="Enter code digit 1" /></span></div>
+                      <div data-testid="codeInputWrapper"><span><input type="text" id="codeEntry-1" maxlength="1" inputmode="numeric" aria-label="Enter code digit 2" /></span></div>
+                      <div data-testid="codeInputWrapper"><span><input type="text" id="codeEntry-2" maxlength="1" inputmode="numeric" aria-label="Enter code digit 3" /></span></div>
+                      <div data-testid="codeInputWrapper"><span><input type="text" id="codeEntry-3" maxlength="1" inputmode="numeric" aria-label="Enter code digit 4" /></span></div>
+                      <div data-testid="codeInputWrapper"><span><input type="text" id="codeEntry-4" maxlength="1" inputmode="numeric" aria-label="Enter code digit 5" /></span></div>
+                      <div data-testid="codeInputWrapper"><span><input type="text" id="codeEntry-5" maxlength="1" inputmode="numeric" aria-label="Enter code digit 6" /></span></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </form>
+          </div>
+        `
+        const input = container.querySelector<HTMLInputElement>('#codeEntry-0')!
+        const result = detectTier2(input, cooldown)
+        expect(result.detected).toBe(true)
+        // The walk stops at <form>; the email text outside it never
+        // reaches the classifier.
+        expect(result.channelEvidence).toBe('unknown')
+      })
     })
   })
 })

@@ -54,6 +54,31 @@ describe('SMS brand-prefix-code shape gate', () => {
         body: 'Microsoft: 654321',
         code: '654321',
       },
+      // Non-Latin scripts. The shape gate is structural; brand names in
+      // any Unicode script must admit so the no-keyword fallback works
+      // across the 21 supported detection languages, not only Latin.
+      {
+        label: 'Cyrillic brand (Яндекс) — Russian',
+        body: 'Яндекс: 234567',
+        code: '234567',
+      },
+      {
+        label: 'CJK brand (微信) — Chinese (3-letter min via Unicode digit class)',
+        // 微信 is 2 chars; pad to 3+ with a punctuation-tolerant brand
+        // token. The shape regex requires 3+ letter chars (1 + 2 inner).
+        body: '微信团队: 345678',
+        code: '345678',
+      },
+      {
+        label: 'Greek brand (Πελάτες) — minimum length',
+        body: 'Πελάτες: 456789',
+        code: '456789',
+      },
+      {
+        label: 'Turkish dotted-İ brand (İstanbul)',
+        body: 'İstanbul: 567890',
+        code: '567890',
+      },
     ]
 
     for (const { label, body, code } of cases) {
