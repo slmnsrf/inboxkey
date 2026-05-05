@@ -590,7 +590,7 @@ export class FieldDetector {
    */
   startObserving(callback: (field: HTMLInputElement, result: DetectionResult) => void): void {
     if (this.observer) {
-      console.log('[FieldDetector] Already observing, stopping previous observer')
+      console.warn('[FieldDetector] Already observing, stopping previous observer')
       this.stopObserving()
     }
 
