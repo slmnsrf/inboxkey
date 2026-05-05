@@ -48,6 +48,13 @@ out/
 # Plasmo generated files
 **/.plasmo/
 
+# Plasmo `npm run package` zips (named after manifest version + git short SHA,
+# e.g. extension/inboxkey-1.0.0+49706dc.zip)
+extension/inboxkey-*.zip
+
+# Internal WIP planning markdown (always local-only, never committed)
+WIP-*.md
+
 # Environment variables
 .env
 .env.local
