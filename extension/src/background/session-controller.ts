@@ -437,6 +437,20 @@ export class SessionController {
     try {
       const code = await this.pollForCode(session)
 
+      // Re-check session state after the await. A concurrent poll
+      // (skip-stall force-timeout below, or another tick that landed a
+      // code while we were awaiting an adapter) may have already
+      // transitioned the session out of 'active' and called
+      // onSessionCompleted. Without this guard we'd double-fire
+      // onSessionCompleted -- once from the racing poll, once from
+      // this one when it resumes. Both branches in this try (skipped /
+      // success / pollsRemaining-timeout) ultimately fire that
+      // callback; this is the only safe place to bail out for all
+      // three.
+      if (session.status !== "active") {
+        return
+      }
+
       // Concurrent baseline capture short-circuited this poll. Don't
       // mark the index completed -- if we did, pollsCompleted.length
       // would advance against pollSchedule.length and the session
@@ -519,6 +533,12 @@ export class SessionController {
       // V2: SessionPoller handles next poll scheduling automatically
     } catch (error) {
       console.warn("[SessionController] Poll execution failed:", error)
+
+      // Same race guard as the success path -- a concurrent poll may
+      // have already completed the session while we were awaiting.
+      if (session.status !== "active") {
+        return
+      }
 
       session.pollsCompleted.push(pollIndex)
       session.pollsCompleted.sort((a, b) => a - b)
