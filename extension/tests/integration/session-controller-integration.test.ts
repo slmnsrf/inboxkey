@@ -42,13 +42,18 @@ vi.mock("../../src/lib/storage/storage-factory", () => {
   }
 })
 
-// V2: Mock EmailPollingService
-// pollOnce returns { candidates, adapterResults } per the current API
-// (not a raw array - that was the pre-refactor shape that drifted).
+// V3: Hoisted shared pollOnce mock so tests can count polls and inject
+// post-baseline candidates.
+const { mockPollOnce } = vi.hoisted(() => ({
+  mockPollOnce: vi.fn((_ctx?: unknown, _cfg?: { onAdapterBatch?: (mailboxId: string, emails: unknown[]) => void }) =>
+    Promise.resolve({ candidates: [], adapterResults: [] })
+  ),
+}))
+
 vi.mock("../../src/lib/services/email-polling-service", () => {
   return {
     EmailPollingService: vi.fn(() => ({
-      pollOnce: vi.fn(() => Promise.resolve({ candidates: [], adapterResults: [] })),
+      pollOnce: mockPollOnce,
     })),
   }
 })
@@ -102,6 +107,10 @@ describe("SessionController Integration", () => {
     // V2: Reset PopupCacheManager mocks
     mockPopupCacheManager.getCache.mockReset()
     mockPopupCacheManager.updateWithNewCodes.mockReset()
+    mockPollOnce.mockReset()
+    mockPollOnce.mockImplementation(() =>
+      Promise.resolve({ candidates: [], adapterResults: [] })
+    )
     mockPopupCacheManager.markCodeUsed.mockReset()
 
     // V2: Default PopupCache returns empty codes
@@ -197,12 +206,12 @@ describe("SessionController Integration", () => {
       // First poll executes via timer at t=0
       await vi.advanceTimersByTimeAsync(0)
       await vi.advanceTimersByTimeAsync(1)
-      expect(mockPopupCacheManager.getCache).toHaveBeenCalledTimes(1)
+      expect(mockPollOnce).toHaveBeenCalledTimes(1)
 
       // Complete remaining polls via timer
       await vi.runAllTimersAsync()
 
-      expect(mockPopupCacheManager.getCache).toHaveBeenCalledTimes(2)
+      expect(mockPollOnce).toHaveBeenCalledTimes(2)
       expect(onCompleted).toHaveBeenCalledWith(
         expect.anything(),
         { status: "timedout" }
@@ -226,17 +235,17 @@ describe("SessionController Integration", () => {
       // First poll via timer at t=0
       await vi.advanceTimersByTimeAsync(0)
       await vi.advanceTimersByTimeAsync(1)
-      expect(mockPopupCacheManager.getCache).toHaveBeenCalledTimes(1)
+      expect(mockPollOnce).toHaveBeenCalledTimes(1)
 
       // Second poll at t=5000
       await vi.advanceTimersByTimeAsync(4999)
-      expect(mockPopupCacheManager.getCache).toHaveBeenCalledTimes(2)
+      expect(mockPollOnce).toHaveBeenCalledTimes(2)
 
       // Third poll at t=10000
       await vi.advanceTimersByTimeAsync(5000)
 
       // Should execute all 3 polls
-      expect(mockPopupCacheManager.getCache).toHaveBeenCalledTimes(3)
+      expect(mockPollOnce).toHaveBeenCalledTimes(3)
     })
 
     it("should handle rapid session restarts", async () => {
@@ -388,7 +397,7 @@ describe("SessionController Integration", () => {
       // Resume behavior: SessionPoller reschedules all polls
       await vi.runAllTimersAsync()
 
-      expect(mockPopupCacheManager.getCache).toHaveBeenCalled()
+      expect(mockPollOnce).toHaveBeenCalled()
     })
   })
 
@@ -434,35 +443,48 @@ describe("SessionController Integration", () => {
 
       await controller.initialize()
 
-      // V2: Provide code via PopupCache for first poll only
-      mockPopupCacheManager.getCache
-        .mockResolvedValueOnce({
-          codes: [
+      // V3: Two concurrent sessions share the mocked pollOnce queue.
+      // First two calls (one baseline per session) return empty. Subsequent
+      // calls return a candidate scoped to example1.com — so it satisfies
+      // the zero-affinity gate for tab 1 only. Tab 2 sees the candidate but
+      // its affinity is zero against example2.com, so tab 2 still times out.
+      let pollCount = 0
+      mockPollOnce.mockImplementation(() => {
+        pollCount++
+        if (pollCount <= 2) {
+          // Baseline polls for both tabs.
+          return Promise.resolve({ candidates: [], adapterResults: [] })
+        }
+        return Promise.resolve({
+          candidates: [
             {
-              code: "123456",
-              receivedAt: Date.now(),
-              source: "Test",
-              usedAt: undefined,
-              senderETLD: "example1.com",
-              domainAffinity: undefined,
+              provider: "imap-bridge" as const,
+              mailboxId: "mailbox-1",
+              messageId: "m-multi",
+              subject: "Test",
+              from: "noreply@example1.com",
+              receivedEpochMs: Date.now(),
+              code: { value: "123456", kind: "digits" as const, score: 0.95 },
+              score: 0.95,
+              provenanceKey: "imap-bridge:mailbox-1:m-multi",
             },
           ],
-          links: [],
+          adapterResults: [{ mailboxId: "mailbox-1", success: true }],
         })
-        .mockResolvedValue({ codes: [], links: [] })
+      })
 
       await controller.startSession({
         tabId: 1,
         url: "https://example1.com",
         expected: {},
-        timeoutSeconds: 0.2,
+        timeoutSeconds: 10,
       })
 
       await controller.startSession({
         tabId: 2,
         url: "https://example2.com",
         expected: {},
-        timeoutSeconds: 0.2,
+        timeoutSeconds: 10,
       })
 
       await vi.runAllTimersAsync()
@@ -485,10 +507,14 @@ describe("SessionController Integration", () => {
 
       await controller.initialize()
 
-      // V2: First poll errors via PopupCache, subsequent succeed
-      mockPopupCacheManager.getCache
-        .mockRejectedValueOnce(new Error("Storage error for tab 1"))
-        .mockResolvedValue({ codes: [], links: [] })
+      // V3: First poll errors out, subsequent polls succeed (empty).
+      mockPollOnce
+        .mockImplementationOnce(() =>
+          Promise.reject(new Error("Storage error for tab 1"))
+        )
+        .mockImplementation(() =>
+          Promise.resolve({ candidates: [], adapterResults: [] })
+        )
 
       await controller.startSession({
         tabId: 1,
@@ -571,7 +597,7 @@ describe("SessionController Integration", () => {
 
       // Good session should still work
       await vi.runAllTimersAsync()
-      expect(mockPopupCacheManager.getCache).toHaveBeenCalled()
+      expect(mockPollOnce).toHaveBeenCalled()
     })
 
     it("should handle session cleanup during persistence errors", async () => {
@@ -692,35 +718,45 @@ describe("SessionController Integration", () => {
 
     it("should handle very fast session lifecycle", async () => {
       const onCompleted = vi.fn()
-      // V2: SessionController constructor takes (callbacks, popupCacheManager?)
       const controller = createController({ onSessionCompleted: onCompleted })
 
       await controller.initialize()
 
-      // V2: Provide code via PopupCache for immediate find
-      mockPopupCacheManager.getCache.mockResolvedValue({
-        codes: [
-          {
-            code: "123456",
-            receivedAt: Date.now(),
-            source: "Test",
-            usedAt: undefined,
-            senderETLD: "example.com",
-            domainAffinity: undefined,
-          },
-        ],
-        links: [],
-      })
+      // V3: Baseline poll then post-baseline candidate.
+      mockPollOnce
+        .mockImplementationOnce(() =>
+          Promise.resolve({ candidates: [], adapterResults: [] })
+        )
+        .mockImplementationOnce(() =>
+          Promise.resolve({
+            candidates: [
+              {
+                provider: "imap-bridge" as const,
+                mailboxId: "mailbox-1",
+                messageId: "m-fast",
+                subject: "Test",
+                from: "noreply@example.com",
+                receivedEpochMs: Date.now(),
+                code: { value: "123456", kind: "digits" as const, score: 0.95 },
+                score: 0.95,
+                provenanceKey: "imap-bridge:mailbox-1:m-fast",
+              },
+            ],
+            adapterResults: [{ mailboxId: "mailbox-1", success: true }],
+          })
+        )
 
       const session = await controller.startSession({
         tabId: 1,
         url: "https://example.com",
         expected: {},
-        timeoutSeconds: 0.2,
+        timeoutSeconds: 10,
       })
 
-      // Complete immediately (first poll at t=0 finds code)
+      // V3: Poll #1 (baseline) + poll #2 (fill).
       await vi.advanceTimersByTimeAsync(0)
+      await vi.advanceTimersByTimeAsync(1)
+      await vi.advanceTimersByTimeAsync(4999)
       await vi.advanceTimersByTimeAsync(1)
 
       expect(onCompleted).toHaveBeenCalledWith(

@@ -36,11 +36,20 @@ vi.mock("../../src/lib/storage/storage-factory", () => {
   }
 })
 
-// Mock EmailPollingService to return empty candidates by default
+// Mock EmailPollingService with a SHARED pollOnce mock so tests can
+// (a) count polls executed by the controller and (b) inject candidate
+// records into specific polls (provenance gate makes the post-baseline
+// poll the autofill-eligible one — see session-controller.ts).
+const { mockPollOnce } = vi.hoisted(() => ({
+  mockPollOnce: vi.fn((_ctx?: unknown, _cfg?: { onAdapterBatch?: (mailboxId: string, emails: unknown[]) => void }) =>
+    Promise.resolve({ candidates: [], adapterResults: [] })
+  ),
+}))
+
 vi.mock("../../src/lib/services/email-polling-service", () => {
   return {
     EmailPollingService: vi.fn(() => ({
-      pollOnce: vi.fn(() => Promise.resolve({ candidates: [], adapterResults: [] })),
+      pollOnce: mockPollOnce,
     })),
   }
 })
@@ -102,6 +111,12 @@ describe("SessionController", () => {
     })
     mockPopupCacheManager.updateWithNewCodes.mockResolvedValue(undefined)
     mockPopupCacheManager.markCodeUsed.mockResolvedValue(undefined)
+
+    // Reset the shared poll mock between tests; default is no candidates.
+    mockPollOnce.mockReset()
+    mockPollOnce.mockImplementation(() =>
+      Promise.resolve({ candidates: [], adapterResults: [] })
+    )
 
     // Setup default mailbox mock (required for polling to work)
     mockGetMailboxes.mockResolvedValue([{
@@ -242,36 +257,54 @@ describe("SessionController", () => {
       )
     })
 
-    it("should fill session when code found", async () => {
+    it("should fill session when code arrives post-baseline", async () => {
       const onCompleted = vi.fn()
       const controller = createController({ onSessionCompleted: onCompleted })
 
       await controller.initialize()
 
-      // V2: Provide codes via PopupCache instead of mockGetRecentCodes
-      mockPopupCacheManager.getCache.mockResolvedValue({
-        codes: [
-          {
-            code: "123456",
-            receivedAt: Date.now(),
-            source: "Unit",
-            usedAt: undefined,
-            senderETLD: "example.com",
-            domainAffinity: undefined,
-          },
-        ],
-        links: [],
-      })
+      // V3 (provenance gate): the FIRST poll captures the inbox baseline
+      // and never autofills. Codes arriving on poll #2 onward are eligible.
+      // First poll: empty inbox (baseline = nothing). Second poll: a new
+      // candidate from a sender whose eTLD matches the page domain so the
+      // zero-affinity guard accepts it.
+      mockPollOnce
+        .mockImplementationOnce(() =>
+          Promise.resolve({ candidates: [], adapterResults: [] })
+        )
+        .mockImplementationOnce(() =>
+          Promise.resolve({
+            candidates: [
+              {
+                provider: "imap-bridge" as const,
+                mailboxId: "mailbox-1",
+                messageId: "m-1",
+                subject: "Code",
+                from: "noreply@example.com",
+                receivedEpochMs: Date.now(),
+                code: { value: "123456", kind: "digits" as const, score: 0.95 },
+                score: 0.95,
+                provenanceKey: "imap-bridge:mailbox-1:m-1",
+              },
+            ],
+            adapterResults: [{ mailboxId: "mailbox-1", success: true }],
+          })
+        )
 
       await controller.startSession({
         tabId: 1,
         url: "https://example.com",
         expected: {},
-        timeoutSeconds: 0.2,
+        timeoutSeconds: 10,
       })
 
-      // First poll at t=0 finds the code
+      // First poll at t=0 captures baseline (no autofill).
       await vi.advanceTimersByTimeAsync(0)
+      await vi.advanceTimersByTimeAsync(1)
+      expect(onCompleted).not.toHaveBeenCalled()
+
+      // Second poll at t=5000 finds the post-baseline candidate.
+      await vi.advanceTimersByTimeAsync(4999)
       await vi.advanceTimersByTimeAsync(1)
 
       expect(onCompleted).toHaveBeenCalledWith(
@@ -345,15 +378,15 @@ describe("SessionController", () => {
       // Initial poll happens immediately (pollTimes[0] = 0ms)
       await vi.advanceTimersByTimeAsync(0)
       await vi.advanceTimersByTimeAsync(1)
-      expect(mockPopupCacheManager.getCache).toHaveBeenCalledTimes(1)
+      expect(mockPollOnce).toHaveBeenCalledTimes(1)
 
       // Second poll at 5000ms
       await vi.advanceTimersByTimeAsync(4999)
-      expect(mockPopupCacheManager.getCache).toHaveBeenCalledTimes(2)
+      expect(mockPollOnce).toHaveBeenCalledTimes(2)
 
       // Third poll at 10000ms
       await vi.advanceTimersByTimeAsync(5000)
-      expect(mockPopupCacheManager.getCache).toHaveBeenCalledTimes(3)
+      expect(mockPollOnce).toHaveBeenCalledTimes(3)
     })
 
     it("should skip duplicate polls (idempotency)", async () => {
@@ -378,7 +411,7 @@ describe("SessionController", () => {
       // Idempotency is now tested via SessionPoller's duplicate execution prevention
 
       // Should only execute once per poll time (not duplicated)
-      expect(mockPopupCacheManager.getCache).toHaveBeenCalledTimes(1)
+      expect(mockPollOnce).toHaveBeenCalledTimes(1)
     })
 
     it("should handle poll errors gracefully", async () => {
@@ -422,9 +455,9 @@ describe("SessionController", () => {
       // Storage errors are no longer relevant since we use PopupCache
 
       // Mock first poll to fail, then succeed
-      mockPopupCacheManager.getCache
-        .mockRejectedValueOnce(new Error("Temporary failure"))
-        .mockResolvedValue({ codes: [], links: [] })
+      mockPollOnce
+        .mockImplementationOnce(() => Promise.reject(new Error("Temporary failure")))
+        .mockImplementation(() => Promise.resolve({ candidates: [], adapterResults: [] }))
 
       // V2: Use timeoutSeconds=10 to get 3 polls at [0, 5000, 10000]
       await controller.startSession({
@@ -441,7 +474,7 @@ describe("SessionController", () => {
       await vi.advanceTimersByTimeAsync(5000)
 
       // Should attempt all 3 polls despite first failure
-      expect(mockPopupCacheManager.getCache).toHaveBeenCalledTimes(3)
+      expect(mockPollOnce).toHaveBeenCalledTimes(3)
       expect(onUpdated).toHaveBeenCalled()
     })
 
@@ -451,34 +484,44 @@ describe("SessionController", () => {
 
       await controller.initialize()
 
-      // V2: Provide code via PopupCache
-      mockPopupCacheManager.getCache.mockResolvedValue({
-        codes: [
-          {
-            code: "123456",
-            receivedAt: Date.now(),
-            source: "Unit",
-            usedAt: undefined,
-            senderETLD: "example.com",
-            domainAffinity: undefined,
-          },
-        ],
-        links: [],
-      })
+      // V3: First poll captures baseline; second poll's candidate triggers fill.
+      mockPollOnce
+        .mockImplementationOnce(() =>
+          Promise.resolve({ candidates: [], adapterResults: [] })
+        )
+        .mockImplementationOnce(() =>
+          Promise.resolve({
+            candidates: [
+              {
+                provider: "imap-bridge" as const,
+                mailboxId: "mailbox-1",
+                messageId: "m-fresh",
+                subject: "Code",
+                from: "noreply@example.com",
+                receivedEpochMs: Date.now(),
+                code: { value: "123456", kind: "digits" as const, score: 0.95 },
+                score: 0.95,
+                provenanceKey: "imap-bridge:mailbox-1:m-fresh",
+              },
+            ],
+            adapterResults: [{ mailboxId: "mailbox-1", success: true }],
+          })
+        )
 
       await controller.startSession({
         tabId: 1,
         url: "https://example.com",
         expected: {},
-        timeoutSeconds: 0.2,
+        timeoutSeconds: 10,
       })
 
-      // First poll finds code and stops
+      // Poll #1 (baseline) + poll #2 (fill).
       await vi.advanceTimersByTimeAsync(0)
       await vi.advanceTimersByTimeAsync(1)
+      await vi.advanceTimersByTimeAsync(4999)
+      await vi.advanceTimersByTimeAsync(1)
 
-      // V2: PopupCache getCache is called on first poll, code found, polling stops
-      expect(mockPopupCacheManager.getCache).toHaveBeenCalled()
+      expect(mockPollOnce).toHaveBeenCalledTimes(2)
       expect(onCompleted).toHaveBeenCalledWith(
         expect.anything(),
         expect.objectContaining({ status: "filled" })
@@ -507,7 +550,7 @@ describe("SessionController", () => {
       await vi.advanceTimersByTimeAsync(5000)
 
       // All 3 polls should execute (pollTimesMs = [0, 5000, 10000])
-      expect(mockPopupCacheManager.getCache).toHaveBeenCalledTimes(3)
+      expect(mockPollOnce).toHaveBeenCalledTimes(3)
       expect(onCompleted).toHaveBeenCalledWith(
         expect.anything(),
         { status: "timedout" }
@@ -515,7 +558,73 @@ describe("SessionController", () => {
 
       // No more polls after timeout
       await vi.advanceTimersByTimeAsync(10000)
-      expect(mockPopupCacheManager.getCache).toHaveBeenCalledTimes(3)
+      expect(mockPollOnce).toHaveBeenCalledTimes(3)
+    })
+
+    it("plumbs session.expected through to pollOnce ctx", async () => {
+      // Regression: keyword-free SMS bodies ("Amazon: 123456 ...") were
+      // rejected by the OTP extractor's no-keyword fallback because the
+      // session's expected length/charset (derived from the OTP field's
+      // maxlength/inputMode) wasn't reaching the extractor. The
+      // SessionController must pass session.expected to pollOnce so the
+      // extractor can pair it with the brand-prefix-shape gate.
+      const controller = createController({ onSessionCompleted: vi.fn() })
+      await controller.initialize()
+
+      // Need at least one mailbox so an adapter is created and pollOnce runs.
+      const { createAdaptersFromMailboxes } = await import("../../src/lib/services/provider-adapter")
+      ;(createAdaptersFromMailboxes as any).mockResolvedValue([{ id: "imap-bridge" }])
+      mockGetMailboxes.mockResolvedValue([
+        { id: "imap-1", providerId: "imap-bridge", email: "user@example.com", imapServer: "imap.example.com", imapPort: 993, imapAccountId: "acc_1", addedAt: Date.now(), lastSyncedAt: 0 },
+      ])
+
+      await controller.startSession({
+        tabId: 1,
+        url: "https://example.com/verify",
+        expected: { length: 6, charset: "digits" },
+        timeoutSeconds: 0.2,
+      })
+
+      // Initial poll at t=0
+      await vi.advanceTimersByTimeAsync(1)
+
+      expect(mockPollOnce).toHaveBeenCalled()
+      const firstCallCtx = mockPollOnce.mock.calls[0][0] as
+        | { expected?: { length?: number; charset?: string } }
+        | undefined
+      expect(firstCallCtx?.expected).toEqual({ length: 6, charset: "digits" })
+    })
+
+    it("passes empty expected when session field has no shape constraints", async () => {
+      // Sessions started without maxlength/inputMode hints (e.g. a
+      // generic <input type="text">) should still poll, just without
+      // shape steering.
+      const controller = createController({ onSessionCompleted: vi.fn() })
+      await controller.initialize()
+
+      const { createAdaptersFromMailboxes } = await import("../../src/lib/services/provider-adapter")
+      ;(createAdaptersFromMailboxes as any).mockResolvedValue([{ id: "imap-bridge" }])
+      mockGetMailboxes.mockResolvedValue([
+        { id: "imap-1", providerId: "imap-bridge", email: "user@example.com", imapServer: "imap.example.com", imapPort: 993, imapAccountId: "acc_1", addedAt: Date.now(), lastSyncedAt: 0 },
+      ])
+
+      await controller.startSession({
+        tabId: 1,
+        url: "https://example.com/verify",
+        expected: {},
+        timeoutSeconds: 0.2,
+      })
+
+      await vi.advanceTimersByTimeAsync(1)
+
+      expect(mockPollOnce).toHaveBeenCalled()
+      const firstCallCtx = mockPollOnce.mock.calls[0][0] as
+        | { expected?: { length?: number; charset?: string } }
+        | undefined
+      // Both fields undefined; downstream extractFromEmail treats
+      // ctx.expected?.length as undefined, falling back to keyword-only
+      // detection.
+      expect(firstCallCtx?.expected).toEqual({ length: undefined, charset: undefined })
     })
   })
 
@@ -573,7 +682,7 @@ describe("SessionController", () => {
       // Advance to next poll opportunity
       await vi.advanceTimersByTimeAsync(0)
       await vi.advanceTimersByTimeAsync(1)
-      expect(mockPopupCacheManager.getCache).toHaveBeenCalled()
+      expect(mockPollOnce).toHaveBeenCalled()
     })
 
     it("should resume active sessions after load", async () => {
@@ -606,10 +715,10 @@ describe("SessionController", () => {
       await controller.initialize()
 
       // SessionPoller reschedules all polls; with empty pollsCompleted
-      // the first poll (index 0) runs immediately and calls getCache.
+      // the first poll (index 0) runs immediately and invokes pollOnce.
       await vi.advanceTimersByTimeAsync(0)
       await vi.advanceTimersByTimeAsync(1)
-      expect(mockPopupCacheManager.getCache).toHaveBeenCalled()
+      expect(mockPollOnce).toHaveBeenCalled()
     })
 
     it("should persist completed sessions in storage", async () => {
@@ -702,30 +811,40 @@ describe("SessionController", () => {
 
       await controller.initialize()
 
-      // V2: Provide code via PopupCache
-      mockPopupCacheManager.getCache.mockResolvedValue({
-        codes: [
-          {
-            code: "123456",
-            receivedAt: Date.now(),
-            source: "Unit",
-            usedAt: undefined,
-            senderETLD: "example.com",
-            domainAffinity: undefined,
-          },
-        ],
-        links: [],
-      })
+      // V3: First poll captures baseline; second poll's candidate triggers fill.
+      mockPollOnce
+        .mockImplementationOnce(() =>
+          Promise.resolve({ candidates: [], adapterResults: [] })
+        )
+        .mockImplementationOnce(() =>
+          Promise.resolve({
+            candidates: [
+              {
+                provider: "imap-bridge" as const,
+                mailboxId: "mailbox-1",
+                messageId: "m-x",
+                subject: "Code",
+                from: "noreply@example.com",
+                receivedEpochMs: Date.now(),
+                code: { value: "123456", kind: "digits" as const, score: 0.95 },
+                score: 0.95,
+                provenanceKey: "imap-bridge:mailbox-1:m-x",
+              },
+            ],
+            adapterResults: [{ mailboxId: "mailbox-1", success: true }],
+          })
+        )
 
       await controller.startSession({
         tabId: 1,
         url: "https://example.com",
         expected: {},
-        timeoutSeconds: 0.2,
+        timeoutSeconds: 10,
       })
 
-      // First poll finds code and completes session
       await vi.advanceTimersByTimeAsync(0)
+      await vi.advanceTimersByTimeAsync(1)
+      await vi.advanceTimersByTimeAsync(4999)
       await vi.advanceTimersByTimeAsync(1)
 
       expect(chrome.alarms.clear).toHaveBeenCalled()
@@ -824,30 +943,39 @@ describe("SessionController", () => {
       mockKeyManagerInstance.getMasterKey.mockReturnValue({})
       mockKeyManagerInstance.getSalt.mockReturnValue(new Uint8Array([1, 2, 3]))
 
-      // V2: Provide code via PopupCache
-      mockPopupCacheManager.getCache.mockResolvedValue({
-        codes: [
-          {
-            code: "123456",
-            receivedAt: Date.now(),
-            source: "Unit",
-            usedAt: undefined,
-            senderETLD: "example.com",
-            domainAffinity: undefined,
-          },
-        ],
-        links: [],
-      })
+      mockPollOnce
+        .mockImplementationOnce(() =>
+          Promise.resolve({ candidates: [], adapterResults: [] })
+        )
+        .mockImplementationOnce(() =>
+          Promise.resolve({
+            candidates: [
+              {
+                provider: "imap-bridge" as const,
+                mailboxId: "mailbox-1",
+                messageId: "m-key",
+                subject: "Code",
+                from: "noreply@example.com",
+                receivedEpochMs: Date.now(),
+                code: { value: "123456", kind: "digits" as const, score: 0.95 },
+                score: 0.95,
+                provenanceKey: "imap-bridge:mailbox-1:m-key",
+              },
+            ],
+            adapterResults: [{ mailboxId: "mailbox-1", success: true }],
+          })
+        )
 
       await controller.startSession({
         tabId: 1,
         url: "https://example.com",
         expected: {},
-        timeoutSeconds: 0.2,
+        timeoutSeconds: 10,
       })
 
-      // First poll finds code
       await vi.advanceTimersByTimeAsync(0)
+      await vi.advanceTimersByTimeAsync(1)
+      await vi.advanceTimersByTimeAsync(4999)
       await vi.advanceTimersByTimeAsync(1)
 
       expect(onCompleted).toHaveBeenCalledWith(
@@ -864,38 +992,85 @@ describe("SessionController", () => {
 
       await controller.initialize()
 
-      // V2: Provide codes via PopupCache (used code should be ignored)
-      mockPopupCacheManager.getCache.mockResolvedValue({
-        codes: [
-          {
-            code: "111111",
-            receivedAt: Date.now() - 10000,
-            source: "Old",
-            usedAt: Date.now() - 5000,  // Already used
-            senderETLD: "example.com",
-            domainAffinity: undefined,
-          },
-          {
-            code: "222222",
-            receivedAt: Date.now(),
-            source: "New",
-            usedAt: undefined,  // Not used
-            senderETLD: "example.com",
-            domainAffinity: undefined,
-          },
-        ],
-        links: [],
-      })
+      // V3 (per-mailbox baselines + first-poll freshness gate): poll #1
+      // reports m-old via the onAdapterBatch baseline hook (the same
+      // channel the real polling service uses), so m-old becomes part of
+      // the baseline. With the first-poll fresh-baseline classification,
+      // a candidate's eligibility is decided by receivedEpochMs vs the
+      // pre-session grace window — not by baseline membership equality
+      // (which is structural for first-poll candidates). Set m-old's
+      // receivedEpochMs well outside the 2-min grace so it correctly
+      // classifies as truly pre-session and the test still asserts
+      // "first-poll candidates older than the user's session intent
+      // don't autofill." Poll #2 yields a fresh m-new that fires fill.
+      const STALE_AGE_MS = 10 * 60_000 // 10 min ago — outside 2-min grace
+      mockPollOnce
+        .mockImplementationOnce((_ctx, cfg) => {
+          cfg?.onAdapterBatch?.("mailbox-1", [
+            {
+              id: "m-old",
+              provider: "imap-bridge",
+              mailboxId: "mailbox-1",
+              text: "old code",
+              receivedEpochMs: Date.now() - STALE_AGE_MS,
+            },
+          ])
+          return Promise.resolve({
+            candidates: [
+              {
+                provider: "imap-bridge" as const,
+                mailboxId: "mailbox-1",
+                messageId: "m-old",
+                subject: "Old",
+                from: "noreply@example.com",
+                receivedEpochMs: Date.now() - STALE_AGE_MS,
+                code: { value: "111111", kind: "digits" as const, score: 0.95 },
+                score: 0.95,
+                provenanceKey: "imap-bridge:mailbox-1:m-old",
+              },
+            ],
+            adapterResults: [{ mailboxId: "mailbox-1", success: true }],
+          })
+        })
+        .mockImplementationOnce((_ctx, cfg) => {
+          cfg?.onAdapterBatch?.("mailbox-1", [
+            {
+              id: "m-new",
+              provider: "imap-bridge",
+              mailboxId: "mailbox-1",
+              text: "new code",
+              receivedEpochMs: Date.now(),
+            },
+          ])
+          return Promise.resolve({
+            candidates: [
+              {
+                provider: "imap-bridge" as const,
+                mailboxId: "mailbox-1",
+                messageId: "m-new",
+                subject: "New",
+                from: "noreply@example.com",
+                receivedEpochMs: Date.now(),
+                code: { value: "222222", kind: "digits" as const, score: 0.95 },
+                score: 0.95,
+                provenanceKey: "imap-bridge:mailbox-1:m-new",
+              },
+            ],
+            adapterResults: [{ mailboxId: "mailbox-1", success: true }],
+          })
+        })
 
       await controller.startSession({
         tabId: 1,
         url: "https://example.com",
         expected: {},
-        timeoutSeconds: 0.2,
+        timeoutSeconds: 10,
       })
 
-      // First poll finds unused code
+      // Poll #1 (baseline includes m-old) + poll #2 (m-new fires fill).
       await vi.advanceTimersByTimeAsync(0)
+      await vi.advanceTimersByTimeAsync(1)
+      await vi.advanceTimersByTimeAsync(4999)
       await vi.advanceTimersByTimeAsync(1)
 
       expect(onCompleted).toHaveBeenCalledWith(
@@ -905,6 +1080,603 @@ describe("SessionController", () => {
           code: expect.objectContaining({ code: "222222" }),
         })
       )
+    })
+
+    // ===========================================================================
+    // First-poll fresh-baseline classification
+    // ===========================================================================
+    //
+    // The provenance baseline for a brand-new session is committed by the
+    // SAME poll that produces the first batch of candidates. Pre-fix,
+    // candidate-vs-baseline membership equality classified those candidates
+    // as pre-session — but the baseline literally contained the candidate's
+    // own snippet/id, because they came from the same poll. The fix:
+    // mailboxes whose baseline was just seeded from the current batch use
+    // a receipt-time freshness gate, not membership equality, on that poll.
+    //
+    // Tests below assert through externally-observable behavior (final
+    // session status + matched code), never through the private classifier.
+    describe("first-poll fresh-baseline classification", () => {
+      const FRESH_NOW_OFFSET = -2_000 // 2s before sessionStart — fresh
+      const STALE_OFFSET_MS = -10 * 60_000 // 10 min before — outside grace
+      const SMS_SNAPSHOT_KEY = "inboxkey.sms_conversation_snapshot.gm-1"
+
+      function setupOneEmailMailbox() {
+        mockGetMailboxes.mockResolvedValue([
+          {
+            id: "mailbox-1",
+            providerId: "imap-bridge",
+            email: "user@example.com",
+            imapServer: "imap.example.com",
+            imapPort: 993,
+            imapAccountId: "acc_1",
+            addedAt: Date.now(),
+            lastSyncedAt: 0,
+          },
+        ])
+      }
+
+      function setupOneSmsMailbox() {
+        mockGetMailboxes.mockResolvedValue([
+          {
+            id: "gm-1",
+            providerId: "google-messages",
+            email: "sms@google-messages.local",
+            gmPhoneNumber: "+10000000000",
+            addedAt: Date.now(),
+            lastSyncedAt: 0,
+          },
+        ])
+      }
+
+      it("(case 1) admits first-poll SMS candidate with fresh receivedEpochMs", async () => {
+        setupOneSmsMailbox()
+        const onCompleted = vi.fn()
+        const controller = createController({ onSessionCompleted: onCompleted })
+        await controller.initialize()
+
+        const now = Date.now()
+        const previewHash = "hash-fresh-sms"
+
+        mockPollOnce.mockImplementationOnce((_ctx, cfg) => {
+          // onAdapterBatch seeds the (current) baseline with the SAME
+          // snippet hash the candidate carries — the chicken-and-egg case.
+          cfg?.onAdapterBatch?.("gm-1", [
+            {
+              id: "gm-msg-1",
+              provider: "google-messages",
+              mailboxId: "gm-1",
+              text: "Brand: 123456 ...",
+              receivedEpochMs: now + FRESH_NOW_OFFSET,
+              _meta: {
+                conversationHref: "/conv/1",
+                snippetHash: previewHash,
+                isUnread: true,
+              },
+            },
+          ])
+          return Promise.resolve({
+            candidates: [
+              {
+                provider: "google-messages" as const,
+                mailboxId: "gm-1",
+                messageId: "gm-msg-1",
+                from: "Brand",
+                receivedEpochMs: now + FRESH_NOW_OFFSET,
+                code: { value: "123456", kind: "digits" as const, score: 0.95 },
+                score: 0.95,
+                provenanceKey: "google-messages:gm-1:gm-msg-1",
+                meta: {
+                  conversationHref: "/conv/1",
+                  snippetHash: previewHash,
+                  isUnread: true,
+                },
+              },
+            ],
+            adapterResults: [{ mailboxId: "gm-1", success: true }],
+          })
+        })
+
+        await controller.startSession({
+          tabId: 1,
+          url: "https://brand.com",
+          expected: { length: 6, charset: "digits" },
+          timeoutSeconds: 0.2,
+          detectedChannels: ["sms"],
+          channelEvidence: "positive",
+        })
+
+        await vi.advanceTimersByTimeAsync(1)
+
+        expect(onCompleted).toHaveBeenCalledWith(
+          expect.anything(),
+          expect.objectContaining({
+            status: "filled",
+            code: expect.objectContaining({ code: "123456" }),
+          })
+        )
+      })
+
+      it("(case 2) admits first-poll email candidate with fresh receivedEpochMs", async () => {
+        setupOneEmailMailbox()
+        const onCompleted = vi.fn()
+        const controller = createController({ onSessionCompleted: onCompleted })
+        await controller.initialize()
+
+        const now = Date.now()
+
+        mockPollOnce.mockImplementationOnce((_ctx, cfg) => {
+          cfg?.onAdapterBatch?.("mailbox-1", [
+            {
+              id: "m-fresh",
+              provider: "imap-bridge",
+              mailboxId: "mailbox-1",
+              text: "Your code is 654321",
+              receivedEpochMs: now + FRESH_NOW_OFFSET,
+            },
+          ])
+          return Promise.resolve({
+            candidates: [
+              {
+                provider: "imap-bridge" as const,
+                mailboxId: "mailbox-1",
+                messageId: "m-fresh",
+                subject: "Your code",
+                from: "noreply@example.com",
+                receivedEpochMs: now + FRESH_NOW_OFFSET,
+                code: { value: "654321", kind: "digits" as const, score: 0.95 },
+                score: 0.95,
+                provenanceKey: "imap-bridge:mailbox-1:m-fresh",
+              },
+            ],
+            adapterResults: [{ mailboxId: "mailbox-1", success: true }],
+          })
+        })
+
+        await controller.startSession({
+          tabId: 1,
+          url: "https://example.com",
+          expected: { length: 6, charset: "digits" },
+          timeoutSeconds: 0.2,
+        })
+
+        await vi.advanceTimersByTimeAsync(1)
+
+        expect(onCompleted).toHaveBeenCalledWith(
+          expect.anything(),
+          expect.objectContaining({
+            status: "filled",
+            code: expect.objectContaining({ code: "654321" }),
+          })
+        )
+      })
+
+      it("(case 2b) rejects first-poll email candidate with undefined receivedEpochMs", async () => {
+        setupOneEmailMailbox()
+        const onCompleted = vi.fn()
+        const controller = createController({ onSessionCompleted: onCompleted })
+        await controller.initialize()
+
+        mockPollOnce.mockImplementation((_ctx, cfg) => {
+          cfg?.onAdapterBatch?.("mailbox-1", [
+            {
+              id: "m-undated",
+              provider: "imap-bridge",
+              mailboxId: "mailbox-1",
+              text: "Your code is 222222",
+            },
+          ])
+          return Promise.resolve({
+            candidates: [
+              {
+                provider: "imap-bridge" as const,
+                mailboxId: "mailbox-1",
+                messageId: "m-undated",
+                subject: "Your code",
+                from: "noreply@example.com",
+                receivedEpochMs: undefined,
+                code: { value: "222222", kind: "digits" as const, score: 0.95 },
+                score: 0.95,
+                provenanceKey: "imap-bridge:mailbox-1:m-undated",
+              },
+            ],
+            adapterResults: [{ mailboxId: "mailbox-1", success: true }],
+          })
+        })
+
+        await controller.startSession({
+          tabId: 1,
+          url: "https://example.com",
+          expected: {},
+          timeoutSeconds: 0.2,
+        })
+
+        // Run all polls + timeout
+        await vi.advanceTimersByTimeAsync(0)
+        await vi.advanceTimersByTimeAsync(200)
+
+        expect(onCompleted).toHaveBeenCalledWith(
+          expect.anything(),
+          expect.objectContaining({ status: "timedout" })
+        )
+      })
+
+      it("(case 3) rejects first-poll SMS candidate with undefined receivedEpochMs", async () => {
+        setupOneSmsMailbox()
+        const onCompleted = vi.fn()
+        const controller = createController({ onSessionCompleted: onCompleted })
+        await controller.initialize()
+
+        const previewHash = "hash-undated"
+
+        mockPollOnce.mockImplementation((_ctx, cfg) => {
+          cfg?.onAdapterBatch?.("gm-1", [
+            {
+              id: "gm-undated",
+              provider: "google-messages",
+              mailboxId: "gm-1",
+              text: "Brand: 333333 ...",
+              receivedEpochMs: undefined,
+              _meta: {
+                conversationHref: "/conv/u",
+                snippetHash: previewHash,
+                isUnread: true,
+              },
+            },
+          ])
+          return Promise.resolve({
+            candidates: [
+              {
+                provider: "google-messages" as const,
+                mailboxId: "gm-1",
+                messageId: "gm-undated",
+                from: "Brand",
+                receivedEpochMs: undefined,
+                code: { value: "333333", kind: "digits" as const, score: 0.95 },
+                score: 0.95,
+                provenanceKey: "google-messages:gm-1:gm-undated",
+                meta: {
+                  conversationHref: "/conv/u",
+                  snippetHash: previewHash,
+                  isUnread: true,
+                },
+              },
+            ],
+            adapterResults: [{ mailboxId: "gm-1", success: true }],
+          })
+        })
+
+        await controller.startSession({
+          tabId: 1,
+          url: "https://brand.com",
+          expected: {},
+          timeoutSeconds: 0.2,
+          detectedChannels: ["sms"],
+          channelEvidence: "positive",
+        })
+
+        await vi.advanceTimersByTimeAsync(0)
+        await vi.advanceTimersByTimeAsync(200)
+
+        expect(onCompleted).toHaveBeenCalledWith(
+          expect.anything(),
+          expect.objectContaining({ status: "timedout" })
+        )
+      })
+
+      it("(case 4) rejects first-poll SMS candidate with stale receivedEpochMs", async () => {
+        setupOneSmsMailbox()
+        const onCompleted = vi.fn()
+        const controller = createController({ onSessionCompleted: onCompleted })
+        await controller.initialize()
+
+        const now = Date.now()
+        const previewHash = "hash-stale"
+
+        mockPollOnce.mockImplementation((_ctx, cfg) => {
+          cfg?.onAdapterBatch?.("gm-1", [
+            {
+              id: "gm-stale",
+              provider: "google-messages",
+              mailboxId: "gm-1",
+              text: "Brand: 444444 ...",
+              receivedEpochMs: now + STALE_OFFSET_MS,
+              _meta: {
+                conversationHref: "/conv/s",
+                snippetHash: previewHash,
+                isUnread: true,
+              },
+            },
+          ])
+          return Promise.resolve({
+            candidates: [
+              {
+                provider: "google-messages" as const,
+                mailboxId: "gm-1",
+                messageId: "gm-stale",
+                from: "Brand",
+                receivedEpochMs: now + STALE_OFFSET_MS,
+                code: { value: "444444", kind: "digits" as const, score: 0.95 },
+                score: 0.95,
+                provenanceKey: "google-messages:gm-1:gm-stale",
+                meta: {
+                  conversationHref: "/conv/s",
+                  snippetHash: previewHash,
+                  isUnread: true,
+                },
+              },
+            ],
+            adapterResults: [{ mailboxId: "gm-1", success: true }],
+          })
+        })
+
+        await controller.startSession({
+          tabId: 1,
+          url: "https://brand.com",
+          expected: {},
+          timeoutSeconds: 0.2,
+          detectedChannels: ["sms"],
+          channelEvidence: "positive",
+        })
+
+        await vi.advanceTimersByTimeAsync(0)
+        await vi.advanceTimersByTimeAsync(200)
+
+        expect(onCompleted).toHaveBeenCalledWith(
+          expect.anything(),
+          expect.objectContaining({ status: "timedout" })
+        )
+      })
+
+      it("(case 5) keeps (snapshot) baseline strict — same-snippet candidate not eligible", async () => {
+        setupOneSmsMailbox()
+        const onCompleted = vi.fn()
+        const controller = createController({ onSessionCompleted: onCompleted })
+        await controller.initialize()
+
+        const now = Date.now()
+        const baselinedHash = "hash-prior-state"
+
+        // Seed a fresh cross-session snapshot. loadSmsSnapshot will return
+        // it (within TTL, observedAt < sessionStart), so the baseline
+        // takes the (snapshot) path and currentBaselineThisPoll does NOT
+        // include this mailbox. Existing strict snippet-diff classification
+        // applies: same conversationHref + same snippetHash = pre-session.
+        await chrome.storage.session.set({
+          [SMS_SNAPSHOT_KEY]: {
+            observedAt: now - 60_000,
+            entries: [
+              {
+                conversationHref: "/conv/p",
+                snippetHash: baselinedHash,
+                isUnread: true,
+              },
+            ],
+          },
+        })
+
+        mockPollOnce.mockImplementation((_ctx, cfg) => {
+          cfg?.onAdapterBatch?.("gm-1", [
+            {
+              id: "gm-snap",
+              provider: "google-messages",
+              mailboxId: "gm-1",
+              text: "Brand: 555555 ...",
+              receivedEpochMs: now + FRESH_NOW_OFFSET,
+              _meta: {
+                conversationHref: "/conv/p",
+                snippetHash: baselinedHash,
+                isUnread: true,
+              },
+            },
+          ])
+          return Promise.resolve({
+            candidates: [
+              {
+                provider: "google-messages" as const,
+                mailboxId: "gm-1",
+                messageId: "gm-snap",
+                from: "Brand",
+                receivedEpochMs: now + FRESH_NOW_OFFSET,
+                code: { value: "555555", kind: "digits" as const, score: 0.95 },
+                score: 0.95,
+                provenanceKey: "google-messages:gm-1:gm-snap",
+                meta: {
+                  conversationHref: "/conv/p",
+                  snippetHash: baselinedHash,
+                  isUnread: true,
+                },
+              },
+            ],
+            adapterResults: [{ mailboxId: "gm-1", success: true }],
+          })
+        })
+
+        await controller.startSession({
+          tabId: 1,
+          url: "https://brand.com",
+          expected: {},
+          timeoutSeconds: 0.2,
+          detectedChannels: ["sms"],
+          channelEvidence: "positive",
+        })
+
+        await vi.advanceTimersByTimeAsync(0)
+        await vi.advanceTimersByTimeAsync(200)
+
+        expect(onCompleted).toHaveBeenCalledWith(
+          expect.anything(),
+          expect.objectContaining({ status: "timedout" })
+        )
+      })
+
+      it("(case 6) admits second-poll new-arrival candidate (existing-baseline path)", async () => {
+        setupOneEmailMailbox()
+        const onCompleted = vi.fn()
+        const controller = createController({ onSessionCompleted: onCompleted })
+        await controller.initialize()
+
+        const now = Date.now()
+
+        mockPollOnce
+          .mockImplementationOnce((_ctx, cfg) => {
+            // Poll #1: stale candidate becomes baseline; receipt time too
+            // old to pass the freshness gate so it doesn't autofill.
+            cfg?.onAdapterBatch?.("mailbox-1", [
+              {
+                id: "m-old",
+                provider: "imap-bridge",
+                mailboxId: "mailbox-1",
+                text: "old code",
+                receivedEpochMs: now + STALE_OFFSET_MS,
+              },
+            ])
+            return Promise.resolve({
+              candidates: [
+                {
+                  provider: "imap-bridge" as const,
+                  mailboxId: "mailbox-1",
+                  messageId: "m-old",
+                  subject: "Old",
+                  from: "noreply@example.com",
+                  receivedEpochMs: now + STALE_OFFSET_MS,
+                  code: { value: "111111", kind: "digits" as const, score: 0.95 },
+                  score: 0.95,
+                  provenanceKey: "imap-bridge:mailbox-1:m-old",
+                },
+              ],
+              adapterResults: [{ mailboxId: "mailbox-1", success: true }],
+            })
+          })
+          .mockImplementationOnce((_ctx, cfg) => {
+            // Poll #2: brand-new email arrives. provenanceKey not in
+            // baseline → existing strict path admits it.
+            cfg?.onAdapterBatch?.("mailbox-1", [
+              {
+                id: "m-new",
+                provider: "imap-bridge",
+                mailboxId: "mailbox-1",
+                text: "new code",
+                receivedEpochMs: Date.now(),
+              },
+            ])
+            return Promise.resolve({
+              candidates: [
+                {
+                  provider: "imap-bridge" as const,
+                  mailboxId: "mailbox-1",
+                  messageId: "m-new",
+                  subject: "New",
+                  from: "noreply@example.com",
+                  receivedEpochMs: Date.now(),
+                  code: { value: "999999", kind: "digits" as const, score: 0.95 },
+                  score: 0.95,
+                  provenanceKey: "imap-bridge:mailbox-1:m-new",
+                },
+              ],
+              adapterResults: [{ mailboxId: "mailbox-1", success: true }],
+            })
+          })
+
+        await controller.startSession({
+          tabId: 1,
+          url: "https://example.com",
+          expected: {},
+          timeoutSeconds: 10,
+        })
+
+        await vi.advanceTimersByTimeAsync(0)
+        await vi.advanceTimersByTimeAsync(1)
+        await vi.advanceTimersByTimeAsync(4999)
+        await vi.advanceTimersByTimeAsync(1)
+
+        expect(onCompleted).toHaveBeenCalledWith(
+          expect.anything(),
+          expect.objectContaining({
+            status: "filled",
+            code: expect.objectContaining({ code: "999999" }),
+          })
+        )
+      })
+
+      it("(case 7) rejects second-poll same email already in baseline (existing strict path)", async () => {
+        setupOneEmailMailbox()
+        const onCompleted = vi.fn()
+        const controller = createController({ onSessionCompleted: onCompleted })
+        await controller.initialize()
+
+        const now = Date.now()
+        const baselineEmail = {
+          id: "m-stable",
+          provider: "imap-bridge",
+          mailboxId: "mailbox-1",
+          text: "code",
+          receivedEpochMs: now + STALE_OFFSET_MS,
+        }
+
+        mockPollOnce
+          .mockImplementationOnce((_ctx, cfg) => {
+            // Poll #1: stale email baselined. Same provenanceKey will be
+            // re-emitted on poll #2 (simulating an extractor retry that
+            // bypassed the seen-store, e.g. version bump on disk).
+            cfg?.onAdapterBatch?.("mailbox-1", [baselineEmail])
+            return Promise.resolve({
+              candidates: [
+                {
+                  provider: "imap-bridge" as const,
+                  mailboxId: "mailbox-1",
+                  messageId: "m-stable",
+                  subject: "Stable",
+                  from: "noreply@example.com",
+                  receivedEpochMs: now + STALE_OFFSET_MS,
+                  code: { value: "100100", kind: "digits" as const, score: 0.95 },
+                  score: 0.95,
+                  provenanceKey: "imap-bridge:mailbox-1:m-stable",
+                },
+              ],
+              adapterResults: [{ mailboxId: "mailbox-1", success: true }],
+            })
+          })
+          .mockImplementationOnce((_ctx, cfg) => {
+            // Poll #2: same provenanceKey appears again. Established-
+            // baseline path: provenanceKey IS in mailboxKeys → not new
+            // arrival → no autofill.
+            cfg?.onAdapterBatch?.("mailbox-1", [baselineEmail])
+            return Promise.resolve({
+              candidates: [
+                {
+                  provider: "imap-bridge" as const,
+                  mailboxId: "mailbox-1",
+                  messageId: "m-stable",
+                  subject: "Stable",
+                  from: "noreply@example.com",
+                  receivedEpochMs: now + STALE_OFFSET_MS,
+                  code: { value: "100100", kind: "digits" as const, score: 0.95 },
+                  score: 0.95,
+                  provenanceKey: "imap-bridge:mailbox-1:m-stable",
+                },
+              ],
+              adapterResults: [{ mailboxId: "mailbox-1", success: true }],
+            })
+          })
+
+        await controller.startSession({
+          tabId: 1,
+          url: "https://example.com",
+          expected: {},
+          timeoutSeconds: 10,
+        })
+
+        await vi.advanceTimersByTimeAsync(0)
+        await vi.advanceTimersByTimeAsync(1)
+        await vi.advanceTimersByTimeAsync(4999)
+        await vi.advanceTimersByTimeAsync(20000)
+
+        expect(onCompleted).toHaveBeenCalledWith(
+          expect.anything(),
+          expect.objectContaining({ status: "timedout" })
+        )
+      })
     })
 
     // TODO: Fix timing issue with fake timers - polls not executing in these edge cases
