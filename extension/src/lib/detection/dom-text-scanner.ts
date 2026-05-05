@@ -6,7 +6,19 @@
  */
 
 /** Elements to exclude from text scanning */
-const EXCLUDED_TAGS = new Set(['HEADER', 'FOOTER', 'NAV'])
+const EXCLUDED_TAGS = new Set([
+  'HEADER',
+  'FOOTER',
+  'NAV',
+  // Code/markup blocks: their text content is implementation, not user-visible
+  // copy. JSDoc tags ("@type {RegExp}"), TS decorators ("@Component"), CSS
+  // at-rules ("@media") otherwise spoof email-context heuristics that look for
+  // an "@" character.
+  'SCRIPT',
+  'STYLE',
+  'NOSCRIPT',
+  'TEMPLATE',
+])
 
 /** ARIA roles to exclude from text scanning */
 const EXCLUDED_ROLES = new Set(['navigation', 'banner', 'contentinfo'])

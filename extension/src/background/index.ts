@@ -195,14 +195,24 @@ sessionController
     await popupCacheManager.initialize()
     console.log("[InboxKey] PopupCacheManager initialized")
 
-    // Warm popup cache with mailbox count (codes are ephemeral-only now)
+    // Warm popup cache with current mailbox metadata WITHOUT wiping the
+    // persisted items[]. The previous implementation called
+    // `updateWithNewCodes([], ...)` here, which ran the full pipeline and
+    // overwrote items[] with an empty array on every SW restart. Service
+    // workers idle out frequently, so any code captured in a prior poll
+    // was lost from the popup before the user could open it. The
+    // persisted cache is restored by `popupCacheManager.initialize()`
+    // above; here we only need to refresh the in-memory mailbox map so
+    // popup projections (provider name, mailbox email) stay accurate
+    // when mailboxes were added/removed while the SW was asleep.
     try {
       const storage = await StorageFactory.create()
 
       const mailboxes = await storage.getMailboxes()
-      // Codes are ephemeral (chrome.storage.session only), so start with empty cache
-      await popupCacheManager.updateWithNewCodes([], mailboxes.length, mailboxes)
-      console.log(`[InboxKey] PopupCache warmed with ${mailboxes.length} mailboxes (codes ephemeral-only)`)
+      popupCacheManager.updateMailboxCache(mailboxes)
+      console.log(
+        `[InboxKey] PopupCache mailbox map refreshed (${mailboxes.length} mailboxes); items preserved`
+      )
 
       // Update count badge with unseen items (codes + magic links).
       // Uses the same safety/freshness/score pipeline as the popup
@@ -423,14 +433,36 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       // leave a narrow window where the user can click a notification
       // whose code hasn't landed in chrome.storage.session yet.
       await rememberNotificationCode(notifId, msg.code)
-      chrome.notifications.create(notifId, {
-        type: 'basic',
-        iconUrl: chrome.runtime.getURL('icon128.plasmo.png'),
-        title: 'Verification code found',
-        message: `${msg.code} -- click to copy.`,
-        silent: true,
-        priority: 1,
-      })
+      // Resolve the icon path from the manifest at runtime. Plasmo
+      // content-hashes the icon filename in production builds (e.g.
+      // `icon128.plasmo.3c1ed2d2.png`), so a hardcoded
+      // `icon128.plasmo.png` would 404 and Chrome would reject the
+      // create() promise with "Unable to download all specified images".
+      const manifest = chrome.runtime.getManifest()
+      const iconPath =
+        manifest.icons?.['128'] ??
+        manifest.icons?.['64'] ??
+        manifest.icons?.['48']
+      const iconUrl = iconPath
+        ? chrome.runtime.getURL(iconPath)
+        : undefined
+      // Wrap in try/catch so a failed create (notifications disabled,
+      // icon missing on a future Plasmo upgrade, etc.) doesn't surface
+      // as an uncaught promise rejection in the user's console.
+      try {
+        await chrome.notifications.create(notifId, {
+          type: 'basic',
+          iconUrl: iconUrl ?? '',
+          title: 'Verification code found',
+          message: `${msg.code} -- click to copy.`,
+          silent: true,
+          priority: 1,
+        })
+      } catch (err) {
+        console.warn('[InboxKey] notifications.create failed:', err)
+        await consumeNotificationCode(notifId)
+        return
+      }
       // Auto-dismiss after 7 seconds. Consume the persisted mapping
       // even though the user didn't click, otherwise
       // chrome.storage.session accumulates orphan entries for

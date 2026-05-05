@@ -52,8 +52,17 @@ export { DOMAIN_ALIASES, WATCH_SESSION_SCORING } from '../matching/scoring-confi
  *             /recover paths
  *           - the OTP extractor false-positive overhaul also lives
  *             behind this stamp (Codex's PR #51 work)
+ *   '3' - keyword-free SMS recovery (Amazon Turkey case):
+ *           - SessionController now plumbs session.expected through to
+ *             EmailPollingService.pollOnce so the OTP extractor knows
+ *             the watch-session field's expected length/charset
+ *           - otp-extractor's no-keyword fallback now requires the
+ *             body to open with an SMS-style brand-prefix-code shape
+ *             ("Amazon: 123456") to admit, blocking same-domain prose
+ *             digit runs (shipping/order/promo) from false-positive
+ *             autofills
  */
-export const EXTRACTOR_VERSION = '2' as const
+export const EXTRACTOR_VERSION = '3' as const
 
 // ------------------------------
 // Types

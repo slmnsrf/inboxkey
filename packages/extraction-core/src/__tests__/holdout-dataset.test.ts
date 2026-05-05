@@ -66,7 +66,10 @@ describe('Holdout Dataset - Overfitting Detection', () => {
 
       // Check if we extracted the expected code
       if (fixture.extracted?.code) {
-        const found = result.some(r => r.code === fixture.extracted!.code)
+        // Case-insensitive: extractor normalizes alnum codes to uppercase,
+        // and OTP fields are case-insensitive in practice.
+        const expected = fixture.extracted.code.toUpperCase()
+        const found = result.some(r => r.code.toUpperCase() === expected)
         if (found) correctExtractions++
       }
     }
@@ -106,7 +109,8 @@ describe('Holdout Dataset - Overfitting Detection', () => {
       totalExtractions += result.length
 
       if (fixture.extracted?.code) {
-        const found = result.some(r => r.code === fixture.extracted!.code)
+        const expected = fixture.extracted.code.toUpperCase()
+        const found = result.some(r => r.code.toUpperCase() === expected)
         if (found) {
           truePositives++
         } else if (result.length > 0) {
