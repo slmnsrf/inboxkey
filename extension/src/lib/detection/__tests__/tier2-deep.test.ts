@@ -1274,5 +1274,78 @@ describe('tier2-deep helpers', () => {
         expect(result.score).toBeGreaterThanOrEqual(55)
       })
     })
+
+    describe('Deep-tree split-input nearby-text scan (Fluent UI / heavy frameworks)', () => {
+      // Microsoft Fluent UI buries the input under 6+ wrapper divs. The
+      // "Enter the code we sent to user@example.com" description lives
+      // further up than the legacy 5-level scan reached, so the channel
+      // classifier saw no email pattern and channelEvidence='unknown'.
+      // The widened scope (8 levels) reaches it; the gating to confirmed
+      // split-input groups protects single-input flows from noise.
+
+      it('promotes channelEvidence to positive on Fluent UI 6-cell with email text 6 levels up', () => {
+        container.innerHTML = `
+          <div>
+            <h1>Enter your code</h1>
+            <p>Enter the code we sent to user@example.com.</p>
+            <div>
+              <div>
+                <div data-testid="codeEntryField">
+                  <div data-testid="codeEntry">
+                    <div data-testid="codeInputWrapper"><span><input type="text" id="codeEntry-0" maxlength="1" inputmode="numeric" aria-label="Enter code digit 1" /></span></div>
+                    <div data-testid="codeInputWrapper"><span><input type="text" id="codeEntry-1" maxlength="1" inputmode="numeric" aria-label="Enter code digit 2" /></span></div>
+                    <div data-testid="codeInputWrapper"><span><input type="text" id="codeEntry-2" maxlength="1" inputmode="numeric" aria-label="Enter code digit 3" /></span></div>
+                    <div data-testid="codeInputWrapper"><span><input type="text" id="codeEntry-3" maxlength="1" inputmode="numeric" aria-label="Enter code digit 4" /></span></div>
+                    <div data-testid="codeInputWrapper"><span><input type="text" id="codeEntry-4" maxlength="1" inputmode="numeric" aria-label="Enter code digit 5" /></span></div>
+                    <div data-testid="codeInputWrapper"><span><input type="text" id="codeEntry-5" maxlength="1" inputmode="numeric" aria-label="Enter code digit 6" /></span></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        `
+        const input = container.querySelector<HTMLInputElement>('#codeEntry-0')!
+        const result = detectTier2(input, cooldown)
+        expect(result.detected).toBe(true)
+        expect(result.channelEvidence).toBe('positive')
+      })
+
+      it('keeps channelEvidence unknown on 6-cell prompt with no email/SMS pattern at any depth', () => {
+        // Split-input shape, deep wrapping, but no email/SMS pattern in
+        // any ancestor text. The widened scan reads everything above; the
+        // classifier finds no @-address and no SMS/phone keyword, so
+        // evidence stays 'unknown'. The Phase 2 chip-suppression gate
+        // therefore still suppresses the listening chip — exactly the
+        // protective intent of the gate.
+        //
+        // (We avoid wording like "authenticator" / "auth app" here
+        // because that triggers the unrelated authenticator-only channel
+        // gate which rejects detection outright.)
+        container.innerHTML = `
+          <div>
+            <h1>Verify your identity</h1>
+            <p>Enter the 6-digit code below.</p>
+            <div>
+              <div>
+                <div data-testid="codeEntryField">
+                  <div data-testid="codeEntry">
+                    <div data-testid="codeInputWrapper"><span><input type="text" id="codeEntry-0" maxlength="1" inputmode="numeric" aria-label="Enter code digit 1" /></span></div>
+                    <div data-testid="codeInputWrapper"><span><input type="text" id="codeEntry-1" maxlength="1" inputmode="numeric" aria-label="Enter code digit 2" /></span></div>
+                    <div data-testid="codeInputWrapper"><span><input type="text" id="codeEntry-2" maxlength="1" inputmode="numeric" aria-label="Enter code digit 3" /></span></div>
+                    <div data-testid="codeInputWrapper"><span><input type="text" id="codeEntry-3" maxlength="1" inputmode="numeric" aria-label="Enter code digit 4" /></span></div>
+                    <div data-testid="codeInputWrapper"><span><input type="text" id="codeEntry-4" maxlength="1" inputmode="numeric" aria-label="Enter code digit 5" /></span></div>
+                    <div data-testid="codeInputWrapper"><span><input type="text" id="codeEntry-5" maxlength="1" inputmode="numeric" aria-label="Enter code digit 6" /></span></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        `
+        const input = container.querySelector<HTMLInputElement>('#codeEntry-0')!
+        const result = detectTier2(input, cooldown)
+        expect(result.detected).toBe(true)
+        expect(result.channelEvidence).toBe('unknown')
+      })
+    })
   })
 })

@@ -12,6 +12,7 @@ export const config = {
 }
 
 import type { DetectionResult } from "@/lib/types"
+import { t } from "@/lib/i18n"
 import { showNotification } from "./notification"
 import { showSessionChip, type ChipHandle } from "./session-chip"
 import { extractDomain, isDomainEnabled } from "@/lib/utils/domain"
@@ -93,7 +94,7 @@ export class WatchSession {
    */
   async start(): Promise<void> {
     if (this.port) {
-      console.log("[WatchSession] Session already started")
+      console.warn("[WatchSession] Session already started")
       return
     }
 
@@ -437,7 +438,7 @@ export class WatchSession {
       }
 
       default:
-        console.log("[WatchSession] Unknown port message:", message)
+        console.warn("[WatchSession] Unknown port message:", message)
         break
     }
   }
@@ -566,12 +567,15 @@ export class WatchSession {
         this.chipHandle.update("copied")
       }
 
-      // Show success notification with clipboard copy
+      // Show success notification with clipboard copy. The OTP value is
+      // interpolated into the title so the user can read the code at a
+      // glance and paste with confidence -- 12s default + a "×" close
+      // button keep the toast forgiving for slow paste flows without
+      // turning into a nag.
       showNotification({
-        title: 'Code copied to clipboard',
-        message: "Paste into the field to continue",
+        title: t('toast_code_copied_with_code', codeResult.code),
+        message: t('toast_code_copied_paste_hint'),
         type: "success",
-        duration: 5000,
       })
 
       console.log("[WatchSession] Code copied to clipboard and user notified")

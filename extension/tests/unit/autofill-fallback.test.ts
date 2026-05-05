@@ -37,8 +37,8 @@ vi.mock("../../src/contents/notification", () => ({
       document.head.appendChild(style)
     }
 
-    // Auto-dismiss after duration
-    const duration = options.duration || 5000
+    // Auto-dismiss after duration (mirrors notification.ts default: 12s)
+    const duration = options.duration || 12000
     setTimeout(() => {
       notification.style.animation = "inboxkeySlideIn 300ms ease-out reverse"
       setTimeout(() => {
@@ -305,8 +305,14 @@ describe("Autofill Fallback", () => {
       // Check notification was added
       const notification = documentRef.querySelector(".inboxkey-notification")
       expect(notification).toBeTruthy()
-      // The notification title says "Code copied to clipboard" (not the code itself)
+      // Title contains both the verification code and the "copied to clipboard"
+      // phrase. The OTP value is interpolated so the user can read it at a
+      // glance, eliminating any ambiguity about which code was placed on the
+      // clipboard when multiple OTPs are in flight (e.g. retried sign-ins).
       expect(notification?.textContent).toContain("copied to clipboard")
+      expect(notification?.textContent).toContain("123456")
+      // Hint message instructs the user what to do next.
+      expect(notification?.textContent).toContain("paste")
     })
 
     it("should handle clipboard API failure gracefully", async () => {
@@ -638,7 +644,7 @@ describe("Autofill Fallback", () => {
   })
 
   describe("Notification auto-dismiss", () => {
-    it("should auto-dismiss notification after 5 seconds", async () => {
+    it("should auto-dismiss notification after 12 seconds", async () => {
       vi.useFakeTimers()
 
       const field = documentRef.createElement("input")
@@ -667,9 +673,12 @@ describe("Autofill Fallback", () => {
 
       expect(documentRef.querySelector(".inboxkey-notification")).toBeTruthy()
 
-      // Fast-forward 5 seconds + animation time
-      await vi.advanceTimersByTimeAsync(5300)
+      // Notification still visible at 11s (default is 12s)
+      await vi.advanceTimersByTimeAsync(11_000)
+      expect(documentRef.querySelector(".inboxkey-notification")).toBeTruthy()
 
+      // Fast-forward past 12s + animation time
+      await vi.advanceTimersByTimeAsync(1_300)
       expect(documentRef.querySelector(".inboxkey-notification")).toBeFalsy()
 
       vi.useRealTimers()

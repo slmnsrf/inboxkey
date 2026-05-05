@@ -432,9 +432,21 @@ function getNearbyText(input: HTMLInputElement, isSplitInput: boolean = false): 
   const texts: string[] = []
   let element: HTMLElement | null = input
   const maxLength = isSplitInput ? 250 : 150  // Increased limit for split-input contexts
+  // Split-input UIs from heavy component frameworks (Microsoft Fluent UI,
+  // Material UI, Chakra UI) bury the input under 6+ wrapper divs. The
+  // heading and the "we sent a code to user@example.com" description live
+  // further up than 5 ancestors. Without reaching them, the channel
+  // classifier sees no email/SMS text → channelEvidence='unknown' →
+  // listening chip is suppressed by the Phase 2 gate. The widened scope
+  // is gated to confirmed split-input groups so simpler single-input
+  // pages don't pull in unrelated header/footer text. The classifier
+  // still requires actual email/SMS text in the deeper scan to promote
+  // evidence — TOTP-only 6-cell prompts (Authenticator app screens) stay
+  // 'unknown' because no email/SMS pattern exists at any depth.
+  const maxLevels = isSplitInput ? 8 : 5
   let levels = 0
 
-  while (element && levels < 5) {
+  while (element && levels < maxLevels) {
     // Get all text from siblings
     if (element.parentElement) {
       const directText = Array.from(element.parentElement.childNodes)
