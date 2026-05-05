@@ -275,6 +275,107 @@ describe('scrapeMessages()', () => {
   // Real-world DOM fidelity
   // -------------------------------------------------------------------------
 
+  // -------------------------------------------------------------------------
+  // Provenance fields (conversationHref + isUnread)
+  // -------------------------------------------------------------------------
+
+  describe('provenance fields', () => {
+    it('captures conversationHref from list item <a href>', () => {
+      // Live Google Messages renders the list item as
+      //   <a class="list-item" href="/web/conversations/CgiqjpTyoePbfRIBOQ">...</a>
+      setBody(`
+        <mws-conversations-list>
+          <mws-conversation-list-item>
+            <a class="list-item" href="/web/conversations/CgABCXYZ">
+              <div data-e2e-is-unread="false">
+                <span data-e2e-conversation-name="">Amazon</span>
+                <mws-relative-timestamp>1 min</mws-relative-timestamp>
+                <span data-e2e-conversation-snippet="">code 1</span>
+              </div>
+            </a>
+          </mws-conversation-list-item>
+        </mws-conversations-list>
+      `)
+
+      const result = scrapeMessages()
+      expect(result.previews[0].conversationHref).toBe('/web/conversations/CgABCXYZ')
+    })
+
+    it('omits conversationHref when no <a href> is present (older fixtures)', () => {
+      setBody(`
+        <mws-conversations-list>
+          <mws-conversation-list-item>
+            <div data-e2e-is-unread="false">
+              <span data-e2e-conversation-name="">Amazon</span>
+              <mws-relative-timestamp>1 min</mws-relative-timestamp>
+              <span data-e2e-conversation-snippet="">code 1</span>
+            </div>
+          </mws-conversation-list-item>
+        </mws-conversations-list>
+      `)
+
+      const result = scrapeMessages()
+      expect(result.previews[0].conversationHref).toBeUndefined()
+    })
+
+    it('isUnread reflects the data-e2e-is-unread attribute', () => {
+      setBody(`
+        <mws-conversations-list>
+          <mws-conversation-list-item>
+            <div data-e2e-is-unread="true">
+              <span data-e2e-conversation-name="">Amazon</span>
+              <mws-relative-timestamp>Now</mws-relative-timestamp>
+              <span data-e2e-conversation-snippet="">code</span>
+            </div>
+          </mws-conversation-list-item>
+        </mws-conversations-list>
+      `)
+
+      const result = scrapeMessages()
+      expect(result.previews[0].isUnread).toBe(true)
+    })
+
+    it('prefers aria-label timestamp when present, falls back to textContent', () => {
+      // Older messages render as <div aria-label="24 min ago">24 min</div>
+      setBody(`
+        <mws-conversations-list>
+          <mws-conversation-list-item>
+            <div data-e2e-is-unread="false">
+              <span data-e2e-conversation-name="">Amazon</span>
+              <mws-relative-timestamp>
+                <div aria-label="24 min ago">24 min</div>
+              </mws-relative-timestamp>
+              <span data-e2e-conversation-snippet="">code</span>
+            </div>
+          </mws-conversation-list-item>
+        </mws-conversations-list>
+      `)
+
+      const result = scrapeMessages()
+      // aria-label is more parser-friendly (always includes "ago" suffix
+      // for older messages, more carefully localized).
+      expect(result.previews[0].timestamp).toBe('24 min ago')
+    })
+
+    it('uses textContent for fresh "Now" messages (no aria-label child)', () => {
+      // Fresh messages render text directly inside <mws-relative-timestamp>.
+      setBody(`
+        <mws-conversations-list>
+          <mws-conversation-list-item>
+            <div data-e2e-is-unread="true">
+              <span data-e2e-conversation-name="">Amazon</span>
+              <mws-relative-timestamp>Now</mws-relative-timestamp>
+              <span data-e2e-conversation-snippet="">code</span>
+            </div>
+          </mws-conversation-list-item>
+        </mws-conversations-list>
+      `)
+
+      const result = scrapeMessages()
+      expect(result.previews[0].timestamp).toBe('Now')
+    })
+  })
+
   describe('real-world DOM fidelity', () => {
     it('excludes mws-conversation-list-item-menu siblings from results', () => {
       setBody(`

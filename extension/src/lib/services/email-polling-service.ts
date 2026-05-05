@@ -94,6 +94,17 @@ export interface PollConfig {
   minScore?: number
   /** Abort signal to cancel this poll (MV3 safe). */
   signal?: AbortSignal
+  /**
+   * Fires once per adapter immediately after `listRecent()` returns the raw
+   * batch, BEFORE per-message seen-store / extraction filtering. Lets the
+   * caller (e.g. SessionController) capture an honest provenance baseline
+   * of every message present in the inbox at this poll, including ones the
+   * extractor will subsequently skip.
+   *
+   * Synchronous on purpose: the callback runs inside the adapter's loop and
+   * must not await anything that could allow a later poll to interleave.
+   */
+  onAdapterBatch?: (mailboxId: string, emails: EmailLike[]) => void
 }
 
 export interface AdapterResult {
@@ -121,6 +132,30 @@ export interface CandidateRecord {
   link?: { href: string, domain: string, score: number }
   /** Debug: combined score used for ranking */
   score: number
+  /**
+   * Stable per-message identity used by the post-session provenance gate.
+   * Shape: `${provider}:${mailboxId}:${messageId}`. Stable across polls so a
+   * baseline snapshot taken on poll #0 can recognise the same message on
+   * later polls. Distinct from the seen-store key which embeds extractor
+   * version (intended for re-extraction on extractor upgrades).
+   */
+  provenanceKey: string
+  /**
+   * Provider-specific metadata used for per-channel provenance checks.
+   * Populated for SMS (google-messages); usually empty for email. The
+   * SessionController inspects this to detect new arrivals when the
+   * messageId itself isn't enough (e.g. Google Messages re-uses
+   * conversationHref while only the snippet/unread state changes).
+   *
+   * snippetHash is the SHA-256 of the preview text (hex-encoded) so the
+   * provenance baseline can be diffed and persisted across sessions
+   * without storing the raw snippet (which contains OTP material).
+   */
+  meta?: {
+    conversationHref?: string
+    isUnread?: boolean
+    snippetHash?: string
+  }
 }
 
 // ---------------- Service ----------------
@@ -203,6 +238,21 @@ export class EmailPollingService {
       }
       try {
         const batch = await ad.listRecent({ sinceEpochMs: since, max: perProviderMax, keywordHint })
+
+        // Fire baseline hook BEFORE seen-store / extraction filtering so the
+        // caller sees every message the adapter returned. The caller uses
+        // this to populate a session-scoped provenance baseline; a message
+        // omitted here would silently become a "new arrival" on the next
+        // poll. Wrapped in try/catch so a faulty hook can't take down the
+        // poll loop.
+        if (cfg.onAdapterBatch) {
+          try {
+            cfg.onAdapterBatch(ad.mailboxId, batch)
+          } catch (err) {
+            console.warn('[EmailPollingService] onAdapterBatch hook threw:', err)
+          }
+        }
+
         for (const msg of batch) {
           if (cfg.signal?.aborted) break
           if (processed >= globalMax) break
@@ -250,8 +300,15 @@ export class EmailPollingService {
                 pageDomain: ctx.pageDomain,
                 brandHints: ctx.brandHints,
                 meta: {
-                  // Map google-messages to imap-bridge: extractFromEmail does not accept 'google-messages'.
-                  // SMS messages have their own pipeline and should not reach here in practice.
+                  // Map google-messages to imap-bridge: extractFromEmail's
+                  // provider type is 'imap' | 'imap-bridge' only. SMS
+                  // previews flow through this same path — the adapter
+                  // packs the snippet into `msg.text`, and the extractor
+                  // treats it as plain body text. Tagging it as
+                  // imap-bridge keeps the extractor's per-provider
+                  // heuristics in their email-shaped configuration; in
+                  // practice the OTP detection works because the snippet
+                  // contains a verification keyword and the digit run.
                   provider: (msg.provider === 'google-messages' ? 'imap-bridge' : msg.provider) as 'imap' | 'imap-bridge',
                   sender: msg.from,
                   subject,
@@ -311,6 +368,9 @@ export class EmailPollingService {
 
           // Gate by minScore; ignore everything else
           if (passesGate) {
+            const meta = msg._meta as
+              | { conversationHref?: string; isUnread?: boolean; snippetHash?: string }
+              | undefined
             const rec: CandidateRecord = {
               provider: msg.provider,
               mailboxId: ad.mailboxId,
@@ -319,6 +379,14 @@ export class EmailPollingService {
               from: msg.from,
               receivedEpochMs: msg.receivedEpochMs,
               score: topScore,
+              provenanceKey: `${msg.provider}:${ad.mailboxId}:${msg.id}`,
+              meta: meta && (meta.conversationHref || meta.isUnread !== undefined || meta.snippetHash)
+                ? {
+                    conversationHref: meta.conversationHref,
+                    isUnread: meta.isUnread,
+                    snippetHash: meta.snippetHash,
+                  }
+                : undefined,
             }
             if (otpScore >= linkScore && topOtp) {
               const kind = topOtp.charset

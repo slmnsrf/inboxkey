@@ -231,35 +231,33 @@ describe('MessagesProviderAdapter', () => {
       expect(diff).toBeLessThanOrEqual(91400000)
     })
 
-    it('unparseable timestamp falls back to Date.now()', async () => {
+    it('unparseable timestamp returns undefined (never fabricates Date.now())', async () => {
+      // Date / clock-time strings that we cannot map to a precise instant
+      // should return undefined. Substituting Date.now() would falsify the
+      // freshness signal and let stale codes outrank fresh ones in scoring.
       const tm = createMockTabManager({
         scrapeRecentPreviews: vi.fn(async () => [
           { conversationId: 'c-0', senderName: 'Test', previewText: 'msg', isUnread: true, timestamp: 'Mar 16' },
         ]),
       })
       const adapter = new MessagesProviderAdapter(tm, 'mbx-1', 'sess-1')
-      const before = Date.now()
 
       const result = await adapter.listRecent({ sinceEpochMs: 0, max: 10 })
 
-      // Should be close to now (within 5 seconds)
-      expect(result[0].receivedEpochMs!).toBeGreaterThanOrEqual(before - 1000)
-      expect(result[0].receivedEpochMs!).toBeLessThanOrEqual(Date.now() + 1000)
+      expect(result[0].receivedEpochMs).toBeUndefined()
     })
 
-    it('undefined timestamp falls back to Date.now()', async () => {
+    it('undefined timestamp returns undefined receivedEpochMs', async () => {
       const tm = createMockTabManager({
         scrapeRecentPreviews: vi.fn(async () => [
           { conversationId: 'c-0', senderName: 'Test', previewText: 'msg', isUnread: true },
         ]),
       })
       const adapter = new MessagesProviderAdapter(tm, 'mbx-1', 'sess-1')
-      const before = Date.now()
 
       const result = await adapter.listRecent({ sinceEpochMs: 0, max: 10 })
 
-      expect(result[0].receivedEpochMs!).toBeGreaterThanOrEqual(before - 1000)
-      expect(result[0].receivedEpochMs!).toBeLessThanOrEqual(Date.now() + 1000)
+      expect(result[0].receivedEpochMs).toBeUndefined()
     })
 
     it('"3 hr" approximates to ~3 hours ago', async () => {
@@ -350,6 +348,110 @@ describe('MessagesProviderAdapter', () => {
       const adapter = new MessagesProviderAdapter(tabManager, 'mbx-42', 'sess-1')
       expect(adapter.id).toBe('google-messages')
       expect(adapter.mailboxId).toBe('mbx-42')
+    })
+  })
+
+  describe('locale-aware timestamp parsing', () => {
+    async function parsedFor(timestamp: string): Promise<number | undefined> {
+      const tm = createMockTabManager({
+        scrapeRecentPreviews: vi.fn(async () => [
+          { conversationId: 'c-0', senderName: 'X', previewText: 'msg', isUnread: true, timestamp },
+        ]),
+      })
+      const adapter = new MessagesProviderAdapter(tm, 'mbx-1', 'sess-l')
+      const result = await adapter.listRecent({ sinceEpochMs: 0, max: 10 })
+      return result[0].receivedEpochMs
+    }
+
+    function approxEqual(actual: number | undefined, expected: number, tolMs = 5_000): void {
+      expect(actual).toBeDefined()
+      expect(Math.abs((actual as number) - expected)).toBeLessThanOrEqual(tolMs)
+    }
+
+    describe('"Now" / fresh-message variants', () => {
+      it.each([
+        'now',
+        'Now',
+        'just now',
+        'Just now',
+        'şimdi',
+        'Şimdi',
+        'şu anda',
+        'Şu Anda',
+        'jetzt',
+        'Jetzt',
+        'soeben',
+      ])('"%s" parses to ~now', async (label) => {
+        const before = Date.now()
+        const got = await parsedFor(label)
+        approxEqual(got, before)
+      })
+    })
+
+    describe('"N min" variants', () => {
+      it.each([
+        ['5 min', 5],
+        ['5 mins', 5],
+        ['5 minute', 5],
+        ['5 minutes', 5],
+        ['5 minutes ago', 5],
+        ['5 dk', 5],
+        ['5 dakika', 5],
+        ['5 dk önce', 5],
+        ['5 Min', 5],
+        ['5 Minute', 5],
+        ['5 Minuten', 5],
+        ['vor 5 Min', 5],
+      ])('"%s" parses to ~%i min ago', async (label, n) => {
+        const before = Date.now()
+        const got = await parsedFor(label)
+        approxEqual(got, before - n * 60_000)
+      })
+    })
+
+    describe('"N hr" variants', () => {
+      it.each([
+        ['3 hr', 3],
+        ['3 hours', 3],
+        ['3 sa', 3],
+        ['3 saat', 3],
+        ['3 Std', 3],
+        ['3 Stunden', 3],
+        ['vor 3 Std', 3],
+      ])('"%s" parses to ~%i hr ago', async (label, n) => {
+        const before = Date.now()
+        const got = await parsedFor(label)
+        approxEqual(got, before - n * 3_600_000, 30_000)
+      })
+    })
+
+    describe('"Yesterday" variants', () => {
+      it.each(['yesterday', 'Yesterday', 'dün', 'Dün', 'gestern', 'Gestern'])(
+        '"%s" parses to ~24h ago',
+        async (label) => {
+          const before = Date.now()
+          const got = await parsedFor(label)
+          approxEqual(got, before - 86_400_000, 30_000)
+        },
+      )
+    })
+
+    describe('unknown / unparseable inputs', () => {
+      it.each([
+        'today',
+        'Today',
+        'bugün',
+        'heute',
+        '1:15 PM',
+        '13:15',
+        'Mar 16',
+        '5 Mar',
+        '',
+        '   ',
+      ])('"%s" returns undefined', async (label) => {
+        const got = await parsedFor(label)
+        expect(got).toBeUndefined()
+      })
     })
   })
 })

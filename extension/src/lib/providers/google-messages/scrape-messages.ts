@@ -66,10 +66,36 @@ export function scrapeMessages(): ScrapeResult {
     }
 
     const isUnread = unreadEl?.getAttribute('data-e2e-is-unread') === 'true'
-    const timestamp = timestampEl?.textContent?.trim() || undefined
+
+    // Timestamp text. Prefer the inner <div aria-label="..."> when present
+    // (older messages render as <div aria-label="N min ago">N min</div>);
+    // fall back to the timestamp element's textContent for fresh messages
+    // which render the text directly inside <mws-relative-timestamp> with
+    // no wrapping div and no aria-label.
+    const ariaTimestampEl = timestampEl?.querySelector<HTMLElement>('[aria-label]')
+    const ariaTimestamp = ariaTimestampEl?.getAttribute('aria-label')?.trim() || undefined
+    const visibleTimestamp = timestampEl?.textContent?.trim() || undefined
+    const timestamp = ariaTimestamp || visibleTimestamp
+
+    // Stable conversation href from the list item's <a href>. Used by
+    // the provenance baseline to identify the same conversation across
+    // polls even after list reorder. Three locations in priority order:
+    //   1. descendant <a href> — current Google Messages structure
+    //      (mws-conversation-list-item wraps an inner <a class="list-item">)
+    //   2. the item itself — when the scraper's selector matches an <a>
+    //   3. ancestor <a href> — defensive against future Google Messages
+    //      restructures that flip the wrapping anchor outside the
+    //      mws-conversation-list-item host. Without this, conversationHref
+    //      goes undefined and the SMS provenance gate degrades to
+    //      snippet-only diff (weaker classifier).
+    const linkEl = item.querySelector<HTMLAnchorElement>('a[href]')
+      ?? (item.tagName?.toUpperCase() === 'A' ? (item as unknown as HTMLAnchorElement) : null)
+      ?? (item.closest?.('a[href]') as HTMLAnchorElement | null)
+    const conversationHref = linkEl?.getAttribute('href') || undefined
 
     previews.push({
       conversationId: `conv-${i}`,
+      conversationHref,
       senderName,
       previewText,
       isUnread,

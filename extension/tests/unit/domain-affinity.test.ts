@@ -76,6 +76,26 @@ describe('Domain Affinity', () => {
       expect(result).toBe(true)
     })
 
+    it('should match Microsoft sign-in domains to microsoft.com', () => {
+      // login.live.com -> live.com (siteETLD); OTPs come from
+      // accountprotection.microsoft.com -> microsoft.com. Without this
+      // alias, the affinity gate at session-controller.ts would silently
+      // drop every Microsoft "Enter your code" autofill.
+      expect(isAliasMatch('live.com', 'microsoft.com')).toBe(true)
+      expect(isAliasMatch('microsoft.com', 'live.com')).toBe(true)
+      expect(isAliasMatch('outlook.com', 'microsoft.com')).toBe(true)
+      expect(isAliasMatch('hotmail.com', 'microsoft.com')).toBe(true)
+    })
+
+    it('should match Microsoft sign-in domains to each other via shared canonical', () => {
+      // live.com and outlook.com both alias to microsoft.com, so they
+      // should match each other through the shared-canonical branch in
+      // isAliasMatch (a user signing in on outlook.com whose OTP arrives
+      // from a live.com sender, or vice versa).
+      expect(isAliasMatch('live.com', 'outlook.com')).toBe(true)
+      expect(isAliasMatch('outlook.com', 'hotmail.com')).toBe(true)
+    })
+
     it('should return false for unrelated domains', () => {
       const result = isAliasMatch('google.com', 'facebook.com')
       expect(result).toBe(false)
@@ -191,6 +211,23 @@ describe('Domain Affinity', () => {
         const score2 = domainAffinity('dropboxmail.com', 'dropbox.com')
         expect(score1).toBe(0.9)
         expect(score2).toBe(0.9)
+      })
+
+      it('should return 0.9 for Microsoft sign-in/sender pairing', () => {
+        // Real-world Microsoft "Enter your code" flow: site = login.live.com,
+        // OTP sender = accountprotection.microsoft.com. Both pass through
+        // extractETLD before reaching domainAffinity.
+        const score = domainAffinity(
+          extractETLD('login.live.com'),
+          extractETLD('accountprotection.microsoft.com'),
+          'Microsoft account verification code'
+        )
+        expect(score).toBe(0.9)
+      })
+
+      it('should return 0.9 for outlook.com sign-in with microsoft.com sender', () => {
+        const score = domainAffinity('outlook.com', 'microsoft.com')
+        expect(score).toBe(0.9)
       })
 
       it('should prioritize alias match over token overlap', () => {
@@ -315,6 +352,12 @@ describe('Domain Affinity', () => {
   describe('DOMAIN_ALIASES configuration', () => {
     it('should include dropboxmail.com alias', () => {
       expect(DOMAIN_ALIASES['dropboxmail.com']).toBe('dropbox.com')
+    })
+
+    it('should include Microsoft sign-in aliases', () => {
+      expect(DOMAIN_ALIASES['live.com']).toBe('microsoft.com')
+      expect(DOMAIN_ALIASES['outlook.com']).toBe('microsoft.com')
+      expect(DOMAIN_ALIASES['hotmail.com']).toBe('microsoft.com')
     })
 
     it('should not contain dead self-reference entries', () => {

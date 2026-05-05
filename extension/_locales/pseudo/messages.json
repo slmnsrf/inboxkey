@@ -291,12 +291,21 @@
     "message": "[Ñõ rëçëñt vérîfîçåtîõñ ëmåîls ýët. one two three]"
   },
   "toast_code_copied": {
-    "message": "[Çõðë çõþîëð: $CODE$ one two three]",
+    "message": "[Çõðë çõþîëð tõ çlîþbõårð one two three]"
+  },
+  "toast_code_copied_with_code": {
+    "message": "[Vërîfîçåtîõñ çõðë $CODE$ çõþîëð tõ çlîþbõårð one two three]",
     "placeholders": {
       "code": {
         "content": "$1"
       }
     }
+  },
+  "toast_code_copied_paste_hint": {
+    "message": "[Jûst þåstë ît åñð sûbmît. one two three]"
+  },
+  "toast_dismiss_aria": {
+    "message": "[Ðîsmîss ñõtîfîçåtîõñ one two three]"
   },
   "firstrun_bridge_title": {
     "message": "[Îñståll thë ÎñbõxBrîðğë hëlþër one two three]"

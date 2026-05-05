@@ -9,12 +9,19 @@ export const config = {
 
 import { COLOR_SUCCESS, COLOR_ERROR, COLOR_PRIMARY } from '@/lib/design-tokens'
 import { isHTMLDocument } from '@/lib/utils/is-html-document'
+import { t } from '@/lib/i18n'
 
 interface NotificationOptions {
   title: string
   message: string
-  duration?: number // milliseconds, default 5000
+  duration?: number // milliseconds, default 12000
   type?: 'success' | 'error' | 'info'
+  /**
+   * When true, render a small "×" close button that dismisses the toast
+   * immediately on click. Defaults to true; pass false for terse,
+   * non-actionable status toasts that don't need a control.
+   */
+  dismissible?: boolean
 }
 
 const STYLE_ID = 'inboxkey-notification-styles'
@@ -47,22 +54,54 @@ export function showNotification(options: NotificationOptions): void {
   // Defense-in-depth for content scripts injected into SVG/XML pages.
   if (!isHTMLDocument()) return
 
-  const { title, message, duration = 5000, type = 'success' } = options
+  const { title, message, duration = 12000, type = 'success', dismissible = true } = options
 
   // Inject styles if not already present
   injectStyles()
 
+  // Capture whatever element was focused when the toast appeared. If
+  // the user keyboard-focuses the close button (Tab → Enter), removing
+  // the button from the DOM would otherwise drop focus to <body>. We
+  // restore to this anchor on dismiss when it's still in the document
+  // and the toast still owns the focus. Snapshot is shadow-DOM safe:
+  // `document.activeElement` returns the shadow host on closed roots,
+  // which is itself focusable enough to be a stable restore target.
+  const focusAnchor = document.activeElement as HTMLElement | null
+
   // Create notification element
-  const notification = createNotificationElement(title, message, type)
+  const notification = createNotificationElement(title, message, type, dismissible)
 
   // Add to DOM
   document.body.appendChild(notification)
 
-  // Auto-dismiss after duration
+  const dismissAndRestore = (): void => {
+    dismissNotification(notification)
+    // Only restore focus if the toast (or one of its descendants) is the
+    // current focused element — otherwise the user has moved on and we
+    // shouldn't yank them back. Also require the anchor to still be in
+    // the document and focusable.
+    const active = document.activeElement
+    const focusInsideToast = active != null && notification.contains(active)
+    if (focusInsideToast && focusAnchor && focusAnchor.isConnected && typeof focusAnchor.focus === 'function') {
+      try { focusAnchor.focus() } catch { /* anchor may have become non-focusable */ }
+    }
+  }
+
+  // Auto-dismiss after duration. Tracked so an explicit close click can
+  // cancel the timer and the toast doesn't try to fade twice.
   const dismissId = trackTimer(setTimeout(() => {
     pendingTimers.delete(dismissId)
-    dismissNotification(notification)
+    dismissAndRestore()
   }, duration))
+
+  if (dismissible) {
+    const closeBtn = notification.querySelector<HTMLButtonElement>('.inboxkey-notification-close')
+    closeBtn?.addEventListener('click', () => {
+      clearTimeout(dismissId)
+      pendingTimers.delete(dismissId)
+      dismissAndRestore()
+    })
+  }
 }
 
 /**
@@ -71,7 +110,8 @@ export function showNotification(options: NotificationOptions): void {
 function createNotificationElement(
   title: string,
   message: string,
-  type: 'success' | 'error' | 'info'
+  type: 'success' | 'error' | 'info',
+  dismissible: boolean
 ): HTMLDivElement {
   const notification = document.createElement('div')
   notification.className = `inboxkey-notification inboxkey-notification--${type}`
@@ -90,6 +130,15 @@ function createNotificationElement(
   content.appendChild(titleEl)
   content.appendChild(messageEl)
   notification.appendChild(content)
+
+  if (dismissible) {
+    const closeBtn = document.createElement('button')
+    closeBtn.type = 'button'
+    closeBtn.className = 'inboxkey-notification-close'
+    closeBtn.setAttribute('aria-label', t('toast_dismiss_aria') || 'Dismiss notification')
+    closeBtn.textContent = '×' // multiplication sign — visually a clean × glyph
+    notification.appendChild(closeBtn)
+  }
 
   return notification
 }
@@ -125,12 +174,15 @@ function injectStyles(): void {
       right: 20px;
       background: ${COLOR_SUCCESS};
       color: white;
-      padding: 16px 20px;
+      padding: 14px 16px 14px 20px;
       border-radius: 8px;
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
       z-index: 2147483647;
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', sans-serif;
-      max-width: 320px;
+      max-width: 360px;
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
       animation: inboxkeySlideIn 0.3s ease-out;
     }
 
@@ -161,6 +213,8 @@ function injectStyles(): void {
       display: flex;
       flex-direction: column;
       gap: 4px;
+      flex: 1 1 auto;
+      min-width: 0;
     }
 
     .inboxkey-notification-title {
@@ -173,6 +227,34 @@ function injectStyles(): void {
       font-size: 12px;
       line-height: 1.4;
       opacity: 0.9;
+    }
+
+    .inboxkey-notification-close {
+      flex: 0 0 auto;
+      appearance: none;
+      background: transparent;
+      border: 0;
+      color: inherit;
+      opacity: 0.75;
+      cursor: pointer;
+      font-size: 20px;
+      line-height: 1;
+      padding: 2px 6px;
+      margin: -2px -4px 0 0;
+      border-radius: 4px;
+      font-family: inherit;
+      transition: opacity 120ms ease, background-color 120ms ease;
+    }
+
+    .inboxkey-notification-close:hover,
+    .inboxkey-notification-close:focus-visible {
+      opacity: 1;
+      background-color: rgba(255, 255, 255, 0.15);
+      outline: none;
+    }
+
+    .inboxkey-notification-close:focus-visible {
+      box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.6);
     }
   `
 

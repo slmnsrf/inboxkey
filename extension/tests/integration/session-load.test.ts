@@ -41,11 +41,17 @@ vi.mock("../../src/lib/storage/storage-factory", () => {
   }
 })
 
-// V2: Mock EmailPollingService
+// V3: Hoisted shared pollOnce for poll counting
+const { mockPollOnce } = vi.hoisted(() => ({
+  mockPollOnce: vi.fn((_ctx?: unknown, _cfg?: { onAdapterBatch?: (mailboxId: string, emails: unknown[]) => void }) =>
+    Promise.resolve({ candidates: [], adapterResults: [] })
+  ),
+}))
+
 vi.mock("../../src/lib/services/email-polling-service", () => {
   return {
     EmailPollingService: vi.fn(() => ({
-      pollOnce: vi.fn(() => Promise.resolve({ candidates: [], adapterResults: [] })),
+      pollOnce: mockPollOnce,
     })),
   }
 })
@@ -105,6 +111,12 @@ describe("SessionController Load Testing", () => {
     mockPopupCacheManager.getCache.mockResolvedValue({ codes: [], links: [] })
     mockPopupCacheManager.updateWithNewCodes.mockResolvedValue(undefined)
     mockPopupCacheManager.markCodeUsed.mockResolvedValue(undefined)
+
+    // V3: Reset shared poll mock
+    mockPollOnce.mockReset()
+    mockPollOnce.mockImplementation(() =>
+      Promise.resolve({ candidates: [], adapterResults: [] })
+    )
 
     // V2: Default mailbox and settings mocks
     mockGetMailboxes.mockResolvedValue([{
@@ -588,7 +600,7 @@ describe("SessionController Load Testing", () => {
 
       // V2: With timeoutSeconds=0.2, each session gets 1 poll
       // 3 sessions x 1 poll each = 3 getCache calls
-      expect(mockPopupCacheManager.getCache).toHaveBeenCalledTimes(3)
+      expect(mockPollOnce).toHaveBeenCalledTimes(3)
     })
 
     it("should handle sessions with different poll schedules", async () => {
@@ -619,7 +631,7 @@ describe("SessionController Load Testing", () => {
       await vi.runAllTimersAsync()
 
       // 2 controllers x 1 poll each = 2 getCache calls
-      expect(mockPopupCacheManager.getCache).toHaveBeenCalledTimes(2)
+      expect(mockPollOnce).toHaveBeenCalledTimes(2)
       expect(onCompleted1).toHaveBeenCalledTimes(1)
       expect(onCompleted2).toHaveBeenCalledTimes(1)
     })

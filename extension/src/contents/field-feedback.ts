@@ -17,6 +17,7 @@ export const config = {
 
 import { generateShadowCSS, generateEnhancedKeyframes } from '@/contents/field-feedback-styles'
 import { detectSplitInputGroup } from '@/lib/detection/split-input-detector'
+import { resolveVisualTarget } from '@/lib/detection/visual-target-resolver'
 import { isHTMLDocument } from '@/lib/utils/is-html-document'
 
 // ─── Public types ────────────────────────────────────────────────────────────
@@ -225,6 +226,17 @@ interface FieldOverlayOptions {
   staggerDelay?: number
   onClose?: () => void | Promise<void>
   onDestroy?: () => void
+  /**
+   * Optional element to use for OVERLAY GEOMETRY only — rect, clipping
+   * ancestor walk, and border-radius derive from this element when set.
+   * Focus/blur listeners and the IntersectionObserver continue to track
+   * the input(s). Defaults to the input itself.
+   *
+   * Used for fake-split OTP layouts (single hidden input + sibling
+   * visual boxes) where the input's bounding rect is too small to
+   * frame the visible boxes. See visual-target-resolver.ts.
+   */
+  visualTarget?: HTMLElement
 }
 
 class FieldOverlay {
@@ -233,6 +245,15 @@ class FieldOverlay {
   private borderRing: HTMLDivElement
   private statusText: HTMLSpanElement
   private target: HTMLInputElement
+  /**
+   * Element used for overlay GEOMETRY only (rect, clipping ancestor
+   * walk, border-radius). Equals `target` for normal inputs; for
+   * fake-split layouts it's the resolved visual container. Focus/blur
+   * and IntersectionObserver continue to track `target`/`groupTargets`.
+   */
+  private visualTarget: HTMLElement
+  /** True when visualTarget !== target. Affects border-radius default. */
+  private hasVisualTarget: boolean
   private isGroup: boolean
   private groupTargets: HTMLInputElement[]
   private destroyed = false
@@ -248,6 +269,8 @@ class FieldOverlay {
     this.target = target
     this.isGroup = options.isGroup ?? false
     this.groupTargets = options.groupTargets ?? [target]
+    this.visualTarget = options.visualTarget ?? target
+    this.hasVisualTarget = !!options.visualTarget && options.visualTarget !== target
     this.onDestroyCallback = options.onDestroy
     this.abortController = new AbortController()
     const signal = this.abortController.signal
@@ -405,7 +428,10 @@ class FieldOverlay {
       const bottom = Math.max(...rects.map(r => r.bottom))
       rect = { left, top, right, bottom, width: right - left, height: bottom - top }
     } else {
-      const r = this.target.getBoundingClientRect()
+      // Use visualTarget for geometry. For normal inputs visualTarget
+      // === target. For fake-split layouts visualTarget is the visible
+      // container resolved by visual-target-resolver.
+      const r = this.visualTarget.getBoundingClientRect()
       rect = { left: r.left, top: r.top, width: r.width, height: r.height, bottom: r.bottom, right: r.right }
     }
 
@@ -427,8 +453,9 @@ class FieldOverlay {
     this.host.style.width = Math.round(rect.width) + 'px'
     this.host.style.height = Math.round(rect.height) + 'px'
 
-    // Inherit border-radius from target (or use default for groups)
-    if (this.isGroup) {
+    // Inherit border-radius from target (or use default for groups
+    // and resolved visual containers, which are typically unstyled).
+    if (this.isGroup || this.hasVisualTarget) {
       this.borderRing.style.borderRadius = '8px'
     } else {
       const computed = getComputedStyle(this.target)
@@ -450,13 +477,17 @@ class FieldOverlay {
 
   /**
    * Fine-grained visibility check against clipping ancestors.
+   *
+   * Walks up from the GEOMETRY anchor (visualTarget, falling back to
+   * the input). The IntersectionObserver still observes the real
+   * input for liveness — see setupIntersectionObserver.
    */
   private isVisibleInClippingAncestors(
     rect: { left: number; top: number; width: number; height: number; bottom: number; right: number }
   ): boolean {
     if (rect.width === 0 || rect.height === 0) return false
 
-    const primary = this.isGroup ? this.groupTargets[0] : this.target
+    const primary = this.isGroup ? this.groupTargets[0] : this.visualTarget
     let parent = primary.parentElement
 
     while (parent && parent !== document.body && parent !== document.documentElement) {
@@ -654,7 +685,25 @@ function buildSingleHandle(
   field: HTMLInputElement,
   options: FieldFeedbackOptions
 ): ChipHandle {
+  // Resolve the visual target lazily here. For 99% of inputs the
+  // resolver returns { kind: 'self' } in O(1) (fast-pass on a normal
+  // sized rect). Only fake-split OTP layouts (e.g. Hepsiburada — one
+  // hidden input + sibling visual boxes) trigger the full structural
+  // walk. See visual-target-resolver.ts for the resolver contract.
+  let visualTarget: HTMLElement | undefined
+  try {
+    const resolved = resolveVisualTarget(field)
+    if (resolved.kind === 'container') {
+      visualTarget = resolved.target
+    }
+  } catch (err) {
+    // Resolver throws should never affect overlay rendering; degrade
+    // to anchoring on the input itself.
+    console.warn('[field-feedback] visual-target-resolver threw:', err)
+  }
+
   const overlay = new FieldOverlay(field, {
+    visualTarget,
     onClose: options.onClose
       ? async () => {
           await options.onClose?.()

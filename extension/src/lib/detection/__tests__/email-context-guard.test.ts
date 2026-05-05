@@ -179,4 +179,77 @@ describe('hasEmailContext', () => {
     const field = document.getElementById('c3') as HTMLInputElement
     expect(hasEmailContext(field)).toBe(true)
   })
+
+  it('ignores @ inside <script> JSDoc (Amazon CVF shape)', () => {
+    document.body.innerHTML = `
+      <form id="verification-code-form">
+        <div>
+          <div>
+            <input id="input-box-otp" type="tel" maxlength="6" name="otpCode" />
+          </div>
+          <script>
+            /**
+             * Validate digit input.
+             * @type {RegExp}
+             */
+            var INVALID_DIGIT_REGEX = /\\D/g;
+          </script>
+        </div>
+      </form>
+    `
+    const field = document.getElementById('input-box-otp') as HTMLInputElement
+    expect(hasEmailContext(field)).toBe(false)
+  })
+
+  it('ignores @ inside <style> at-rules (e.g. @media, @font-face)', () => {
+    document.body.innerHTML = `
+      <form>
+        <style>
+          @media (max-width: 600px) { .otp { width: 100%; } }
+          @font-face { font-family: 'X'; src: url('x.woff'); }
+        </style>
+        <input id="code" type="text" />
+      </form>
+    `
+    const field = document.getElementById('code') as HTMLInputElement
+    expect(hasEmailContext(field)).toBe(false)
+  })
+
+  it('ignores bare "@type" / "@param" JSDoc tags in code blocks', () => {
+    document.body.innerHTML = `
+      <form>
+        <input id="code" type="text" />
+        <script>
+          // @type comment
+          // @param x
+          // @Component decorator
+          var x = 1;
+        </script>
+      </form>
+    `
+    const field = document.getElementById('code') as HTMLInputElement
+    expect(hasEmailContext(field)).toBe(false)
+  })
+
+  it('still detects masked email addresses (a***@example.com)', () => {
+    document.body.innerHTML = `
+      <main>
+        <p>We sent a code to a***@gmail.com</p>
+        <input id="code" type="text" />
+      </main>
+    `
+    const field = document.getElementById('code') as HTMLInputElement
+    expect(hasEmailContext(field)).toBe(true)
+  })
+
+  it('still detects an email rendered as visible link text', () => {
+    document.body.innerHTML = `
+      <section>
+        <p>Reply to <a href="mailto:user@example.com">user@example.com</a> if you didn't request this.</p>
+        <input id="code" type="text" />
+      </section>
+    `
+    const field = document.getElementById('code') as HTMLInputElement
+    expect(hasEmailContext(field)).toBe(true)
+  })
 })

@@ -94,8 +94,17 @@ export function extractOTPs(input: string, opts: OTPExtractOptions = {}): OTPCan
   const kwRegex = buildKeywordRegex(CODE_KEYWORDS)
   const hasKeywords = kwRegex.test(text)
   if (!hasKeywords) {
-    // Edge allowance: Some brands send bare codes without keyword; try only if expectedLength is set.
+    // Edge allowance: brands routinely send keyword-free SMS in the form
+    // "Brand: 123456 ..." (Amazon, Telegram, Discord). Admit only when the
+    // caller signaled an expected shape AND the body opens with that
+    // brand-prefix-code shape. Without the shape gate, plumbing
+    // expectedLength alone causes false-positive autofills on prose digit
+    // runs ("Your shipment of Item 123456", "Get 100000 points",
+    // "ZIP 100234"). The shape requirement is structural, not lingual:
+    // it gates on `Word:Code` form and works equally across the 21
+    // supported languages.
     if (!opts.expectedLength && !opts.expectedShape) return []
+    if (!hasBrandPrefixCodeShape(text)) return []
   }
   // Reset lastIndex after test
   kwRegex.lastIndex = 0
@@ -159,6 +168,7 @@ export function extractOTPs(input: string, opts: OTPExtractOptions = {}): OTPCan
   const precise = scored
     .filter(isNotPhoneLike)
     .filter(isNotContactMetadata)
+    .filter(c => isNotTransactionReference(c, text))
     .filter(s => s.confidence >= threshold)
 
   if (precise.length === 0) return []
@@ -451,6 +461,44 @@ function isNonOtpKeywordMatch(text: string, match: RegExpExecArray): boolean {
   )
 }
 
+/**
+ * SMS-style brand-prefix-code shape at the very start of the body.
+ *
+ * Matches the standard worldwide convention used by carriers and
+ * brand-name SMS senders across scripts: "Amazon: 383931", "Яндекс: 12345",
+ * "微信: 987654", "Discord:777888". Required components:
+ *
+ *   - optional leading non-letter/non-digit chars (skips whitespace,
+ *     punctuation, emoji, etc., but stops before the first brand letter
+ *     in any script)
+ *   - a 3-25 char Unicode-letter-led brand token. Inner chars allow
+ *     letters, digits, underscore, and the common brand specials `&'-`.
+ *   - mandatory colon, optionally surrounded by whitespace
+ *   - a 4-10 digit run with a trailing word-boundary
+ *
+ * Unicode notes: uses the `u` flag with `\p{L}` / `\p{N}` so Cyrillic,
+ * Greek, CJK, Devanagari, Arabic and Turkish dotted-İ brand names all
+ * admit. JavaScript's `\w` / `\W` are explicitly NOT Unicode-aware even
+ * with `u`, so the original `^\W*[A-Za-z]` regex silently rejected
+ * every non-Latin brand name.
+ *
+ * Deliberate false-negatives (worth the precision):
+ *   - bracket forms: "[Brand] 123456" (no colon)
+ *   - dash forms:   "Brand - 123456"  (no colon)
+ *   - prose mentions of code later in the body ("Hello, Amazon: 12345 is...")
+ *   - sender names with leading digits or dots ("3M:", "AT&T:")
+ *
+ * Deliberate rejections (the regression vectors):
+ *   - "Your shipment of Item 123456" (multiple tokens before digits)
+ *   - "Get 100000 points" (3-char first word fails brand-length minimum)
+ *   - "$123456.00" (no leading alphabetic brand token)
+ */
+const BRAND_PREFIX_OTP_SHAPE = /^[^\p{L}\p{N}]*\p{L}[\p{L}\p{N}_&'\-]{2,24}\s*:\s*\d{4,10}\b/u
+
+function hasBrandPrefixCodeShape(text: string): boolean {
+  return BRAND_PREFIX_OTP_SHAPE.test(text)
+}
+
 function isPlausibleOtpCandidate(text: string, c: InternalCandidate): boolean {
   const around = candidateWindow(text, c, 96).toLowerCase()
 
@@ -678,6 +726,54 @@ function isNotPhoneLike(c: OTPCandidate): boolean {
   // Penalize grouped patterns that resemble phone formatting in snippet
   const snip = (c.context?.snippet || '').toLowerCase()
   if (/\b(call|phone|tel|fax)\b/.test(snip)) return false
+  return true
+}
+
+/**
+ * Reject candidates that are the trailing digits of a transactional
+ * reference number rather than a real OTP.
+ *
+ * Two grammars are detected, both anchored to the candidate's start
+ * position so a real OTP appearing elsewhere in the same text is not
+ * affected:
+ *
+ *   1. Reference label immediately preceding the candidate. A label
+ *      token (`ref`, `reference`, `txn`, `tx`, `transaction`, `order`,
+ *      `invoice`, `tracking`) followed only by ID-style noise
+ *      (`:`, `.`, `#`, `-`, whitespace, alnum) up to the candidate.
+ *      Catches "Ref: 1234", "txn ID 1234", "Order #1234".
+ *
+ *   2. Transactional grammar `[A-Z]{2,}\d{4,}-` immediately preceding
+ *      the candidate. Catches the tail of compound IDs like
+ *      `TXN20260505-1234` (the inner numeric `20260505` is excluded
+ *      from candidacy by `RX_NUMERIC`'s look-behind, but the trailing
+ *      `1234` is preceded only by `-` so it does match).
+ *
+ * Real OTP messages neighbor a verification keyword. When a message
+ * carries both a real code and a reference tail, the OTP usually
+ * outscores the tail and dedupe keeps the top entry; this filter is
+ * mainly load-bearing for status-only messages ("OTP request pending,
+ * Ref: TXN…") that contain no real code at all.
+ */
+function isNotTransactionReference(
+  c: OTPCandidate,
+  text: string
+): boolean {
+  if (c.charset !== 'digits') return true
+  const start = c.context?.start
+  if (start === undefined) return true
+
+  // 30 chars is enough to capture "transaction id #" + a short ref ID;
+  // cap at start to avoid scanning negative indices.
+  const labelWindow = text.slice(Math.max(0, start - 30), start)
+  const referenceLabel =
+    /\b(?:ref(?:erence)?|txn|tx|transaction|order|invoice|tracking)\b[:.#\-\s]*[\w\-]*$/i
+  if (referenceLabel.test(labelWindow)) return false
+
+  const transactionalPrefix = /[A-Z]{2,}\d{4,}-$/
+  const immediatePrefix = text.slice(Math.max(0, start - 25), start)
+  if (transactionalPrefix.test(immediatePrefix)) return false
+
   return true
 }
 

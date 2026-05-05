@@ -538,6 +538,24 @@
     "message": "Code copied to clipboard",
     "description": "Toast: code copied"
   },
+  "toast_code_copied_with_code": {
+    "message": "Verification code $CODE$ copied to clipboard",
+    "description": "Autofill-fallback toast title shown after the code is placed on the clipboard. $CODE$ is the OTP value (e.g. 123456).",
+    "placeholders": {
+      "code": {
+        "content": "$1",
+        "example": "123456"
+      }
+    }
+  },
+  "toast_code_copied_paste_hint": {
+    "message": "Just paste it and submit.",
+    "description": "Autofill-fallback toast body shown beneath the title."
+  },
+  "toast_dismiss_aria": {
+    "message": "Dismiss notification",
+    "description": "Accessible label for the close (×) button on content-script toasts."
+  },
   "toast_link_opened": {
     "message": "Link opened",
     "description": "Toast: link opened"

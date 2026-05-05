@@ -21,6 +21,14 @@
  */
 export const DOMAIN_ALIASES: Record<string, string> = {
   "dropboxmail.com": "dropbox.com",
+  // Microsoft sign-in domains map to the brand domain that sends OTP emails
+  // (e.g. accountprotection.microsoft.com -> microsoft.com via extractETLD).
+  // Microsoft's "Enter your code" flow on login.live.com would otherwise
+  // fail the affinity gate because live.com and microsoft.com share no
+  // tokens.
+  "live.com": "microsoft.com",
+  "outlook.com": "microsoft.com",
+  "hotmail.com": "microsoft.com",
 };
 
 /**

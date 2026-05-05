@@ -33,6 +33,14 @@ function isDialogContainer(el: HTMLElement): boolean {
 const FALLBACK_DEPTH = 5
 
 /**
+ * Email-shape pattern for the Signal 2 fast path. Matches local@domain.tld
+ * and tolerates a masked local-part ("a***@example.com"). Bare "@" tokens
+ * with no domain tail (JSDoc, decorators, social handles inline in copy)
+ * fail the trailing `\.[\w-]+` requirement.
+ */
+const EMAIL_SHAPE_PATTERN = /[\w*.+-]+@[\w-]+(?:\.[\w-]+)+/i
+
+/**
  * Check if there is email-related context near the given field.
  *
  * @param field - The detected input field
@@ -50,8 +58,11 @@ export function hasEmailContext(field: HTMLInputElement): boolean {
       if (pattern.test(text)) return true
     }
 
-    // Signal 2: @ character in scanned text
-    if (text.includes('@')) return true
+    // Signal 2: email-shaped token in scanned text. Requires a domain-like
+    // tail after the "@" so JSDoc ("@type"), decorators ("@Component"), and
+    // bare social handles don't pass. Allows masked addresses ("a***@x.com")
+    // by keeping "*" in the local-part character class.
+    if (EMAIL_SHAPE_PATTERN.test(text)) return true
 
     // Signal 3: Email input field in container
     const emailInputs = container.querySelectorAll(

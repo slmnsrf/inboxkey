@@ -163,6 +163,10 @@ global.chrome = {
         accounts_status_not_connected: "Not connected",
         accounts_status_connected: "Connected",
         accounts_status_error: "Error",
+        toast_code_copied: "Code copied to clipboard",
+        toast_code_copied_with_code: "Verification code $1 copied to clipboard",
+        toast_code_copied_paste_hint: "Just paste it and submit.",
+        toast_dismiss_aria: "Dismiss notification",
       }
 
       let message = translations[key] || key
