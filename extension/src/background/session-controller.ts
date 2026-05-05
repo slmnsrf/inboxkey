@@ -443,7 +443,38 @@ export class SessionController {
       // could time out one tick early. Letting the index sit unmarked
       // keeps `pollsRemaining` honest; the next scheduled poll runs
       // normally once the in-flight baseline finishes.
+      //
+      // Two safety nets prevent the session from sitting active forever
+      // when polls keep getting skipped:
+      //
+      //   1. Last-scheduled poll: if THIS skipped poll is the last
+      //      entry in pollSchedule, no more polls will fire. Force
+      //      timeout so the session resolves.
+      //
+      //   2. Absolute deadline: even if some scheduled polls remain,
+      //      bail out once `sessionStart + effectiveTimeout` has
+      //      elapsed. Defends against hung adapters where every
+      //      remaining poll would also skip.
       if (code === 'skipped') {
+        const isLastScheduledPoll = pollIndex === session.pollSchedule.length - 1
+        const deadlineMs = session.sessionStart + session.effectiveTimeout * 1000
+        const pastDeadline = Date.now() >= deadlineMs
+        if (isLastScheduledPoll || pastDeadline) {
+          console.log(
+            `[SessionController] Session ${session.id} skip-stalled at poll ${pollIndex}, forcing timeout (lastScheduled=${isLastScheduledPoll}, pastDeadline=${pastDeadline})`
+          )
+          session.status = "timedout"
+          session.lastUpdated = Date.now()
+          if (session.detectedChannels?.includes('sms')) {
+            try {
+              getMessagesTabManager().resetPollCount(session.id)
+              await getMessagesTabManager().closeIfOwned()
+            } catch { /* tab manager not loaded or no GM session */ }
+          }
+          await this.persistSessions()
+          this.poller.cancelPolls(sessionId)
+          this.callbacks.onSessionCompleted(session, { status: "timedout" })
+        }
         return
       }
 
