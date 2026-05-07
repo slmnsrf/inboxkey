@@ -6,7 +6,7 @@
 
 Privacy-first email verification code autofill and magic-link opener for Chrome.
 
-[![Chrome Web Store soon](https://img.shields.io/badge/Chrome%20Web%20Store-coming%20soon-b45309)](https://github.com/slmnsrf/inboxkey)
+[![Chrome Web Store](https://img.shields.io/badge/Chrome%20Web%20Store-install-2563eb)](https://chromewebstore.google.com/detail/mioicbneapdjamkppcidooggnmegpocn)
 [![Local-only](https://img.shields.io/badge/local--only-yes-0f766e)](PRIVACY.md)
 [![License: PolyForm Noncommercial](https://img.shields.io/badge/license-PolyForm%20Noncommercial-2563eb)](LICENSE)
 [![Built with Claude](https://img.shields.io/badge/built%20with-Claude-D97757?logo=anthropic&logoColor=white)](https://claude.com/claude-code)
@@ -15,7 +15,7 @@ Privacy-first email verification code autofill and magic-link opener for Chrome.
 > [!IMPORTANT]
 > InboxKey processes verification emails locally on your device. There is no backend, no analytics, and no third-party tracking.
 
-[Website](https://inboxkey.net) | [Build from source](#build-from-source) | [Privacy](PRIVACY.md) | [Security](SECURITY.md) | [Source](https://github.com/slmnsrf/inboxkey)
+[Install from Chrome Web Store](https://chromewebstore.google.com/detail/mioicbneapdjamkppcidooggnmegpocn) | [Website](https://inboxkey.net) | [Build from source](#build-from-source) | [Privacy](PRIVACY.md) | [Security](SECURITY.md) | [Source](https://github.com/slmnsrf/inboxkey)
 
 ## Why InboxKey
 
@@ -23,12 +23,13 @@ Every sign-in flow that ends with "check your email" breaks momentum. InboxKey s
 
 InboxKey is a source-available solo project. The full source code is public so you can verify exactly what it does with your data. The goal is simple: make verification flows faster without turning email access into a cloud service.
 
-## Status
+## Install
 
-> [!NOTE]
-> InboxKey is preparing for Chrome Web Store launch. The listing is not live yet.
+InboxKey is live on the Chrome Web Store:
 
-Today, the supported install path is building from source and loading the extension unpacked in Chrome.
+[Install InboxKey from the Chrome Web Store](https://chromewebstore.google.com/detail/mioicbneapdjamkppcidooggnmegpocn)
+
+After installing the extension, set up InboxBridge (see the section below) to connect your mailbox over IMAP.
 
 ## Build From Source
 
