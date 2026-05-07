@@ -323,6 +323,27 @@ describe('detectSplitInputGroup', () => {
       expect(detectSplitInputGroup(leader)).toBeNull()
     })
 
+    // T7b — extraneous-input guard ignores hidden inputs (honeypots, backup fields)
+    it('still detects shape (c) when ancestor contains a hidden honeypot input', () => {
+      container.innerHTML = `
+        <div class="form__item-sms-box">
+          <input type="text" name="trap" style="display: none" />
+          <input type="hidden" name="csrf" value="abc" />
+          <input type="text" name="num1" maxlength="6" aria-label="otp code 1" />
+          <input type="text" name="num2" maxlength="1" aria-label="otp code 2" />
+          <input type="text" name="num3" maxlength="1" aria-label="otp code 3" />
+          <input type="text" name="num4" maxlength="1" aria-label="otp code 4" />
+          <input type="text" name="num5" maxlength="1" aria-label="otp code 5" />
+          <input type="text" name="num6" maxlength="1" aria-label="otp code 6" />
+        </div>
+      `
+      const leader = container.querySelector<HTMLInputElement>('input[name="num1"]')!
+      const group = detectSplitInputGroup(leader)
+      expect(group).not.toBeNull()
+      expect(group!.pattern).toBe('asymmetric-leader')
+      expect(group!.inputs.length).toBe(6)
+    })
+
     // T8 — two-leader rejection
     it('rejects shape (c) candidate with two leaders (maxLength=6 each)', () => {
       container.innerHTML = `

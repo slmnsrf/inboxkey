@@ -299,20 +299,33 @@ function matchesShapeC(inputs: HTMLInputElement[]): boolean {
     return false
   }
 
-  // Extraneous-input guard: if the common ancestor contains relevant
-  // inputs beyond the candidate group (e.g. a firstname text input
-  // sitting in the same wrapper), this is not a pure OTP widget.
+  // Extraneous-input guard: if the common ancestor contains visible
+  // relevant inputs beyond the candidate group (e.g. a firstname text
+  // input sitting in the same wrapper), this is not a pure OTP widget.
+  // Hidden inputs (display:none, visibility:hidden, type=hidden honeypots,
+  // backup fields) are not counted — they're not user-fillable and don't
+  // indicate the wrapper is a mixed form.
   const ancestor = findCommonAncestor(sortedByDom, 3)
   if (ancestor) {
     const ancestorRelevantInputs = Array.from(
       ancestor.querySelectorAll('input')
-    ).filter((i): i is HTMLInputElement =>
-      i instanceof HTMLInputElement &&
-      isRelevantInputType(i) &&
-      !i.disabled &&
-      !i.readOnly &&
-      !i.hidden
-    )
+    ).filter((i): i is HTMLInputElement => {
+      if (!(i instanceof HTMLInputElement)) return false
+      if (!isRelevantInputType(i)) return false
+      if (i.disabled || i.readOnly || i.hidden) return false
+      const inlineStyle = i.getAttribute('style') || ''
+      if (/display\s*:\s*none|visibility\s*:\s*hidden/i.test(inlineStyle)) return false
+      // Computed style check is happy-dom-safe: getComputedStyle returns
+      // a CSSStyleDeclaration with empty strings if no rules applied.
+      // A real CSS `display:none` from a stylesheet still resolves here.
+      try {
+        const style = window.getComputedStyle(i)
+        if (style.display === 'none' || style.visibility === 'hidden') return false
+      } catch {
+        // happy-dom in some configurations may throw; fall back to inline-only.
+      }
+      return true
+    })
     if (ancestorRelevantInputs.length > inputs.length) {
       return false
     }
