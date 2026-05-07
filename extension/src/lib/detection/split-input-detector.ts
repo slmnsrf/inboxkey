@@ -26,6 +26,52 @@ export interface SplitInputGroup {
   pattern: 'maxlength-1' | 'sequential-name' | 'adjacent-siblings' | 'asymmetric-leader'
 }
 
+/**
+ * Returns true if the input shows >=2 of 5 visual-suppression cues.
+ * Same threshold as PR #78's isShadowedByVisibleSplitGroup. Conservative
+ * gate so 28px legitimate OTP cells (1 size cue) are NOT excluded.
+ *
+ * Fail-open: if computed style is unavailable (test env), the cue isn't
+ * counted; never classify the input as suppressed without evidence.
+ */
+function isVisuallySuppressed(input: HTMLInputElement): boolean {
+  let cues = 0
+  try {
+    const rect = input.getBoundingClientRect()
+    if (rect.width < 30 || rect.height < 10) cues++
+  } catch { /* fail-open */ }
+  try {
+    const style = window.getComputedStyle(input)
+    const op = parseFloat(style.opacity || '1')
+    if (Number.isFinite(op) && op < 0.05) cues++
+    const cc = (style.caretColor || '').toLowerCase()
+    if (cc === 'transparent' || cc === 'rgba(0, 0, 0, 0)') cues++
+    const ls = parseFloat(style.letterSpacing || '0')
+    if (Number.isFinite(ls) && ls >= 10) cues++
+    const ti = Math.abs(parseFloat(style.textIndent || '0'))
+    if (Number.isFinite(ti) && ti >= 10) cues++
+  } catch { /* fail-open */ }
+  return cues >= 2
+}
+
+/**
+ * Returns true if the input is hard-hidden (display:none, visibility:hidden,
+ * or .hidden attribute). Cheaper than isVisuallySuppressed; runs first as
+ * a fast-path filter for non-reference siblings.
+ */
+function isHardHidden(input: HTMLInputElement): boolean {
+  // Fail-open: a DOM property access on a detached or cross-origin node
+  // can throw; never classify the input as hidden without evidence.
+  try {
+    if (input.hidden) return true
+    const inlineStyle = input.getAttribute('style') || ''
+    if (/display\s*:\s*none|visibility\s*:\s*hidden/i.test(inlineStyle)) return true
+    const style = window.getComputedStyle(input)
+    if (style.display === 'none' || style.visibility === 'hidden') return true
+  } catch { /* fail-open */ }
+  return false
+}
+
 const OTP_EVIDENCE_PATTERN = /\b(?:otp|one[-\s_]?time|verification|verify|security|auth(?:entication)?|mfa|2fa|twofa|code|pin|sms)\b|codeentry/i
 
 /**
@@ -61,6 +107,14 @@ export function detectSplitInputGroup(
   const maxLen = field.maxLength
 
   if (maxLen > 8 && maxLen !== -1) {
+    return null
+  }
+
+  // Self guard: a visually-suppressed reference field is never a valid OTP
+  // group anchor. Critical for PR #78's isShadowReplacement guard, which
+  // requires `detectSplitInputGroup(oldShadow) === null` before allowing
+  // rate-limited replacement.
+  if (isVisuallySuppressed(field)) {
     return null
   }
 
@@ -124,14 +178,24 @@ function getSimilarSiblings(field: HTMLInputElement): HTMLInputElement[] {
     if (!isRelevantInputType(input)) return false
     const sibMax = input.maxLength
     // Same maxLength preserves existing all-equal [1, n] and -1 paths.
-    if (sibMax === fieldMax) return true
-    // Asymmetric leader+cells pairing (shape c): leader has maxLength
-    // in [4, 8], cells have maxLength=1. Symmetric so
-    // detectSplitInputGroup returns the same group regardless of which
-    // input is the entry point (leader OR cell).
-    if (fieldMax >= 4 && fieldMax <= 8 && sibMax === 1) return true
-    if (fieldMax === 1 && sibMax >= 4 && sibMax <= 8) return true
-    return false
+    const matchesMaxLength =
+      sibMax === fieldMax ||
+      // Asymmetric leader+cells pairing (shape c): leader has maxLength
+      // in [4, 8], cells have maxLength=1. Symmetric so
+      // detectSplitInputGroup returns the same group regardless of which
+      // input is the entry point (leader OR cell).
+      (fieldMax >= 4 && fieldMax <= 8 && sibMax === 1) ||
+      (fieldMax === 1 && sibMax >= 4 && sibMax <= 8)
+    if (!matchesMaxLength) return false
+    // Non-reference siblings must be visible. The reference field itself
+    // is permitted (caller may legitimately query from a small visible cell).
+    // Order: cheap structural checks first, then isHardHidden (inline-style
+    // fast path), then isVisuallySuppressed (computed style + cues).
+    if (input !== field) {
+      if (isHardHidden(input)) return false
+      if (isVisuallySuppressed(input)) return false
+    }
+    return true
   }
 
   // Check parent container

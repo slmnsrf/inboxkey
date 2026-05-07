@@ -412,4 +412,87 @@ describe('detectSplitInputGroup', () => {
       expect(group!.inputs.length).toBe(4)
     })
   })
+
+  describe('shadow-input pollution (PR #79)', () => {
+    /**
+     * IKEA-shape DOM where a hidden shadow `otp-input` (maxLength=6,
+     * visually-suppressed) coexists with the visible split group
+     * `num1`..`num6`. Before PR #79, getSimilarSiblings collected the
+     * shadow because it shared maxLength=6 with the leader, producing a
+     * 7-input candidate group with two leaders that failed shape (c).
+     */
+    function ikeaWithShadow(parent: HTMLElement) {
+      parent.innerHTML = `
+        <form>
+          <input id="otp-input" type="text" maxlength="6" style="opacity:0;width:1px;height:1px;caret-color:transparent" />
+          <div class="form__item-sms-box">
+            <input type="text" name="num1" maxlength="6" />
+            <input type="text" name="num2" maxlength="1" />
+            <input type="text" name="num3" maxlength="1" />
+            <input type="text" name="num4" maxlength="1" />
+            <input type="text" name="num5" maxlength="1" />
+            <input type="text" name="num6" maxlength="1" />
+          </div>
+        </form>
+      `
+    }
+
+    // B.1 — IKEA leader entry, shadow excluded
+    it('B.1 returns 6-input shape (c) group with shadow excluded (leader entry)', () => {
+      ikeaWithShadow(container)
+      const num1 = container.querySelector<HTMLInputElement>('input[name="num1"]')!
+      const group = detectSplitInputGroup(num1)
+      expect(group).not.toBeNull()
+      expect(group!.pattern).toBe('asymmetric-leader')
+      expect(group!.inputs.length).toBe(6)
+      expect(group!.inputs.every(i => i.name?.startsWith('num'))).toBe(true)
+      expect(group!.representative).toBe(num1)
+    })
+
+    // B.2 — Symmetric reachability with shadow (cell entry)
+    it('B.2 returns same 6-input group from a cell entry, shadow excluded', () => {
+      ikeaWithShadow(container)
+      const num2 = container.querySelector<HTMLInputElement>('input[name="num2"]')!
+      const group = detectSplitInputGroup(num2)
+      expect(group).not.toBeNull()
+      expect(group!.inputs.length).toBe(6)
+      expect(group!.representative).toBe(container.querySelector('input[name="num1"]'))
+    })
+
+    // B.3 — Shadow query returns null when visible cells exist (self guard)
+    it('B.3 returns null when querying the shadow itself (self guard)', () => {
+      ikeaWithShadow(container)
+      const shadow = container.querySelector<HTMLInputElement>('#otp-input')!
+      expect(detectSplitInputGroup(shadow)).toBeNull()
+    })
+
+    // B.4 — Small-visible-cell regression (28px, 1 cue only — must NOT be filtered)
+    it('B.4 still detects a Steam-style group of 28px cells (1 size cue, no other cues)', () => {
+      // Pure 5-input maxlength=1 group, all cells 28px wide (small but
+      // visible). 1 cue (size) only — must NOT be filtered.
+      container.innerHTML = `
+        <div>
+          <input type="text" maxlength="1" style="width:28px;height:32px" />
+          <input type="text" maxlength="1" style="width:28px;height:32px" />
+          <input type="text" maxlength="1" style="width:28px;height:32px" />
+          <input type="text" maxlength="1" style="width:28px;height:32px" />
+          <input type="text" maxlength="1" style="width:28px;height:32px" />
+        </div>
+      `
+      // Stub getBoundingClientRect since happy-dom returns 0×0
+      container.querySelectorAll<HTMLInputElement>('input').forEach(i => {
+        Object.defineProperty(i, 'getBoundingClientRect', {
+          configurable: true,
+          value: () => ({
+            width: 28, height: 32, top: 0, left: 0, right: 28, bottom: 32, x: 0, y: 0,
+            toJSON: () => ({}),
+          }) as DOMRect,
+        })
+      })
+      const first = container.querySelector<HTMLInputElement>('input')!
+      const group = detectSplitInputGroup(first)
+      expect(group).not.toBeNull()
+      expect(group!.inputs.length).toBe(5)
+    })
+  })
 })
