@@ -10,6 +10,10 @@
  * - maxlength-1: Multiple inputs with maxlength="1" (or 2-3) in same container
  * - sequential-name: Inputs with sequential names (code_1, code_2, ...)
  * - adjacent-siblings: Multiple inputs of same type adjacent in DOM
+ * - asymmetric-leader: One paste-receiver leader (maxLength = group size,
+ *   in [4, 8]) plus single-digit cells. Hand-rolled split-OTP widget
+ *   pattern (e.g., IKEA Turkey: name=num1 maxLength=6 + 5 cells named
+ *   num2..num6 maxLength=1).
  *
  * Performance: Fast rejection for non-split inputs (< 1ms overhead)
  */
@@ -19,7 +23,7 @@ import { isRelevantInputType } from './patterns'
 export interface SplitInputGroup {
   inputs: HTMLInputElement[]
   representative: HTMLInputElement  // First input (left-most in DOM order)
-  pattern: 'maxlength-1' | 'sequential-name' | 'adjacent-siblings'
+  pattern: 'maxlength-1' | 'sequential-name' | 'adjacent-siblings' | 'asymmetric-leader'
 }
 
 const OTP_EVIDENCE_PATTERN = /\b(?:otp|one[-\s_]?time|verification|verify|security|auth(?:entication)?|mfa|2fa|twofa|code|pin|sms)\b|codeentry/i
@@ -47,9 +51,16 @@ export function detectSplitInputGroup(
   // Fast rejection: Skip if maxLength is explicitly set to large values
   // Allow unset maxLength (-1) for fields like Microsoft (codeEntry-0...5)
   // Split-input fields typically have maxlength="1" (Steam) or maxlength="2" (some banks)
+  //
+  // Cap lifted to TYPICAL_CODE_LENGTHS.max (8) so asymmetric-leader OTP
+  // shapes (one paste-receiver leader with maxLength = group size, e.g.
+  // IKEA Turkey's name=num1 maxLength=6 + 5 cells maxLength=1) reach the
+  // deeper coherence check via the relaxed sibling predicate. Wide
+  // single-input fields (street, address, search) are still filtered by
+  // the coherence-and-shape gate downstream.
   const maxLen = field.maxLength
 
-  if (maxLen > 3 && maxLen !== -1) {
+  if (maxLen > 8 && maxLen !== -1) {
     return null
   }
 
@@ -102,16 +113,26 @@ export function detectSplitInputGroup(
 function getSimilarSiblings(field: HTMLInputElement): HTMLInputElement[] {
   const candidates: HTMLInputElement[] = []
 
-  const matchesField = (input: Element): input is HTMLInputElement =>
-    input instanceof HTMLInputElement &&
-    input.type === field.type &&
-    input.maxLength === field.maxLength &&
-    !input.disabled &&
-    !input.readOnly &&
+  const fieldMax = field.maxLength
+  const matchesField = (input: Element): input is HTMLInputElement => {
+    if (!(input instanceof HTMLInputElement)) return false
+    if (input.type !== field.type) return false
+    if (input.disabled || input.readOnly) return false
     // Belt-and-braces: caller already gated on isRelevantInputType,
     // but the sibling collection itself must reject non-text inputs
     // so a future caller path can't pull in radios/checkboxes.
-    isRelevantInputType(input)
+    if (!isRelevantInputType(input)) return false
+    const sibMax = input.maxLength
+    // Same maxLength preserves existing all-equal [1, n] and -1 paths.
+    if (sibMax === fieldMax) return true
+    // Asymmetric leader+cells pairing (shape c): leader has maxLength
+    // in [4, 8], cells have maxLength=1. Symmetric so
+    // detectSplitInputGroup returns the same group regardless of which
+    // input is the entry point (leader OR cell).
+    if (fieldMax >= 4 && fieldMax <= 8 && sibMax === 1) return true
+    if (fieldMax === 1 && sibMax >= 4 && sibMax <= 8) return true
+    return false
+  }
 
   // Check parent container
   const parent = field.parentElement
@@ -145,12 +166,28 @@ function getSimilarSiblings(field: HTMLInputElement): HTMLInputElement[] {
   // Deduplicate (same input might appear in multiple parent results)
   const unique = Array.from(new Set(candidates))
 
+  // Performance guard: the relaxed predicate (which now accepts
+  // leader+cells asymmetric pairs) could match wide forms with many
+  // small inputs. If the candidate set is large, require strong OTP
+  // container evidence to proceed. Real OTP groups top out at 8; 12
+  // leaves headroom for shadow-DOM duplicates without admitting wide
+  // forms.
+  if (unique.length > 12 && !hasOtpContainerEvidence(unique)) {
+    return []
+  }
+
   return unique
 }
 
 /**
  * Validate that inputs form a coherent group
- * Checks: same type, not disabled, not readonly, similar positioning
+ *
+ * Common pre-checks (same type, all enabled, common ancestor) are
+ * applied uniformly; then dispatch on shape:
+ *  - shape (a) all-equal maxLength in [1, 6]
+ *  - shape (b) all-equal maxLength === -1 with per-cell wrapping
+ *  - shape (c) one leader (maxLength = groupSize, in [4, 8]) + cells
+ *    of maxLength === 1 (asymmetric-leader pattern, e.g. IKEA Turkey)
  *
  * @param inputs - Array of input fields
  * @returns true if inputs form a coherent group
@@ -160,72 +197,144 @@ function isCoherentGroup(inputs: HTMLInputElement[]): boolean {
     return false
   }
 
-  // All inputs must have same maxLength
-  const maxLengths = new Set(inputs.map(input => input.maxLength))
-  if (maxLengths.size > 1) {
+  if (!validateCommonCoherence(inputs)) {
     return false
   }
 
-  // Accept one of two shapes for a real split-input OTP widget:
-  //
-  // (a) sharedMaxLen in [1, 6]: explicit per-cell limit. Typical for
-  //     React OTP libraries and hand-rolled 6-digit code widgets.
-  //
-  // (b) sharedMaxLen === -1 AND inputs live in *different* immediate
-  //     parents: Microsoft login's codeEntry-0..5 pattern (input ->
-  //     span -> div), where each cell has its own wrapper. Generic
-  //     flat form fields (street/city/state/zipcode/country all as
-  //     direct <form> children) must not pass because they also show
-  //     maxLength === -1 in happy-dom but clearly aren't an OTP.
-  //
-  // Anything else (big positive maxLength like 10+, or -1 with all
-  // inputs sharing one parent) is rejected.
-  const sharedMaxLen = inputs[0].maxLength
-  if (sharedMaxLen >= 1 && sharedMaxLen <= 6) {
-    // shape (a): OK
-  } else if (sharedMaxLen === -1) {
-    // shape (b): require per-cell wrapping plus OTP-ish structure.
-    const immediateParents = new Set(inputs.map(i => i.parentElement))
-    if (immediateParents.size < inputs.length) {
-      // Two or more inputs share an immediate parent - flat form, not
-      // a wrapped OTP widget.
-      return false
-    }
+  return matchesShapeA(inputs) || matchesShapeB(inputs) || matchesShapeC(inputs)
+}
 
-    if (!hasSequentialIdentifiers(inputs) && !hasOtpContainerEvidence(inputs)) {
-      return false
-    }
-  } else {
-    return false
-  }
-
-  // All inputs must have same type
+/**
+ * Common coherence checks that every shape must satisfy:
+ *  - All inputs share the same type
+ *  - No inputs are disabled or readonly
+ *  - Inputs share a common ancestor within 3 DOM levels
+ *
+ * Walking 3 ancestor levels accepts the common React OTP pattern of
+ * wrapping each digit cell in its own <div class="digit-wrapper">
+ * (6 inputs -> 6 parents -> would otherwise be rejected) while still
+ * rejecting inputs scattered across unrelated form sections.
+ */
+function validateCommonCoherence(inputs: HTMLInputElement[]): boolean {
   const types = new Set(inputs.map(input => input.type))
-  if (types.size > 1) {
-    return false
-  }
+  if (types.size > 1) return false
 
-  // All inputs must be enabled and not readonly
   const hasDisabled = inputs.some(input => input.disabled || input.readOnly)
-  if (hasDisabled) {
-    return false
-  }
+  if (hasDisabled) return false
 
-  // Check if inputs share a common ancestor within a few DOM levels.
-  // The old heuristic rejected groups with more than 2 distinct
-  // immediate parents, which killed the common React OTP pattern of
-  // wrapping each digit cell in its own <div class="digit-wrapper">
-  // (6 inputs -> 6 parents -> rejected). Walking up 3 levels lets us
-  // accept those while still rejecting inputs scattered across
-  // unrelated form sections.
-  if (!hasCommonAncestorWithin(inputs, 3)) {
+  if (!hasCommonAncestorWithin(inputs, 3)) return false
+
+  return true
+}
+
+/**
+ * Shape (a): all inputs share the same maxLength in [1, 6].
+ * Typical for React OTP libraries and hand-rolled per-cell widgets.
+ */
+function matchesShapeA(inputs: HTMLInputElement[]): boolean {
+  const maxLengths = new Set(inputs.map(input => input.maxLength))
+  if (maxLengths.size !== 1) return false
+  const sharedMaxLen = inputs[0].maxLength
+  return sharedMaxLen >= 1 && sharedMaxLen <= 6
+}
+
+/**
+ * Shape (b): all inputs share maxLength === -1 with per-cell wrapping.
+ * Microsoft login's codeEntry-0..5 pattern (input -> span -> div),
+ * where each cell has its own wrapper. Generic flat form fields
+ * (street/city/state/zipcode/country all as direct <form> children)
+ * must not pass because they also show maxLength === -1 in happy-dom
+ * but clearly aren't an OTP.
+ */
+function matchesShapeB(inputs: HTMLInputElement[]): boolean {
+  const maxLengths = new Set(inputs.map(input => input.maxLength))
+  if (maxLengths.size !== 1) return false
+  const sharedMaxLen = inputs[0].maxLength
+  if (sharedMaxLen !== -1) return false
+
+  // Require per-cell wrapping: every input must have a distinct
+  // immediate parent.
+  const immediateParents = new Set(inputs.map(i => i.parentElement))
+  if (immediateParents.size < inputs.length) return false
+
+  // And require OTP-ish structure: sequential identifiers or strong
+  // container evidence.
+  if (!hasSequentialIdentifiers(inputs) && !hasOtpContainerEvidence(inputs)) {
     return false
   }
 
   return true
 }
 
-function hasSequentialIdentifiers(inputs: HTMLInputElement[]): boolean {
+/**
+ * Shape (c): asymmetric-leader OTP. One leader with maxLength equal to
+ * the group size (in [4, 8]) plus single-digit cells. Common in
+ * hand-rolled split-OTP widgets where the leader doubles as a
+ * paste-receiver — e.g. IKEA Turkey: name=num1 maxLength=6 + 5 cells
+ * named num2..num6 maxLength=1.
+ *
+ * Guards against false positives:
+ *  - Leader must be DOM-first (paste-receiver convention)
+ *  - leader.maxLength must equal inputs.length (otherwise it's just a
+ *    long single field with unrelated 1-char neighbors)
+ *  - Requires sequential identifiers OR OTP container evidence
+ *  - Requires that the common ancestor doesn't contain extra
+ *    relevant inputs (firstname etc.) beyond the candidate group
+ */
+function matchesShapeC(inputs: HTMLInputElement[]): boolean {
+  const sortedByDom = sortByDomOrder(inputs)
+  const leaders = sortedByDom.filter(i => i.maxLength >= 4 && i.maxLength <= 8)
+  const cells = sortedByDom.filter(i => i.maxLength === 1)
+
+  if (leaders.length !== 1) return false
+  if (cells.length !== inputs.length - 1) return false
+  if (leaders[0] !== sortedByDom[0]) return false
+  if (leaders[0].maxLength !== inputs.length) return false
+
+  // Require structural OTP evidence — sequential names/ids or
+  // container hints. Asymmetric leaders are common in legitimate
+  // OTPs but also could appear in unrelated forms; the structural
+  // evidence is what disambiguates.
+  if (!hasSequentialIdentifiers(sortedByDom) && !hasOtpContainerEvidence(sortedByDom)) {
+    return false
+  }
+
+  // Extraneous-input guard: if the common ancestor contains visible
+  // relevant inputs beyond the candidate group (e.g. a firstname text
+  // input sitting in the same wrapper), this is not a pure OTP widget.
+  // Hidden inputs (display:none, visibility:hidden, type=hidden honeypots,
+  // backup fields) are not counted — they're not user-fillable and don't
+  // indicate the wrapper is a mixed form.
+  const ancestor = findCommonAncestor(sortedByDom, 3)
+  if (ancestor) {
+    const ancestorRelevantInputs = Array.from(
+      ancestor.querySelectorAll('input')
+    ).filter((i): i is HTMLInputElement => {
+      if (!(i instanceof HTMLInputElement)) return false
+      if (!isRelevantInputType(i)) return false
+      if (i.disabled || i.readOnly || i.hidden) return false
+      const inlineStyle = i.getAttribute('style') || ''
+      if (/display\s*:\s*none|visibility\s*:\s*hidden/i.test(inlineStyle)) return false
+      // Computed style check is happy-dom-safe: getComputedStyle returns
+      // a CSSStyleDeclaration with empty strings if no rules applied.
+      // A real CSS `display:none` from a stylesheet still resolves here.
+      try {
+        const style = window.getComputedStyle(i)
+        if (style.display === 'none' || style.visibility === 'hidden') return false
+      } catch {
+        // happy-dom in some configurations may throw; fall back to inline-only.
+      }
+      return true
+    })
+    if (ancestorRelevantInputs.length > inputs.length) {
+      return false
+    }
+  }
+
+  return true
+}
+
+export function hasSequentialIdentifiers(inputs: HTMLInputElement[]): boolean {
   const sorted = sortByDomOrder(inputs)
   const values = sorted.map(input => input.name || input.id || '')
   if (values.some(value => value.length === 0)) return false
@@ -271,7 +380,7 @@ function hasOtpContainerEvidence(inputs: HTMLInputElement[]): boolean {
   })
 }
 
-function findCommonAncestor(inputs: HTMLInputElement[], levels: number): HTMLElement | null {
+export function findCommonAncestor(inputs: HTMLInputElement[], levels: number): HTMLElement | null {
   if (inputs.length === 0) return null
 
   let node: HTMLElement | null = inputs[0]
@@ -335,12 +444,27 @@ function hasCommonAncestorWithin(inputs: HTMLInputElement[], levels: number): bo
 /**
  * Detect the pattern used for grouping
  *
+ * Asymmetric-leader is checked FIRST so a 1-leader+5-cells group is
+ * never mislabeled as sequential-name (the cells are maxLength=1 but
+ * the group as a whole is shape c, not shape a).
+ *
  * @param inputs - Array of input fields
  * @returns Detected pattern type
  */
 function detectGroupPattern(
   inputs: HTMLInputElement[]
-): 'maxlength-1' | 'sequential-name' | 'adjacent-siblings' {
+): 'maxlength-1' | 'sequential-name' | 'adjacent-siblings' | 'asymmetric-leader' {
+  const sortedByDom = sortByDomOrder(inputs)
+  const leaderCount = sortedByDom.filter(i => i.maxLength >= 4 && i.maxLength <= 8).length
+  if (
+    leaderCount === 1 &&
+    sortedByDom[0].maxLength >= 4 &&
+    sortedByDom[0].maxLength <= 8 &&
+    sortedByDom[0].maxLength === inputs.length
+  ) {
+    return 'asymmetric-leader'
+  }
+
   // Check for maxlength-1 pattern (most common)
   const allMaxLength1 = inputs.every(input => input.maxLength === 1)
   if (allMaxLength1) {

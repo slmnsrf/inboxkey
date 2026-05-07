@@ -221,4 +221,195 @@ describe('detectSplitInputGroup', () => {
       expect(detectSplitInputGroup(first)).toBeNull()
     })
   })
+
+  describe('asymmetric-leader OTP shape (c)', () => {
+    /**
+     * IKEA Turkey hand-rolled split-OTP: a maxLength=6 leader doubles
+     * as paste-receiver, followed by 5 maxLength=1 cells. The shape is
+     * generic (not site-specific) — sequential names + OTP-evidence
+     * class names anchor it.
+     */
+    function ikeaContainer(parent: HTMLElement) {
+      parent.innerHTML = `
+        <div class="form__item form__item--sms">
+          <div class="form__item-sms-box">
+            <input type="text" name="num1" class="form__input form__input--sms" maxlength="6" inputmode="numeric" aria-label="otp code 1" />
+            <input type="text" name="num2" class="form__input form__input--sms" maxlength="1" inputmode="numeric" aria-label="otp code 2" />
+            <input type="text" name="num3" class="form__input form__input--sms" maxlength="1" inputmode="numeric" aria-label="otp code 3" />
+            <input type="text" name="num4" class="form__input form__input--sms" maxlength="1" inputmode="numeric" aria-label="otp code 4" />
+            <input type="text" name="num5" class="form__input form__input--sms" maxlength="1" inputmode="numeric" aria-label="otp code 5" />
+            <input type="text" name="num6" class="form__input form__input--sms" maxlength="1" inputmode="numeric" aria-label="otp code 6" />
+          </div>
+        </div>
+      `
+    }
+
+    // T1
+    it('detects IKEA shape (1 leader maxLen=6 + 5 cells maxLen=1)', () => {
+      ikeaContainer(container)
+      const leader = container.querySelector<HTMLInputElement>('input[name="num1"]')!
+      const group = detectSplitInputGroup(leader)
+      expect(group).not.toBeNull()
+      expect(group!.inputs.length).toBe(6)
+      expect(group!.representative).toBe(leader)
+      expect(group!.pattern).toBe('asymmetric-leader')
+    })
+
+    // T2 — symmetric reachability
+    it('returns the same group regardless of which input is the entry point', () => {
+      ikeaContainer(container)
+      const all = Array.from(container.querySelectorAll<HTMLInputElement>('input'))
+      const leader = container.querySelector<HTMLInputElement>('input[name="num1"]')!
+      for (const input of all) {
+        const group = detectSplitInputGroup(input)
+        expect(group).not.toBeNull()
+        expect(group!.inputs.length).toBe(6)
+        expect(group!.representative).toBe(leader)
+        expect(group!.pattern).toBe('asymmetric-leader')
+      }
+    })
+
+    // T5 — performance cap (no OTP evidence)
+    it('rejects 13 inputs in same parent without OTP container evidence', () => {
+      const parts: string[] = []
+      // 1 leader maxLength=6 + 12 cells maxLength=1, sequential but no
+      // OTP-evidence class/data-testid/aria-label anywhere. The
+      // performance cap should reject because the predicate would
+      // happily match a wide form.
+      parts.push(`<input type="text" name="f1" maxlength="6" />`)
+      for (let i = 2; i <= 13; i++) {
+        parts.push(`<input type="text" name="f${i}" maxlength="1" />`)
+      }
+      container.innerHTML = `<form>${parts.join('\n')}</form>`
+      const first = container.querySelector<HTMLInputElement>('input')!
+      expect(detectSplitInputGroup(first)).toBeNull()
+    })
+
+    // T6 — performance cap bypass via OTP container evidence
+    it('does NOT trip the performance cap when parent has OTP-evidence (>12 candidates)', () => {
+      // Build a parent with OTP-evidence class plus 13 same-maxLength
+      // shape-(a) inputs. Without the cap-bypass, the predicate would
+      // collect 13 candidates and trigger the >12 cap → return [].
+      // With the bypass, the candidates flow through and shape (a)
+      // succeeds for the all-maxlength-1 set. Cap >12, count 13.
+      const parts: string[] = []
+      for (let i = 1; i <= 13; i++) {
+        parts.push(`<input type="text" name="otp${i}" maxlength="1" aria-label="otp code ${i}" />`)
+      }
+      container.innerHTML = `<div class="otp-cells">${parts.join('\n')}</div>`
+      const first = container.querySelector<HTMLInputElement>('input')!
+      const group = detectSplitInputGroup(first)
+      // 13 cells fail shape (a) range [1, 6]? No — 13 inputs all share
+      // maxLength=1 so shape (a) accepts. Real OTPs cap at 8 but the
+      // detector's shape (a) doesn't enforce that bound.
+      expect(group).not.toBeNull()
+      expect(group!.inputs.length).toBe(13)
+    })
+
+    // T7 — extraneous-input guard
+    it('rejects shape (c) candidate when an unrelated input shares the ancestor', () => {
+      container.innerHTML = `
+        <div class="form__item-sms-box">
+          <input type="text" name="firstname" />
+          <input type="text" name="num1" maxlength="6" aria-label="otp code 1" />
+          <input type="text" name="num2" maxlength="1" aria-label="otp code 2" />
+          <input type="text" name="num3" maxlength="1" aria-label="otp code 3" />
+          <input type="text" name="num4" maxlength="1" aria-label="otp code 4" />
+          <input type="text" name="num5" maxlength="1" aria-label="otp code 5" />
+          <input type="text" name="num6" maxlength="1" aria-label="otp code 6" />
+        </div>
+      `
+      const leader = container.querySelector<HTMLInputElement>('input[name="num1"]')!
+      expect(detectSplitInputGroup(leader)).toBeNull()
+    })
+
+    // T7b — extraneous-input guard ignores hidden inputs (honeypots, backup fields)
+    it('still detects shape (c) when ancestor contains a hidden honeypot input', () => {
+      container.innerHTML = `
+        <div class="form__item-sms-box">
+          <input type="text" name="trap" style="display: none" />
+          <input type="hidden" name="csrf" value="abc" />
+          <input type="text" name="num1" maxlength="6" aria-label="otp code 1" />
+          <input type="text" name="num2" maxlength="1" aria-label="otp code 2" />
+          <input type="text" name="num3" maxlength="1" aria-label="otp code 3" />
+          <input type="text" name="num4" maxlength="1" aria-label="otp code 4" />
+          <input type="text" name="num5" maxlength="1" aria-label="otp code 5" />
+          <input type="text" name="num6" maxlength="1" aria-label="otp code 6" />
+        </div>
+      `
+      const leader = container.querySelector<HTMLInputElement>('input[name="num1"]')!
+      const group = detectSplitInputGroup(leader)
+      expect(group).not.toBeNull()
+      expect(group!.pattern).toBe('asymmetric-leader')
+      expect(group!.inputs.length).toBe(6)
+    })
+
+    // T8 — two-leader rejection
+    it('rejects shape (c) candidate with two leaders (maxLength=6 each)', () => {
+      container.innerHTML = `
+        <div class="form__item-sms-box">
+          <input type="text" name="num1" maxlength="6" aria-label="otp code 1" />
+          <input type="text" name="num2" maxlength="6" aria-label="otp code 2" />
+          <input type="text" name="num3" maxlength="1" aria-label="otp code 3" />
+          <input type="text" name="num4" maxlength="1" aria-label="otp code 4" />
+          <input type="text" name="num5" maxlength="1" aria-label="otp code 5" />
+          <input type="text" name="num6" maxlength="1" aria-label="otp code 6" />
+        </div>
+      `
+      const leader = container.querySelector<HTMLInputElement>('input[name="num1"]')!
+      expect(detectSplitInputGroup(leader)).toBeNull()
+    })
+
+    // T10 — Steam regression
+    it('still detects shape (a): 5 cells maxlength=1, no leader (Steam)', () => {
+      container.innerHTML = `
+        <form>
+          <input type="text" maxlength="1" />
+          <input type="text" maxlength="1" />
+          <input type="text" maxlength="1" />
+          <input type="text" maxlength="1" />
+          <input type="text" maxlength="1" />
+        </form>
+      `
+      const first = container.querySelector<HTMLInputElement>('input')!
+      const group = detectSplitInputGroup(first)
+      expect(group).not.toBeNull()
+      expect(group!.inputs.length).toBe(5)
+      expect(group!.pattern).toBe('maxlength-1')
+    })
+
+    // T11 — Microsoft codeEntry regression
+    it('still detects shape (b): 6 inputs maxLength=-1 with codeEntry-N ids', () => {
+      container.innerHTML = `
+        <div data-testid="codeEntry">
+          <span><div><input type="tel" id="codeEntry-0" /></div></span>
+          <span><div><input type="tel" id="codeEntry-1" /></div></span>
+          <span><div><input type="tel" id="codeEntry-2" /></div></span>
+          <span><div><input type="tel" id="codeEntry-3" /></div></span>
+          <span><div><input type="tel" id="codeEntry-4" /></div></span>
+          <span><div><input type="tel" id="codeEntry-5" /></div></span>
+        </div>
+      `
+      const first = container.querySelector<HTMLInputElement>('#codeEntry-0')!
+      const group = detectSplitInputGroup(first)
+      expect(group).not.toBeNull()
+      expect(group!.inputs.length).toBe(6)
+    })
+
+    // T12 — chunked all-equal-2 regression
+    it('still detects shape (a) when all inputs share maxLength=2', () => {
+      container.innerHTML = `
+        <div class="otp">
+          <input type="text" name="part1" maxlength="2" />
+          <input type="text" name="part2" maxlength="2" />
+          <input type="text" name="part3" maxlength="2" />
+          <input type="text" name="part4" maxlength="2" />
+        </div>
+      `
+      const first = container.querySelector<HTMLInputElement>('input')!
+      const group = detectSplitInputGroup(first)
+      expect(group).not.toBeNull()
+      expect(group!.inputs.length).toBe(4)
+    })
+  })
 })

@@ -1420,5 +1420,72 @@ describe('tier2-deep helpers', () => {
         expect(result.channelEvidence).toBe('unknown')
       })
     })
+
+    /**
+     * T9 — Tier 2 split-bonus suppression for cells-only sub-group.
+     *
+     * Defense-in-depth: when the detector returns a cells-only shape (a)
+     * group (because the leader has a different `type` than the cells,
+     * or otherwise escapes the sibling predicate), Tier 2 must not
+     * award the +75 split-bonus for that result. The leader-inclusive
+     * shape (c) detection already triggers via the leader's own entry
+     * point and is the canonical hit.
+     *
+     * In this test the leader is `type=tel` and the cells are
+     * `type=text`. The sibling predicate filters by exact `type`, so a
+     * cell entry-point only collects cells; that's a cells-only shape
+     * (a) group. The suppression check sees a maxLength=4-8 input
+     * preceding the cells in the same ancestor with sequential names →
+     * suppress.
+     */
+    describe('split-bonus suppression for asymmetric-leader cells-only sub-group', () => {
+      it('does not award the +75 split bonus when a leader precedes the cells in the same ancestor', () => {
+        container.innerHTML = `
+          <div class="form__item-sms-box">
+            <input type="tel" name="num1" maxlength="6" inputmode="numeric" />
+            <input type="text" name="num2" maxlength="1" inputmode="numeric" />
+            <input type="text" name="num3" maxlength="1" inputmode="numeric" />
+            <input type="text" name="num4" maxlength="1" inputmode="numeric" />
+            <input type="text" name="num5" maxlength="1" inputmode="numeric" />
+            <input type="text" name="num6" maxlength="1" inputmode="numeric" />
+          </div>
+        `
+        const cell = container.querySelector<HTMLInputElement>('input[name="num2"]')!
+        const result = detectTier2(cell, cooldown)
+        // The +75 bonus is suppressed; without other strong signals the
+        // score stays well below the 70-point threshold and detection
+        // fails. (No label, no placeholder, no nearby keyword, no
+        // pattern attribute.) Reason should mention the suppression.
+        expect(result.detected).toBe(false)
+        expect(result.reason).toContain('suppressed by asymmetric-leader')
+        expect(result.score).toBeLessThan(70)
+      })
+
+      it('still awards the +75 bonus on a uniform shape-(c) group (no suppression)', () => {
+        // Sanity check that suppression is scoped: a normal IKEA-shape
+        // group where leader and cells share `type` (and therefore the
+        // detector returns a leader-inclusive shape (c) group with
+        // pattern='asymmetric-leader') should NOT be suppressed. The
+        // shape (c) group is the canonical leader-inclusive hit.
+        container.innerHTML = `
+          <div class="form__item-sms-box">
+            <input type="text" name="num1" maxlength="6" inputmode="numeric" />
+            <input type="text" name="num2" maxlength="1" inputmode="numeric" />
+            <input type="text" name="num3" maxlength="1" inputmode="numeric" />
+            <input type="text" name="num4" maxlength="1" inputmode="numeric" />
+            <input type="text" name="num5" maxlength="1" inputmode="numeric" />
+            <input type="text" name="num6" maxlength="1" inputmode="numeric" />
+          </div>
+        `
+        const cell = container.querySelector<HTMLInputElement>('input[name="num2"]')!
+        const result = detectTier2(cell, cooldown)
+        // Detector returns shape (c) → suppression is bypassed because
+        // group.pattern === 'asymmetric-leader'. The +75 bonus is awarded
+        // and the field is detected on split-input alone.
+        expect(result.detected).toBe(true)
+        expect(result.score).toBeGreaterThanOrEqual(70)
+        expect(result.reason).not.toContain('suppressed by asymmetric-leader')
+      })
+    })
   })
 })
