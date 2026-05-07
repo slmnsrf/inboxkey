@@ -650,6 +650,50 @@ let lastSessionCreated = 0
 const SESSION_CREATION_RATE_LIMIT_MS = 1000  // Max 1 session per second
 
 /**
+ * Internal: cheap "potentially shadowed" probe for the rate-limit
+ * replacement path. Intentionally less strict than the detection-side
+ * `isShadowedByVisibleSplitGroup` (any cue) — the C.2 helper compounds
+ * this probe with `detectSplitInputGroup(oldField) === null` and a
+ * positive split-group check on the newField, which together provide
+ * the precision. Kept local to avoid a content-script -> lib import
+ * cycle.
+ */
+function isPotentiallyShadowed(input: HTMLInputElement): boolean {
+  const rect = input.getBoundingClientRect()
+  if (rect.width < 30 || rect.height < 10) return true
+  try {
+    const op = parseFloat(window.getComputedStyle(input).opacity || '1')
+    if (Number.isFinite(op) && op < 0.05) return true
+  } catch { /* ignore */ }
+  return false
+}
+
+/**
+ * Returns true when the active watch was started on a visually-shadowed
+ * input and the new startWatch caller is the representative of a
+ * coexisting visible split-input group. Lets the rate-limit fast-path
+ * relinquish a stale shadow session in favor of the correct visible
+ * one. Symmetric guard: the old field must NOT itself be a member of
+ * a split group (prevents a small visible split cell from being
+ * mistaken for a shadow).
+ */
+export function isShadowReplacement(
+  oldField: HTMLInputElement,
+  newField: HTMLInputElement
+): boolean {
+  if (oldField === newField) return false
+  if (!document.contains(oldField) || !document.contains(newField)) return false
+  if (!isPotentiallyShadowed(oldField)) return false
+  // Guard: oldField must NOT itself be part of a visible split group
+  // (prevents small split cell from being mistaken for a shadow).
+  if (detectSplitInputGroup(oldField) !== null) return false
+  // newField must be a visible split-group representative.
+  const newGroup = detectSplitInputGroup(newField)
+  if (!newGroup || newGroup.inputs.length < 4) return false
+  return true
+}
+
+/**
  * Start watching a field for verification codes. Existing sessions are canceled.
  * Defense-in-depth: Rate limiting prevents runaway session creation bugs.
  */
@@ -661,16 +705,19 @@ export function startWatch(
   // DEFENSE 1: Rate limiting (catches bugs that bypass other checks)
   const now = Date.now()
   if (now - lastSessionCreated < SESSION_CREATION_RATE_LIMIT_MS) {
-    console.log('[WatchSession] Rate limit exceeded - rejecting session creation')
-    console.log(`[WatchSession] Last session created ${now - lastSessionCreated}ms ago (limit: ${SESSION_CREATION_RATE_LIMIT_MS}ms)`)
-
-    // Return existing session or create dummy
-    if (activeWatch) {
+    if (activeWatch && isShadowReplacement(activeWatch.getField(), field)) {
+      console.log('[WatchSession] Allowing rate-limited replacement: shadow → visible split group')
+      const stoppedWatch = activeWatch
+      activeWatch = null  // Clear FIRST so later DEFENSE 2/3 can't see stopped watch
+      stoppedWatch.stop()
+      // Fall through to creation path
+    } else if (activeWatch) {
       console.log('[WatchSession] Reusing existing session due to rate limit')
+      console.log(`[WatchSession] Last session created ${now - lastSessionCreated}ms ago (limit: ${SESSION_CREATION_RATE_LIMIT_MS}ms)`)
       return activeWatch
+    } else {
+      console.log('[WatchSession] No active session but rate limit triggered - allowing this session')
     }
-    // No active session but rate limit triggered - possible bug, log and allow
-    console.log('[WatchSession] No active session but rate limit triggered - allowing this session')
   }
 
   // DEFENSE 2: Same field check

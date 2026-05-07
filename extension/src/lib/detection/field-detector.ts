@@ -23,6 +23,98 @@ import { createCooldownRegistry, type CooldownRegistry } from './cooldown-regist
 import { detectTier1, type Tier1Result } from './tier1-fast'
 import { detectTier2, type Tier2Result } from './tier2-deep'
 import { isRelevantInputType } from './patterns'
+import { detectSplitInputGroup } from './split-input-detector'
+
+// ═══════════════════════════════════════════════════════════════
+// Shadow-input vs visible-split-group filtering
+// ═══════════════════════════════════════════════════════════════
+//
+// Some sites (e.g. IKEA Turkey) render a hidden "shadow" OTP input
+// alongside a visible split-cell group (num1..num6). The shadow is
+// visually suppressed (tiny rect / opacity 0 / transparent caret) but
+// otherwise passes the basic visibility filter. Without this pass,
+// Tier-1 attribute-match on the shadow's id="otp-input" wins detection
+// at high confidence; the visible split group is then ignored or, in
+// the dynamic path, rejected by the watch-session rate limit. The
+// fill targets the shadow, IKEA's submission rejects it.
+//
+// Strategy: when both coexist within the same form (or root if no
+// form), drop the shadow from the candidate set so the visible split
+// group wins detection naturally. The check is gated on the same
+// suppression cues used by visual-target-resolver and only fires when
+// a coherent visible split group with all-visible members exists.
+
+/** Returns true if the input has at least one CSS suppression cue. Cheap early-out. */
+function isPotentiallyShadowed(input: HTMLInputElement): boolean {
+  const rect = input.getBoundingClientRect()
+  // Fast-pass: a normal-sized input is never a shadow.
+  if (rect.width >= 30 && rect.height >= 10) {
+    // Still check opacity for fully-covered shadow inputs that have layout box.
+    try {
+      const op = parseFloat(window.getComputedStyle(input).opacity || '1')
+      if (Number.isFinite(op) && op < 0.05) return true
+    } catch { /* ignore */ }
+    return false
+  }
+  return true
+}
+
+/**
+ * Returns true if `input` is a visually-suppressed shadow OTP input
+ * AND a coexisting visible split-input group exists in the same form
+ * (or document root if no form). When true, `input` should be filtered
+ * out of detection so the visible split group can win.
+ *
+ * Predicate (all must hold):
+ * - At least 2 of: small rect (w<30 or h<10), opacity<0.05, caretColor
+ *   transparent, |letterSpacing|>=10, |textIndent|>=10. (Reuses the
+ *   visual-target-resolver thresholds.)
+ * - Some other input `c` in the same form (or root if no form) yields
+ *   `detectSplitInputGroup(c)` with `inputs.length >= 4` AND every group
+ *   member is in `allInputs` (already-visibility-filtered).
+ */
+export function isShadowedByVisibleSplitGroup(
+  input: HTMLInputElement,
+  allInputs: HTMLInputElement[]
+): boolean {
+  const rect = input.getBoundingClientRect()
+  let cues = 0
+  if (rect.width < 30 || rect.height < 10) cues++
+  try {
+    const style = window.getComputedStyle(input)
+    const op = parseFloat(style.opacity || '1')
+    if (Number.isFinite(op) && op < 0.05) cues++
+    const cc = (style.caretColor || '').toLowerCase()
+    if (cc === 'transparent' || cc === 'rgba(0, 0, 0, 0)') cues++
+    const ls = parseFloat(style.letterSpacing || '0')
+    if (Number.isFinite(ls) && ls >= 10) cues++
+    const ti = Math.abs(parseFloat(style.textIndent || '0'))
+    if (Number.isFinite(ti) && ti >= 10) cues++
+  } catch { /* test env */ }
+  if (cues < 2) return false
+
+  const form = (input as HTMLInputElement).form
+  const inScope = (c: HTMLInputElement): boolean => {
+    if (form) return form.contains(c)
+    const root = input.getRootNode()
+    if (root instanceof Document || root instanceof ShadowRoot) {
+      return root.contains(c)
+    }
+    return document.contains(c)
+  }
+
+  const allInputsSet = new Set(allInputs)
+  for (const c of allInputs) {
+    if (c === input) continue
+    if (!inScope(c)) continue
+    const group = detectSplitInputGroup(c)
+    if (!group) continue
+    if (group.inputs.length < 4) continue
+    if (group.inputs.some(i => !allInputsSet.has(i))) continue
+    return true
+  }
+  return false
+}
 
 // ═══════════════════════════════════════════════════════════════
 // Cooldown Registry Singleton
@@ -140,7 +232,7 @@ function tier2ToDetectionResult(
  * @returns Array of visible input fields
  */
 function getInputFields(strictVisibility = true): HTMLInputElement[] {
-  return Array.from(
+  const visibleCandidates = Array.from(
     document.querySelectorAll<HTMLInputElement>('input')
   ).filter(input => {
     // Must not be disabled
@@ -193,6 +285,19 @@ function getInputFields(strictVisibility = true): HTMLInputElement[] {
 
     return true
   })
+
+  // Test mode (strictVisibility=false) bypasses the shadow-vs-split-group
+  // pass: the cue check relies on getComputedStyle/rect which happy-dom
+  // reports as defaults, leading to false positives in tests.
+  if (!strictVisibility) return visibleCandidates
+
+  // Cheap early-out: if no candidate looks even potentially shadowed,
+  // skip the O(n*m) split-group probe entirely. Common case on most pages.
+  const earlyOut = !visibleCandidates.some(i => isPotentiallyShadowed(i))
+  if (earlyOut) return visibleCandidates
+  return visibleCandidates.filter(
+    i => !isShadowedByVisibleSplitGroup(i, visibleCandidates)
+  )
 }
 
 /**
@@ -228,7 +333,7 @@ function findInputsInShadowDOM(root: Document | ShadowRoot | Element): HTMLInput
 function getAllInputFields(strictVisibility = true): HTMLInputElement[] {
   const inputs = findInputsInShadowDOM(document)
 
-  return inputs.filter(input => {
+  const visibleCandidates = inputs.filter(input => {
     // Must not be disabled
     if (input.disabled) {
       return false
@@ -271,6 +376,15 @@ function getAllInputFields(strictVisibility = true): HTMLInputElement[] {
 
     return true
   })
+
+  // Test mode bypass — see getInputFields for rationale.
+  if (!strictVisibility) return visibleCandidates
+
+  const earlyOut = !visibleCandidates.some(i => isPotentiallyShadowed(i))
+  if (earlyOut) return visibleCandidates
+  return visibleCandidates.filter(
+    i => !isShadowedByVisibleSplitGroup(i, visibleCandidates)
+  )
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -764,8 +878,23 @@ export class FieldDetector {
       return
     }
 
+    // Shadow-vs-split-group filter (mirrors getInputFields/getAllInputFields).
+    // Without this, the dynamic mutation path can still hand a shadow
+    // input (e.g. IKEA's id="otp-input") to Tier 1 even if the visible
+    // split group is already in the DOM. We use the full visible
+    // document set as the scope so cells outside `pendingMutations`
+    // count as "visible group members."
+    const fullVisible = getAllInputFields(true)
+    const filtered = visibleInputs.filter(
+      i => !isShadowedByVisibleSplitGroup(i, fullVisible)
+    )
+
+    if (filtered.length === 0) {
+      return
+    }
+
     // Try to detect verification fields
-    for (const input of visibleInputs) {
+    for (const input of filtered) {
       const startTime = performance.now()
 
       // Try Tier 1 first
