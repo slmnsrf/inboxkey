@@ -38,7 +38,7 @@ inboxkey/
 │   │   │   │   ├── context-validator.ts # Multilingual validation (21 langs)
 │   │   │   │   ├── types.ts             # Shared type definitions (TextSources, ChannelClassification)
 │   │   │   │   ├── cooldown-registry.ts # Field cooldown tracking
-│   │   │   │   └── split-input-detector.ts # Split-input group detection (183 LOC)
+│   │   │   │   └── split-input-detector.ts # Split-input group detection (471 LOC)
 │   │   │   ├── matching/        # Code matching (v2 algorithm)
 │   │   │   │   ├── code-matcher.ts      # Best match selection (458-pt scoring)
 │   │   │   │   ├── domain-affinity.ts   # Domain scoring (0-100 pts)
@@ -214,7 +214,7 @@ Minimum threshold: 100 points
 - Dispatches `input`, `change`, `keydown`, `keyup` events for framework reactivity
 - Optional auto-submit with password-reset link protection
 
-**Split-Input Distribution:** Detects split-input groups (e.g., 5 separate maxlength=1 fields) and distributes codes character-by-character ("12345" → "1" "2" "3" "4" "5"). Focuses last filled input and applies visual feedback to each input. Handles edge cases: code shorter/longer than input count.
+**Split-Input Distribution:** Detects split-input groups across three shapes — (a) all-equal `maxlength` 1-3 cells (Steam, GitHub), (b) per-cell wrappers with `maxlength=-1` (Microsoft codeEntry), (c) asymmetric leader where the first input acts as a paste-receiver (`maxlength` = group size, 4-8) and the rest are single-digit cells (e.g., IKEA Turkey). Distributes codes character-by-character across cells. For asymmetric-leader groups where only the leader has a submittable `name` and cells are presentation-only, falls back to filling the leader with the full code. Tier 2 split-bonus is suppressed for cells-only sub-groups when a viable leader precedes them in the common ancestor (defense-in-depth against double sessions).
 
 ### Layer 5 (Tier 1): Delivery Channel Signal Classifier
 

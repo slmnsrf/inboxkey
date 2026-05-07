@@ -11,7 +11,12 @@ import type { CooldownRegistry } from './cooldown-registry'
 import { validateContext } from './context-validator'
 import { classifyDeliveryChannel } from './signal-classifier'
 import { classifyNonEmailIntent } from './non-email-contexts'
-import { detectSplitInputGroup } from './split-input-detector'
+import {
+  detectSplitInputGroup,
+  findCommonAncestor,
+  hasSequentialIdentifiers,
+  type SplitInputGroup,
+} from './split-input-detector'
 import {
   getAriaDescribedbyText,
   getAriaLabelledbyText,
@@ -23,6 +28,7 @@ import {
   getLabelMatchStrength,
   getPlaceholderMatchStrength,
   getCodeLengthRangeFromPattern,
+  isRelevantInputType,
   TYPICAL_CODE_LENGTHS,
 } from './patterns'
 
@@ -86,6 +92,70 @@ const HIGH_CONFIDENCE_KEYWORDS_NONLATIN = new RegExp(
  * Prevents false positives on password/email fields with "code" in nearby text.
  */
 const NEGATIVE_SIGNALS = /\b(password|email.?address|username|phone.?number)\b/i
+
+/**
+ * Tier-2 split-bonus suppression check.
+ *
+ * Background: with the asymmetric-leader sibling predicate, an
+ * entry-point of input #2 (a maxLength=1 cell) returns the full
+ * leader+cells group (shape c). But Tier 2 still receives the
+ * pre-existing cells-only sub-group when triggered against a cell that
+ * happens to land on the legacy detection path before the leader is
+ * encountered. Awarding the +75 split bonus there causes the cells-only
+ * group to win the score race and autofill fails on shape mismatch
+ * (5 cells vs. a 6-digit code).
+ *
+ * Suppress the bonus when the entry input is a single-digit cell, the
+ * group itself is cells-only (NOT shape c), and a leader (maxLength
+ * 4-8) precedes the cells in DOM order under the same ancestor with a
+ * compatible sequential-identifier prefix. The leader-inclusive shape
+ * (c) group will reach Tier 2 via the leader entry-point and is not
+ * suppressed (its `pattern` is `'asymmetric-leader'`).
+ */
+function shouldSuppressSplitBonus(
+  input: HTMLInputElement,
+  group: SplitInputGroup
+): boolean {
+  // Asymmetric-leader groups already include the leader; no need to
+  // suppress — the autofill path handles them correctly.
+  if (group.pattern === 'asymmetric-leader') return false
+  // Only relevant for cells-only shape (a) groups where the input
+  // itself is a single-digit cell.
+  if (input.maxLength !== 1) return false
+
+  const ancestor = findCommonAncestor(group.inputs, 3)
+  if (!ancestor) return false
+
+  // DOM-ordered list of relevant inputs in the ancestor.
+  const ancestorRelevantInputs = Array.from(
+    ancestor.querySelectorAll('input')
+  ).filter((i): i is HTMLInputElement =>
+    i instanceof HTMLInputElement &&
+    isRelevantInputType(i) &&
+    !i.disabled &&
+    !i.readOnly
+  )
+
+  // Find the first input of the cells-only group in DOM order.
+  const sortedGroup = [...group.inputs].sort((a, b) => {
+    const pos = a.compareDocumentPosition(b)
+    if (pos & Node.DOCUMENT_POSITION_FOLLOWING) return -1
+    if (pos & Node.DOCUMENT_POSITION_PRECEDING) return 1
+    return 0
+  })
+  const firstCell = sortedGroup[0]
+  const firstCellIndex = ancestorRelevantInputs.indexOf(firstCell)
+  if (firstCellIndex <= 0) return false
+
+  // The relevant input immediately preceding the cells-only run.
+  const preceding = ancestorRelevantInputs[firstCellIndex - 1]
+  if (preceding.maxLength < 4 || preceding.maxLength > 8) return false
+
+  // Sequential-identifier-prefix-compatible: preceding+cells share a
+  // sequential name/id pattern (e.g., num1 -> num2..num6).
+  const allInputs = [preceding, ...sortedGroup]
+  return hasSequentialIdentifiers(allInputs)
+}
 
 /**
  * Form context analysis result
@@ -592,9 +662,17 @@ export function detectTier2(
   // Uses detectSplitInputGroup as single source of truth (cached for reuse below)
   const splitGroup = detectSplitInputGroup(input)
   const isSplitInput = splitGroup !== null
-  if (isSplitInput) {
+  // Suppress split-bonus when this is a cells-only shape (a) match for
+  // an input that is part of a larger asymmetric-leader OTP. The
+  // leader-inclusive group will be detected via the leader's own entry
+  // point and routed to autofill correctly.
+  const suppressSplitBonus =
+    splitGroup !== null && shouldSuppressSplitBonus(input, splitGroup)
+  if (isSplitInput && !suppressSplitBonus) {
     score += 75  // High confidence, sufficient to meet threshold (70)
     scoreBreakdown.push('split-input:75')
+  } else if (suppressSplitBonus) {
+    scoreBreakdown.push('split-input:0 (suppressed by asymmetric-leader)')
   }
 
   // Extract label text

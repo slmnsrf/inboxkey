@@ -10,7 +10,7 @@ export const config = {
 import { extractDomain, isDomainEnabled } from '@/lib/utils/domain'
 import { findSubmitButton } from './submit-button-finder'
 import { logAutoSubmitFailure } from '@/lib/storage/telemetry'
-import { detectSplitInputGroup } from '@/lib/detection/split-input-detector'
+import { detectSplitInputGroup, type SplitInputGroup } from '@/lib/detection/split-input-detector'
 export interface AutofillOptions {
   code: string
   field: HTMLInputElement
@@ -83,13 +83,41 @@ export async function autofillCode(options: AutofillOptions): Promise<boolean> {
   const group = detectSplitInputGroup(field)
 
   if (group && group.inputs.length > 1) {
-    console.log(`[Autofill] Split-input group detected: ${group.inputs.length} inputs`)
-    return autofillSplitInputs(code, group.inputs)
+    console.log(
+      `[Autofill] Split-input group detected: ${group.inputs.length} inputs (pattern=${group.pattern})`
+    )
+    return autofillSplitInputs(code, group)
   }
 
   // Perform autofill (single field)
   console.log(`[Autofill] Autofilling code (redacted ${code.length} chars)`)
 
+  await fillSingleField(field, code)
+
+  // Check if we should auto-submit
+  const shouldAutoSubmit = await checkForAutoSubmit(field)
+  if (shouldAutoSubmit) {
+    console.log('[Autofill] Auto-submitting form')
+    await submitForm(field)
+  }
+
+  console.log('[Autofill] Autofill completed successfully')
+  return true
+}
+
+/**
+ * Fill a single input with the full code value and dispatch the
+ * framework-reactivity event sequence. Marks the field as filled.
+ *
+ * Extracted so the leader-only-submitted branch of autofillSplitInputs
+ * can reuse the same fill-and-mark behavior without re-running
+ * auto-submit logic (which only the single-field path triggers).
+ *
+ * @param field - Input to fill
+ * @param code - Full verification code value
+ * @returns true (always; caller handles availability/visibility checks)
+ */
+async function fillSingleField(field: HTMLInputElement, code: string): Promise<boolean> {
   // Focus the field first
   field.focus()
 
@@ -109,14 +137,6 @@ export async function autofillCode(options: AutofillOptions): Promise<boolean> {
   field.setAttribute('data-inboxkey-filled', 'true')
   field.setAttribute('data-inboxkey-timestamp', Date.now().toString())
 
-  // Check if we should auto-submit
-  const shouldAutoSubmit = await checkForAutoSubmit(field)
-  if (shouldAutoSubmit) {
-    console.log('[Autofill] Auto-submitting form')
-    await submitForm(field)
-  }
-
-  console.log('[Autofill] Autofill completed successfully')
   return true
 }
 
@@ -124,14 +144,35 @@ export async function autofillCode(options: AutofillOptions): Promise<boolean> {
  * Autofill code across multiple split inputs (e.g., Steam's 5-input code)
  * Distributes code character-by-character: "12345" → "1" "2" "3" "4" "5"
  *
+ * Special-case: asymmetric-leader groups where only the leader has a
+ * `name` attribute (cells are presentation-only). The page submits the
+ * full code from the leader; per-cell distribution would corrupt the
+ * value. Fall back to filling the leader with the full code.
+ *
  * @param code - Verification code to fill
- * @param inputs - Array of input fields in DOM order
+ * @param group - Detected split-input group (DOM-ordered)
  * @returns true if successful
  */
 async function autofillSplitInputs(
   code: string,
-  inputs: HTMLInputElement[]
+  group: SplitInputGroup
 ): Promise<boolean> {
+  // Leader-only-submitted variant: the leader has a name and the
+  // cells are presentation-only (no name attribute). The framework
+  // funnels submission through the leader's value, so distributing
+  // chars across cells would NOT submit the code at all. Fill just
+  // the leader with the full code.
+  if (group.pattern === 'asymmetric-leader') {
+    const [leader, ...cells] = group.inputs  // sorted DOM-order, leader at [0]
+    if (leader.name !== '' && cells.every(c => c.name === '')) {
+      console.log(
+        '[Autofill] Asymmetric-leader, leader-only-submitted: filling leader with full code'
+      )
+      return fillSingleField(leader, code)
+    }
+  }
+
+  const inputs = group.inputs
   const chars = code.split('')
 
   // Filter to fillable inputs only (skip readOnly, disabled)
