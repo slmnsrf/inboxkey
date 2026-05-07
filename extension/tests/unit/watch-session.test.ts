@@ -524,6 +524,81 @@ describe("WatchSession", () => {
     expect(port.disconnect).toHaveBeenCalled()
   })
 
+  // D.7 — startWatch integration: rate-limited shadow → visible split group
+  // replacement allowed via the isShadowReplacement escape hatch.
+  it("D.7 allows rate-limited replacement: shadow session → visible split-group session", async () => {
+    // Old field: "shadow" — small rect triggers isPotentiallyShadowed (any cue).
+    // Mock detectSplitInputGroup(oldField) === null per the C.2 guard.
+    const oldField = documentRef.createElement("input")
+    oldField.type = "text"
+    oldField.id = "otp-input"
+    oldField.maxLength = 6
+    documentRef.body.appendChild(oldField)
+    Object.defineProperty(oldField, "getBoundingClientRect", {
+      configurable: true,
+      value: () => ({
+        width: 1, height: 1, top: 0, left: 0, right: 1, bottom: 1, x: 0, y: 0,
+        toJSON: () => ({}),
+      }) as DOMRect,
+    })
+
+    // New field: leader of a visible 6-input split group.
+    const newField = documentRef.createElement("input")
+    newField.type = "text"
+    newField.name = "num1"
+    newField.maxLength = 6
+    documentRef.body.appendChild(newField)
+    const cells: HTMLInputElement[] = [newField]
+    for (let i = 2; i <= 6; i++) {
+      const c = documentRef.createElement("input")
+      c.type = "text"
+      c.name = `num${i}`
+      c.maxLength = 1
+      documentRef.body.appendChild(c)
+      cells.push(c)
+    }
+
+    // detectSplitInputGroup mock contract:
+    //   oldField → null (C.2 guard satisfied: oldField is not in a group)
+    //   newField → 6-input asymmetric-leader group (size >= 4)
+    vi.mocked(detectSplitInputGroup).mockImplementation((f) => {
+      if (f === newField) {
+        return {
+          inputs: cells,
+          representative: newField,
+          pattern: "asymmetric-leader",
+        }
+      }
+      return null
+    })
+
+    // Start session 1 on the shadow field.
+    const detection1 = createDetectionResult(oldField)
+    const oldSession = startWatch(oldField, detection1, { onCodeFound: vi.fn() })
+    await flushMicrotasks()
+    await emitPortMessage({
+      type: "SESSION_STARTED",
+      session: { id: "shadow-session" },
+    })
+    expect(getActiveWatch()).toBe(oldSession)
+
+    // Spy on the shadow session's stop method to confirm it was called.
+    const stopSpy = vi.spyOn(oldSession, "stop")
+
+    // Within the 1s rate-limit window, call startWatch with the leader.
+    // The shadow-replacement path must clear activeWatch BEFORE stop(),
+    // then create a new session.
+    const detection2 = createDetectionResult(newField)
+    const newSession = startWatch(newField, detection2, { onCodeFound: vi.fn() })
+    await flushMicrotasks()
+
+    // The old session was stopped; the new session is now active.
+    expect(stopSpy).toHaveBeenCalled()
+    expect(getActiveWatch()).toBe(newSession)
+    expect(getActiveWatch()).not.toBe(oldSession)
+    expect(isFieldWatched(newField)).toBe(true)
+  })
+
   it("should stop session when stopActiveWatch called", async () => {
     const field = documentRef.createElement("input")
     documentRef.body.appendChild(field)
