@@ -60,10 +60,12 @@ function isVisuallySuppressed(input: HTMLInputElement): boolean {
  * a fast-path filter for non-reference siblings.
  */
 function isHardHidden(input: HTMLInputElement): boolean {
-  if (input.hidden) return true
-  const inlineStyle = input.getAttribute('style') || ''
-  if (/display\s*:\s*none|visibility\s*:\s*hidden/i.test(inlineStyle)) return true
+  // Fail-open: a DOM property access on a detached or cross-origin node
+  // can throw; never classify the input as hidden without evidence.
   try {
+    if (input.hidden) return true
+    const inlineStyle = input.getAttribute('style') || ''
+    if (/display\s*:\s*none|visibility\s*:\s*hidden/i.test(inlineStyle)) return true
     const style = window.getComputedStyle(input)
     if (style.display === 'none' || style.visibility === 'hidden') return true
   } catch { /* fail-open */ }
