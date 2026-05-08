@@ -31,6 +31,7 @@ import {
   COLOR_ERROR,
   DURATION_NORMAL,
 } from '@/lib/design-tokens'
+import { debugLog } from '@/lib/utils/debug-log'
 
 /**
  * Badge priority levels (higher = more important)
@@ -138,7 +139,7 @@ function setBadgeText(text: string): void {
   try {
     chrome.action.setBadgeText({ text })
   } catch (error) {
-    console.warn('[BadgeManager] Failed to set badge text:', error)
+    debugLog('[BadgeManager] Failed to set badge text:', error)
   }
 }
 
@@ -156,7 +157,7 @@ function setBadgeBackgroundColor(color: string): void {
   try {
     chrome.action.setBadgeBackgroundColor({ color })
   } catch (error) {
-    console.warn('[BadgeManager] Failed to set badge background color:', error)
+    debugLog('[BadgeManager] Failed to set badge background color:', error)
   }
 }
 

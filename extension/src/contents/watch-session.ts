@@ -26,6 +26,7 @@ import { AUTOCOMPLETE_VALUES } from '@/lib/detection/patterns'
 import { getMatchingAutocompleteToken } from '@/lib/detection/detection-utils'
 import { POSITIVE_SIGNAL_GATE_ENABLED } from '@/lib/constants'
 import { getFullAutomationSafety } from '@/lib/automation/automation-safety'
+import { debugLog } from '@/lib/utils/debug-log'
 
 /**
  * Google deliberately hides its own SMS codes from messages.google.com web.
@@ -96,7 +97,7 @@ export class WatchSession {
    */
   async start(): Promise<void> {
     if (this.port) {
-      console.warn("[WatchSession] Session already started")
+      debugLog("[WatchSession] Session already started")
       return
     }
 
@@ -224,8 +225,8 @@ export class WatchSession {
       this.port = chrome.runtime.connect({ name: "watch-session" })
     } catch (error) {
       // Extension context invalidated (extension reloaded while content script still running)
-      console.warn("[WatchSession] Failed to connect to background:", error)
-      console.warn("[WatchSession] Extension context invalidated. Please refresh the page.")
+      debugLog("[WatchSession] Failed to connect to background:", error)
+      debugLog("[WatchSession] Extension context invalidated. Please refresh the page.")
 
       // Show user notification
       showNotification({
@@ -259,7 +260,7 @@ export class WatchSession {
         channelEvidence: sessionChannelEvidence,
       })
     } catch (error) {
-      console.warn("[WatchSession] Failed to send START_SESSION:", error)
+      debugLog("[WatchSession] Failed to send START_SESSION:", error)
       this.cleanup()
       return
     }
@@ -343,7 +344,7 @@ export class WatchSession {
           if (result.success) {
             console.log('[WatchSession] URL successfully blacklisted:', currentUrl)
           } else {
-            console.warn('[WatchSession] Failed to blacklist URL:', result.errorMessage)
+            debugLog('[WatchSession] Failed to blacklist URL:', result.errorMessage)
           }
           this.stop()
         }
@@ -397,7 +398,7 @@ export class WatchSession {
         if (this.callbacks.onAutofill) {
           this.handleCodeFoundWithAutofill(payload.code)
             .catch((error) => {
-              console.warn("[WatchSession] Autofill error:", error)
+              debugLog("[WatchSession] Autofill error:", error)
             })
             .finally(() => {
               this.callbacks.onCodeHandled?.()
@@ -439,13 +440,13 @@ export class WatchSession {
       }
 
       default:
-        console.warn("[WatchSession] Unknown port message:", message)
+        debugLog("[WatchSession] Unknown port message:", message)
         break
     }
   }
 
   private handlePortDisconnect = (): void => {
-    console.warn("[WatchSession] Port disconnected")
+    debugLog("[WatchSession] Port disconnected")
     this.cleanup()
   }
 
@@ -535,7 +536,7 @@ export class WatchSession {
       }
       return success
     } catch (error) {
-      console.warn("[WatchSession] Autofill error:", error)
+      debugLog("[WatchSession] Autofill error:", error)
       return false
     }
   }
@@ -561,7 +562,7 @@ export class WatchSession {
         console.log("[WatchSession] No submit button found for auto-submit")
       }
     } catch (error) {
-      console.warn("[WatchSession] Auto-submit failed:", error)
+      debugLog("[WatchSession] Auto-submit failed:", error)
     }
   }
 
@@ -595,7 +596,7 @@ export class WatchSession {
 
       console.log("[WatchSession] Code copied to clipboard and user notified")
     } catch (clipboardError) {
-      console.warn("[WatchSession] Clipboard copy failed:", clipboardError)
+      debugLog("[WatchSession] Clipboard copy failed:", clipboardError)
 
       // Even if clipboard fails, show notification with code
       showNotification({
