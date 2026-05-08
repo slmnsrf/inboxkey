@@ -250,6 +250,93 @@ describe('field-detector — shadow-input vs visible split-group filter', () => 
     expect(visible).toEqual(cells)
   })
 
+  // ── D.9 (LIVE IKEA shape — only zero-rect cue, no other CSS cues) ──
+  // Reproduces the actual production rendering captured from
+  // https://www.ikea.com.tr/uyelik/uye-giris-uye-ol via getComputedStyle:
+  //   display:block, visibility:visible, opacity:1
+  //   caret-color:rgb(36,36,36), letter-spacing:normal, text-indent:0px
+  //   rect: 0×0 (because ancestor DIV.progress-modal.hide has display:none)
+  //
+  // The shadow has ONLY ONE cue (zero rect). Earlier shadow tests over-
+  // stubbed the input with opacity:0 + caret:transparent (3 cues) and
+  // gave a false sense of coverage. With the real one-cue shape, the
+  // mutation path's inline visibility filter must reject the shadow
+  // by zero rect, otherwise Tier 1 fires on it.
+  it('D.9 LIVE IKEA shape: zero-rect shadow inside hidden modal does not trigger detection callback', async () => {
+    // Build the actual production DOM hierarchy.
+    const aspnetForm = document.createElement('form')
+    aspnetForm.id = 'aspnetForm'
+    document.body.appendChild(aspnetForm)
+
+    // Hidden modal ancestor — equivalent to display:none in production.
+    const modal = document.createElement('div')
+    modal.className = 'progress-modal hide'
+    modal.setAttribute('style', 'display: none')
+    aspnetForm.appendChild(modal)
+
+    const formGroup = document.createElement('div')
+    formGroup.className = 'form-group after-error'
+    modal.appendChild(formGroup)
+
+    // Shadow input — REAL shape, no CSS suppression cues. Only zero rect.
+    const shadow = document.createElement('input')
+    shadow.id = 'otp-input'
+    shadow.type = 'text'
+    shadow.className = 'form-control required smstext'
+    shadow.maxLength = 6
+    shadow.setAttribute('placeholder', 'Kodu Giriniz')
+    formGroup.appendChild(shadow)
+    stubRect(shadow, 0, 0) // zero rect (descendant of display:none parent)
+
+    // Visible split cells in their own form (mimics IKEA's layout).
+    const visibleForm = document.createElement('div')
+    visibleForm.className = 'form'
+    document.body.appendChild(visibleForm)
+
+    const cellsBox = document.createElement('div')
+    cellsBox.className = 'form__item-sms-box'
+    visibleForm.appendChild(cellsBox)
+
+    const cells: HTMLInputElement[] = []
+    for (let i = 1; i <= 6; i++) {
+      const c = document.createElement('input')
+      c.type = 'text'
+      c.name = `num${i}`
+      c.maxLength = i === 1 ? 6 : 1
+      c.setAttribute('inputmode', 'numeric')
+      c.setAttribute('aria-label', `otp code ${i}`)
+      cellsBox.appendChild(c)
+      stubRect(c, 40, 40)
+      cells.push(c)
+    }
+
+    // Drive a mutation that adds the shadow into pendingMutations.
+    // We do this by detaching and reattaching the shadow after observe-start,
+    // because happy-dom only fires the observer for mutations occurring
+    // AFTER startObserving.
+    shadow.remove()
+
+    const detector = new FieldDetector()
+    const detected: HTMLInputElement[] = []
+    detector.startObserving((field: HTMLInputElement, _r: DetectionResult) => {
+      detected.push(field)
+    })
+
+    // Re-attach the shadow — triggers an observer mutation.
+    formGroup.appendChild(shadow)
+
+    // Wait past the 100ms processPendingMutations debounce.
+    await new Promise(r => setTimeout(r, 200))
+    detector.stopObserving()
+
+    // Shadow must NOT have triggered a callback. With the current bug,
+    // the inline visibility filter in processPendingMutations checks
+    // computed display/visibility but not rect dimensions, so the
+    // zero-rect shadow slips through and Tier 1 fires on the
+    // id="otp-input" contains-match.
+    expect(detected).not.toContain(shadow)
+  })
+
   // ── D.6 (live MutationObserver path) ──
   it('D.6 mutation path: FieldDetector.startObserving callback skips the shadow', async () => {
     const form = document.createElement('form')
