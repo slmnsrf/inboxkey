@@ -861,17 +861,24 @@ export class FieldDetector {
     // Filter visible inputs - and require a text-entry type so dynamic
     // <input type="radio">/<input type="checkbox"> nodes can't slip
     // into Tier 1 via the mutation path (see getInputFields).
+    //
+    // The rect check mirrors getInputFields' strict visibility filter.
+    // Without it, an input with display:block on itself but display:none
+    // on an ancestor (parent/grandparent/modal-hide pattern) reports
+    // computed display:block on itself yet renders as 0×0. IKEA's
+    // hidden shadow `<input id="otp-input">` lives inside
+    // `<div class="progress-modal hide">` and slipped through here
+    // before this check was added, winning Tier 1 against the visible
+    // split cells.
     const visibleInputs = inputs.filter(input => {
       const style = window.getComputedStyle(input)
-      return (
-        style.display !== 'none' &&
-        style.visibility !== 'hidden' &&
-        input.type !== 'hidden' &&
-        !input.disabled &&
-        !input.readOnly &&
-        !input.hidden &&
-        isRelevantInputType(input)
-      )
+      if (style.display === 'none' || style.visibility === 'hidden') return false
+      if (input.type === 'hidden') return false
+      if (input.disabled || input.readOnly || input.hidden) return false
+      if (!isRelevantInputType(input)) return false
+      const rect = input.getBoundingClientRect()
+      if (rect.width === 0 || rect.height === 0) return false
+      return true
     })
 
     if (visibleInputs.length === 0) {

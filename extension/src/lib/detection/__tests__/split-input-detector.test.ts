@@ -494,5 +494,102 @@ describe('detectSplitInputGroup', () => {
       expect(group).not.toBeNull()
       expect(group!.inputs.length).toBe(5)
     })
+
+    /**
+     * B.5 — Live IKEA shadow shape: zero-rect (display:block, opacity:1,
+     * normal caret/letterSpacing/textIndent). Captured directly from the
+     * production page at https://www.ikea.com.tr/uyelik/uye-giris-uye-ol
+     * via getComputedStyle on the live shadow element. Only ONE cue fires
+     * naturally (zero rect). PR #79's 2-cue threshold lets it slip through
+     * — must be caught by treating zero rect as definitively suppressed.
+     */
+    it('B.5 excludes shadow with zero-rect only (live IKEA shape)', () => {
+      // Outer HTML reproduced from the live IKEA page:
+      //   <input id="otp-input" type="text" class="form-control required smstext"
+      //          maxlength="6" placeholder="Kodu Giriniz">
+      // Wrapped in <div class="form-group after-error">. CSS-computed:
+      //   display:block, visibility:visible, opacity:1, caret:rgb(36,36,36),
+      //   letterSpacing:normal, textIndent:0px. Rect: 0×0.
+      container.innerHTML = `
+        <form>
+          <div class="form-group after-error">
+            <input id="otp-input" type="text" class="form-control required smstext" maxlength="6" placeholder="Kodu Giriniz" />
+          </div>
+          <div class="form__item-sms-box">
+            <input type="text" name="num1" maxlength="6" />
+            <input type="text" name="num2" maxlength="1" />
+            <input type="text" name="num3" maxlength="1" />
+            <input type="text" name="num4" maxlength="1" />
+            <input type="text" name="num5" maxlength="1" />
+            <input type="text" name="num6" maxlength="1" />
+          </div>
+        </form>
+      `
+      // Shadow has 0×0 rect (live behavior — parent collapse or
+      // CSS width:0/height:0 from the .form-group wrapper).
+      const shadow = container.querySelector<HTMLInputElement>('#otp-input')!
+      Object.defineProperty(shadow, 'getBoundingClientRect', {
+        configurable: true,
+        value: () => ({
+          width: 0, height: 0, top: 0, left: 0, right: 0, bottom: 0, x: 0, y: 0,
+          toJSON: () => ({}),
+        }) as DOMRect,
+      })
+      // Visible cells have proper rect.
+      container.querySelectorAll<HTMLInputElement>('input[name^="num"]').forEach(cell => {
+        Object.defineProperty(cell, 'getBoundingClientRect', {
+          configurable: true,
+          value: () => ({
+            width: 40, height: 40, top: 0, left: 0, right: 40, bottom: 40, x: 0, y: 0,
+            toJSON: () => ({}),
+          }) as DOMRect,
+        })
+      })
+
+      const num1 = container.querySelector<HTMLInputElement>('input[name="num1"]')!
+      const group = detectSplitInputGroup(num1)
+      expect(group).not.toBeNull()
+      expect(group!.pattern).toBe('asymmetric-leader')
+      expect(group!.inputs.length).toBe(6)
+      expect(group!.inputs.every(i => i.name?.startsWith('num'))).toBe(true)
+      expect(group!.representative).toBe(num1)
+    })
+
+    // B.6 — Self guard fires on zero-rect shadow (live IKEA shape).
+    it('B.6 returns null when querying the live-shape shadow itself', () => {
+      container.innerHTML = `
+        <form>
+          <div class="form-group after-error">
+            <input id="otp-input" type="text" class="form-control required smstext" maxlength="6" placeholder="Kodu Giriniz" />
+          </div>
+          <div class="form__item-sms-box">
+            <input type="text" name="num1" maxlength="6" />
+            <input type="text" name="num2" maxlength="1" />
+            <input type="text" name="num3" maxlength="1" />
+            <input type="text" name="num4" maxlength="1" />
+            <input type="text" name="num5" maxlength="1" />
+            <input type="text" name="num6" maxlength="1" />
+          </div>
+        </form>
+      `
+      const shadow = container.querySelector<HTMLInputElement>('#otp-input')!
+      Object.defineProperty(shadow, 'getBoundingClientRect', {
+        configurable: true,
+        value: () => ({
+          width: 0, height: 0, top: 0, left: 0, right: 0, bottom: 0, x: 0, y: 0,
+          toJSON: () => ({}),
+        }) as DOMRect,
+      })
+      container.querySelectorAll<HTMLInputElement>('input[name^="num"]').forEach(cell => {
+        Object.defineProperty(cell, 'getBoundingClientRect', {
+          configurable: true,
+          value: () => ({
+            width: 40, height: 40, top: 0, left: 0, right: 40, bottom: 40, x: 0, y: 0,
+            toJSON: () => ({}),
+          }) as DOMRect,
+        })
+      })
+      expect(detectSplitInputGroup(shadow)).toBeNull()
+    })
   })
 })
