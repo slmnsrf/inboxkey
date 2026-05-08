@@ -17,6 +17,93 @@
 import { domainAffinity, extractETLD } from "@/lib/matching/domain-affinity"
 import { SHARED_HOST_BLOCKLIST } from "@/lib/constants"
 
+type SessionChannel = 'email' | 'sms'
+
+export interface NewArrivalCandidateEligibilityInput {
+  siteETLD: string
+  detectedChannels: ReadonlyArray<SessionChannel>
+  provider?: string
+  source?: string
+  siteMatch?: string
+  senderETLD?: string
+  googleMessagesSessionExpired?: boolean
+}
+
+function hasSmsChannel(channels: ReadonlyArray<SessionChannel>): boolean {
+  return channels.includes('sms')
+}
+
+function isLegacySmsOnlyCandidate(
+  channels: ReadonlyArray<SessionChannel>,
+  source: string | undefined,
+  siteMatch: string | undefined,
+  provider: string | undefined,
+): boolean {
+  return (
+    provider === undefined &&
+    channels.length === 1 &&
+    channels[0] === 'sms' &&
+    !siteMatch &&
+    !!source &&
+    !source.includes('@')
+  )
+}
+
+function looksLikeLegacyGoogleMessagesCode(
+  source: string | undefined,
+  siteMatch: string | undefined,
+  provider: string | undefined,
+): boolean {
+  return provider === undefined && !siteMatch && !!source && !source.includes('@')
+}
+
+/**
+ * Decides whether a post-session-arrival candidate is eligible to enter
+ * the matcher. Email candidates use domain affinity. Google Messages
+ * candidates use SMS-session provenance instead because branded SMS
+ * senders are often short codes or labels, not domains.
+ */
+export function isNewArrivalCandidateEligibleForAutofill(
+  input: NewArrivalCandidateEligibilityInput,
+): boolean {
+  const isGoogleMessagesCandidate = input.provider === 'google-messages'
+  const isLegacySmsCandidate = isLegacySmsOnlyCandidate(
+    input.detectedChannels,
+    input.source,
+    input.siteMatch,
+    input.provider,
+  )
+
+  if (
+    input.googleMessagesSessionExpired &&
+    (isGoogleMessagesCandidate ||
+      looksLikeLegacyGoogleMessagesCode(
+        input.source,
+        input.siteMatch,
+        input.provider,
+      ))
+  ) {
+    return false
+  }
+
+  if (isGoogleMessagesCandidate) {
+    return hasSmsChannel(input.detectedChannels)
+  }
+
+  if (isLegacySmsCandidate) {
+    return true
+  }
+
+  const senderETLDForAffinity =
+    input.senderETLD || extractETLD(input.siteMatch || '')
+  const affinity = domainAffinity(
+    input.siteETLD,
+    senderETLDForAffinity,
+    input.source,
+  )
+  return affinity >= 0.6
+}
+
 /**
  * Returns true when the matched code's sender domain strictly matches
  * the page domain.

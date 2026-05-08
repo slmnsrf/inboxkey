@@ -38,27 +38,27 @@ export const SUBMIT_BUTTON_PATTERNS_BY_LANG: Readonly<Record<string, ReadonlyArr
  * These patterns indicate a button should NEVER be auto-clicked
  */
 export const DANGEROUS_BUTTON_PATTERNS_BY_LANG: Readonly<Record<string, ReadonlyArray<string>>> = Object.freeze({
-  en: ['cancel', 'clear', 'close account', 'deactivate', 'delete', 'delete account', 'delete payment', 'deny', 'log out', 'logout', 'opt out', 'reject', 'remove', 'remove card', 'reset password', 'sign out', 'signout', 'unsubscribe'],
-  es: ['borrar', 'cancelar', 'cerrar cuenta', 'cerrar sesión', 'desactivar', 'deshacerse', 'eliminar', 'eliminar cuenta', 'eliminar pago', 'negar', 'rechazar', 'remover tarjeta', 'restablecer contraseña', 'salir'],
-  fr: ['annuler', 'déconnexion', 'désactiver', 'désabonner', 'effacer', 'fermer compte', 'refuser', 'rejeter', 'réinitialiser mot de passe', 'retirer carte', 'se déconnecter', 'supprimer', 'supprimer compte', 'supprimer paiement'],
-  de: ['abbrechen', 'ablehnen', 'abmelden', 'ausloggen', 'deaktivieren', 'entfernen', 'karte entfernen', 'konto löschen', 'konto schließen', 'löschen', 'passwort zurücksetzen', 'verweigern', 'zahlung löschen', 'zurückweisen'],
-  it: ['annulla', 'chiudi account', 'disiscrivi', 'disattiva', 'disconnetti', 'elimina', 'elimina account', 'elimina pagamento', 'esci', 'nega', 'reimposta password', 'rifiuta', 'rimuovi', 'rimuovi carta'],
-  pt: ['cancelar', 'desativar', 'desconectar', 'excluir', 'excluir conta', 'excluir pagamento', 'fechar conta', 'negar', 'recusar', 'redefinir senha', 'remover', 'remover cartão', 'sair'],
-  nl: ['afmelden', 'annuleren', 'deactiveren', 'opzeggen', 'uitloggen', 'verwijder', 'verwijder account', 'verwijder betaling', 'wachtwoord resetten', 'weigeren', 'wissen'],
-  sv: ['avbryt', 'avregistrera', 'avsluta konto', 'avvisa', 'deaktivera', 'logga ut', 'neka', 'radera', 'radera betalning', 'radera konto', 'ta bort', 'ta bort kort', 'återställ lösenord'],
-  fi: ['hylkää', 'kirjaudu ulos', 'lopeta tilaus', 'peruuta', 'poista', 'poista kortti', 'poista maksu', 'poista tili', 'sulje tili', 'älä hyväksy'],
-  da: ['afmeld', 'afvis', 'annuller', 'deaktiver', 'fjern', 'fjern betaling', 'fjern kort', 'log ud', 'luk konto', 'nulstil adgangskode', 'slet', 'slet konto'],
-  no: ['avbryt', 'avmeld', 'avvis', 'deaktiver', 'fjern', 'fjern betaling', 'fjern kort', 'logg ut', 'lukk konto', 'nekt', 'slett', 'slett konto', 'tilbakestill passord'],
-  pl: ['anuluj', 'dezaktywuj', 'odrzuć', 'rezygnuj', 'usuń', 'usuń konto', 'usuń kartę', 'usuń płatność', 'wyloguj', 'zamknij konto', 'zresetuj hasło'],
-  cs: ['deaktivovat', 'odhlásit', 'odmítnout', 'odhlásit odběr', 'odstranit kartu', 'smazat', 'smazat platbu', 'smazat účet', 'zavřít účet', 'zrušit'],
-  tr: ['devre dışı bırak', 'iptal', 'kapat hesap', 'kartı kaldır', 'ödemeyi sil', 'reddet', 'sil', 'hesabı sil', 'şifre sıfırla', 'çıkış'],
-  ru: ['выйти', 'деактивировать', 'закрыть аккаунт', 'отказаться', 'отклонить', 'отменить', 'сбросить пароль', 'удалить', 'удалить аккаунт', 'удалить карту', 'удалить платеж'],
-  uk: ['видалити', 'видалити акаунт', 'видалити картку', 'видалити платіж', 'вийти', 'відхилити', 'деактивувати', 'закрити акаунт', 'скасувати', 'скинути пароль'],
-  ar: ['إلغاء', 'إلغاء الاشتراك', 'إعادة تعيين كلمة المرور', 'تسجيل الخروج', 'حذف', 'حذف الحساب', 'حذف الدفع', 'رفض', 'إزالة البطاقة', 'تعطيل', 'إغلاق الحساب'],
-  hi: ['रद्द करें', 'हटाएं', 'खाता बंद करें', 'खाता हटाएं', 'भुगतान हटाएं', 'लॉगआउट', 'साइन आउट', 'पासवर्ड रीसेट', 'निष्क्रिय करें', 'अस्वीकार करें', 'कार्ड हटाएं'],
-  ja: ['キャンセル', 'サインアウト', 'パスワードリセット', 'ログアウト', '削除', '拒否', '支払い削除', '無効化', '登録解除', '解約', 'アカウント削除', 'カード削除', 'アカウント閉鎖'],
-  ko: ['거부', '계정 삭제', '계정 폐쇄', '구독 취소', '로그아웃', '비밀번호 재설정', '비활성화', '삭제', '카드 삭제', '취소', '결제 삭제'],
-  zh: ['删除', '删除账户', '删除支付', '关闭账户', '取消', '取消订阅', '拒绝', '注销', '禁用', '移除卡片', '退出', '重置密码']
+  en: ['cancel', 'clear', 'close account', 'deactivate', 'delete', 'delete account', 'delete payment', 'deny', 'log out', 'logout', 'opt out', 'reject', 'remove', 'remove card', 'request new code', 'resend', 'resend code', 'reset password', 'send again', 'sign out', 'signout', 'unsubscribe'],
+  es: ['borrar', 'cancelar', 'cerrar cuenta', 'cerrar sesión', 'desactivar', 'deshacerse', 'eliminar', 'eliminar cuenta', 'eliminar pago', 'enviar de nuevo', 'negar', 'nuevo código', 'rechazar', 'reenviar', 'reenviar código', 'remover tarjeta', 'restablecer contraseña', 'salir'],
+  fr: ['annuler', 'déconnexion', 'désactiver', 'désabonner', 'effacer', 'envoyer à nouveau', 'fermer compte', 'nouveau code', 'refuser', 'rejeter', 'renvoyer', 'renvoyer le code', 'réinitialiser mot de passe', 'retirer carte', 'se déconnecter', 'supprimer', 'supprimer compte', 'supprimer paiement'],
+  de: ['abbrechen', 'ablehnen', 'abmelden', 'ausloggen', 'code erneut anfordern', 'code erneut senden', 'deaktivieren', 'entfernen', 'erneut senden', 'karte entfernen', 'konto löschen', 'konto schließen', 'löschen', 'neuen code', 'passwort zurücksetzen', 'verweigern', 'zahlung löschen', 'zurückweisen'],
+  it: ['annulla', 'chiudi account', 'disiscrivi', 'disattiva', 'disconnetti', 'elimina', 'elimina account', 'elimina pagamento', 'esci', 'invia di nuovo', 'nega', 'nuovo codice', 'reimposta password', 'reinvia', 'reinvia codice', 'rifiuta', 'rimuovi', 'rimuovi carta'],
+  pt: ['cancelar', 'desativar', 'desconectar', 'enviar novamente', 'excluir', 'excluir conta', 'excluir pagamento', 'fechar conta', 'negar', 'novo código', 'recusar', 'redefinir senha', 'reenviar', 'reenviar código', 'remover', 'remover cartão', 'sair'],
+  nl: ['afmelden', 'annuleren', 'code opnieuw verzenden', 'deactiveren', 'nieuwe code', 'opnieuw verzenden', 'opzeggen', 'uitloggen', 'verwijder', 'verwijder account', 'verwijder betaling', 'wachtwoord resetten', 'weigeren', 'wissen'],
+  sv: ['avbryt', 'avregistrera', 'avsluta konto', 'avvisa', 'deaktivera', 'logga ut', 'neka', 'ny kod', 'radera', 'radera betalning', 'radera konto', 'skicka igen', 'skicka kod igen', 'ta bort', 'ta bort kort', 'återställ lösenord'],
+  fi: ['hylkää', 'kirjaudu ulos', 'lopeta tilaus', 'lähetä uudelleen', 'peruuta', 'poista', 'poista kortti', 'poista maksu', 'poista tili', 'sulje tili', 'uusi koodi', 'älä hyväksy'],
+  da: ['afmeld', 'afvis', 'annuller', 'deaktiver', 'fjern', 'fjern betaling', 'fjern kort', 'log ud', 'luk konto', 'ny kode', 'nulstil adgangskode', 'send igen', 'slet', 'slet konto'],
+  no: ['avbryt', 'avmeld', 'avvis', 'deaktiver', 'fjern', 'fjern betaling', 'fjern kort', 'logg ut', 'lukk konto', 'nekt', 'ny kode', 'send på nytt', 'slett', 'slett konto', 'tilbakestill passord'],
+  pl: ['anuluj', 'dezaktywuj', 'nowy kod', 'odrzuć', 'rezygnuj', 'usuń', 'usuń konto', 'usuń kartę', 'usuń płatność', 'wyloguj', 'wyślij ponownie', 'zamknij konto', 'zresetuj hasło'],
+  cs: ['deaktivovat', 'nový kód', 'odeslat znovu', 'odhlásit', 'odmítnout', 'odhlásit odběr', 'odstranit kartu', 'smazat', 'smazat platbu', 'smazat účet', 'zavřít účet', 'zrušit'],
+  tr: ['devre dışı bırak', 'hesabı sil', 'iptal', 'kapat hesap', 'kartı kaldır', 'kodu tekrar gönder', 'reddet', 'sil', 'tekrar gönder', 'yeni kod', 'ödemeyi sil', 'şifre sıfırla', 'çıkış'],
+  ru: ['выйти', 'деактивировать', 'закрыть аккаунт', 'новый код', 'отказаться', 'отклонить', 'отменить', 'отправить код повторно', 'отправить повторно', 'сбросить пароль', 'удалить', 'удалить аккаунт', 'удалить карту', 'удалить платеж'],
+  uk: ['видалити', 'видалити акаунт', 'видалити картку', 'видалити платіж', 'вийти', 'відхилити', 'деактивувати', 'закрити акаунт', 'надіслати повторно', 'новий код', 'скасувати', 'скинути пароль'],
+  ar: ['إلغاء', 'إلغاء الاشتراك', 'إعادة الإرسال', 'إعادة تعيين كلمة المرور', 'أرسل مرة أخرى', 'تسجيل الخروج', 'حذف', 'حذف الحساب', 'حذف الدفع', 'رفض', 'رمز جديد', 'إزالة البطاقة', 'تعطيل', 'إغلاق الحساب'],
+  hi: ['अस्वीकार करें', 'कार्ड हटाएं', 'खाता बंद करें', 'खाता हटाएं', 'नया कोड', 'निष्क्रिय करें', 'पासवर्ड रीसेट', 'फिर से भेजें', 'भुगतान हटाएं', 'रद्द करें', 'लॉगआउट', 'साइन आउट', 'हटाएं'],
+  ja: ['キャンセル', 'コードを再送信', 'サインアウト', 'パスワードリセット', 'ログアウト', '再送信', '削除', '拒否', '支払い削除', '新しいコード', '無効化', '登録解除', '解約', 'アカウント削除', 'カード削除', 'アカウント閉鎖'],
+  ko: ['거부', '계정 삭제', '계정 폐쇄', '구독 취소', '다시 보내기', '로그아웃', '비밀번호 재설정', '비활성화', '삭제', '새 코드', '카드 삭제', '취소', '코드 재전송', '결제 삭제'],
+  zh: ['重新发送', '重发', '删除', '删除账户', '删除支付', '关闭账户', '取消', '取消订阅', '拒绝', '新验证码', '注销', '禁用', '移除卡片', '退出', '重置密码']
 })
 
 /**
@@ -66,14 +66,20 @@ export const DANGEROUS_BUTTON_PATTERNS_BY_LANG: Readonly<Record<string, Readonly
  */
 function buildCombinedPattern(patterns: typeof SUBMIT_BUTTON_PATTERNS_BY_LANG): RegExp {
   const allPatterns = Object.values(patterns).flat()
-  // Escape special regex characters and join with |
-  const escapedPatterns = allPatterns.map(p => p.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
+  const patternAlternatives = allPatterns.map((pattern) => {
+    const escaped = pattern.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 
-  // Use word boundaries for Latin scripts, but allow matching anywhere for non-Latin scripts
-  // Word boundaries (\b) only work with ASCII [a-zA-Z0-9_], not with Chinese, Arabic, Cyrillic, etc.
-  // Instead, we'll match the pattern anywhere in the string (case-insensitive)
-  // The 'u' flag enables proper Unicode matching for non-Latin scripts (Chinese, Arabic, Cyrillic, etc.)
-  return new RegExp(`(${escapedPatterns.join('|')})`, 'ui')
+    // Require Unicode letter/number boundaries for spaced-word scripts so
+    // "send" does not match "resend". Compact CJK/Korean/Japanese labels
+    // still match inside common button text such as "ログインする".
+    if (/[\u3040-\u30ff\u3400-\u9fff\uac00-\ud7af]/u.test(pattern)) {
+      return escaped
+    }
+
+    return `(?<![\\p{L}\\p{M}\\p{N}])${escaped}(?![\\p{L}\\p{M}\\p{N}])`
+  })
+
+  return new RegExp(`(${patternAlternatives.join('|')})`, 'ui')
 }
 
 /**

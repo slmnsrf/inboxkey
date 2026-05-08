@@ -9,7 +9,9 @@
  * Supported patterns:
  * - maxlength-1: Multiple inputs with maxlength="1" (or 2-3) in same container
  * - sequential-name: Inputs with sequential names (code_1, code_2, ...)
- * - adjacent-siblings: Multiple inputs of same type adjacent in DOM
+ * - adjacent-siblings: Multiple inputs of same type adjacent in DOM,
+ *   including maxLength-absent AntD cells when pattern/inputmode show
+ *   repeated one-character numeric cells inside an OTP container
  * - asymmetric-leader: One paste-receiver leader (maxLength = group size,
  *   in [4, 8]) plus single-digit cells. Hand-rolled split-OTP widget
  *   pattern (e.g., IKEA Turkey: name=num1 maxLength=6 + 5 cells named
@@ -73,6 +75,36 @@ function isHardHidden(input: HTMLInputElement): boolean {
 }
 
 const OTP_EVIDENCE_PATTERN = /\b(?:otp|one[-\s_]?time|verification|verify|security|auth(?:entication)?|mfa|2fa|twofa|code|pin|sms)\b|codeentry/i
+
+function hasOneCharacterPattern(input: HTMLInputElement): boolean {
+  const rawPattern = input.getAttribute('pattern')
+  if (!rawPattern) return false
+
+  const normalized = rawPattern
+    .trim()
+    .replace(/^\^/, '')
+    .replace(/\$$/, '')
+    .replace(/\s+/g, '')
+
+  return (
+    normalized === '\\d' ||
+    normalized === '\\d{1}' ||
+    normalized === '[0-9]' ||
+    normalized === '[0-9]{1}' ||
+    normalized === '\\d{0,1}' ||
+    normalized === '[0-9]{0,1}'
+  )
+}
+
+function hasNumericCellCue(input: HTMLInputElement): boolean {
+  const inputMode = input.getAttribute('inputmode')?.toLowerCase()
+  return hasOneCharacterPattern(input) && (
+    inputMode === null ||
+    inputMode === 'numeric' ||
+    inputMode === 'decimal' ||
+    inputMode === 'tel'
+  )
+}
 
 /**
  * Detect if field is part of a split-input group
@@ -158,15 +190,15 @@ export function detectSplitInputGroup(
 
 /**
  * Get all similar sibling inputs within same container
- * Scans parent, grandparent, and great-grandparent (up to 3 levels)
- * Handles deep nesting like Microsoft's structure (input → span → div → div)
+ * Scans ancestor containers until it finds the nearest coherent group.
+ * Handles deep nesting like AntD/React structures
+ * (input → span → label → div → div → OTP container) without pulling
+ * unrelated page fields into the candidate set.
  *
  * @param field - Reference input field
  * @returns Array of similar inputs including the reference field
  */
 function getSimilarSiblings(field: HTMLInputElement): HTMLInputElement[] {
-  const candidates: HTMLInputElement[] = []
-
   const fieldMax = field.maxLength
   const matchesField = (input: Element): input is HTMLInputElement => {
     if (!(input instanceof HTMLInputElement)) return false
@@ -198,49 +230,36 @@ function getSimilarSiblings(field: HTMLInputElement): HTMLInputElement[] {
     return true
   }
 
-  // Check parent container
-  const parent = field.parentElement
-  if (parent) {
-    const parentInputs = Array.from(parent.querySelectorAll('input'))
-      .filter(matchesField)
-    candidates.push(...parentInputs)
-  }
+  let container = field.parentElement
+  let depth = 0
+  let fallback: HTMLInputElement[] = []
 
-  // If parent has few inputs, check grandparent
-  if (candidates.length < 4) {
-    const grandparent = parent?.parentElement
-    if (grandparent) {
-      const grandparentInputs = Array.from(grandparent.querySelectorAll('input'))
-        .filter(matchesField)
-      candidates.push(...grandparentInputs)
+  while (container && depth < 8) {
+    const unique = Array.from(new Set(
+      Array.from(container.querySelectorAll('input')).filter(matchesField)
+    ))
+
+    if (unique.length >= 4) {
+      // Performance guard: the relaxed predicate could match wide forms
+      // with many small inputs. If the candidate set is large, require
+      // strong OTP evidence to proceed.
+      if (unique.length <= 12 || hasOtpContainerEvidence(unique)) {
+        if (isCoherentGroup(unique)) {
+          return unique
+        }
+        fallback = unique
+      }
     }
+
+    const tag = container.tagName
+    if (tag === 'FORM' || tag === 'DIALOG' || tag === 'MAIN') break
+    if (container.getAttribute('role') === 'dialog') break
+
+    container = container.parentElement
+    depth += 1
   }
 
-  // If still not enough, check great-grandparent (3 levels up)
-  // Handles Microsoft structure: input → span → div → div[data-testid="codeEntry"]
-  if (candidates.length < 4) {
-    const greatGrandparent = parent?.parentElement?.parentElement
-    if (greatGrandparent) {
-      const greatGrandparentInputs = Array.from(greatGrandparent.querySelectorAll('input'))
-        .filter(matchesField)
-      candidates.push(...greatGrandparentInputs)
-    }
-  }
-
-  // Deduplicate (same input might appear in multiple parent results)
-  const unique = Array.from(new Set(candidates))
-
-  // Performance guard: the relaxed predicate (which now accepts
-  // leader+cells asymmetric pairs) could match wide forms with many
-  // small inputs. If the candidate set is large, require strong OTP
-  // container evidence to proceed. Real OTP groups top out at 8; 12
-  // leaves headroom for shadow-DOM duplicates without admitting wide
-  // forms.
-  if (unique.length > 12 && !hasOtpContainerEvidence(unique)) {
-    return []
-  }
-
-  return unique
+  return fallback
 }
 
 /**
@@ -272,12 +291,12 @@ function isCoherentGroup(inputs: HTMLInputElement[]): boolean {
  * Common coherence checks that every shape must satisfy:
  *  - All inputs share the same type
  *  - No inputs are disabled or readonly
- *  - Inputs share a common ancestor within 3 DOM levels
+ *  - Inputs share a common ancestor within 8 DOM levels
  *
- * Walking 3 ancestor levels accepts the common React OTP pattern of
- * wrapping each digit cell in its own <div class="digit-wrapper">
- * (6 inputs -> 6 parents -> would otherwise be rejected) while still
- * rejecting inputs scattered across unrelated form sections.
+ * Wrapper-heavy component libraries can put each real input under
+ * span/label/affix/div stacks. The candidate collector returns the
+ * nearest coherent container first, so the wider ancestor check does
+ * not mean "scan the whole page".
  */
 function validateCommonCoherence(inputs: HTMLInputElement[]): boolean {
   const types = new Set(inputs.map(input => input.type))
@@ -286,7 +305,7 @@ function validateCommonCoherence(inputs: HTMLInputElement[]): boolean {
   const hasDisabled = inputs.some(input => input.disabled || input.readOnly)
   if (hasDisabled) return false
 
-  if (!hasCommonAncestorWithin(inputs, 3)) return false
+  if (!hasCommonAncestorWithin(inputs, 8)) return false
 
   return true
 }
@@ -308,7 +327,8 @@ function matchesShapeA(inputs: HTMLInputElement[]): boolean {
  * where each cell has its own wrapper. Generic flat form fields
  * (street/city/state/zipcode/country all as direct <form> children)
  * must not pass because they also show maxLength === -1 in happy-dom
- * but clearly aren't an OTP.
+ * but clearly aren't an OTP. AntD/React OTP widgets with no maxLength
+ * are accepted when every cell declares a one-character numeric pattern.
  */
 function matchesShapeB(inputs: HTMLInputElement[]): boolean {
   const maxLengths = new Set(inputs.map(input => input.maxLength))
@@ -324,6 +344,14 @@ function matchesShapeB(inputs: HTMLInputElement[]): boolean {
   // And require OTP-ish structure: sequential identifiers or strong
   // container evidence.
   if (!hasSequentialIdentifiers(inputs) && !hasOtpContainerEvidence(inputs)) {
+    return false
+  }
+
+  // If the fields have no sequential identifiers, require per-cell
+  // numeric one-character pattern evidence. This admits AntD cells like
+  // pattern="\\d{1}" while rejecting generic wrapped form fields that
+  // happen to sit under OTP-ish marketing text.
+  if (!hasSequentialIdentifiers(inputs) && !inputs.every(hasNumericCellCue)) {
     return false
   }
 

@@ -15,7 +15,7 @@ import { DebugPanel } from '@/ui/components/DebugPanel'
 
 export function AdvancedSettings() {
   const { showToast } = useToast()
-  const [extendedButtonDetection, setExtendedButtonDetection] = useState<boolean>(false)
+  const [extendedButtonDetection, setExtendedButtonDetection] = useState<boolean>(true)
   const [automationLevel, setAutomationLevel] = useState<AutomationLevel>('autofill')
   const [disableOnBankingSites, setDisableOnBankingSites] = useState<boolean>(true)
   const [loading, setLoading] = useState<boolean>(true)
@@ -48,7 +48,7 @@ export function AdvancedSettings() {
       setLoading(true)
       const storage = await StorageFactory.create()
       const settings = await storage.getSettings()
-      setExtendedButtonDetection(settings.extendedButtonDetection ?? false)
+      setExtendedButtonDetection(settings.extendedButtonDetection ?? true)
       setAutomationLevel(settings.automationLevel || 'autofill')
       setDisableOnBankingSites(settings.disableOnBankingSites ?? false)
     } catch (error) {
@@ -175,10 +175,9 @@ export function AdvancedSettings() {
             <>
               <div className="setting-divider" />
 
-              <div className="setting-row setting-row--beta">
+              <div className="setting-row">
                 <div className="setting-row__info">
                   <label htmlFor="extended-button-detection" className="setting-row__label">
-                    <span className="beta-badge">BETA</span>
                     {t('settings_advanced_extended_detection')}
                   </label>
                   <p className="setting-row__description">

@@ -27,6 +27,11 @@ import {
   isShadowedByVisibleSplitGroup,
   resetCooldownRegistry,
 } from '../field-detector'
+import {
+  _resetSmsCacheForTest,
+  hydrateSmsCache,
+  smsFeatureEnabledCache,
+} from '../sms-feature-cache'
 import type { DetectionResult } from '../../types'
 
 // ─── helpers ──────────────────────────────────────────────────────
@@ -94,14 +99,147 @@ function buildVisibleSplitGroup(parent: HTMLElement): HTMLInputElement[] {
   return inputs
 }
 
+async function enableGoogleMessagesPairing(): Promise<void> {
+  const now = Date.now()
+  await chrome.storage.local.set({
+    mailboxes_plain: [
+      {
+        id: '11111111-1111-4111-8111-111111111111',
+        providerId: 'google-messages',
+        email: 'sms@example.com',
+        gmPhoneNumber: '+905551234567',
+        addedAt: now,
+        lastSyncedAt: now,
+      },
+    ],
+  })
+  await hydrateSmsCache()
+}
+
+function buildIkeaPostGateSmsDom(): {
+  shadow: HTMLInputElement
+  cells: HTMLInputElement[]
+} {
+  const form = document.createElement('div')
+  form.className = 'form'
+  document.body.appendChild(form)
+
+  const commercialChrome = document.createElement('div')
+  commercialChrome.textContent = 'Sepet Alışveriş Kampanya Ödeme'
+  form.appendChild(commercialChrome)
+
+  const hiddenModal = document.createElement('div')
+  hiddenModal.className = 'progress-modal hide'
+  hiddenModal.setAttribute('style', 'display: none')
+  form.appendChild(hiddenModal)
+
+  const shadow = document.createElement('input')
+  shadow.id = 'otp-input'
+  shadow.type = 'text'
+  shadow.className = 'form-control required smstext'
+  shadow.maxLength = 6
+  shadow.setAttribute('placeholder', 'Kodu Giriniz')
+  hiddenModal.appendChild(shadow)
+  stubRect(shadow, 0, 0)
+
+  const phoneLabel = document.createElement('label')
+  phoneLabel.textContent = 'Cep Telefonu'
+  form.appendChild(phoneLabel)
+
+  const phoneInput = document.createElement('input')
+  phoneInput.name = 'form-phone'
+  phoneInput.setAttribute('inputmode', 'tel')
+  phoneInput.disabled = true
+  form.appendChild(phoneInput)
+  stubRect(phoneInput, 180, 40)
+
+  const otpBlock = document.createElement('div')
+  otpBlock.className = 'form__item form__item--sms'
+  form.appendChild(otpBlock)
+
+  const caption = document.createElement('div')
+  caption.textContent = 'Doğrulama Kodu'
+  otpBlock.appendChild(caption)
+
+  const cellsBox = document.createElement('div')
+  cellsBox.className = 'form__item-sms-box'
+  otpBlock.appendChild(cellsBox)
+
+  const cells: HTMLInputElement[] = []
+  for (let i = 1; i <= 6; i++) {
+    const c = document.createElement('input')
+    c.type = 'text'
+    c.name = `num${i}`
+    c.className = 'form__input form__input--sms'
+    c.maxLength = i === 1 ? 6 : 1
+    c.setAttribute('inputmode', 'numeric')
+    c.setAttribute('autocomplete', 'off')
+    c.setAttribute('aria-label', `otp code ${i}`)
+    cellsBox.appendChild(c)
+    stubRect(c, 48, 48)
+    cells.push(c)
+  }
+
+  return { shadow, cells }
+}
+
+function buildTurkNetSmsSplitDom(): HTMLInputElement[] {
+  const modal = document.createElement('div')
+  modal.setAttribute('role', 'dialog')
+  modal.setAttribute('aria-label', 'Modal')
+  document.body.appendChild(modal)
+
+  const group = document.createElement('div')
+  group.setAttribute('role', 'group')
+  group.setAttribute('aria-label', 'Telefon doğrulama kodu')
+  group.className = 'index-styles__OtpInputContainer-sc-505cfed0-1'
+  modal.appendChild(group)
+
+  const inputs: HTMLInputElement[] = []
+  for (let i = 1; i <= 6; i++) {
+    const input = document.createElement('input')
+    input.type = 'text'
+    input.setAttribute('data-test-id', 'otp-root-input-code')
+    input.setAttribute('inputmode', 'numeric')
+    input.setAttribute('pattern', '[0-9]*')
+    input.maxLength = 1
+    input.setAttribute('aria-label', `OTP ${i}. hane`)
+    input.setAttribute('autocomplete', 'one-time-code')
+    group.appendChild(input)
+    stubRect(input, 48, 56)
+    inputs.push(input)
+  }
+
+  return inputs
+}
+
+function forceDocumentFocus(): () => void {
+  const originalHasFocus = document.hasFocus.bind(document)
+  Object.defineProperty(document, 'hasFocus', {
+    configurable: true,
+    value: () => true,
+  })
+
+  return () => {
+    Object.defineProperty(document, 'hasFocus', {
+      configurable: true,
+      value: originalHasFocus,
+    })
+  }
+}
+
 describe('field-detector — shadow-input vs visible split-group filter', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
+    await chrome.storage.local.clear()
+    _resetSmsCacheForTest()
     document.body.innerHTML = ''
     resetCooldownRegistry()
   })
 
-  afterEach(() => {
+  afterEach(async () => {
     document.body.innerHTML = ''
+    await chrome.storage.local.clear()
+    _resetSmsCacheForTest()
     resetCooldownRegistry()
   })
 
@@ -335,6 +473,61 @@ describe('field-detector — shadow-input vs visible split-group filter', () => 
     // zero-rect shadow slips through and Tier 1 fires on the
     // id="otp-input" contains-match.
     expect(detected).not.toContain(shadow)
+  })
+
+  it('D.10 detects visible IKEA-style SMS split group despite storefront context', async () => {
+    await enableGoogleMessagesPairing()
+    expect(smsFeatureEnabledCache).toBe(true)
+
+    const { shadow, cells } = buildIkeaPostGateSmsDom()
+
+    const detector = new FieldDetector()
+    const results = detector.detectExisting({ strictVisibility: true })
+    const leader = results.find(r => r.field === cells[0])
+
+    expect(results.some(r => r.field === shadow)).toBe(false)
+    expect(leader).toBeDefined()
+    expect(leader?.detectedChannels).toContain('sms')
+    expect(leader?.channelEvidence).toBe('positive')
+  })
+
+  it('D.11 mutation path detects newly inserted IKEA-style SMS split group', async () => {
+    await enableGoogleMessagesPairing()
+    expect(smsFeatureEnabledCache).toBe(true)
+
+    const restoreFocus = forceDocumentFocus()
+    const detector = new FieldDetector()
+    const detected: DetectionResult[] = []
+
+    detector.startObserving((_field: HTMLInputElement, result: DetectionResult) => {
+      detected.push(result)
+    })
+
+    const { cells } = buildIkeaPostGateSmsDom()
+
+    await new Promise(r => setTimeout(r, 200))
+    detector.stopObserving()
+    restoreFocus()
+
+    const leader = detected.find(r => r.field === cells[0])
+    expect(leader).toBeDefined()
+    expect(leader?.detectedChannels).toContain('sms')
+    expect(leader?.channelEvidence).toBe('positive')
+  })
+
+  it('D.12 detects Turknet-style SMS split group from accessible group label', async () => {
+    await enableGoogleMessagesPairing()
+    expect(smsFeatureEnabledCache).toBe(true)
+
+    const cells = buildTurkNetSmsSplitDom()
+
+    const detector = new FieldDetector()
+    const results = detector.detectExisting({ strictVisibility: true })
+    const leader = results.find(r => r.field === cells[0])
+
+    expect(leader).toBeDefined()
+    expect(leader?.detectedChannels).toContain('sms')
+    expect(leader?.channelEvidence).toBe('positive')
   })
 
   // ── D.6 (live MutationObserver path) ──

@@ -801,11 +801,11 @@
     "description": "Advanced setting: extended button detection description"
   },
   "settings_advanced_extended_detection_warning": {
-    "message": "Heads up: On rare occasions, a wrong element might be detected as a button. Only needed if submit buttons are being missed on some sites.",
+    "message": "Heads up: On unusual pages, a wrong element might still be detected as a button. Turn this off if a site misbehaves.",
     "description": "Advanced setting: extended button detection warning"
   },
   "settings_advanced_extended_detection_hint": {
-    "message": "This feature is in beta. Monitor its behavior and disable if issues occur.",
+    "message": "Enabled by default for full automation. Detection requires a nearby verification-style button label.",
     "description": "Advanced setting: extended button detection hint"
   },
   "settings_advanced_extended_detection_details_summary": {

@@ -11,6 +11,7 @@
 
 export const config = {
   matches: ["https://*/*"],
+  run_at: "document_end",
 }
 
 import { FieldDetector } from '@/lib/detection/field-detector'
@@ -20,7 +21,7 @@ import {
   isFieldWatched,
   stopActiveWatch,
 } from './watch-session'
-import { autofillCode } from './autofill'
+import { autofillCode, clearAutofillTracking } from './autofill'
 import type { DetectionResult } from '@/lib/types'
 import { isExtensionEnabled } from '@/lib/utils/domain'
 import { isHTMLDocument } from '@/lib/utils/is-html-document'
@@ -130,6 +131,32 @@ export function clearProcessedFields(): void {
   }
 
   /**
+   * Skip re-triggering on fields InboxKey just filled. Autofill dispatches
+   * framework events and some sites mutate OTP input classes in response; those
+   * mutations must not start a fresh listening session over the completed one.
+   * If the page/user has cleared the value, remove the marker so resend/retry
+   * flows can be detected normally.
+   */
+  function hasActiveInboxKeyFill(field: HTMLInputElement): boolean {
+    const group = detectSplitInputGroup(field)
+    const inputs = group?.inputs ?? [field]
+    const tracked = inputs.filter(input => input.getAttribute('data-inboxkey-filled') === 'true')
+
+    if (tracked.length === 0) {
+      return false
+    }
+
+    if (tracked.some(input => input.value.trim().length > 0)) {
+      return true
+    }
+
+    for (const input of tracked) {
+      clearAutofillTracking(input)
+    }
+    return false
+  }
+
+  /**
    * Register a focus gate on a detected field.
    * The field must receive focus before a watch session starts.
    * Bypassed when shouldBypassFocusGate() returns true.
@@ -182,6 +209,10 @@ export function clearProcessedFields(): void {
     const group = detectSplitInputGroup(field)
     const representativeField = group?.representative || field
 
+    if (hasActiveInboxKeyFill(representativeField)) {
+      return
+    }
+
     // Check if already watching this field (or its group representative)
     if (isFieldWatched(representativeField)) {
       return
@@ -222,11 +253,11 @@ export function clearProcessedFields(): void {
           representativeField.setAttribute('data-inboxkey-watching', 'true')
         },
         onCodeFound: (_result) => {
-          // Code found (any path: autofill, clipboard, fallback).
-          // Clean up focus gate so the field can be re-detected on
-          // SPA resend/retry flows. This fires before autofill attempt,
-          // covering all completion paths including clipboard-only mode
-          // and autofill failure fallback.
+          // Code found; cleanup waits until WatchSession finishes autofill,
+          // clipboard fallback, and auto-submit handling. Cleaning here would
+          // release detector guards before autofill's input/change events settle.
+        },
+        onCodeHandled: () => {
           cleanupFocusGate()
         },
         onAutofill: async (result, targetField) => {
@@ -279,6 +310,10 @@ export function clearProcessedFields(): void {
     const best = results[0]
     const group = detectSplitInputGroup(best.field)
     const representative = group?.representative || best.field
+    if (hasActiveInboxKeyFill(representative)) {
+      return
+    }
+
     if (shouldBypassFocusGate(representative, best)) {
       handleDetectedField(representative, best)
     } else {
@@ -337,6 +372,11 @@ export function clearProcessedFields(): void {
           // Detect if this field is part of a split-input group
           const group = detectSplitInputGroup(f)
           const representative = group?.representative || f
+
+          if (hasActiveInboxKeyFill(representative)) {
+            globalProcessedRepresentatives?.add(representative)
+            continue
+          }
 
           // Skip if we've already processed this representative (GLOBAL check across all batches)
           if (globalProcessedRepresentatives?.has(representative)) {

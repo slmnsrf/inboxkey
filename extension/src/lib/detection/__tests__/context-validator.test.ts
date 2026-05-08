@@ -34,6 +34,55 @@ describe('context-validator', () => {
     pageTitle,
   })
 
+  describe('CAPTCHA / image-character context', () => {
+    it('should reject CAPTCHA context before verification-code allow-list wording', () => {
+      const result = validateContext(createSources('CAPTCHA verification code'))
+
+      expect(result.pass).toBe(false)
+      expect(result.matchedNegatives).toContain('captcha-context-detected')
+      expect(result.confidence).toBe(0)
+    })
+
+    it.each([
+      ['en', 'Enter the characters in the image'],
+      ['es', 'Ingrese los caracteres de la imagen'],
+      ['pt', 'Digite os caracteres da imagem'],
+      ['de', 'Geben Sie die Zeichen im Bild ein'],
+      ['fr', 'Saisissez les caracteres de l image'],
+      ['it', 'Inserisci i caratteri dell immagine'],
+      ['nl', 'Voer de tekens van de afbeelding in'],
+      ['tr', 'Resimdeki karakterleri giriniz'],
+      ['pl', 'Wpisz znaki z obrazku'],
+      ['cs', 'Zadejte znaky z obrazku'],
+      ['sv', 'Ange tecken fran bilden'],
+      ['fi', 'Kirjoita kuvassa nakyvat merkit'],
+      ['da', 'Indtast tegnene fra billedet'],
+      ['no', 'Skriv inn tegnene fra bildet'],
+      ['ru', 'Введите символы с картинки'],
+      ['uk', 'Введіть символи із зображення'],
+      ['ar', 'أحرف الصورة'],
+      ['hi', 'चित्र के अक्षर दर्ज करें'],
+      ['ja', '画像の文字を入力してください'],
+      ['ko', '이미지의 문자를 입력하세요'],
+      ['zh', '请输入图片中的验证码'],
+    ])('should reject direct image-character prompts for %s', (_lang, placeholder) => {
+      const result = validateContext(createSources('', placeholder))
+
+      expect(result.pass).toBe(false)
+      expect(result.matchedNegatives).toContain('captcha-context-detected')
+      expect(result.confidence).toBe(0)
+    })
+
+    it('should not reject a real OTP label because of ambient CAPTCHA page chrome', () => {
+      const result = validateContext(
+        createSources('Verification code', '', 'This site is protected by CAPTCHA')
+      )
+
+      expect(result.pass).toBe(true)
+      expect(result.confidence).toBe(1.0)
+    })
+  })
+
   describe('Allow-list patterns (highest priority)', () => {
     it('should PASS for "password code" (password reset code)', () => {
       const result = validateContext(createSources('Enter password code'))
@@ -107,6 +156,61 @@ describe('context-validator', () => {
       expect(result.pass).toBe(true)
       expect(result.confidence).toBe(1.0)
     })
+
+    it('should PASS direct OTP code labels even with storefront chrome nearby', () => {
+      const result = validateContext(
+        createSources(
+          '',
+          '',
+          'Sepet alışveriş kampanya ödeme',
+          'otp code 1',
+          'Üye Girişi'
+        )
+      )
+
+      expect(result.pass).toBe(true)
+      expect(result.confidence).toBe(1.0)
+    })
+
+    it.each([
+      ['en', 'verification code', 'cart checkout order'],
+      ['zh', '验证码', '购物车 订单 优惠券'],
+      ['es', 'código de verificación', 'carrito compras pedido'],
+      ['pt', 'código de verificação', 'carrinho compras pedido'],
+      ['ja', '確認コード', 'ショッピング 購入 注文'],
+      ['ru', 'код подтверждения', 'корзина покупка заказ'],
+      ['de', 'Verifizierungscode', 'Warenkorb einkaufen Bestellung'],
+      ['fr', 'code de vérification', 'panier achats commande'],
+      ['ar', 'رمز التحقق', 'سلة تسوق طلب'],
+      ['tr', 'doğrulama kodu', 'sepet alışveriş sipariş'],
+      ['ko', '인증 코드', '장바구니 쇼핑 주문'],
+      ['it', 'codice di verifica', 'carrello acquisti ordine'],
+      ['nl', 'verificatiecode', 'winkelwagen winkelen bestelling'],
+      ['pl', 'kod weryfikacyjny', 'koszyk zakupy zamówienie'],
+      ['hi', 'सत्यापन कोड', 'कार्ट खरीदारी आदेश'],
+      ['sv', 'verifieringskod', 'varukorg shopping beställning'],
+      ['fi', 'vahvistuskoodi', 'ostoskori ostokset tilaus'],
+      ['da', 'bekræftelseskode', 'kurv shopping bestilling'],
+      ['no', 'bekreftelseskode', 'handlekurv shopping bestilling'],
+      ['cs', 'ověřovací kód', 'košík nákupy objednávka'],
+      ['uk', 'код підтвердження', 'кошик покупки замовлення'],
+    ])(
+      'should PASS direct verification-code labels for %s even with commercial page text nearby',
+      (_lang, label, nearby) => {
+        const result = validateContext(
+          createSources(
+            '',
+            '',
+            nearby,
+            label,
+            'Member page'
+          )
+        )
+
+        expect(result.pass).toBe(true)
+        expect(result.confidence).toBe(1.0)
+      }
+    )
   })
 
   describe('English (en) - Negative keywords', () => {

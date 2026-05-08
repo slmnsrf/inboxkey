@@ -10,15 +10,19 @@
  * @param input - Input field to resolve aria-describedby from
  * @returns Combined text from all referenced elements
  */
-export function getAriaDescribedbyText(input: HTMLInputElement): string {
-  const describedby = input.getAttribute('aria-describedby')
-  if (!describedby) return ''
+function getIdReferenceText(element: Element, attribute: string): string {
+  const refs = element.getAttribute(attribute)
+  if (!refs) return ''
 
-  return describedby
+  return refs
     .split(/\s+/)
-    .map(id => input.ownerDocument?.getElementById(id)?.textContent?.trim() || '')
+    .map(id => element.ownerDocument?.getElementById(id)?.textContent?.trim() || '')
     .filter(Boolean)
     .join(' ')
+}
+
+export function getAriaDescribedbyText(input: HTMLInputElement): string {
+  return getIdReferenceText(input, 'aria-describedby')
 }
 
 /**
@@ -26,14 +30,7 @@ export function getAriaDescribedbyText(input: HTMLInputElement): string {
  * Handles space-separated IDs per the ARIA spec.
  */
 export function getAriaLabelledbyText(input: HTMLInputElement): string {
-  const labelledby = input.getAttribute('aria-labelledby')
-  if (!labelledby) return ''
-
-  return labelledby
-    .split(/\s+/)
-    .map(id => input.ownerDocument?.getElementById(id)?.textContent?.trim() || '')
-    .filter(Boolean)
-    .join(' ')
+  return getIdReferenceText(input, 'aria-labelledby')
 }
 
 function escapeCssString(value: string): string {
@@ -85,4 +82,85 @@ export function getMatchingAutocompleteToken(
 ): string | null {
   const allowed = new Set(allowedValues)
   return getAutocompleteTokens(input).find(token => allowed.has(token)) || null
+}
+
+const ACCESSIBLE_CONTEXT_ROLES = new Set([
+  'group',
+  'radiogroup',
+  'dialog',
+  'alertdialog',
+])
+
+const ACCESSIBLE_CONTEXT_TAGS = new Set([
+  'FIELDSET',
+  'DIALOG',
+])
+
+function getDirectLegendText(element: HTMLElement): string {
+  if (element.tagName !== 'FIELDSET') return ''
+
+  for (const child of Array.from(element.children)) {
+    if (child.tagName === 'LEGEND') {
+      return child.textContent?.trim() || ''
+    }
+  }
+
+  return ''
+}
+
+function pushUniqueText(parts: string[], value: string | null | undefined): void {
+  const text = value?.trim()
+  if (!text) return
+  if (parts.includes(text)) return
+  parts.push(text)
+}
+
+/**
+ * Read the accessible name/description from nearby semantic wrappers.
+ *
+ * OTP widgets often put the meaningful delivery context on a group or
+ * modal, while each individual cell only says "OTP digit 1". This helper
+ * inherits compact accessible context from ancestors such as:
+ * - role="group" aria-label="Phone verification code"
+ * - fieldset > legend
+ * - role="dialog" aria-labelledby / aria-describedby
+ *
+ * It deliberately reads accessible names/descriptions only, not arbitrary
+ * ancestor textContent, so split-input structure remains separate from
+ * delivery-channel evidence.
+ */
+export function getAccessibleAncestorContextText(input: HTMLInputElement): string {
+  const parts: string[] = []
+  let node: HTMLElement | null = input.parentElement
+  let depth = 0
+
+  while (node && node !== document.body && depth < 8) {
+    const role = node.getAttribute('role')?.toLowerCase() || ''
+    const isAccessibleContext =
+      ACCESSIBLE_CONTEXT_ROLES.has(role) ||
+      ACCESSIBLE_CONTEXT_TAGS.has(node.tagName) ||
+      node.getAttribute('aria-modal') === 'true'
+
+    if (isAccessibleContext) {
+      pushUniqueText(parts, node.getAttribute('aria-label'))
+      pushUniqueText(parts, getIdReferenceText(node, 'aria-labelledby'))
+      pushUniqueText(parts, getIdReferenceText(node, 'aria-describedby'))
+      pushUniqueText(parts, getDirectLegendText(node))
+    }
+
+    if (
+      role === 'dialog' ||
+      role === 'alertdialog' ||
+      node.tagName === 'DIALOG' ||
+      node.tagName === 'FORM' ||
+      node.getAttribute('aria-modal') === 'true'
+    ) {
+      break
+    }
+
+    node = node.parentElement
+    depth += 1
+  }
+
+  return parts.join(' ')
 }

@@ -351,52 +351,72 @@ const SMS_PATTERNS = [
   /\bphone\s*number\b/i,
   /code.*(?:via|from|in).*(?:sms|text|mobile)/i,
   /check.*(?:sms|text\s*message|mobile)/i,
+  /(?:sms|text|phone|mobile).{0,40}verification/i,
+  /(?:enter|input|type).{0,40}code.{0,80}(?:sent|delivered).{0,80}(?:phone|mobile|text|sms)/i,
 
   // Spanish
   /\b(?:sms|mensaje\s*de\s*texto|tel[eé]fono\s*m[oó]vil|celular)\b/i,
   /enviado.*(?:sms|tel[eé]fono|celular)/i,
   /c[oó]digo.*(?:por|en).*(?:sms|tel[eé]fono)/i,
+  /verificaci[oó]n.{0,40}(?:sms|tel[eé]fono|celular)/i,
+  /(?:ingres|introdu|escrib).{0,40}c[oó]digo.{0,80}enviado.{0,80}(?:tel[eé]fono|celular|sms)/i,
 
   // Portuguese
   /\b(?:sms|mensagem\s*de\s*texto|celular|telefone)\b/i,
   /enviado.*(?:sms|telefone|celular)/i,
   /c[oó]digo.*(?:por|no).*(?:sms|telefone)/i,
+  /verifica[çc][aã]o.{0,40}(?:sms|telefone|celular)/i,
+  /(?:digite|insira).{0,40}c[oó]digo.{0,80}enviado.{0,80}(?:telefone|celular|sms)/i,
 
   // German
   /\b(?:sms|textnachricht|handy|mobiltelefon)\b/i,
   /gesendet.*(?:sms|handy|telefon)/i,
   /code.*(?:per|via).*(?:sms|handy)/i,
+  /(?:sms|telefon|handy|mobiltelefon).{0,40}(?:best[aä]tigung|verifizierung)/i,
+  /(?:geben|gib).{0,40}code.{0,80}gesendet.{0,80}(?:telefon|handy|mobiltelefon|sms)/i,
 
   // French
   /\b(?:sms|message\s*texte|t[eé]l[eé]phone\s*mobile|portable)\b/i,
   /envoy[eé].*(?:sms|portable|t[eé]l[eé]phone)/i,
   /code.*(?:par|via).*(?:sms|portable)/i,
+  /v[eé]rification.{0,40}(?:sms|t[eé]l[eé]phone|portable)/i,
+  /(?:entrez|saisissez).{0,40}code.{0,80}envoy[eé].{0,80}(?:t[eé]l[eé]phone|portable|sms)/i,
 
   // Italian
   /\b(?:sms|messaggio\s*di\s*testo|cellulare|telefono)\b/i,
   /inviato.*(?:sms|cellulare|telefono)/i,
   /codice.*(?:via|su).*(?:sms|cellulare)/i,
+  /verifica.{0,40}(?:sms|cellulare|telefono)/i,
+  /(?:inserisci|immetti).{0,40}codice.{0,80}inviato.{0,80}(?:cellulare|telefono|sms)/i,
 
   // Dutch
   /\b(?:sms|tekstbericht|mobiel|telefoon)\b/i,
   /verstuurd.*(?:sms|mobiel|telefoon)/i,
   /code.*(?:via|per).*(?:sms|mobiel)/i,
+  /verificatie.{0,40}(?:sms|mobiel|telefoon)/i,
+  /(?:voer|vul).{0,40}code.{0,80}verstuurd.{0,80}(?:telefoon|mobiel|sms)/i,
 
   // Turkish (telefon = phone, kısa mesaj = SMS, mesaj = message)
-  /\b(?:k[ıi]sa\s*mesaj|sms|telefon(?:un(?:uz)?(?:a|dan)?)?)\b/i,
-  /(?:cep\s*)?telefon(?:un(?:uz)?)?(?:a|dan)/i,
-  /kod.*(?:telefon|mesaj|sms)/i,
-  /(?:telefon|mesaj|sms).*(?:kod|kodu)/i,
+  /\b(?:k[ıi]sa\s*mesaj|sms|telefon(?:unuz|unuza|un(?:uz)?(?:a|dan)?|u)?|telefon\s*numaras[ıi](?:na|n[ıi])?|numaras[ıi](?:na|n[ıi])?)\b/i,
+  /(?:cep\s*)?telefon(?:unuz|unuza|un(?:uz)?(?:a|dan)?|u)?/i,
+  /kod.*(?:telefon|numara|mesaj|sms)/i,
+  /(?:telefon|numara|mesaj|sms).*(?:kod|kodu|doğrulama)/i,
+  /(?:gönder(?:il(?:en|di)|ildi)?|yolla(?:nan|ndı)?).{0,80}(?:telefon|numara|sms|mesaj)/i,
+  /(?:telefon|numara|sms|mesaj).{0,80}(?:gönder(?:il(?:en|di)|ildi)?|yolla(?:nan|ndı)?)/i,
 
   // Polish
   /\b(?:sms|wiadomo[sś][cć]\s*tekstowa|telefon\s*kom[oó]rkowy)\b/i,
   /wys[lł]any.*(?:sms|telefon)/i,
   /kod.*(?:z|na).*(?:sms|telefon)/i,
+  /weryfikacj[aą].{0,40}(?:sms|telefon)/i,
+  /wpisz.{0,40}kod.{0,80}wys[lł]any.{0,80}(?:telefon|sms)/i,
 
   // Czech
   /\b(?:sms|textov[aá]\s*zpr[aá]va|mobiln[ií]\s*telefon)\b/i,
   /odesl[aá]n.*(?:sms|telefon)/i,
   /k[oó]d.*(?:z|na).*(?:sms|telefon)/i,
+  /ov[eě][rř]en[ií].{0,40}(?:sms|telefon)/i,
+  /zadejte.{0,40}k[oó]d.{0,80}odesl[aá]n.{0,80}(?:telefon|sms)/i,
 
   // ═══════════════════════════════════════════════════════════════
   // Nordic Languages
@@ -406,21 +426,29 @@ const SMS_PATTERNS = [
   /\b(?:sms|textmeddelande|mobiltelefon|mobil)\b/i,
   /skickat.*(?:sms|mobil|telefon)/i,
   /kod.*(?:via|fr[aå]n).*(?:sms|mobil)/i,
+  /verifiering.{0,40}(?:sms|mobil|telefon)/i,
+  /ange.{0,40}kod.{0,80}skickat.{0,80}(?:telefon|mobil|sms)/i,
 
   // Finnish
-  /\b(?:sms|tekstiviesti|matkapuhelin)\b/i,
+  /\b(?:sms|tekstiviesti|matkapuhelin|puhelin|puhelimeen|puhelinnumero)\b/i,
   /l[aä]hetetty.*(?:sms|puhelin)/i,
   /koodi.*(?:viestiss[aä]|puhelimeen)/i,
+  /vahvistus.{0,40}(?:sms|tekstiviesti|puhelin)/i,
+  /sy[oö]t[aä].{0,40}koodi.{0,80}l[aä]hetetty.{0,80}(?:puhelin|sms|tekstiviesti)/i,
 
   // Danish
   /\b(?:sms|tekstbesked|mobiltelefon|mobil)\b/i,
   /sendt.*(?:sms|mobil|telefon)/i,
   /kode.*(?:via|fra).*(?:sms|mobil)/i,
+  /bekr[aæ]ftelse.{0,40}(?:sms|mobil|telefon)/i,
+  /indtast.{0,40}kode.{0,80}sendt.{0,80}(?:telefon|mobil|sms)/i,
 
   // Norwegian
   /\b(?:sms|tekstmelding|mobiltelefon|mobil)\b/i,
   /sendt.*(?:sms|mobil|telefon)/i,
   /kode.*(?:via|fra).*(?:sms|mobil)/i,
+  /bekreftelse.{0,40}(?:sms|mobil|telefon)/i,
+  /skriv.{0,40}kode.{0,80}sendt.{0,80}(?:telefon|mobil|sms)/i,
 
   // ═══════════════════════════════════════════════════════════════
   // Cyrillic Script
@@ -430,11 +458,15 @@ const SMS_PATTERNS = [
   /(?:смс|текстов[оыае]+\s*сообщени[ея]|мобильн[оыаяий]+|телефон)/i,
   /отправлен.*(?:смс|телефон)/i,
   /код.*(?:по|на|из).*(?:смс|телефон)/i,
+  /подтверждени[ея].{0,40}(?:смс|телефон|мобильн)/i,
+  /введите.{0,40}код.{0,80}отправлен.{0,80}(?:телефон|смс|мобильн)/i,
 
   // Ukrainian - remove \b
   /(?:смс|текстов[еіо]+\s*повідомленн[яі]|мобільн[ийіао]+|телефон)/i,
   /надіслан.*(?:смс|телефон)/i,
   /код.*(?:на|з).*(?:смс|телефон)/i,
+  /підтвердженн[яі].{0,40}(?:смс|телефон|мобільн)/i,
+  /введіть.{0,40}код.{0,80}надіслан.{0,80}(?:телефон|смс|мобільн)/i,
 
   // ═══════════════════════════════════════════════════════════════
   // Arabic Script
@@ -444,6 +476,8 @@ const SMS_PATTERNS = [
   /(?:رسالة\s*نصية|رسالة\s*قصيرة|هاتف\s*محمول)/i,
   /(?:مرسل|أرسل).*(?:رسالة|هاتف)/i,
   /رمز.*(?:على|من).*هاتف/i,
+  /(?:تحقق|تأكيد).{0,40}(?:رسالة|هاتف|جوال)/i,
+  /(?:أدخل|ادخل).{0,40}رمز.{0,80}(?:أرسل|مرسل).{0,80}(?:هاتف|جوال|رسالة)/i,
 
   // ═══════════════════════════════════════════════════════════════
   // Devanagari Script
@@ -453,6 +487,8 @@ const SMS_PATTERNS = [
   /(?:एसएमएस|मोबाइल|फ़ोन)/i,
   /भेजा.*(?:एसएमएस|मोबाइल|फ़ोन)/i,
   /कोड.*(?:एसएमएस|मोबाइल)/i,
+  /(?:सत्यापन|पुष्टि).{0,40}(?:एसएमएस|मोबाइल|फ़ोन)/i,
+  /(?:दर्ज|भरें).{0,40}कोड.{0,80}भेजा.{0,80}(?:मोबाइल|फ़ोन|एसएमएस)/i,
 
   // ═══════════════════════════════════════════════════════════════
   // CJK Scripts
@@ -462,23 +498,31 @@ const SMS_PATTERNS = [
   /(?:ショートメール|携帯電話|携帯)/i,
   /送信.*(?:携帯|電話)/i,
   /コード.*(?:携帯)/i,
+  /(?:確認|認証).{0,40}(?:sms|ショートメール|携帯|電話)/i,
+  /(?:入力).{0,40}コード.{0,80}送信.{0,80}(?:携帯|電話|sms|ショートメール)/i,
 
   // Korean (문자 메시지 = text message, 휴대폰 = mobile) - remove \b
   /(?:문자\s*메시지|문자|휴대폰|휴대전화)/i,
   /전송.*(?:문자|휴대폰)/i,
   /코드.*(?:문자|휴대폰)/i,
+  /(?:확인|인증).{0,40}(?:sms|문자|휴대폰|휴대전화)/i,
+  /입력.{0,40}코드.{0,80}전송.{0,80}(?:문자|휴대폰|휴대전화|sms)/i,
 
   // Chinese Simplified (短信 = SMS, 手机 = mobile phone) - remove \b
   /(?:短信|手机|移动电话)/i,
   /发送.*(?:短信|手机)/i,
   /代码.*(?:短信|手机)/i,
   /输入.*短信/i,  // "enter SMS"
+  /(?:验证|确认).{0,40}(?:短信|手机|移动电话)/i,
+  /输入.{0,40}(?:验证码|代码).{0,80}发送.{0,80}(?:手机|短信|移动电话)/i,
 
   // Chinese Traditional - remove \b
   /(?:簡訊|手機|行動電話)/i,
   /發送.*(?:簡訊|手機)/i,
   /代碼.*(?:簡訊|手機)/i,
   /輸入.*簡訊/i,  // "enter SMS"
+  /(?:驗證|確認).{0,40}(?:簡訊|手機|行動電話)/i,
+  /輸入.{0,40}(?:驗證碼|代碼).{0,80}發送.{0,80}(?:手機|簡訊|行動電話)/i,
 ] as const
 
 /**
@@ -499,6 +543,10 @@ const PHONE_NUMBER_PATTERNS = [
   // Turkish: "numarasına gönderildi" near masked numbers
   /\*{2,}[\s\-]?\d{2,4}.*(?:numara|gönder)/i,
   /(?:numara|gönder).*\*{2,}[\s\-]?\d{2,4}/i,
+  // General masked phone endings across supported languages. Requires
+  // phone/SMS delivery context so masked cards/accounts do not become SMS.
+  /(?:phone|mobile|cell|sms|text|tel[eé]fono|celular|telefone|handy|mobiltelefon|portable|cellulare|telefoon|telefon|numara|telefonu|kom[oó]rkowy|mobiln[ií]|mobil|puhelin|смс|телефон|мобільн|هاتف|جوال|رسالة|मोबाइल|फ़ोन|एसएमएस|携帯|電話|ショートメール|문자|휴대폰|휴대전화|短信|手机|簡訊|手機)[^.!?\n]{0,100}[\*•●x]{2,}(?:[\s\-][\*•●x]{2,}){0,4}[\s\-]?\d{2,4}/i,
+  /[\*•●x]{2,}(?:[\s\-][\*•●x]{2,}){0,4}[\s\-]?\d{2,4}[^.!?\n]{0,100}(?:phone|mobile|cell|sms|text|tel[eé]fono|celular|telefone|handy|mobiltelefon|portable|cellulare|telefoon|telefon|numara|telefonu|kom[oó]rkowy|mobiln[ií]|mobil|puhelin|смс|телефон|мобільн|هاتف|جوال|رسالة|मोबाइल|फ़ोन|एसएमएस|携帯|電話|ショートメール|문자|휴대폰|휴대전화|短信|手机|簡訊|手機)/i,
 ] as const
 
 /**

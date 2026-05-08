@@ -97,10 +97,12 @@ describe('MessagesProviderAdapter', () => {
       expect(result[0].html).toBeUndefined()
       expect(result[0].provider).toBe('google-messages')
       expect(result[0].mailboxId).toBe('mbx-1')
+      expect(result[0]._meta?.previewRank).toBe(0)
 
       // Second item
       expect(result[1].from).toBe('Trendyol')
       expect(result[1].text).toBe('Login code: 789012')
+      expect(result[1]._meta?.previewRank).toBe(1)
     })
 
     it('caps output at 4 previews', async () => {

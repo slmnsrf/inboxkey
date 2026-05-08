@@ -69,6 +69,89 @@ describe('Multilingual OTP Keyword Matching', () => {
     })
   })
 
+  describe('Latin transliteration and accent-insensitive keyword matching', () => {
+    it('Turkish SMS ASCII transliteration: should match "tek kullanimlik sifreniz"', () => {
+      const text = 'Superonline.net uzerinden iletmis oldugunuz talebiniz icin tek kullanimlik sifreniz: 551652 Size ozel sifre bilgilerinizi guvenliginiz icin kimseyle paylasmayiniz.'
+      const result = extractOTPs(text)
+      expect(result).toHaveLength(1)
+      expect(result[0].code).toBe('551652')
+    })
+
+    it('Turkish SMS ASCII transliteration: should match "tek seferlik sifreniz"', () => {
+      const text = 'Turknet tek seferlik sifreniz: 795680 Bunu kimseyle paylasmayin. @www.turk.net #795680 B001'
+      const result = extractOTPs(text)
+      expect(result).toHaveLength(1)
+      expect(result[0].code).toBe('795680')
+    })
+
+    it.each([
+      ['Spanish', 'Tu codigo de verificacion es 333333', '333333'],
+      ['Portuguese', 'Seu codigo de verificacao e 444444', '444444'],
+      ['German one-to-one fold', 'Ihr Bestatigungscode lautet 555555', '555555'],
+      ['German ae transliteration', 'Ihr Bestaetigungscode lautet 555556', '555556'],
+      ['French', 'Votre code de securite est 666666', '666666'],
+      ['Turkish', 'Dogrulama kodu: 222222', '222222'],
+      ['Swedish', 'Din sakerhetskod ar 171717', '171717'],
+      ['Finnish', 'Kertakayttokoodi on 181818', '181818'],
+      ['Danish ae transliteration', 'Din bekraeftelseskode er 191919', '191919'],
+      ['Czech', 'Overovaci kod je 212121', '212121'],
+      ['Polish', 'Kod bezpieczenstwa to 141414', '141414'],
+    ])('%s: should extract from unaccented Latin SMS/email copy', (_label, text, expected) => {
+      const result = extractOTPs(text)
+      expect(result).toHaveLength(1)
+      expect(result[0].code).toBe(expected)
+    })
+
+    it.each([
+      ['English', 'Your password is 123456', '123456'],
+      ['Spanish', 'Su contraseña: 123456', '123456'],
+      ['French', 'Votre mot de passe: 123456', '123456'],
+      ['German', 'Ihr Passwort: 123456', '123456'],
+      ['Italian', 'La tua password: 123456', '123456'],
+      ['Portuguese', 'Sua senha: 123456', '123456'],
+      ['Dutch', 'Uw wachtwoord: 123456', '123456'],
+      ['Swedish', 'Ditt lösenord: 123456', '123456'],
+      ['Finnish', 'Salasanasi: 123456', '123456'],
+      ['Danish', 'Din adgangskode: 123456', '123456'],
+      ['Norwegian', 'Ditt passord: 123456', '123456'],
+      ['Polish', 'Twoje hasło: 123456', '123456'],
+      ['Czech', 'Vaše heslo: 123456', '123456'],
+      ['Turkish', 'Sifreniz: 123456', '123456'],
+      ['Russian', 'Ваш пароль: 123456', '123456'],
+      ['Ukrainian', 'Ваш пароль: 123456', '123456'],
+      ['Hindi', 'आपका पासवर्ड: 123456', '123456'],
+      ['Arabic', 'كلمة المرور: 123456', '123456'],
+      ['Japanese', 'パスワード: 123456', '123456'],
+      ['Korean', '비밀번호: 123456', '123456'],
+      ['Chinese', '密码: 123456', '123456'],
+    ])('%s: weak password token extracts only with expected shape', (_label, text, expected) => {
+      const result = extractOTPs(text, { expectedLength: 6, expectedCharset: 'digits' })
+      expect(result).toHaveLength(1)
+      expect(result[0].code).toBe(expected)
+    })
+
+    it('does not extract weak password tokens without page-derived expected shape', () => {
+      const result = extractOTPs('Sifreniz: 123456')
+      expect(result).toHaveLength(0)
+    })
+
+    it('does not extract weak password tokens from password-management copy', () => {
+      const result = extractOTPs('Password reset: 123456', {
+        expectedLength: 6,
+        expectedCharset: 'digits',
+      })
+      expect(result).toHaveLength(0)
+    })
+
+    it('does not extract weak password tokens from Wi-Fi password copy', () => {
+      const result = extractOTPs('WiFi password: 123456', {
+        expectedLength: 6,
+        expectedCharset: 'digits',
+      })
+      expect(result).toHaveLength(0)
+    })
+  })
+
   describe('Inflected Languages - Case Endings', () => {
     it('Russian: should match "код" with genitive case', () => {
       const text = 'Использование кода 159357 подтверждения'

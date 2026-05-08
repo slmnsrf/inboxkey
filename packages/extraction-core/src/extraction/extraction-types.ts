@@ -61,8 +61,20 @@ export { DOMAIN_ALIASES, WATCH_SESSION_SCORING } from '../matching/scoring-confi
  *             ("Amazon: 123456") to admit, blocking same-domain prose
  *             digit runs (shipping/order/promo) from false-positive
  *             autofills
+ *   '4' - accent-insensitive Latin keyword matching:
+ *           - OTP keyword detection folds Latin diacritics for carrier
+ *             SMS transliterations such as "tek kullanimlik sifreniz"
+ *             while preserving strict candidate extraction/scoring
+ *           - invalidates miss-cache entries created by v3 for the same
+ *             message preview before the widened keyword matcher existed
+ *   '5' - weak SMS OTP token expansion:
+ *           - generic password/passcode words across the supported
+ *             languages can signal OTP extraction only behind expected
+ *             shape + SMS-like/compact-message evidence
+ *           - invalidates v4 miss-cache entries for messages like
+ *             "tek seferlik sifreniz: 123456"
  */
-export const EXTRACTOR_VERSION = '3' as const
+export const EXTRACTOR_VERSION = '5' as const
 
 // ------------------------------
 // Types
@@ -344,6 +356,8 @@ export const CODE_KEYWORDS_BY_LANG: Readonly<Record<string, ReadonlyArray<string
       'güvenlik kodu',
       'tek kullanımlık kod',
       'tek kullanımlık şifre',
+      'tek seferlik kod',
+      'tek seferlik şifre',
       'otp',
       'giriş kodu',
       'kimlik doğrulama kodu',
@@ -420,6 +434,37 @@ export const CODE_KEYWORDS_BY_LANG: Readonly<Record<string, ReadonlyArray<string
       '认证码',
       'otp',
     ],
+  })
+
+/**
+ * Weak OTP tokens by language. These are intentionally generic words
+ * that can mean "password/code" outside OTP flows, so otp-extractor.ts
+ * only uses them when the caller also supplied page-derived expected
+ * shape and the message looks SMS-like/compact.
+ */
+export const CODE_WEAK_KEYWORDS_BY_LANG: Readonly<Record<string, ReadonlyArray<string>>> =
+  Object.freeze({
+    en: ['password', 'passcode', 'pass code'],
+    es: ['contraseña', 'clave'],
+    fr: ['mot de passe'],
+    de: ['passwort'],
+    it: ['password'],
+    pt: ['senha'],
+    nl: ['wachtwoord'],
+    sv: ['lösenord'],
+    fi: ['salasana'],
+    da: ['adgangskode'],
+    no: ['passord'],
+    pl: ['hasło'],
+    cs: ['heslo'],
+    tr: ['şifre'],
+    ru: ['пароль'],
+    uk: ['пароль'],
+    hi: ['पासवर्ड'],
+    ar: ['كلمة المرور', 'كلمة سر'],
+    ja: ['パスワード'],
+    ko: ['비밀번호'],
+    zh: ['密码'],
   })
 
 /** Magic-link terms by language. */
@@ -784,6 +829,10 @@ export const MAGIC_LINK_KEYWORDS_BY_LANG: Readonly<
 /** Flattened keyword lists (legacy-compatible) */
 export const CODE_KEYWORDS: ReadonlyArray<string> = Object.freeze(
   Object.values(CODE_KEYWORDS_BY_LANG).flat().filter(Boolean)
+)
+
+export const CODE_WEAK_KEYWORDS: ReadonlyArray<string> = Object.freeze(
+  Object.values(CODE_WEAK_KEYWORDS_BY_LANG).flat().filter(Boolean)
 )
 export const MAGIC_LINK_KEYWORDS: ReadonlyArray<string> = Object.freeze(
   Object.values(MAGIC_LINK_KEYWORDS_BY_LANG).flat().filter(Boolean)

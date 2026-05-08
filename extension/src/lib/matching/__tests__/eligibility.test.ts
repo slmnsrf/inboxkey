@@ -1,5 +1,9 @@
 import { describe, it, expect } from "vitest"
-import { isStrictDomainMatch, shouldSuppressMatch } from "../eligibility"
+import {
+  isNewArrivalCandidateEligibleForAutofill,
+  isStrictDomainMatch,
+  shouldSuppressMatch,
+} from "../eligibility"
 import { domainAffinity, extractETLD } from "../domain-affinity"
 
 describe("isStrictDomainMatch", () => {
@@ -207,5 +211,88 @@ describe("shouldSuppressMatch", () => {
         shouldSuppressMatch(true, "unknown", ["email"], "x.com", "mailgun.org"),
       ).toBe(true)
     })
+  })
+})
+
+describe("isNewArrivalCandidateEligibleForAutofill", () => {
+  it("allows Google Messages candidates with branded SMS sender labels", () => {
+    expect(
+      isNewArrivalCandidateEligibleForAutofill({
+        siteETLD: "ikea.com.tr",
+        detectedChannels: ["sms"],
+        provider: "google-messages",
+        senderETLD: "lkea aile",
+        source: "IKEA AILE - No subject",
+      }),
+    ).toBe(true)
+  })
+
+  it("allows Google Messages candidates in hybrid email plus SMS sessions", () => {
+    expect(
+      isNewArrivalCandidateEligibleForAutofill({
+        siteETLD: "example.com",
+        detectedChannels: ["email", "sms"],
+        provider: "google-messages",
+        senderETLD: "brand shortcode",
+        source: "BRAND - No subject",
+      }),
+    ).toBe(true)
+  })
+
+  it("rejects Google Messages candidates when the page did not expose an SMS context", () => {
+    expect(
+      isNewArrivalCandidateEligibleForAutofill({
+        siteETLD: "example.com",
+        detectedChannels: ["email"],
+        provider: "google-messages",
+        senderETLD: "brand shortcode",
+        source: "BRAND - No subject",
+      }),
+    ).toBe(false)
+  })
+
+  it("rejects Google Messages candidates when the provider session expired", () => {
+    expect(
+      isNewArrivalCandidateEligibleForAutofill({
+        siteETLD: "example.com",
+        detectedChannels: ["sms"],
+        provider: "google-messages",
+        senderETLD: "brand shortcode",
+        source: "BRAND - No subject",
+        googleMessagesSessionExpired: true,
+      }),
+    ).toBe(false)
+  })
+
+  it("keeps the email domain-affinity gate for email candidates", () => {
+    expect(
+      isNewArrivalCandidateEligibleForAutofill({
+        siteETLD: "github.com",
+        detectedChannels: ["email"],
+        provider: "imap-bridge",
+        senderETLD: "notification.com",
+        source: "GitHub Security Alert",
+      }),
+    ).toBe(true)
+
+    expect(
+      isNewArrivalCandidateEligibleForAutofill({
+        siteETLD: "twitter.com",
+        detectedChannels: ["email"],
+        provider: "imap-bridge",
+        senderETLD: "mailgun.org",
+        source: "Verification code",
+      }),
+    ).toBe(false)
+  })
+
+  it("preserves legacy SMS-only persisted candidates without provider metadata", () => {
+    expect(
+      isNewArrivalCandidateEligibleForAutofill({
+        siteETLD: "ikea.com.tr",
+        detectedChannels: ["sms"],
+        source: "IKEA AILE - No subject",
+      }),
+    ).toBe(true)
   })
 })

@@ -12,6 +12,7 @@ import {
   detectTier2,
 } from '../tier2-deep'
 import { createCooldownRegistry } from '../cooldown-registry'
+import { _resetSmsCacheForTest } from '../sms-feature-cache'
 
 describe('tier2-deep helpers', () => {
   let container: HTMLDivElement
@@ -619,6 +620,7 @@ describe('tier2-deep helpers', () => {
 
     beforeEach(() => {
       cooldown = createCooldownRegistry()
+      _resetSmsCacheForTest()
     })
 
     describe('Layer 1: Cooldown Check', () => {
@@ -805,6 +807,26 @@ describe('tier2-deep helpers', () => {
         // pattern length > 8 so no pattern points
         // Total = 55 points
         expect(result.score).toBe(55)
+      })
+
+      it('uses accessible group labels for split-input SMS channel gate', () => {
+        container.innerHTML = `
+          <div role="group" aria-label="Phone verification code">
+            <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="1" aria-label="Digit 1" />
+            <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="1" aria-label="Digit 2" />
+            <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="1" aria-label="Digit 3" />
+            <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="1" aria-label="Digit 4" />
+            <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="1" aria-label="Digit 5" />
+            <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="1" aria-label="Digit 6" />
+          </div>
+        `
+
+        const input = container.querySelector<HTMLInputElement>('input')!
+        const result = detectTier2(input, cooldown)
+
+        expect(result.detected).toBe(false)
+        expect(result.reason).toContain('SMS-only field (channel gate)')
+        expect(result.score).toBeGreaterThanOrEqual(70)
       })
     })
 

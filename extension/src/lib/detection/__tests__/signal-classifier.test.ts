@@ -115,6 +115,42 @@ describe('signal-classifier', () => {
       const result = classifyDeliveryChannel(createSources('Enter code from text message'))
       expect(result.channel).toBe('sms')
     })
+
+    it('detects Turkcell-style Turkish SMS modal copy with masked phone ending', () => {
+      const result = classifyDeliveryChannel(
+        createSources('SMS Doğrulama **** *****15 telefon numarasına gönderilen doğrulama kodunu giriniz.')
+      )
+      expect(result.channel).toBe('sms')
+      expect(result.allChannels).toEqual(['sms'])
+    })
+
+    it.each([
+      ['en', 'Enter the code sent to your phone number ending in 15'],
+      ['es', 'Ingrese el código enviado al teléfono móvil que termina en 15'],
+      ['pt', 'Digite o código enviado ao telefone celular terminado em 15'],
+      ['de', 'Geben Sie den Code ein, der an Ihr Mobiltelefon gesendet wurde'],
+      ['fr', 'Saisissez le code envoyé au téléphone mobile se terminant par 15'],
+      ['it', 'Inserisci il codice inviato al telefono cellulare'],
+      ['nl', 'Voer de code in die naar uw telefoon is verstuurd'],
+      ['tr', '**** *****15 telefon numarasına gönderilen doğrulama kodunu giriniz'],
+      ['pl', 'Wpisz kod wysłany na telefon'],
+      ['cs', 'Zadejte kód odeslán na telefon'],
+      ['sv', 'Ange koden skickats till din mobiltelefon'],
+      ['fi', 'Syötä koodi lähetetty puhelimeen'],
+      ['da', 'Indtast koden sendt til din mobiltelefon'],
+      ['no', 'Skriv inn koden sendt til mobiltelefonen'],
+      ['ru', 'Введите код отправлен на телефон'],
+      ['uk', 'Введіть код надісланий на телефон'],
+      ['ar', 'أدخل رمز أرسل إلى هاتفك'],
+      ['hi', 'मोबाइल पर भेजा गया कोड दर्ज करें'],
+      ['ja', '携帯電話に送信されたコードを入力'],
+      ['ko', '휴대폰으로 전송된 코드를 입력하세요'],
+      ['zh', '输入发送到手机的验证码'],
+    ])('detects SMS/phone delivery phrasing in supported language %s', (_lang, text) => {
+      const result = classifyDeliveryChannel(createSources(text))
+      expect(result.channel).toBe('sms')
+      expect(result.allChannels).toEqual(['sms'])
+    })
   })
 
   // ═══════════════════════════════════════════════════════════════

@@ -22,6 +22,7 @@ import {
   COMMON_OTP_PATTERNS,
   // Keyword dictionary (array of strings or regex sources) in multiple locales
   CODE_KEYWORDS,
+  CODE_WEAK_KEYWORDS,
 } from './extraction-types.js'
 
 import { shapeScore, type ExpectedShape } from '../matching/shape-matcher.js'
@@ -89,11 +90,20 @@ export function extractOTPs(input: string, opts: OTPExtractOptions = {}): OTPCan
 
   // Normalize to plain text; remove HTML noise early to reduce spurious matches
   const { text } = toPlainText(input)
+  const keywordText = normalizeKeywordText(text)
 
-  // If there are no keywords at all in the whole message, short-circuit (fast fail)
-  const kwRegex = buildKeywordRegex(CODE_KEYWORDS)
-  const hasKeywords = kwRegex.test(text)
-  if (!hasKeywords) {
+  // If there are no strong keywords at all in the whole message,
+  // optionally admit weak password/code tokens behind stricter gates.
+  const strongKwRegex = CODE_KEYWORDS_MATCHER
+  strongKwRegex.lastIndex = 0
+  const hasStrongKeywords = strongKwRegex.test(keywordText)
+
+  const weakKwRegex = CODE_WEAK_KEYWORDS_MATCHER
+  weakKwRegex.lastIndex = 0
+  const hasWeakKeywords = !hasStrongKeywords && weakKwRegex.test(keywordText)
+  const usesWeakKeywords = !hasStrongKeywords && hasWeakKeywords
+
+  if (!hasStrongKeywords && !hasWeakKeywords) {
     // Edge allowance: brands routinely send keyword-free SMS in the form
     // "Brand: 123456 ..." (Amazon, Telegram, Discord). Admit only when the
     // caller signaled an expected shape AND the body opens with that
@@ -106,11 +116,14 @@ export function extractOTPs(input: string, opts: OTPExtractOptions = {}): OTPCan
     if (!opts.expectedLength && !opts.expectedShape) return []
     if (!hasBrandPrefixCodeShape(text)) return []
   }
-  // Reset lastIndex after test
+  if (usesWeakKeywords && !hasExpectedShapeForWeakOtp(opts)) return []
+
+  const kwRegex = usesWeakKeywords ? weakKwRegex : strongKwRegex
+  // Reset lastIndex after tests
   kwRegex.lastIndex = 0
 
   // Build search windows around keywords to avoid scanning footers/long IDs
-  const windows = collectWindows(text, kwRegex, windowRadius)
+  const windows = collectWindows(keywordText, kwRegex, windowRadius)
 
   // If we had no keyword windows but do have expectedLength, scan the whole text but with strict scoring
   if (windows.length === 0 && !opts.expectedLength && !opts.expectedShape) {
@@ -126,18 +139,21 @@ export function extractOTPs(input: string, opts: OTPExtractOptions = {}): OTPCan
     allowedNumericLengths: opts.allowedNumericLengths,
   })
 
-  const viableCandidates = rawCandidates.filter(c => isPlausibleOtpCandidate(text, c))
+  const viableCandidates = rawCandidates
+    .filter(c => isPlausibleOtpCandidate(text, c))
+    .filter(c => !usesWeakKeywords || hasWeakOtpCandidateSupport(text, c, opts))
   if (viableCandidates.length === 0) return []
 
   // Score each candidate with context signals
   const subject = (opts.subject || '').toLowerCase()
   const scored: OTPCandidate[] = viableCandidates.map(c => {
     const base = baseScore(c, opts)
-    const near = nearestKeywordSignal(text, c, kwRegex)
+    const near = nearestKeywordSignal(keywordText, c, kwRegex)
     const footer = footerPenalty(text, c)
     const subjectBoost = subject.includes('code') || subject.includes('otp') || subject.includes('verification') ? 0.08 : 0
 
     let confidence = base + near.score + subjectBoost
+    if (usesWeakKeywords) confidence -= 0.14
     if (footer.applies) confidence -= 0.2
 
     // Clamp and attach context
@@ -264,20 +280,86 @@ function decodeEntities(s: string): string {
   return s
 }
 
+/**
+ * Normalize Latin diacritics only for keyword matching. Positions are
+ * intentionally preserved for normal composed Unicode text, so keyword
+ * windows still map back to the original plaintext used for candidate
+ * extraction. This catches carrier/SMS transliterations like Turkish
+ * "tek kullanimlik sifreniz" for "tek kullanımlık şifre" and also
+ * helps Spanish/Portuguese/Czech/Polish/Nordic unaccented SMS copy.
+ */
+function normalizeKeywordText(s: string): string {
+  const specialLatinMap: Record<string, string> = {
+    'ı': 'i',
+    'İ': 'I',
+    'ł': 'l',
+    'Ł': 'L',
+    'đ': 'd',
+    'Đ': 'D',
+    'ø': 'o',
+    'Ø': 'O',
+    'ß': 's',
+    'æ': 'a',
+    'Æ': 'A',
+    'œ': 'o',
+    'Œ': 'O',
+  }
+
+  return s
+    .replace(/[ıİłŁđĐøØßæÆœŒ]/g, ch => specialLatinMap[ch] ?? ch)
+    .replace(/\p{Script=Latin}\p{M}*/gu, segment =>
+      segment.normalize('NFD').replace(/\p{M}/gu, '')
+    )
+}
+
+function keywordVariants(keyword: string): string[] {
+  const germanicTransliteration = keyword.replace(/[äÄöÖüÜßæÆøØåÅ]/g, ch => {
+    const map: Record<string, string> = {
+      'ä': 'ae',
+      'Ä': 'Ae',
+      'ö': 'oe',
+      'Ö': 'Oe',
+      'ü': 'ue',
+      'Ü': 'Ue',
+      'ß': 'ss',
+      'æ': 'ae',
+      'Æ': 'Ae',
+      'ø': 'oe',
+      'Ø': 'Oe',
+      'å': 'aa',
+      'Å': 'Aa',
+    }
+    return map[ch] ?? ch
+  })
+
+  return Array.from(new Set([
+    keyword,
+    normalizeKeywordText(keyword),
+    germanicTransliteration,
+    normalizeKeywordText(germanicTransliteration),
+  ]))
+}
+
 /** Build a case-insensitive word-boundary regex for an array of keywords/regex sources */
 function buildKeywordRegex(words: readonly (string | RegExp)[]): RegExp {
   // Treat incoming RegExp.source as literal where possible; keywords already curated in extraction-types
-  const parts = words.map(w => {
+  const parts = words.flatMap(w => {
     if (w instanceof RegExp) return w.source
+    const variants = keywordVariants(w)
     // Escape keyword and allow hyphen/space variants (e.g., one-time / one time / one‑time)
-    const esc = w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-    return esc.replace(/[-\s]/g, '[-\\s\\u00A0\\u2011\\u2013]?')
+    return variants.map(variant => {
+      const esc = variant.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+      return esc.replace(/[-\s]/g, '[-\\s\\u00A0\\u2011\\u2013]?')
+    })
   })
   // Trailing boundary removed to support agglutinative (Turkish, Finnish, Japanese, Korean)
   // and inflected (Russian, Polish, Hindi) languages where keywords appear with suffixes/particles.
   // Leading boundary prevents false positives (e.g., "discount" won't match "count").
   return new RegExp(`(?:^|[^\\p{L}\\p{N}])(?:${parts.join('|')})`, 'gimu')
 }
+
+const CODE_KEYWORDS_MATCHER = buildKeywordRegex(CODE_KEYWORDS)
+const CODE_WEAK_KEYWORDS_MATCHER = buildKeywordRegex(CODE_WEAK_KEYWORDS)
 
 /** Collect windows around keywords for targeted scanning */
 function collectWindows(text: string, kw: RegExp, radius: number): { start: number; end: number; reason: string }[] {
@@ -438,6 +520,7 @@ function isNonOtpKeywordMatch(text: string, match: RegExpExecArray): boolean {
 
   const genericCodeTerms = new Set([
     'code',
+    'codigo',
     'kod',
     'kode',
     'kód',
@@ -499,11 +582,84 @@ function hasBrandPrefixCodeShape(text: string): boolean {
   return BRAND_PREFIX_OTP_SHAPE.test(text)
 }
 
+function hasExpectedShapeForWeakOtp(opts: OTPExtractOptions): boolean {
+  return (
+    opts.expectedLength !== undefined ||
+    opts.expectedCharset !== undefined ||
+    opts.expectedShape?.len !== undefined ||
+    opts.expectedShape?.charset !== undefined
+  )
+}
+
+function candidateMatchesExpectedShape(
+  c: InternalCandidate,
+  opts: OTPExtractOptions
+): boolean {
+  const expectedLength = opts.expectedShape?.len ?? opts.expectedLength
+  const expectedCharset = opts.expectedShape?.charset ?? opts.expectedCharset
+
+  if (expectedLength !== undefined && c.length !== expectedLength) {
+    return false
+  }
+
+  if (expectedCharset === 'digits' && c.charset !== 'digits') {
+    return false
+  }
+
+  return true
+}
+
+function hasWeakOtpCandidateSupport(
+  text: string,
+  c: InternalCandidate,
+  opts: OTPExtractOptions
+): boolean {
+  if (!candidateMatchesExpectedShape(c, opts)) return false
+
+  const around = candidateWindow(text, c, 112).toLowerCase()
+  if (isPasswordResetManagementContext(around)) return false
+
+  return (
+    hasSmsAppHashShape(text) ||
+    hasCompactSmsLikeBody(text) ||
+    hasSecurityShareContext(around)
+  )
+}
+
+function hasCompactSmsLikeBody(text: string): boolean {
+  const lineCount = text.split(/\n+/).filter(Boolean).length
+  return text.length <= 260 && lineCount <= 4
+}
+
+function hasSmsAppHashShape(text: string): boolean {
+  return /(?:^|\s)@[A-Za-z0-9.-]{3,80}\s+#?[A-Za-z0-9]{4,10}\s+B\d{3}\b/i.test(text)
+}
+
+function hasSecurityShareContext(around: string): boolean {
+  return (
+    /\b(?:do\s+not|don't|never)\s+share\b/i.test(around) ||
+    /\b(?:share|send|give)\s+(?:it|this|code|password)\s+to\s+(?:no\s+one|nobody|anyone)\b/i.test(around) ||
+    /\b(?:kimseyle|kimse\s+ile)\s+payla[sş]/i.test(around) ||
+    /\b(?:guvenlig|g[üu]venli[gğ])\b/i.test(around) ||
+    /\b(?:ne\s+partagez|no\s+comparta|não\s+compartilhe|non\s+condividere|nicht\s+teilen|niet\s+delen)\b/i.test(around)
+  )
+}
+
+function isPasswordResetManagementContext(around: string): boolean {
+  return (
+    /\b(?:reset|forgot|recover|change|update)\s+(?:your\s+)?password\b/i.test(around) ||
+    /\bpassword\s+(?:reset|recovery|change|update)\b/i.test(around) ||
+    /\b(?:sifre|şifre|parola)\s+(?:sifirla|sıfırla|yenile|degistir|değiştir)\b/i.test(around) ||
+    /\b(?:wi[-\s]?fi|wireless|network|router)\s+(?:password|passcode|passwort|senha|wachtwoord|şifre|sifre)\b/i.test(around)
+  )
+}
+
 function isPlausibleOtpCandidate(text: string, c: InternalCandidate): boolean {
   const around = candidateWindow(text, c, 96).toLowerCase()
 
   if (isEmbeddedInUrl(text, c)) return false
   if (isCssToken(text, c)) return false
+  if (isSmsAppHashToken(text, c)) return false
   if (isDateOrdinal(c.code)) return false
   if (isCommercialCodeContext(around)) return false
   if (isSoftwareCodeContext(around)) return false
@@ -514,6 +670,10 @@ function isPlausibleOtpCandidate(text: string, c: InternalCandidate): boolean {
 
 function candidateWindow(text: string, c: InternalCandidate, radius: number): string {
   return text.slice(Math.max(0, c.start - radius), Math.min(text.length, c.end + radius))
+}
+
+function isSmsAppHashToken(text: string, c: InternalCandidate): boolean {
+  return /^B\d{3}$/i.test(c.code) && hasSmsAppHashShape(text)
 }
 
 function isEmbeddedInUrl(text: string, c: InternalCandidate): boolean {

@@ -222,10 +222,10 @@ export interface Settings {
    */
   autoSubmitFailures?: AutoSubmitFailure[]
   /**
-   * BETA: Enable extended button detection for pseudo-buttons (opt-in).
+   * Enable extended button detection for pseudo-buttons.
    * When enabled, detects custom component buttons (e.g., <a>, [role="button"])
    * used by modern SPA frameworks (Vue, React).
-   * @default false (opt-in)
+   * @default true
    */
   extendedButtonDetection?: boolean
   /**
@@ -326,6 +326,7 @@ export const DEFAULT_SETTINGS: Settings = {
   domainsEnabledByDefault: true, // Default: enable on all domains
   showSessionChips: true, // Default: show session status chips
   disableOnBankingSites: false, // Opt-in: users must enable manually
+  extendedButtonDetection: true, // Default: detect non-standard submit controls in full automation
   sessionTimeoutSeconds: 60, // Default: 60 seconds
   blacklistedDomains: [], // Default: no blacklisted domains
   blacklistedUrls: [], // Default: no blacklisted URLs
