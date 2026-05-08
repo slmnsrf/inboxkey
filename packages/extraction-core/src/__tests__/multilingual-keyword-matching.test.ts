@@ -259,6 +259,56 @@ describe('Multilingual OTP Keyword Matching', () => {
       expect(result).toHaveLength(0)
     })
 
+    describe('weak password-token management contexts for expanded locales', () => {
+      const opts = { expectedLength: 6, expectedCharset: 'digits' as const }
+
+      it.each([
+        ['Dutch',     'Wachtwoord resetten: 123456',         'Uw wachtwoord: 123456'],
+        ['Swedish',   'Återställ ditt lösenord: 123456',     'Ditt lösenord: 123456'],
+        ['Finnish',   'Palauta salasana: 123456',            'Salasanasi: 123456'],
+        ['Danish',    'Nulstil din adgangskode: 123456',     'Din adgangskode: 123456'],
+        ['Norwegian', 'Tilbakestill passordet ditt: 123456', 'Ditt passord: 123456'],
+      ])('%s: rejects Nordic/Dutch reset copy but keeps legitimate OTP copy', (_lang, resetText, otpText) => {
+        expect(extractOTPs(resetText, opts)).toHaveLength(0)
+        const result = extractOTPs(otpText, opts)
+        expect(result).toHaveLength(1)
+        expect(result[0].code).toBe('123456')
+      })
+
+      it.each([
+        ['Polish',    'Resetuj hasło: 123456',  'Twoje hasło: 123456'],
+        ['Czech',     'Obnovit heslo: 123456',   'Vaše heslo: 123456'],
+        ['Russian',   'Сбросить пароль: 123456', 'Ваш пароль: 123456'],
+        ['Ukrainian', 'Скинути пароль: 123456',  'Ваш пароль: 123456'],
+      ])('%s: rejects Slavic reset copy but keeps legitimate OTP copy', (_lang, resetText, otpText) => {
+        expect(extractOTPs(resetText, opts)).toHaveLength(0)
+        const result = extractOTPs(otpText, opts)
+        expect(result).toHaveLength(1)
+        expect(result[0].code).toBe('123456')
+      })
+
+      it.each([
+        ['Hindi',  'पासवर्ड रीसेट करें: 123456',     'आपका पासवर्ड: 123456'],
+        ['Arabic', 'إعادة تعيين كلمة المرور: 123456', 'كلمة المرور: 123456'],
+      ])('%s: rejects Hindi/Arabic reset copy but keeps legitimate OTP copy', (_lang, resetText, otpText) => {
+        expect(extractOTPs(resetText, opts)).toHaveLength(0)
+        const result = extractOTPs(otpText, opts)
+        expect(result).toHaveLength(1)
+        expect(result[0].code).toBe('123456')
+      })
+
+      it.each([
+        ['Japanese', 'パスワードをリセットしてください: 123456', 'パスワード: 123456'],
+        ['Korean',   '비밀번호 재설정: 123456',                  '비밀번호: 123456'],
+        ['Chinese',  '重置密码: 123456',                          '密码: 123456'],
+      ])('%s: rejects CJK reset copy but keeps legitimate OTP copy', (_lang, resetText, otpText) => {
+        expect(extractOTPs(resetText, opts)).toHaveLength(0)
+        const result = extractOTPs(otpText, opts)
+        expect(result).toHaveLength(1)
+        expect(result[0].code).toBe('123456')
+      })
+    })
+
     it('German compounds: should match "code" in "Sicherheitscode"', () => {
       const text = 'Ihr Sicherheitscode: 246813'
       // Translation: "Your security code: 246813"

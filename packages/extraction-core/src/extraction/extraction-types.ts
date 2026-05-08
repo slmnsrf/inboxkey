@@ -384,7 +384,10 @@ export const CODE_KEYWORDS_BY_LANG: Readonly<Record<string, ReadonlyArray<string
     ],
     hi: [
       'कोड',
-      'पासवर्ड',
+      // 'पासवर्ड' (password) is a generic noun — kept WEAK-only so the
+      // password-reset/management context guard fires on Hindi reset
+      // copy. Phrases like "एकबारगी पासवर्ड" (one-time password) remain
+      // here because they are unambiguously OTP-specific.
       'ओटीपी',
       'सत्यापन कोड',
       'सुरक्षा कोड',

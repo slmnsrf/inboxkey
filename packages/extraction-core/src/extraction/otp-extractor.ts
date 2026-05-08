@@ -118,6 +118,13 @@ export function extractOTPs(input: string, opts: OTPExtractOptions = {}): OTPCan
     // "ZIP 100234"). The shape requirement is structural, not lingual:
     // it gates on `Word:Code` form and works equally across the 21
     // supported languages.
+    //
+    // Defense-in-depth: CJK reset/management copy ("重置密码: 123456",
+    // "비밀번호 재설정: 123456") can pass `hasBrandPrefixCodeShape` because
+    // its leading non-Latin verb-noun cluster reads as a "brand" token.
+    // Reject the entire body when password-reset/management context is
+    // present so the brand-prefix path can't sneak past.
+    if (isPasswordResetManagementContext(text.toLowerCase())) return []
     if (!opts.expectedLength && !opts.expectedShape) return []
     if (!hasBrandPrefixCodeShape(text)) return []
   }
@@ -784,6 +791,41 @@ const PASSWORD_RESET_PATTERNS: ReadonlyArray<RegExp> = [
   // Portuguese
   /(?<![\p{L}\p{M}\p{N}])(?:redefinir|recuperar|alterar|atualizar|esqueci|esqueceu)\s+(?:sua\s+|a\s+|o\s+)?(?:senha|palavra-passe)(?![\p{L}\p{M}\p{N}])/iu,
   /(?<![\p{L}\p{M}\p{N}])(?:senha|palavra-passe)\s+(?:esquecida|nova|redefinida)(?![\p{L}\p{M}\p{N}])/iu,
+  // Dutch
+  /(?<![\p{L}\p{M}\p{N}])(?:reset|herstel|wijzig|verander|update|vernieuw)\s+(?:uw\s+|je\s+|jouw\s+|het\s+)?wachtwoord(?![\p{L}\p{M}\p{N}])/iu,
+  /(?<![\p{L}\p{M}\p{N}])wachtwoord\s+(?:resetten|herstellen|wijzigen|veranderen|vernieuwen|vergeten|opnieuw\s+instellen|nieuw)(?![\p{L}\p{M}\p{N}])/iu,
+  // Swedish
+  /(?<![\p{L}\p{M}\p{N}])(?:återställ|aterstall|ändra|andra|byt|byta|uppdatera|glömt|glomt)\s+(?:ditt\s+|ert\s+)?(?:lösenord|losenord)[\p{L}\p{M}]*(?![\p{L}\p{M}\p{N}])/iu,
+  // Finnish
+  /(?<![\p{L}\p{M}\p{N}])(?:palauta|palauttaa|vaihda|muuta|päivitä|paivita|unohditko|unohtunut)\s+salasana[\p{L}\p{M}]*(?![\p{L}\p{M}\p{N}])/iu,
+  // Danish
+  /(?<![\p{L}\p{M}\p{N}])(?:nulstil|gendan|skift|ændr|aendr|opdater|glemt)\s+(?:din\s+|dit\s+)?adgangskode(?![\p{L}\p{M}\p{N}])/iu,
+  // Norwegian
+  /(?<![\p{L}\p{M}\p{N}])(?:tilbakestill|gjenopprett|endre|bytt|oppdater|glemt)\s+passord[\p{L}\p{M}]*(?:\s+ditt)?(?![\p{L}\p{M}\p{N}])/iu,
+  // Polish
+  /(?<![\p{L}\p{M}\p{N}])(?:resetuj|zresetuj|odzyskaj|zmień|zmien|aktualizuj|przypomnij)\s+(?:swoje\s+)?has(?:ł|l)o(?![\p{L}\p{M}\p{N}])/iu,
+  // Czech
+  /(?<![\p{L}\p{M}\p{N}])(?:obnovit|resetovat|změnit|zmenit|aktualizovat|zapomenuté|zapomenute)\s+(?:svoje\s+)?heslo(?![\p{L}\p{M}\p{N}])/iu,
+  // Russian
+  /(?<![\p{L}\p{M}\p{N}])(?:сбросить|восстановить|изменить|обновить|забыли|забыл|новый)\s+(?:ваш\s+)?пароль(?![\p{L}\p{M}\p{N}])/iu,
+  // Ukrainian
+  /(?<![\p{L}\p{M}\p{N}])(?:скинути|відновити|змінити|оновити|забули|новий)\s+(?:ваш\s+)?пароль(?![\p{L}\p{M}\p{N}])/iu,
+  // Hindi
+  /(?<![\p{L}\p{M}\p{N}])(?:अपना\s+)?पासवर्ड\s+(?:रीसेट|बदलें|बदले|अपडेट|पुनर्प्राप्त|नया)(?:\s+करें)?(?![\p{L}\p{M}\p{N}])/iu,
+  /(?<![\p{L}\p{M}\p{N}])(?:रीसेट|बदलें|बदले|अपडेट|पुनर्प्राप्त)\s+(?:अपना\s+)?पासवर्ड(?![\p{L}\p{M}\p{N}])/iu,
+  // Arabic
+  /(?<![\p{L}\p{M}\p{N}])(?:إعادة\s+تعيين|اعادة\s+تعيين|استعادة|تغيير|تحديث)\s+(?:كلمة\s+المرور|كلمة\s+سر)(?![\p{L}\p{M}\p{N}])/iu,
+  /(?<![\p{L}\p{M}\p{N}])(?:كلمة\s+المرور|كلمة\s+سر)\s+(?:الجديدة|جديدة|نسيت|إعادة\s+تعيين|اعادة\s+تعيين|استعادة)(?![\p{L}\p{M}\p{N}])/iu,
+  // Japanese
+  /(?<![\p{L}\p{M}\p{N}])パスワード(?:を)?(?:リセット|再設定|変更|更新|復元)(?:して(?:ください|下さい)?|する|します)?(?![\p{L}\p{M}\p{N}])/iu,
+  /(?<![\p{L}\p{M}\p{N}])(?:新しい|新規)パスワード(?![\p{L}\p{M}\p{N}])/iu,
+  // Korean
+  /(?<![\p{L}\p{M}\p{N}])비밀번호(?:를)?\s*(?:재설정|초기화|변경|복구|업데이트)(?:하세요|합니다)?(?![\p{L}\p{M}\p{N}])/iu,
+  /(?<![\p{L}\p{M}\p{N}])새\s*비밀번호(?![\p{L}\p{M}\p{N}])/iu,
+  // Chinese
+  /(?<![\p{L}\p{M}\p{N}])(?:重置|找回|修改|更改|更新|恢复)密码(?![\p{L}\p{M}\p{N}])/iu,
+  /(?<![\p{L}\p{M}\p{N}])密码(?:重置|找回|修改|更改|更新|恢复)(?![\p{L}\p{M}\p{N}])/iu,
+  /(?<![\p{L}\p{M}\p{N}])新密码(?![\p{L}\p{M}\p{N}])/iu,
   // Wi-Fi / network passwords (any language)
   /(?<![\p{L}\p{M}\p{N}])(?:wi[-\s]?fi|wireless|network|router)\s+(?:password|passcode|passwort|senha|wachtwoord|şifre|sifre|contraseña|clave|mot\s+de\s+passe)(?![\p{L}\p{M}\p{N}])/iu,
 ]
