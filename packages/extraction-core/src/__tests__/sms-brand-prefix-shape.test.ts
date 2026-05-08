@@ -156,6 +156,34 @@ describe('SMS brand-prefix-code shape gate', () => {
         expect(result.otps[0].code).toBe(code)
       })
     }
+
+    it('Google Messages Superonline ASCII Turkish SMS snippet extracts via keyword path', () => {
+      const result = extractFromEmail(
+        {
+          subject: '',
+          text: 'Superonline.net uzerinden iletmis oldugunuz talebiniz icin tek kullanimlik sifreniz: 551652 Size ozel sifre bilgilerinizi guvenliginiz icin kendini Turkcell/Superonline calisani olarak tanitan kisiler dahil kimseyle paylasmayiniz. B018',
+        },
+        { expected }
+      )
+
+      expect(result.otps.length).toBeGreaterThan(0)
+      expect(result.otps[0].code).toBe('551652')
+      expect(result.otps[0].confidence).toBeGreaterThanOrEqual(0.6)
+    })
+
+    it('Google Messages Turknet ASCII Turkish SMS snippet extracts via keyword path', () => {
+      const result = extractFromEmail(
+        {
+          subject: '',
+          text: 'Turknet tek seferlik sifreniz: 795680 Bunu kimseyle paylasmayin. @www.turk.net #795680 B001',
+        },
+        { expected }
+      )
+
+      expect(result.otps.length).toBeGreaterThan(0)
+      expect(result.otps[0].code).toBe('795680')
+      expect(result.otps[0].confidence).toBeGreaterThanOrEqual(0.6)
+    })
   })
 
   describe('fails closed without expected shape', () => {

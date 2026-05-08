@@ -16,6 +16,52 @@ export interface AutofillOptions {
   field: HTMLInputElement
 }
 
+function setNativeInputValue(field: HTMLInputElement, value: string): void {
+  const ownDescriptor = Object.getOwnPropertyDescriptor(field, 'value')
+  const prototype = Object.getPrototypeOf(field)
+  const prototypeDescriptor = prototype
+    ? Object.getOwnPropertyDescriptor(prototype, 'value')
+    : undefined
+  const setter = prototypeDescriptor?.set ?? ownDescriptor?.set
+
+  if (setter) {
+    setter.call(field, value)
+  } else {
+    field.value = value
+  }
+}
+
+function createInputEvent(
+  type: 'beforeinput' | 'input',
+  value: string
+): Event {
+  try {
+    return new InputEvent(type, {
+      bubbles: true,
+      cancelable: type === 'beforeinput',
+      data: value,
+      inputType: 'insertText',
+    })
+  } catch {
+    return new Event(type, { bubbles: true, cancelable: type === 'beforeinput' })
+  }
+}
+
+function dispatchFillEvents(field: HTMLInputElement, value: string): void {
+  const key = value.length === 1 ? value : ''
+  const keyboardInit: KeyboardEventInit = {
+    bubbles: true,
+    key,
+    code: /^\d$/.test(key) ? `Digit${key}` : '',
+  }
+
+  field.dispatchEvent(new KeyboardEvent('keydown', keyboardInit))
+  field.dispatchEvent(createInputEvent('beforeinput', value))
+  field.dispatchEvent(createInputEvent('input', value))
+  field.dispatchEvent(new KeyboardEvent('keyup', keyboardInit))
+  field.dispatchEvent(new Event('change', { bubbles: true }))
+}
+
 /**
  * Autofill a verification code into an input field
  * @returns true if successful, false if field is not fillable
@@ -121,17 +167,10 @@ async function fillSingleField(field: HTMLInputElement, code: string): Promise<b
   // Focus the field first
   field.focus()
 
-  // Set the value
-  field.value = code
-
-  // Dispatch events to trigger framework reactivity
-  // Order matters: input -> change -> blur
-  field.dispatchEvent(new Event('input', { bubbles: true }))
-  field.dispatchEvent(new Event('change', { bubbles: true }))
-
-  // Some frameworks use 'keyup' or 'keydown' for validation
-  field.dispatchEvent(new KeyboardEvent('keydown', { bubbles: true }))
-  field.dispatchEvent(new KeyboardEvent('keyup', { bubbles: true }))
+  // Use the native setter so React/AntD controlled inputs observe the
+  // value change, then dispatch the browser-like event sequence.
+  setNativeInputValue(field, code)
+  dispatchFillEvents(field, code)
 
   // Mark as filled for tracking
   field.setAttribute('data-inboxkey-filled', 'true')
@@ -195,14 +234,10 @@ async function autofillSplitInputs(
     // Focus the input
     input.focus()
 
-    // Set the value
-    input.value = chars[i]
-
-    // Dispatch events to trigger framework reactivity
-    input.dispatchEvent(new Event('input', { bubbles: true }))
-    input.dispatchEvent(new Event('change', { bubbles: true }))
-    input.dispatchEvent(new KeyboardEvent('keydown', { bubbles: true }))
-    input.dispatchEvent(new KeyboardEvent('keyup', { bubbles: true }))
+    // Use the native setter so React/AntD controlled inputs observe the
+    // value change, then dispatch the browser-like event sequence.
+    setNativeInputValue(input, chars[i])
+    dispatchFillEvents(input, chars[i])
 
     // Mark as filled
     input.setAttribute('data-inboxkey-filled', 'true')

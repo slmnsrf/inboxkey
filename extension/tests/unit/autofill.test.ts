@@ -604,6 +604,55 @@ describe('Autofill', () => {
       expect(inputs[4].value).toBe('3')
     })
 
+    it('should distribute across AntD-style controlled split inputs with the native setter', async () => {
+      const container = document.createElement('div')
+      const inputs: HTMLInputElement[] = []
+      const ownSetterCalls: boolean[] = []
+
+      for (let i = 0; i < 6; i++) {
+        const input = document.createElement('input')
+        input.type = 'text'
+        input.setAttribute('inputmode', 'numeric')
+        input.setAttribute('pattern', '\\d{1}')
+
+        const nativeValue = Object.getOwnPropertyDescriptor(
+          Object.getPrototypeOf(input),
+          'value'
+        )
+        ownSetterCalls[i] = false
+        Object.defineProperty(input, 'value', {
+          configurable: true,
+          get() {
+            return nativeValue?.get?.call(input) ?? ''
+          },
+          set(value: string) {
+            ownSetterCalls[i] = true
+            nativeValue?.set?.call(input, value)
+          },
+        })
+
+        container.appendChild(input)
+        inputs.push(input)
+      }
+      document.body.appendChild(container)
+
+      const { detectSplitInputGroup } = await import('../../src/lib/detection/split-input-detector')
+      vi.mocked(detectSplitInputGroup).mockReturnValue({
+        inputs,
+        representative: inputs[0],
+        pattern: 'adjacent-siblings',
+      })
+
+      const result = await autofillCode({
+        code: '126430',
+        field: inputs[0],
+      })
+
+      expect(result).toBe(true)
+      expect(inputs.map(input => input.value)).toEqual(['1', '2', '6', '4', '3', '0'])
+      expect(ownSetterCalls).toEqual([false, false, false, false, false, false])
+    })
+
     it('should return false when code is longer than fillable inputs (no partial fill)', async () => {
       const container = document.createElement('div')
       const inputs: HTMLInputElement[] = []

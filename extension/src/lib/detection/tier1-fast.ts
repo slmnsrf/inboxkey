@@ -26,14 +26,17 @@ import { classifyDeliveryChannel } from './signal-classifier'
 import {
   getAriaDescribedbyText,
   getAriaLabelledbyText,
+  getAccessibleAncestorContextText,
   getExplicitLabelText,
   getMatchingAutocompleteToken,
 } from './detection-utils'
+import { getFilteredText } from './dom-text-scanner'
 import { smsFeatureEnabledCache } from './sms-feature-cache'
 import type { TextSources } from './types'
 import {
   ATTRIBUTE_PATTERNS,
   AUTOCOMPLETE_VALUES,
+  CAPTCHA_ATTRIBUTE_PATTERN,
   NUMERIC_INPUT_MODES,
   TYPICAL_CODE_LENGTHS,
   isExcluded,
@@ -112,27 +115,50 @@ function getLabelText(input: HTMLInputElement): string {
     labels.push(ariaLabelledby)
   }
 
+  const ancestorContext = getAccessibleAncestorContextText(input)
+  if (ancestorContext) {
+    labels.push(ancestorContext)
+  }
+
   return labels.join(' ')
 }
 
 /**
  * Extract nearby text for context validation
  *
- * Searches up to 4 parent levels for sibling text content
+ * Searches parent levels for sibling text content
  * Used to detect password/login context in 21 languages
  *
  * Performance: Expanded from 2 to 4 levels to handle modern component-based UIs
  * (React/Vue/Angular add 3-5 wrapper divs per component)
  *
  * @param input - Input field to extract nearby text from
+ * @param extended - Reach dialog/form-bounded modal text for OTP autocomplete fields
  * @returns Combined nearby text
  */
-function getNearbyText(input: HTMLInputElement): string {
+const NEARBY_SCAN_BLOCKED_TAGS = new Set([
+  'NAV',
+  'HEADER',
+  'FOOTER',
+  'ASIDE',
+  'SCRIPT',
+  'STYLE',
+])
+
+const SEMANTIC_CONTEXT_TAGS = new Set(['FORM', 'MAIN', 'SECTION', 'ARTICLE', 'DIALOG'])
+const SEMANTIC_CONTEXT_ROLES = new Set(['dialog', 'alertdialog'])
+const SEMANTIC_CONTEXT_TEXT_CAP = 2000
+
+function getNearbyText(input: HTMLInputElement, extended = false): string {
   const texts: string[] = []
   let element: HTMLElement | null = input
   let levels = 0
+  let cumulativeLength = 0
+  const maxLevels = extended ? 8 : 4
+  const maxChunkLength = extended ? 300 : 150
+  const cumulativeCap = extended ? 1200 : 600
 
-  while (element && levels < 4) {
+  while (element && levels < maxLevels) {
     // Get all text from siblings
     if (element.parentElement) {
       const directText = Array.from(element.parentElement.childNodes)
@@ -140,27 +166,81 @@ function getNearbyText(input: HTMLInputElement): string {
         .map(node => node.textContent?.trim() || '')
         .filter(Boolean)
         .join(' ')
-      if (directText && directText.length < 150) {
+      if (directText && directText.length < maxChunkLength) {
         texts.push(directText)
+        cumulativeLength += directText.length
       }
 
       const siblings = Array.from(element.parentElement.children)
       siblings.forEach((sibling) => {
         if (sibling !== element && sibling instanceof HTMLElement) {
+          if (extended && NEARBY_SCAN_BLOCKED_TAGS.has(sibling.tagName)) return
+          if (extended && sibling.getAttribute('role') === 'navigation') return
+
           const text = sibling.textContent?.trim()
-          if (text && text.length < 150) {
+          if (text && text.length < maxChunkLength) {
             // Avoid huge blocks (stricter limit for performance)
             texts.push(text)
+            cumulativeLength += text.length
           }
         }
       })
     }
 
-    element = element.parentElement
+    if (cumulativeLength >= cumulativeCap) break
+
+    const next = element.parentElement
+    if (!next) break
+
+    if (extended) {
+      const tag = next.tagName
+      if (tag === 'FORM' || tag === 'DIALOG' || tag === 'MAIN') {
+        break
+      }
+      if (next.getAttribute('role') === 'dialog') {
+        break
+      }
+    }
+
+    element = next
     levels++
   }
 
   return texts.join(' ')
+}
+
+function isSemanticContextContainer(el: HTMLElement): boolean {
+  if (SEMANTIC_CONTEXT_TAGS.has(el.tagName)) return true
+  const role = el.getAttribute('role')
+  if (role && SEMANTIC_CONTEXT_ROLES.has(role)) return true
+  if (el.getAttribute('aria-modal') === 'true') return true
+  return false
+}
+
+function getBoundedSemanticContextText(input: HTMLInputElement): string {
+  let node: HTMLElement | null = input.parentElement
+  let fallback: HTMLElement | null = null
+  let depth = 0
+
+  while (node && node !== document.body) {
+    if (depth === 6) {
+      fallback = node
+    }
+    if (isSemanticContextContainer(node)) {
+      const text = getFilteredText(node)
+      return text.length > SEMANTIC_CONTEXT_TEXT_CAP
+        ? text.slice(0, SEMANTIC_CONTEXT_TEXT_CAP)
+        : text
+    }
+    node = node.parentElement
+    depth += 1
+  }
+
+  if (!fallback) return ''
+  const text = getFilteredText(fallback)
+  return text.length > SEMANTIC_CONTEXT_TEXT_CAP
+    ? text.slice(0, SEMANTIC_CONTEXT_TEXT_CAP)
+    : text
 }
 
 /**
@@ -176,10 +256,17 @@ function getNearbyText(input: HTMLInputElement): string {
  */
 function validateFieldContext(
   input: HTMLInputElement,
-  cooldown: CooldownRegistry
+  cooldown: CooldownRegistry,
+  options: { extendedNearbyText?: boolean } = {}
 ): { pass: true; textSources: TextSources; allChannels?: Array<'email' | 'sms' | 'authenticator'>; channelEvidence: 'positive' | 'unknown' } | { pass: false; result: Tier1Result } {
   const labelText = getLabelText(input)
-  const nearbyText = getNearbyText(input)
+  const localNearbyText = getNearbyText(input, options.extendedNearbyText === true)
+  const boundedContextText = options.extendedNearbyText === true
+    ? getBoundedSemanticContextText(input)
+    : ''
+  const nearbyText = [localNearbyText, boundedContextText]
+    .filter(Boolean)
+    .join(' ')
   const textSources: TextSources = {
     label: labelText,
     placeholder: input.placeholder || '',
@@ -381,6 +468,21 @@ export function detectTier1(
     }
   }
 
+  for (const attr of allAttributes) {
+    if (
+      CAPTCHA_ATTRIBUTE_PATTERN.test(attr.name) ||
+      CAPTCHA_ATTRIBUTE_PATTERN.test(attr.value)
+    ) {
+      cooldown.markRejected(input)
+      return {
+        detected: false,
+        confidence: 0,
+        reason: `CAPTCHA field attribute: ${attr.name}="${attr.value}"`,
+        metadata: { layer: 'attribute' },
+      }
+    }
+  }
+
   // Extract attributes once for reuse
   const name = input.name?.toLowerCase() || ''
   const id = input.id?.toLowerCase() || ''
@@ -443,7 +545,7 @@ export function detectTier1(
   // Check autocomplete attribute (HTML standard) - highest confidence
   const autocomplete = getMatchingAutocompleteToken(input, AUTOCOMPLETE_VALUES)
   if (autocomplete) {
-    const validation = validateFieldContext(input, cooldown)
+    const validation = validateFieldContext(input, cooldown, { extendedNearbyText: true })
     if (!validation.pass) return validation.result
 
     cooldown.markDetected(input)

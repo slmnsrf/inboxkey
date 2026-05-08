@@ -155,6 +155,7 @@ export interface CandidateRecord {
     conversationHref?: string
     isUnread?: boolean
     snippetHash?: string
+    previewRank?: number
   }
 }
 
@@ -369,7 +370,7 @@ export class EmailPollingService {
           // Gate by minScore; ignore everything else
           if (passesGate) {
             const meta = msg._meta as
-              | { conversationHref?: string; isUnread?: boolean; snippetHash?: string }
+              | { conversationHref?: string; isUnread?: boolean; snippetHash?: string; previewRank?: number }
               | undefined
             const rec: CandidateRecord = {
               provider: msg.provider,
@@ -380,11 +381,17 @@ export class EmailPollingService {
               receivedEpochMs: msg.receivedEpochMs,
               score: topScore,
               provenanceKey: `${msg.provider}:${ad.mailboxId}:${msg.id}`,
-              meta: meta && (meta.conversationHref || meta.isUnread !== undefined || meta.snippetHash)
+              meta: meta && (
+                meta.conversationHref ||
+                meta.isUnread !== undefined ||
+                meta.snippetHash ||
+                meta.previewRank !== undefined
+              )
                 ? {
                     conversationHref: meta.conversationHref,
                     isUnread: meta.isUnread,
                     snippetHash: meta.snippetHash,
+                    previewRank: meta.previewRank,
                   }
                 : undefined,
             }

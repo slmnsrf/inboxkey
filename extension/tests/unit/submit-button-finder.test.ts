@@ -57,6 +57,23 @@ describe('Submit Button Finder', () => {
       expect(result).toBe(submitInput)
     })
 
+    it('should find safe-labeled input[type="button"] inside form', async () => {
+      const form = document.createElement('form')
+      const field = document.createElement('input')
+      field.type = 'text'
+      const buttonInput = document.createElement('input')
+      buttonInput.type = 'button'
+      buttonInput.value = 'Devam'
+
+      form.appendChild(field)
+      form.appendChild(buttonInput)
+      document.body.appendChild(form)
+
+      const result = await findSubmitButton({ field })
+
+      expect(result).toBe(buttonInput)
+    })
+
     it('should prefer safe pattern match over type=submit alone', async () => {
       const form = document.createElement('form')
       const field = document.createElement('input')
@@ -561,7 +578,7 @@ describe('Submit Button Finder', () => {
         document.body.removeChild(container)
       })
 
-      it('should NOT find <a> when extended detection disabled', async () => {
+      it('should find safe same-form <a> when extended detection disabled', async () => {
         const container = document.createElement('div')
         container.innerHTML = `
           <form>
@@ -577,7 +594,8 @@ describe('Submit Button Finder', () => {
           extendedDetection: false
         })
 
-        expect(button).toBeNull()
+        expect(button).not.toBeNull()
+        expect(button?.tagName).toBe('A')
 
         document.body.removeChild(container)
       })
@@ -639,6 +657,26 @@ describe('Submit Button Finder', () => {
         const button = await findSubmitButton({ field, extendedDetection: true })
 
         expect(button).not.toBeNull()
+
+        document.body.removeChild(container)
+      })
+
+      it('should detect same-form <a href="javascript:;"> without extended detection', async () => {
+        const container = document.createElement('div')
+        container.innerHTML = `
+          <form>
+            <input type="text" id="code" />
+            <a href="javascript:;" class="btn btn-primary btn-block btn--big">Onayla</a>
+          </form>
+        `
+        document.body.appendChild(container)
+
+        const field = container.querySelector('#code') as HTMLInputElement
+        const button = await findSubmitButton({ field, extendedDetection: false })
+
+        expect(button).not.toBeNull()
+        expect(button?.tagName).toBe('A')
+        expect(button?.textContent).toContain('Onayla')
 
         document.body.removeChild(container)
       })
@@ -798,6 +836,46 @@ describe('Submit Button Finder', () => {
 
         document.body.removeChild(container)
       })
+
+      it('should reject resend pseudo-links that contain safe words', async () => {
+        const container = document.createElement('div')
+        container.innerHTML = `
+          <form>
+            <input type="text" id="code" />
+            <a href="#">Resend code</a>
+          </form>
+        `
+        document.body.appendChild(container)
+
+        const field = container.querySelector('#code') as HTMLInputElement
+        const button = await findSubmitButton({ field, extendedDetection: true })
+
+        expect(button).toBeNull()
+
+        document.body.removeChild(container)
+      })
+
+      it('should reject localized send-again pseudo-links', async () => {
+        const labels = ['Tekrar gönder', 'Enviar de nuevo', '重新发送']
+
+        for (const label of labels) {
+          const container = document.createElement('div')
+          container.innerHTML = `
+            <form>
+              <input type="text" id="code" />
+              <a href="#">${label}</a>
+            </form>
+          `
+          document.body.appendChild(container)
+
+          const field = container.querySelector('#code') as HTMLInputElement
+          const button = await findSubmitButton({ field, extendedDetection: true })
+
+          expect(button).toBeNull()
+
+          document.body.removeChild(container)
+        }
+      })
     })
 
     describe('Container requirement (SAFEGUARD)', () => {
@@ -858,7 +936,7 @@ describe('Submit Button Finder', () => {
         document.body.removeChild(container)
       })
 
-      it('should NOT find Battlestate button when extended detection disabled', async () => {
+      it('should find same-form Battlestate button when extended detection disabled', async () => {
         const container = document.createElement('div')
         container.innerHTML = `
           <form class="bsg-ac-form-2fa">
@@ -876,7 +954,8 @@ describe('Submit Button Finder', () => {
           extendedDetection: false
         })
 
-        expect(button).toBeNull()
+        expect(button).not.toBeNull()
+        expect(button?.tagName).toBe('A')
 
         document.body.removeChild(container)
       })

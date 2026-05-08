@@ -300,6 +300,7 @@ export const ALLOW_PATTERNS = [
 
   // OTP variations
   /\botp[_\s-]?password\b/i,
+  /\botp[_\s-]?(code|token|pin)\b/i,
 
   // Passwordless authentication
   /\bwithout\s+password\b/i,
@@ -320,7 +321,35 @@ export const ALLOW_PATTERNS = [
   /\bcode\s+(sent|delivered|emailed)\b/i,
   /\bwe[''']ve\s+sent.*code\b/i,
 
-  // Turkish: "enter code" variations (OVERRIDES "giriş" negative keyword)
+  // Multilingual direct verification/security-code phrases.
+  // These override broad page chrome like cart/checkout only when the text
+  // is explicitly an authentication-code label, not a generic "code" field.
+  /\bc[oó]digo\s+(?:de\s+)?(?:verificaci[oó]n|seguridad|autenticaci[oó]n)\b/i, // es
+  /\bc[oó]digo\s+(?:de\s+)?(?:verifica[cç][aã]o|seguran[cç]a|autentica[cç][aã]o)\b/i, // pt
+  /\b(?:verifizierungs|best[äa]tigungs|sicherheits|authentifizierungs)[-\s]?(?:code|kode)\b/i, // de
+  /\b(?:code|kode)\s+(?:zur\s+)?(?:verifizierung|best[äa]tigung|authentifizierung)\b/i, // de
+  /\bcode\s+(?:de\s+)?(?:v[eé]rification|s[eé]curit[eé]|authentification)\b/i, // fr
+  /\bcodice\s+(?:di\s+)?(?:verifica|sicurezza|autenticazione)\b/i, // it
+  /\b(?:verificatie|beveiligings|authenticatie)[-\s]?code\b/i, // nl
+  /\bcode\s+(?:voor\s+)?(?:verificatie|beveiliging|authenticatie)\b/i, // nl
+  /\bkod\s+(?:weryfikacyjny|weryfikacji|bezpiecze[ńn]stwa|uwierzytelniaj[ąa]cy)\b/i, // pl
+  /\b(?:ov[eě]řovac[ií]|overovaci|bezpečnostn[ií]|bezpecnostni|autentizační|autentizacni)\s+k[oó]d\b/i, // cs
+  /\bk[oó]d\s+(?:ov[eě]řen[ií]|overeni|bezpečnost[ií]|bezpecnosti|autentizace)\b/i, // cs
+  /\b(?:verifierings|s[äa]kerhets|autentiserings)[-\s]?kod\b/i, // sv
+  /\b(?:vahvistus|turva|todennus)[-\s]?koodi\b/i, // fi
+  /\b(?:bekr[æa]ftelses|sikkerheds|godkendelses)[-\s]?kode\b/i, // da
+  /\b(?:bekreftelses|sikkerhets|autentiserings)[-\s]?kode\b/i, // no
+  /\bdo[ğg]rulama\s+(?:kodu|kod|pin)\b/i, // tr
+  /\bg[üu]venlik\s+kodu\b/i, // tr
+  /код\s+(?:подтверждения|безопасности|аутентификации)/i, // ru
+  /код\s+(?:підтвердження|пидтвердження|безпеки|автентифікації|автентификации)/i, // uk
+  /رمز\s+(?:التحقق|الأمان|المصادقة)/i, // ar
+  /(?:सत्यापन|सुरक्षा|प्रमाणीकरण)\s*कोड/i, // hi
+  /(?:確認|認証|セキュリティ)[\s　]*コード/i, // ja
+  /(?:인증|확인|보안)\s*코드/i, // ko
+  /(?:验证码|驗證碼|安全码|安全碼|认证码|認證碼)/i, // zh
+
+  // Turkish/Finnish: "enter code" variations (OVERRIDES login negatives)
   /\b(kod|kodu|doğrulama|kimlik)\s+(gir|girin|giriniz)\b/i,  // kod girin, kodu giriniz, doğrulama girin
   /\bgir(in|iniz)?\s+(kod|kodu|doğrulama)\b/i,  // girin kodu, giriniz kod
 
@@ -349,6 +378,67 @@ function matchesCommercialContext(text: string): boolean {
         return true
       }
     }
+  }
+
+  return false
+}
+
+const CAPTCHA_CONTEXT_PATTERNS = [
+  /\b(?:captcha|re[\s\-_]?captcha|hcaptcha|turnstile)\b/i,
+  /\b(?:bot|human)\s+(?:check|verification|challenge)\b/i,
+
+  // Latin-script "characters/code in the image" prompts across the
+  // supported locales. These are direct-field prompts, not page-wide
+  // ambient text, so they can safely veto OTP-shaped inputs.
+  /(?:image|picture|photo).{0,80}(?:character|letter|digit|text|code)|(?:character|letter|digit|text|code).{0,80}(?:image|picture|photo)/i,
+  /(?:imagen).{0,80}(?:caracter|letra|digito|codigo)|(?:caracter|letra|digito|codigo).{0,80}(?:imagen)/i,
+  /(?:imagem).{0,80}(?:caracter|letra|digito|codigo)|(?:caracter|letra|digito|codigo).{0,80}(?:imagem)/i,
+  /(?:bild).{0,80}(?:zeichen|buchstab|ziffer|code)|(?:zeichen|buchstab|ziffer|code).{0,80}(?:bild)/i,
+  /(?:image).{0,80}(?:caractere|lettre|chiffre|code)|(?:caractere|lettre|chiffre|code).{0,80}(?:image)/i,
+  /(?:immagine).{0,80}(?:caratter|letter|cifr|codice)|(?:caratter|letter|cifr|codice).{0,80}(?:immagine)/i,
+  /(?:afbeelding|plaatje).{0,80}(?:teken|letter|cijfer|code)|(?:teken|letter|cijfer|code).{0,80}(?:afbeelding|plaatje)/i,
+  /(?:resim|resimdeki|gorsel).{0,80}(?:karakter|harf|rakam|kod)|(?:karakter|harf|rakam|kod).{0,80}(?:resim|resimdeki|gorsel)/i,
+  /(?:obraz|obrazku|obrazek).{0,80}(?:znak|liter|cyfr|kod)|(?:znak|liter|cyfr|kod).{0,80}(?:obraz|obrazku|obrazek)/i,
+  /(?:bild).{0,80}(?:tecken|bokstav|siff|kod)|(?:tecken|bokstav|siff|kod).{0,80}(?:bild)/i,
+  /(?:kuva|kuvassa).{0,80}(?:merk|kirja|numero|koodi)|(?:merk|kirja|numero|koodi).{0,80}(?:kuva|kuvassa)/i,
+  /(?:billede|bildet).{0,80}(?:tegn|bokstav|siffer|kode)|(?:tegn|bokstav|siffer|kode).{0,80}(?:billede|bildet)/i,
+
+  // Non-Latin scripts: require image/picture wording near character/code
+  // wording. Do not block bare "verification code" terms such as 验证码,
+  // because those are also legitimate OTP labels.
+  /(?:картинк|изображени).{0,80}(?:символ|букв|цифр|код)|(?:символ|букв|цифр|код).{0,80}(?:картинк|изображени)/i,
+  /(?:зображенн|картин|малюнк).{0,80}(?:символ|букв|цифр|код)|(?:символ|букв|цифр|код).{0,80}(?:зображенн|картин|малюнк)/i,
+  /(?:صورة|الصورة).{0,80}(?:رمز|حرف|أحرف|ارقام|أرقام)|(?:رمز|حرف|أحرف|ارقام|أرقام).{0,80}(?:صورة|الصورة)/i,
+  /(?:छवि|चित्र).{0,80}(?:अक्षर|वर्ण|कोड|अंक)|(?:अक्षर|वर्ण|कोड|अंक).{0,80}(?:छवि|चित्र)/i,
+  /(?:画像|イメージ).{0,60}(?:文字|コード|数字)|(?:文字|コード|数字).{0,60}(?:画像|イメージ)/i,
+  /(?:이미지|그림).{0,60}(?:문자|글자|코드|숫자)|(?:문자|글자|코드|숫자).{0,60}(?:이미지|그림)/i,
+  /(?:图片|圖片|图像|圖像|影像).{0,60}(?:字符|字元|文字|验证码|驗證碼|代码|代碼)|(?:字符|字元|文字|验证码|驗證碼|代码|代碼).{0,60}(?:图片|圖片|图像|圖像|影像)/i,
+] as const
+
+function matchesCaptchaContext(textSources: TextSources): boolean {
+  const directText = [
+    textSources.label,
+    textSources.placeholder,
+    textSources.ariaLabel || '',
+    textSources.ariaDescribedby || '',
+  ].filter(Boolean).join(' ')
+
+  const directNormalized = normalizeText(directText)
+  if (CAPTCHA_CONTEXT_PATTERNS.some(pattern =>
+    pattern.test(directText) || pattern.test(directNormalized)
+  )) {
+    return true
+  }
+
+  const nearbyText = textSources.nearbyText || ''
+  const nearbyNormalized = normalizeText(nearbyText)
+  if (
+    directText.trim().length === 0 &&
+    CAPTCHA_CONTEXT_PATTERNS.some(pattern =>
+      pattern.test(nearbyText) || pattern.test(nearbyNormalized)
+    )
+  ) {
+    return true
   }
 
   return false
@@ -598,9 +688,11 @@ export function validateContext(
 
   // PRIORITY ORDER (defense-in-depth):
   // 1. Setup page patterns (highest - always reject authenticator setup)
-  // 2. Allow-list (second - overrides all negatives)
-  // 3. Commercial context (third - e-commerce, API, referral)
-  // 4. Negative keywords (fourth - password/login detection)
+  // 2. CAPTCHA/image-character context (second - image challenges can
+  //    use "verification code" wording in some locales)
+  // 3. Allow-list (third - overrides other negatives)
+  // 4. Commercial context (fourth - e-commerce, API, referral)
+  // 5. Negative keywords (fifth - password/login detection)
 
   // PRIORITY 1: Check setup page patterns (Phase 1 - False-trigger fix)
   // Rejects GitHub 2FA setup, Steam Guard setup, Microsoft Authenticator setup, etc.
@@ -613,7 +705,17 @@ export function validateContext(
     }
   }
 
-  // PRIORITY 2: Check allow-list (Phase 3 - overrides ALL negatives below)
+  // PRIORITY 2: CAPTCHA / image-character challenges are not OTP fields.
+  if (matchesCaptchaContext(textSources)) {
+    return {
+      pass: false,
+      matchedNegatives: ['captcha-context-detected'],
+      language: null,
+      confidence: 0,
+    }
+  }
+
+  // PRIORITY 3: Check allow-list (Phase 3 - overrides ALL negatives below)
   if (matchesAllowList(combinedText)) {
     return {
       pass: true,
@@ -623,7 +725,7 @@ export function validateContext(
     }
   }
 
-  // PRIORITY 3: Check commercial context (Phase 1b - False-positive prevention)
+  // PRIORITY 4: Check commercial context (Phase 1b - False-positive prevention)
   if (matchesCommercialContext(combinedText)) {
     return {
       pass: false,
@@ -633,7 +735,7 @@ export function validateContext(
     }
   }
 
-  // PRIORITY 3.5: Check non-email intent contexts (developer, address, payment, etc.)
+  // PRIORITY 4.5: Check non-email intent contexts (developer, address, payment, etc.)
   const intentResult = classifyNonEmailIntent(combinedText)
   if (intentResult.blocked) {
     return {

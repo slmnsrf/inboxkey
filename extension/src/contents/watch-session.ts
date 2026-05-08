@@ -25,6 +25,7 @@ import { smsFeatureEnabledCache } from '@/lib/detection/sms-feature-cache'
 import { AUTOCOMPLETE_VALUES } from '@/lib/detection/patterns'
 import { getMatchingAutocompleteToken } from '@/lib/detection/detection-utils'
 import { POSITIVE_SIGNAL_GATE_ENABLED } from '@/lib/constants'
+import { getFullAutomationSafety } from '@/lib/automation/automation-safety'
 
 /**
  * Google deliberately hides its own SMS codes from messages.google.com web.
@@ -52,6 +53,7 @@ interface WatchSessionCallbacks {
   onVetoed?: () => void  // Called when a pre-flight guardrail blocks session start
   onSessionStarted?: (sessionId: string) => void
   onAutofill?: (result: SessionCodeResult, field: HTMLInputElement) => Promise<boolean>
+  onCodeHandled?: () => void
 }
 
 interface ExpectedShape {
@@ -393,19 +395,18 @@ export class WatchSession {
 
         // Try to autofill if callback provided
         if (this.callbacks.onAutofill) {
-          // FIXED: Chain cleanup after autofill completes (prevents race condition)
           this.handleCodeFoundWithAutofill(payload.code)
-            .then(() => {
-              // Cleanup AFTER chip hide is triggered
-              this.cleanup()
-            })
             .catch((error) => {
               console.warn("[WatchSession] Autofill error:", error)
+            })
+            .finally(() => {
+              this.callbacks.onCodeHandled?.()
               this.cleanup()
             })
         } else {
           // Legacy path: just call onCodeFound
           this.callbacks.onCodeFound(payload.code)
+          this.callbacks.onCodeHandled?.()
           this.cleanup()
         }
 
@@ -470,8 +471,22 @@ export class WatchSession {
 
     console.log(`[WatchSession] Automation level: ${automationLevel}`)
 
+    let effectiveAutomationLevel = automationLevel
+    if (automationLevel === 'full-automation') {
+      const safety = getFullAutomationSafety({
+        url: window.location.href,
+        field: this.field,
+      })
+      if (safety.shouldDemote) {
+        effectiveAutomationLevel = 'autofill'
+        console.log(
+          `[WatchSession] Full automation demoted to autofill (${safety.reasons.join(', ')})`
+        )
+      }
+    }
+
     // Handle based on automation level
-    if (automationLevel === 'clipboard') {
+    if (effectiveAutomationLevel === 'clipboard') {
       // Clipboard-only mode: skip autofill, go straight to clipboard
       console.log("[WatchSession] Clipboard mode - skipping autofill")
       await this.handleAutofillFailure(codeResult)
@@ -481,7 +496,7 @@ export class WatchSession {
     // Try to autofill (for 'autofill' and 'full-automation' modes)
     const autofilled = await this.tryAutofill(codeResult)
 
-    if (autofilled && automationLevel === 'full-automation') {
+    if (autofilled && effectiveAutomationLevel === 'full-automation') {
       // Full automation: try to click submit button
       console.log("[WatchSession] Full automation - attempting auto-submit")
       await this.tryAutoSubmit()
@@ -532,10 +547,10 @@ export class WatchSession {
     try {
       // Load extended detection setting
       const result = await chrome.storage.local.get('settings')
-      const extendedDetection = result.settings?.extendedButtonDetection || false
+      const extendedDetection = result.settings?.extendedButtonDetection ?? true
 
       if (extendedDetection) {
-        console.log('[WatchSession] [BETA] Extended button detection enabled')
+        console.log('[WatchSession] Extended button detection enabled')
       }
 
       const clicked = await findAndClickSubmitButton(this.field, extendedDetection)

@@ -67,6 +67,7 @@ import { hasEmailContext } from "../../src/lib/detection/email-context-guard"
 import { StorageFactory } from "../../src/lib/storage/storage-factory"
 import * as smsCache from "../../src/lib/detection/sms-feature-cache"
 import { showSessionChip } from "../../src/contents/session-chip"
+import { findAndClickSubmitButton } from "../../src/contents/autofill"
 
 interface MockPort {
   name: string
@@ -268,7 +269,44 @@ describe("WatchSession", () => {
     expect(onVetoed).not.toHaveBeenCalled()
     expect(chrome.runtime.connect).toHaveBeenCalledWith({ name: "watch-session" })
     expect(port.postMessage).toHaveBeenCalledWith(
-      expect.objectContaining({ type: "START_SESSION" })
+      expect.objectContaining({
+        type: "START_SESSION",
+        detectedChannels: ["email"],
+      })
+    )
+  })
+
+  it("starts SMS autocomplete sessions only when detection has positive SMS context", async () => {
+    vi.mocked(hasEmailContext).mockReturnValue(false)
+    vi.mocked(StorageFactory.create).mockResolvedValue({
+      getSettings: vi.fn().mockResolvedValue({ sessionTimeoutSeconds: 20 }),
+      getMailboxes: vi.fn().mockResolvedValue([
+        { id: "mb-gm", providerId: "google-messages", email: "sms@google-messages.local" },
+      ]),
+    } as never)
+
+    const field = documentRef.createElement("input")
+    field.setAttribute("autocomplete", "one-time-code")
+    documentRef.body.appendChild(field)
+
+    const detection: DetectionResult = {
+      ...createDetectionResult(field),
+      detectedChannels: ["sms"],
+      channelEvidence: "positive",
+    }
+    const onVetoed = vi.fn()
+    const onCodeFound = vi.fn()
+
+    const session = new WatchSession(field, detection, { onCodeFound, onVetoed })
+    await session.start()
+
+    expect(onVetoed).not.toHaveBeenCalled()
+    expect(port.postMessage).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: "START_SESSION",
+        detectedChannels: ["sms"],
+        channelEvidence: "positive",
+      })
     )
   })
 
@@ -522,6 +560,122 @@ describe("WatchSession", () => {
     )
     expect(session.isActive()).toBe(false)
     expect(port.disconnect).toHaveBeenCalled()
+  })
+
+  it("defaults extended button detection on for full automation when the setting is absent", async () => {
+    const getLocalStorage = chrome.storage.local.get as unknown as ReturnType<typeof vi.fn>
+    getLocalStorage
+      .mockResolvedValueOnce({ settings: { automationLevel: "full-automation" } })
+      .mockResolvedValueOnce({ settings: { automationLevel: "full-automation" } })
+
+    const field = documentRef.createElement("input")
+    documentRef.body.appendChild(field)
+
+    const detection = createDetectionResult(field)
+    const onCodeFound = vi.fn()
+    const onAutofill = vi.fn().mockResolvedValue(true)
+
+    const session = new WatchSession(field, detection, { onCodeFound, onAutofill })
+    await session.start()
+
+    await emitPortMessage({
+      type: "SESSION_CODE_FOUND",
+      code: { code: "123456", source: "UnitTest", timestamp: Date.now() },
+    })
+
+    expect(findAndClickSubmitButton).toHaveBeenCalledWith(field, true)
+  })
+
+  it("honors explicit extended button detection opt-out in full automation", async () => {
+    const getLocalStorage = chrome.storage.local.get as unknown as ReturnType<typeof vi.fn>
+    getLocalStorage
+      .mockResolvedValueOnce({ settings: { automationLevel: "full-automation" } })
+      .mockResolvedValueOnce({
+        settings: {
+          automationLevel: "full-automation",
+          extendedButtonDetection: false,
+        },
+      })
+
+    const field = documentRef.createElement("input")
+    documentRef.body.appendChild(field)
+
+    const detection = createDetectionResult(field)
+    const onCodeFound = vi.fn()
+    const onAutofill = vi.fn().mockResolvedValue(true)
+
+    const session = new WatchSession(field, detection, { onCodeFound, onAutofill })
+    await session.start()
+
+    await emitPortMessage({
+      type: "SESSION_CODE_FOUND",
+      code: { code: "123456", source: "UnitTest", timestamp: Date.now() },
+    })
+
+    expect(findAndClickSubmitButton).toHaveBeenCalledWith(field, false)
+  })
+
+  it("demotes full automation to autofill in payment context", async () => {
+    const getLocalStorage = chrome.storage.local.get as unknown as ReturnType<typeof vi.fn>
+    getLocalStorage.mockResolvedValueOnce({
+      settings: { automationLevel: "full-automation" },
+    })
+
+    const form = documentRef.createElement("form")
+    const heading = documentRef.createElement("h2")
+    heading.textContent = "Payment confirmation"
+    const field = documentRef.createElement("input")
+    field.setAttribute("autocomplete", "one-time-code")
+    form.appendChild(heading)
+    form.appendChild(field)
+    documentRef.body.appendChild(form)
+
+    const detection = createDetectionResult(field)
+    const onCodeFound = vi.fn()
+    const onAutofill = vi.fn().mockResolvedValue(true)
+
+    const session = new WatchSession(field, detection, { onCodeFound, onAutofill })
+    await session.start()
+
+    await emitPortMessage({
+      type: "SESSION_CODE_FOUND",
+      code: { code: "123456", source: "UnitTest", timestamp: Date.now() },
+    })
+
+    expect(onAutofill).toHaveBeenCalledTimes(1)
+    expect(findAndClickSubmitButton).not.toHaveBeenCalled()
+  })
+
+  it("fires code-handled cleanup after autofill completes", async () => {
+    const events: string[] = []
+    const field = documentRef.createElement("input")
+    documentRef.body.appendChild(field)
+
+    const detection = createDetectionResult(field)
+    const onCodeFound = vi.fn(() => {
+      events.push("found")
+    })
+    const onAutofill = vi.fn().mockImplementation(async () => {
+      events.push("autofill")
+      return true
+    })
+    const onCodeHandled = vi.fn(() => {
+      events.push("handled")
+    })
+
+    const session = new WatchSession(field, detection, {
+      onCodeFound,
+      onAutofill,
+      onCodeHandled,
+    })
+    await session.start()
+
+    await emitPortMessage({
+      type: "SESSION_CODE_FOUND",
+      code: { code: "123456", source: "UnitTest", timestamp: Date.now() },
+    })
+
+    expect(events).toEqual(["found", "autofill", "handled"])
   })
 
   // D.7 — startWatch integration: rate-limited shadow → visible split group

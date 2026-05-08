@@ -69,6 +69,89 @@ describe('Multilingual OTP Keyword Matching', () => {
     })
   })
 
+  describe('Latin transliteration and accent-insensitive keyword matching', () => {
+    it('Turkish SMS ASCII transliteration: should match "tek kullanimlik sifreniz"', () => {
+      const text = 'Superonline.net uzerinden iletmis oldugunuz talebiniz icin tek kullanimlik sifreniz: 551652 Size ozel sifre bilgilerinizi guvenliginiz icin kimseyle paylasmayiniz.'
+      const result = extractOTPs(text)
+      expect(result).toHaveLength(1)
+      expect(result[0].code).toBe('551652')
+    })
+
+    it('Turkish SMS ASCII transliteration: should match "tek seferlik sifreniz"', () => {
+      const text = 'Turknet tek seferlik sifreniz: 795680 Bunu kimseyle paylasmayin. @www.turk.net #795680 B001'
+      const result = extractOTPs(text)
+      expect(result).toHaveLength(1)
+      expect(result[0].code).toBe('795680')
+    })
+
+    it.each([
+      ['Spanish', 'Tu codigo de verificacion es 333333', '333333'],
+      ['Portuguese', 'Seu codigo de verificacao e 444444', '444444'],
+      ['German one-to-one fold', 'Ihr Bestatigungscode lautet 555555', '555555'],
+      ['German ae transliteration', 'Ihr Bestaetigungscode lautet 555556', '555556'],
+      ['French', 'Votre code de securite est 666666', '666666'],
+      ['Turkish', 'Dogrulama kodu: 222222', '222222'],
+      ['Swedish', 'Din sakerhetskod ar 171717', '171717'],
+      ['Finnish', 'Kertakayttokoodi on 181818', '181818'],
+      ['Danish ae transliteration', 'Din bekraeftelseskode er 191919', '191919'],
+      ['Czech', 'Overovaci kod je 212121', '212121'],
+      ['Polish', 'Kod bezpieczenstwa to 141414', '141414'],
+    ])('%s: should extract from unaccented Latin SMS/email copy', (_label, text, expected) => {
+      const result = extractOTPs(text)
+      expect(result).toHaveLength(1)
+      expect(result[0].code).toBe(expected)
+    })
+
+    it.each([
+      ['English', 'Your password is 123456', '123456'],
+      ['Spanish', 'Su contraseña: 123456', '123456'],
+      ['French', 'Votre mot de passe: 123456', '123456'],
+      ['German', 'Ihr Passwort: 123456', '123456'],
+      ['Italian', 'La tua password: 123456', '123456'],
+      ['Portuguese', 'Sua senha: 123456', '123456'],
+      ['Dutch', 'Uw wachtwoord: 123456', '123456'],
+      ['Swedish', 'Ditt lösenord: 123456', '123456'],
+      ['Finnish', 'Salasanasi: 123456', '123456'],
+      ['Danish', 'Din adgangskode: 123456', '123456'],
+      ['Norwegian', 'Ditt passord: 123456', '123456'],
+      ['Polish', 'Twoje hasło: 123456', '123456'],
+      ['Czech', 'Vaše heslo: 123456', '123456'],
+      ['Turkish', 'Sifreniz: 123456', '123456'],
+      ['Russian', 'Ваш пароль: 123456', '123456'],
+      ['Ukrainian', 'Ваш пароль: 123456', '123456'],
+      ['Hindi', 'आपका पासवर्ड: 123456', '123456'],
+      ['Arabic', 'كلمة المرور: 123456', '123456'],
+      ['Japanese', 'パスワード: 123456', '123456'],
+      ['Korean', '비밀번호: 123456', '123456'],
+      ['Chinese', '密码: 123456', '123456'],
+    ])('%s: weak password token extracts only with expected shape', (_label, text, expected) => {
+      const result = extractOTPs(text, { expectedLength: 6, expectedCharset: 'digits' })
+      expect(result).toHaveLength(1)
+      expect(result[0].code).toBe(expected)
+    })
+
+    it('does not extract weak password tokens without page-derived expected shape', () => {
+      const result = extractOTPs('Sifreniz: 123456')
+      expect(result).toHaveLength(0)
+    })
+
+    it('does not extract weak password tokens from password-management copy', () => {
+      const result = extractOTPs('Password reset: 123456', {
+        expectedLength: 6,
+        expectedCharset: 'digits',
+      })
+      expect(result).toHaveLength(0)
+    })
+
+    it('does not extract weak password tokens from Wi-Fi password copy', () => {
+      const result = extractOTPs('WiFi password: 123456', {
+        expectedLength: 6,
+        expectedCharset: 'digits',
+      })
+      expect(result).toHaveLength(0)
+    })
+  })
+
   describe('Inflected Languages - Case Endings', () => {
     it('Russian: should match "код" with genitive case', () => {
       const text = 'Использование кода 159357 подтверждения'
@@ -149,6 +232,111 @@ describe('Multilingual OTP Keyword Matching', () => {
       const text = 'Please encode your data properly.'
       const result = extractOTPs(text)
       expect(result).toHaveLength(0)
+    })
+
+    it.each([
+      ['Codex', 'Welcome to Codex 123456 release notes.'],
+      ['Codebase', 'Push to the Codebase 123456 mirror.'],
+      ['Codec', 'Install Codec: 123456 for playback.'],
+    ])('should NOT prefix-match English "code" inside "%s"', (_label, text) => {
+      const result = extractOTPs(text)
+      expect(result).toHaveLength(0)
+    })
+
+    it.each([
+      ['French', 'Réinitialiser votre mot de passe : 123456'],
+      ['Spanish', 'Restablece tu contraseña: 123456'],
+      ['German', 'Passwort zurücksetzen: 123456'],
+      ['Italian', 'Reimposta la tua password: 123456'],
+      ['Portuguese', 'Redefinir sua senha: 123456'],
+      ['Turkish', 'Şifrenizi sıfırlayın: 123456'],
+      ['English', 'Reset your password: 123456'],
+    ])('does not weak-extract OTPs inside %s password-reset/management copy', (_lang, text) => {
+      // Weak-keyword path requires expectedShape; even with that signal, the
+      // Unicode-aware password-context guard must reject these flows so the
+      // code does not autofill.
+      const result = extractOTPs(text, { expectedLength: 6, expectedCharset: 'digits' })
+      expect(result).toHaveLength(0)
+    })
+
+    it.each([
+      ['Change your passcode', 'Change your passcode: 123456'],
+      ['Reset your pass code', 'Reset your pass code: 123456'],
+      ['Update your passcode', 'Update your passcode: 123456'],
+    ])('rejects English %s reset/management copy (strong-keyword path)', (_label, text) => {
+      // `passcode` / `pass code` are present in both strong and weak
+      // keyword tables, so the strong path activates first and the
+      // weak-only guard never fires. The universal prefix guard in
+      // `isPlausibleOtpCandidate` catches these.
+      expect(extractOTPs(text)).toHaveLength(0)
+    })
+
+    it('extracts legitimate passcode OTP without reset verb in prefix', () => {
+      // Same `passcode` keyword, but no reset/management verb before
+      // the code, so extraction should succeed.
+      const result = extractOTPs('Your passcode is 123456')
+      expect(result).toHaveLength(1)
+      expect(result[0].code).toBe('123456')
+    })
+
+    it('still extracts when reset wording appears AFTER the code as a disclaimer', () => {
+      // The prefix-only filter must not over-reject OTP messages that
+      // include a trailing "if you did not request this..." disclaimer.
+      const result = extractOTPs(
+        'Your verification code is 123456. If you did not request this, you can safely ignore this email or reset your password to be safe.'
+      )
+      expect(result).toHaveLength(1)
+      expect(result[0].code).toBe('123456')
+    })
+
+    describe('weak password-token management contexts for expanded locales', () => {
+      const opts = { expectedLength: 6, expectedCharset: 'digits' as const }
+
+      it.each([
+        ['Dutch',     'Wachtwoord resetten: 123456',         'Uw wachtwoord: 123456'],
+        ['Swedish',   'Återställ ditt lösenord: 123456',     'Ditt lösenord: 123456'],
+        ['Finnish',   'Palauta salasana: 123456',            'Salasanasi: 123456'],
+        ['Danish',    'Nulstil din adgangskode: 123456',     'Din adgangskode: 123456'],
+        ['Norwegian', 'Tilbakestill passordet ditt: 123456', 'Ditt passord: 123456'],
+      ])('%s: rejects Nordic/Dutch reset copy but keeps legitimate OTP copy', (_lang, resetText, otpText) => {
+        expect(extractOTPs(resetText, opts)).toHaveLength(0)
+        const result = extractOTPs(otpText, opts)
+        expect(result).toHaveLength(1)
+        expect(result[0].code).toBe('123456')
+      })
+
+      it.each([
+        ['Polish',    'Resetuj hasło: 123456',  'Twoje hasło: 123456'],
+        ['Czech',     'Obnovit heslo: 123456',   'Vaše heslo: 123456'],
+        ['Russian',   'Сбросить пароль: 123456', 'Ваш пароль: 123456'],
+        ['Ukrainian', 'Скинути пароль: 123456',  'Ваш пароль: 123456'],
+      ])('%s: rejects Slavic reset copy but keeps legitimate OTP copy', (_lang, resetText, otpText) => {
+        expect(extractOTPs(resetText, opts)).toHaveLength(0)
+        const result = extractOTPs(otpText, opts)
+        expect(result).toHaveLength(1)
+        expect(result[0].code).toBe('123456')
+      })
+
+      it.each([
+        ['Hindi',  'पासवर्ड रीसेट करें: 123456',     'आपका पासवर्ड: 123456'],
+        ['Arabic', 'إعادة تعيين كلمة المرور: 123456', 'كلمة المرور: 123456'],
+      ])('%s: rejects Hindi/Arabic reset copy but keeps legitimate OTP copy', (_lang, resetText, otpText) => {
+        expect(extractOTPs(resetText, opts)).toHaveLength(0)
+        const result = extractOTPs(otpText, opts)
+        expect(result).toHaveLength(1)
+        expect(result[0].code).toBe('123456')
+      })
+
+      it.each([
+        ['Japanese', 'パスワードをリセットしてください: 123456', 'パスワード: 123456'],
+        ['Korean',   '비밀번호 재설정: 123456',                  '비밀번호: 123456'],
+        ['Chinese',  '重置密码: 123456',                          '密码: 123456'],
+      ])('%s: rejects CJK reset copy but keeps legitimate OTP copy', (_lang, resetText, otpText) => {
+        expect(extractOTPs(resetText, opts)).toHaveLength(0)
+        const result = extractOTPs(otpText, opts)
+        expect(result).toHaveLength(1)
+        expect(result[0].code).toBe('123456')
+      })
     })
 
     it('German compounds: should match "code" in "Sicherheitscode"', () => {

@@ -17,9 +17,9 @@
  *   The parsed epoch returned here is consumed by the recency scorer for
  *   ordering inside the post-baseline candidate set and by the popup for
  *   sorting. Values that cannot be parsed return undefined; downstream
- *   treats undefined as "unknown" and only uses it as a low-priority
- *   tiebreaker. We never substitute `Date.now()` for a value we don't
- *   actually know — that would falsify freshness signals.
+ *   treats undefined as "unknown" and may use separate provenance
+ *   signals. We never substitute `Date.now()` for a value we don't
+ *   actually know, since that would falsify timestamp evidence.
  */
 
 import type { ProviderAdapter, EmailLike, ProviderId } from '@/lib/services/email-polling-service'
@@ -85,7 +85,7 @@ export class MessagesProviderAdapter implements ProviderAdapter {
       // (and across sessions, via the persisted snapshot) without ever
       // having raw snippet text leave the in-memory pipeline.
       return Promise.all(
-        previews.slice(0, MAX_PREVIEWS).map(async preview => {
+        previews.slice(0, MAX_PREVIEWS).map(async (preview, index) => {
           const conversationKey = preview.conversationHref || preview.conversationId
           const snippetHash = await sha256Hex(preview.previewText)
           return {
@@ -101,6 +101,7 @@ export class MessagesProviderAdapter implements ProviderAdapter {
               conversationHref: preview.conversationHref,
               isUnread: preview.isUnread,
               snippetHash,
+              previewRank: preview.previewRank ?? index,
             },
           }
         })

@@ -503,6 +503,40 @@ describe('split input support', () => {
     })
   })
 
+  it('keeps the status label visible on the last split overlay', async () => {
+    const container = document.createElement('div')
+    const inputs: HTMLInputElement[] = []
+    for (let i = 0; i < 4; i++) {
+      const input = document.createElement('input')
+      input.maxLength = 1
+      Object.defineProperty(input, 'getBoundingClientRect', {
+        configurable: true,
+        value: () => ({
+          width: 40,
+          height: 40,
+          left: i * 50,
+          right: i * 50 + 40,
+          top: 40,
+          bottom: 80,
+          x: i * 50,
+          y: 40,
+          toJSON: () => ({}),
+        }) as DOMRect,
+      })
+      container.appendChild(input)
+      inputs.push(input)
+    }
+    document.body.appendChild(container)
+
+    ;(detectSplitInputGroup as any).mockReturnValue({ inputs })
+
+    await showFieldFeedback(inputs[0])
+
+    const overlays = Array.from(document.querySelectorAll('inboxkey-overlay'))
+    expect(overlays.slice(0, -1).every(overlay => overlay.getAttribute('data-compact') === 'true')).toBe(true)
+    expect(overlays[overlays.length - 1].getAttribute('data-compact')).toBe('false')
+  })
+
   it('removes all split overlays when handle.hide is called', async () => {
     const container = document.createElement('div')
     const inputs: HTMLInputElement[] = []

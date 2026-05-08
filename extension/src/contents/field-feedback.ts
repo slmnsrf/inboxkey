@@ -223,6 +223,7 @@ interface FieldOverlayOptions {
   isGroup?: boolean
   groupTargets?: HTMLInputElement[]
   hideStatusText?: boolean
+  forceStatusText?: boolean
   staggerDelay?: number
   onClose?: () => void | Promise<void>
   onDestroy?: () => void
@@ -256,6 +257,7 @@ class FieldOverlay {
   private hasVisualTarget: boolean
   private isGroup: boolean
   private groupTargets: HTMLInputElement[]
+  private forceStatusText: boolean
   private destroyed = false
   private dismissTimer: ReturnType<typeof setTimeout> | null = null
   private currentState: ChipState | 'idle' = 'idle'
@@ -269,6 +271,7 @@ class FieldOverlay {
     this.target = target
     this.isGroup = options.isGroup ?? false
     this.groupTargets = options.groupTargets ?? [target]
+    this.forceStatusText = options.forceStatusText ?? false
     this.visualTarget = options.visualTarget ?? target
     this.hasVisualTarget = !!options.visualTarget && options.visualTarget !== target
     this.onDestroyCallback = options.onDestroy
@@ -467,7 +470,7 @@ class FieldOverlay {
     this.host.setAttribute('data-text-pos', textPosition)
 
     // Compact mode: hide pill on narrow inputs
-    const isNarrow = rect.width < 120
+    const isNarrow = !this.forceStatusText && rect.width < 120
     this.host.setAttribute('data-compact', isNarrow ? 'true' : 'false')
 
     // Adaptive border thickness
@@ -754,6 +757,8 @@ function buildSplitHandle(
     const overlay = new FieldOverlay(inputs[i], {
       // Status text only on the last input
       hideStatusText: i < inputs.length - 1,
+      // Split OTP cells are narrow; keep the label visible on the last cell.
+      forceStatusText: i === inputs.length - 1,
       // Stagger animation 150ms per box
       staggerDelay: i * 150,
       // Only wire Escape on the first overlay

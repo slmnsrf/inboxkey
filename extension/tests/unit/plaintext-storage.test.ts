@@ -493,6 +493,7 @@ describe("PlaintextStorage", () => {
       const settings = await storage.getSettings()
       expect(settings.autoFillEnabled).toBe(true)
       expect(settings.notificationsEnabled).toBe(true)
+      expect(settings.extendedButtonDetection).toBe(true)
       expect(settings.allowedDomains).toEqual([])
       expect(settings.deniedDomains).toEqual([])
     })

@@ -20,6 +20,7 @@ import {
 import {
   getAriaDescribedbyText,
   getAriaLabelledbyText,
+  getAccessibleAncestorContextText,
   getExplicitLabelText,
 } from './detection-utils'
 import { smsFeatureEnabledCache } from './sms-feature-cache'
@@ -483,6 +484,11 @@ function getLabelText(input: HTMLInputElement): string {
   const ariaLabelledby = getAriaLabelledbyText(input)
   if (ariaLabelledby) {
     labels.push(ariaLabelledby)
+  }
+
+  const ancestorContext = getAccessibleAncestorContextText(input)
+  if (ancestorContext) {
+    labels.push(ancestorContext)
   }
 
   return labels.join(' ')

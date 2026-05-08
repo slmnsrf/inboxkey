@@ -10,6 +10,7 @@
  * 6. Empty mailbox list → returns success silently, pollOnce NOT called
  * 7. tryAcquirePoll() called even when getMailboxes rejects (early I/O failure)
  * 8. Zero candidates → updateWithNewCodes and badge functions NOT called (Fix A)
+ * 9. Manual sync zero candidates preserves existing popup cache (Fix B)
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest'
@@ -167,6 +168,7 @@ describe('PopupMessageHandler — TRIGGER_INBOX_POLL', () => {
   let handler: PopupMessageHandler
 
   beforeEach(() => {
+    vi.useRealTimers()
     vi.clearAllMocks()
 
     // Default: polling is allowed (tryAcquirePoll returns true)
@@ -395,5 +397,50 @@ describe('PopupMessageHandler — TRIGGER_INBOX_POLL', () => {
     expect(mockUpdateWithNewCodes).not.toHaveBeenCalled()
     expect(mockSetBadgeCount).not.toHaveBeenCalled()
     expect(mockClearBadge).not.toHaveBeenCalled()
+  })
+
+  // -------------------------------------------------------------------------
+  // Test 9: Manual sync zero candidates → preserve existing cache
+  // Fix B: opening/refreshing the popup must not wipe SMS items captured by
+  // an active watch session when normal email sync finds nothing new.
+  // -------------------------------------------------------------------------
+  it('preserves existing cache when manual sync returns zero candidates', async () => {
+    vi.useFakeTimers()
+
+    try {
+      const existingCache = {
+        items: [
+          {
+            kind: 'code',
+            id: 'google-messages:gm1:1000',
+            providerId: 'google-messages',
+            source: 'IKEA AILE - No subject',
+            receivedAt: 1000,
+            score: 0.95,
+            code: '123456',
+            len: 6,
+          },
+        ],
+      }
+      mockGetCache.mockResolvedValue(existingCache)
+
+      const mockStorage = buildMockStorage([makeMailbox('m1')])
+      ;(StorageFactory.create as ReturnType<typeof vi.fn>).mockResolvedValue(mockStorage)
+      ;(createAdaptersFromMailboxes as ReturnType<typeof vi.fn>).mockResolvedValue([{ id: 'adapter1' }])
+      mockPollOnce.mockResolvedValue({
+        candidates: [],
+        adapterResults: [{ mailboxId: 'm1', success: true }],
+      })
+
+      const responsePromise = handler.handleMessage({ type: 'TRIGGER_SYNC' })
+      await vi.runAllTimersAsync()
+      const response = await responsePromise
+
+      expect(response).toEqual({ success: true, data: existingCache })
+      expect(mockUpdateWithNewCodes).not.toHaveBeenCalled()
+      expect(mockGetCache).toHaveBeenCalled()
+    } finally {
+      vi.useRealTimers()
+    }
   })
 })

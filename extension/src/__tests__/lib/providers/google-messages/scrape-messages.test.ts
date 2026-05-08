@@ -374,6 +374,58 @@ describe('scrapeMessages()', () => {
       const result = scrapeMessages()
       expect(result.previews[0].timestamp).toBe('Now')
     })
+
+    it('reads timestamp from the mws-relative-timestamp host aria-label', () => {
+      setBody(`
+        <mws-conversations-list>
+          <mws-conversation-list-item>
+            <div data-e2e-is-unread="true">
+              <span data-e2e-conversation-name="">Amazon</span>
+              <mws-relative-timestamp aria-label="2 min ago"></mws-relative-timestamp>
+              <span data-e2e-conversation-snippet="">code</span>
+            </div>
+          </mws-conversation-list-item>
+        </mws-conversations-list>
+      `)
+
+      const result = scrapeMessages()
+      expect(result.previews[0].timestamp).toBe('2 min ago')
+    })
+
+    it('reads timestamp text from an open shadow root', () => {
+      setBody(`
+        <mws-conversations-list>
+          <mws-conversation-list-item>
+            <div data-e2e-is-unread="true">
+              <span data-e2e-conversation-name="">Amazon</span>
+              <mws-relative-timestamp id="ts"></mws-relative-timestamp>
+              <span data-e2e-conversation-snippet="">code</span>
+            </div>
+          </mws-conversation-list-item>
+        </mws-conversations-list>
+      `)
+      const timestampHost = document.getElementById('ts') as HTMLElement
+      const shadow = timestampHost.attachShadow({ mode: 'open' })
+      const span = document.createElement('span')
+      span.textContent = '1 min'
+      shadow.appendChild(span)
+
+      const result = scrapeMessages()
+      expect(result.previews[0].timestamp).toBe('1 min')
+    })
+
+    it('records zero-based preview rank', () => {
+      setBody(`
+        <mws-conversations-list>
+          ${makeConversationItem('First', 'first', { timestamp: 'Now' })}
+          ${makeConversationItem('Second', 'second', { timestamp: '1 min' })}
+        </mws-conversations-list>
+      `)
+
+      const result = scrapeMessages()
+      expect(result.previews[0].previewRank).toBe(0)
+      expect(result.previews[1].previewRank).toBe(1)
+    })
   })
 
   describe('real-world DOM fidelity', () => {

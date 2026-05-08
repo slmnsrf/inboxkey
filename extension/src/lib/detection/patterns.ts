@@ -150,6 +150,7 @@ export const TYPICAL_CODE_LENGTHS = {
  * - first_name, first-name, firstname → ^(?:first|last|full)[\s\-_]?name$
  */
 export const EXCLUSION_PATTERNS = {
+  captcha: /captcha|re[\s\-_]?captcha|hcaptcha|turnstile/i,
   password: /password/i,
   email: /^e[\s\-_]?mail$/i,  // Exact match only - don't exclude "email_code"
   username: /user[\s\-_]?name/i,
@@ -188,6 +189,13 @@ export const EXCLUSION_PATTERNS = {
   affiliate: /affiliate[\s\-_]?(code|link)/i,
   invite: /invit(e|ation)[\s\-_]?code/i,
 } as const
+
+/**
+ * Technical CAPTCHA provider/name marker. Checked against the candidate
+ * field's own attributes, not the whole page, so a separate hidden
+ * reCAPTCHA token elsewhere in a form does not suppress a real OTP field.
+ */
+export const CAPTCHA_ATTRIBUTE_PATTERN = EXCLUSION_PATTERNS.captcha
 
 /**
  * Check if a string matches any exclusion pattern

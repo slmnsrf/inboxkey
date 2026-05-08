@@ -64,7 +64,9 @@ vi.mock("../../src/lib/services/provider-adapter", () => {
 vi.mock("../../src/lib/matching/code-matcher", () => {
   return {
     findBestMatchingCode: vi.fn((codes: StoredCode[]) => {
-      return codes.find((c) => !c.used) || null
+      return codes
+        .filter((c) => !c.used)
+        .sort((a, b) => (b.receivedAt ?? b.timestamp) - (a.receivedAt ?? a.timestamp))[0] || null
     }),
   }
 })
@@ -1129,7 +1131,7 @@ describe("SessionController", () => {
         ])
       }
 
-      it("(case 1) admits first-poll SMS candidate with fresh receivedEpochMs", async () => {
+      it("(case 1) defers first-poll SMS candidate until the settle window elapses", async () => {
         setupOneSmsMailbox()
         const onCompleted = vi.fn()
         const controller = createController({ onSessionCompleted: onCompleted })
@@ -1181,18 +1183,131 @@ describe("SessionController", () => {
           tabId: 1,
           url: "https://brand.com",
           expected: { length: 6, charset: "digits" },
-          timeoutSeconds: 0.2,
+          timeoutSeconds: 10,
           detectedChannels: ["sms"],
           channelEvidence: "positive",
         })
 
         await vi.advanceTimersByTimeAsync(1)
+        expect(onCompleted).not.toHaveBeenCalled()
+
+        await vi.advanceTimersByTimeAsync(4999)
 
         expect(onCompleted).toHaveBeenCalledWith(
           expect.anything(),
           expect.objectContaining({
             status: "filled",
             code: expect.objectContaining({ code: "123456" }),
+          })
+        )
+      })
+
+      it("(case 1b) prefers a newer SMS that arrives during the settle window", async () => {
+        setupOneSmsMailbox()
+        const onCompleted = vi.fn()
+        const controller = createController({ onSessionCompleted: onCompleted })
+        await controller.initialize()
+
+        const firstHash = "hash-first-sms"
+        const secondHash = "hash-second-sms"
+
+        mockPollOnce
+          .mockImplementationOnce((_ctx, cfg) => {
+            const firstReceived = Date.now()
+            cfg?.onAdapterBatch?.("gm-1", [
+              {
+                id: "gm-msg-first",
+                provider: "google-messages",
+                mailboxId: "gm-1",
+                text: "Brand: 111111 ...",
+                receivedEpochMs: firstReceived,
+                _meta: {
+                  conversationHref: "/conv/1",
+                  snippetHash: firstHash,
+                  isUnread: true,
+                },
+              },
+            ])
+            return Promise.resolve({
+              candidates: [
+                {
+                  provider: "google-messages" as const,
+                  mailboxId: "gm-1",
+                  messageId: "gm-msg-first",
+                  from: "Brand",
+                  receivedEpochMs: firstReceived,
+                  code: { value: "111111", kind: "digits" as const, score: 0.95 },
+                  score: 0.95,
+                  provenanceKey: "google-messages:gm-1:gm-msg-first",
+                  meta: {
+                    conversationHref: "/conv/1",
+                    snippetHash: firstHash,
+                    isUnread: true,
+                  },
+                },
+              ],
+              adapterResults: [{ mailboxId: "gm-1", success: true }],
+            })
+          })
+          .mockImplementationOnce((_ctx, cfg) => {
+            const secondReceived = Date.now()
+            cfg?.onAdapterBatch?.("gm-1", [
+              {
+                id: "gm-msg-second",
+                provider: "google-messages",
+                mailboxId: "gm-1",
+                text: "Brand: 222222 ...",
+                receivedEpochMs: secondReceived,
+                _meta: {
+                  conversationHref: "/conv/1",
+                  snippetHash: secondHash,
+                  isUnread: true,
+                },
+              },
+            ])
+            return Promise.resolve({
+              candidates: [
+                {
+                  provider: "google-messages" as const,
+                  mailboxId: "gm-1",
+                  messageId: "gm-msg-second",
+                  from: "Brand",
+                  receivedEpochMs: secondReceived,
+                  code: { value: "222222", kind: "digits" as const, score: 0.95 },
+                  score: 0.95,
+                  provenanceKey: "google-messages:gm-1:gm-msg-second",
+                  meta: {
+                    conversationHref: "/conv/1",
+                    snippetHash: secondHash,
+                    isUnread: true,
+                  },
+                },
+              ],
+              adapterResults: [{ mailboxId: "gm-1", success: true }],
+            })
+          })
+
+        await controller.startSession({
+          tabId: 1,
+          url: "https://brand.com",
+          expected: { length: 6, charset: "digits" },
+          timeoutSeconds: 15,
+          detectedChannels: ["sms"],
+          channelEvidence: "positive",
+        })
+
+        await vi.advanceTimersByTimeAsync(1)
+        expect(onCompleted).not.toHaveBeenCalled()
+
+        await vi.advanceTimersByTimeAsync(4999)
+        expect(onCompleted).not.toHaveBeenCalled()
+
+        await vi.advanceTimersByTimeAsync(5000)
+        expect(onCompleted).toHaveBeenCalledWith(
+          expect.anything(),
+          expect.objectContaining({
+            status: "filled",
+            code: expect.objectContaining({ code: "222222" }),
           })
         )
       })
@@ -1301,7 +1416,77 @@ describe("SessionController", () => {
         )
       })
 
-      it("(case 3) rejects first-poll SMS candidate with undefined receivedEpochMs", async () => {
+      it("(case 3) rejects first-poll top unread SMS candidate with undefined receivedEpochMs (fails closed)", async () => {
+        // Unread + previewRank 0 is ordering evidence, not arrival-time
+        // evidence. An old conversation that happens to be top-unread on
+        // first browser run could otherwise surface yesterday's code, so
+        // we fail closed for autofill: undated candidates do not advance
+        // through the freshness gate.
+        setupOneSmsMailbox()
+        const onCompleted = vi.fn()
+        const controller = createController({ onSessionCompleted: onCompleted })
+        await controller.initialize()
+
+        const previewHash = "hash-undated-top"
+
+        mockPollOnce.mockImplementation((_ctx, cfg) => {
+          cfg?.onAdapterBatch?.("gm-1", [
+            {
+              id: "gm-undated-top",
+              provider: "google-messages",
+              mailboxId: "gm-1",
+              text: "Brand: 333333 ...",
+              receivedEpochMs: undefined,
+              _meta: {
+                conversationHref: "/conv/u",
+                snippetHash: previewHash,
+                isUnread: true,
+                previewRank: 0,
+              },
+            },
+          ])
+          return Promise.resolve({
+            candidates: [
+              {
+                provider: "google-messages" as const,
+                mailboxId: "gm-1",
+                messageId: "gm-undated-top",
+                from: "Brand",
+                receivedEpochMs: undefined,
+                code: { value: "333333", kind: "digits" as const, score: 0.95 },
+                score: 0.95,
+                provenanceKey: "google-messages:gm-1:gm-undated-top",
+                meta: {
+                  conversationHref: "/conv/u",
+                  snippetHash: previewHash,
+                  isUnread: true,
+                  previewRank: 0,
+                },
+              },
+            ],
+            adapterResults: [{ mailboxId: "gm-1", success: true }],
+          })
+        })
+
+        await controller.startSession({
+          tabId: 1,
+          url: "https://brand.com",
+          expected: {},
+          timeoutSeconds: 0.2,
+          detectedChannels: ["sms"],
+          channelEvidence: "positive",
+        })
+
+        await vi.advanceTimersByTimeAsync(0)
+        await vi.advanceTimersByTimeAsync(200)
+
+        expect(onCompleted).toHaveBeenCalledWith(
+          expect.anything(),
+          expect.objectContaining({ status: "timedout" })
+        )
+      })
+
+      it("(case 3b) rejects first-poll SMS candidate with undefined receivedEpochMs when it is not top unread", async () => {
         setupOneSmsMailbox()
         const onCompleted = vi.fn()
         const controller = createController({ onSessionCompleted: onCompleted })
@@ -1339,6 +1524,7 @@ describe("SessionController", () => {
                   conversationHref: "/conv/u",
                   snippetHash: previewHash,
                   isUnread: true,
+                  previewRank: 1,
                 },
               },
             ],

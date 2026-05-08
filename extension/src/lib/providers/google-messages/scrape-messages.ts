@@ -17,6 +17,57 @@ import type { ScrapeResult, MessagePreview } from './types'
  * 4. NEVER: ng-star-inserted, _ngcontent-*, Material class names
  */
 export function scrapeMessages(): ScrapeResult {
+  function firstNonEmpty(...values: Array<string | null | undefined>): string | undefined {
+    for (const value of values) {
+      const trimmed = value?.trim()
+      if (trimmed) return trimmed
+    }
+    return undefined
+  }
+
+  function findDeep(root: ParentNode | null | undefined, selector: string): Element | null {
+    if (!root) return null
+    if ('querySelector' in root) {
+      const direct = root.querySelector(selector)
+      if (direct) return direct
+    }
+
+    const elements = 'querySelectorAll' in root
+      ? Array.from(root.querySelectorAll('*'))
+      : []
+    for (const el of elements) {
+      const shadow = (el as HTMLElement).shadowRoot
+      if (!shadow) continue
+      const found = findDeep(shadow, selector)
+      if (found) return found
+    }
+    return null
+  }
+
+  function getDeepText(node: Node | null | undefined): string | undefined {
+    if (!node) return undefined
+
+    const parts: string[] = []
+    const walk = (current: Node) => {
+      if (current.nodeType === Node.TEXT_NODE) {
+        const text = current.textContent?.trim()
+        if (text) parts.push(text)
+        return
+      }
+
+      if (current instanceof HTMLElement && current.shadowRoot) {
+        walk(current.shadowRoot)
+      }
+
+      for (const child of Array.from(current.childNodes)) {
+        walk(child)
+      }
+    }
+
+    walk(node)
+    return firstNonEmpty(parts.join(' '))
+  }
+
   // 1. Check for QR code -- means device is not paired yet
   if (document.querySelector('mw-qr-code')) {
     return { status: 'unpaired', previews: [] }
@@ -50,7 +101,7 @@ export function scrapeMessages(): ScrapeResult {
     const nameEl = item.querySelector('[data-e2e-conversation-name]')
     const snippetEl = item.querySelector('[data-e2e-conversation-snippet]')
     const unreadEl = item.querySelector('[data-e2e-is-unread]')
-    const timestampEl = item.querySelector('mws-relative-timestamp')
+    const timestampEl = findDeep(item, 'mws-relative-timestamp') as HTMLElement | null
 
     let senderName = nameEl?.textContent?.trim() ?? ''
     let previewText = snippetEl?.textContent?.trim() ?? ''
@@ -72,10 +123,15 @@ export function scrapeMessages(): ScrapeResult {
     // fall back to the timestamp element's textContent for fresh messages
     // which render the text directly inside <mws-relative-timestamp> with
     // no wrapping div and no aria-label.
-    const ariaTimestampEl = timestampEl?.querySelector<HTMLElement>('[aria-label]')
+    const ariaTimestampEl = findDeep(timestampEl, '[aria-label]') as HTMLElement | null
     const ariaTimestamp = ariaTimestampEl?.getAttribute('aria-label')?.trim() || undefined
-    const visibleTimestamp = timestampEl?.textContent?.trim() || undefined
-    const timestamp = ariaTimestamp || visibleTimestamp
+    const timestamp = firstNonEmpty(
+      timestampEl?.getAttribute('aria-label'),
+      timestampEl?.getAttribute('title'),
+      timestampEl?.getAttribute('datetime'),
+      ariaTimestamp,
+      getDeepText(timestampEl)
+    )
 
     // Stable conversation href from the list item's <a href>. Used by
     // the provenance baseline to identify the same conversation across
@@ -100,6 +156,7 @@ export function scrapeMessages(): ScrapeResult {
       previewText,
       isUnread,
       timestamp,
+      previewRank: i,
     })
   }
 

@@ -169,6 +169,36 @@ describe('detectSplitInputGroup', () => {
       expect(group!.inputs.length).toBe(6)
     })
 
+    it('detects AntD-style one-character pattern cells with no maxlength', () => {
+      container.innerHTML = `
+        <div role="dialog">
+          <h2>SMS Doğrulama</h2>
+          <p>**** *****15 telefon numarasına gönderilen doğrulama kodunu giriniz.</p>
+          <div class="ModalOtp_otp__inputs__mLi8o">
+            ${Array.from({ length: 6 }, (_, index) => `
+              <div>
+                <div class="atom-input_a-input__wrapper__nSzVL">
+                  <label>
+                    <span class="ant-input-affix-wrapper">
+                      <input autocomplete="${index === 0 ? 'one-time-code' : 'off'}" type="text" inputmode="numeric" pattern="\\d{1}" class="ant-input ant-input-lg" />
+                    </span>
+                  </label>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      `
+      const inputs = Array.from(container.querySelectorAll<HTMLInputElement>('input'))
+
+      for (const input of inputs) {
+        const group = detectSplitInputGroup(input)
+        expect(group).not.toBeNull()
+        expect(group!.inputs).toHaveLength(6)
+        expect(group!.representative).toBe(inputs[0])
+      }
+    })
+
     it('detects vertical text-input OTP layout (no geometry filter)', () => {
       // Some mobile OTP layouts stack cells vertically. The fix must
       // not regress these — the gate is on input type, not geometry.

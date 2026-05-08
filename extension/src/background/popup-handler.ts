@@ -186,8 +186,13 @@ export class PopupMessageHandler {
             }
             console.log(`[PopupHandler] Updated lastSyncedAt for ${updatedCount}/${mailboxes.length} mailboxes`)
 
-            // Update popup cache with ephemeral codes (session storage only)
-            await this.cacheManager.updateWithNewCodes(ephemeralCodes, mailboxes.length, mailboxes)
+            // Update popup cache only when this sync discovered new items.
+            // Google Messages is session-scoped and excluded from normal
+            // popup sync, so an empty email sync must not wipe a still-fresh
+            // SMS item captured by an active watch session.
+            if (ephemeralCodes.length > 0) {
+              await this.cacheManager.updateWithNewCodes(ephemeralCodes, mailboxes.length, mailboxes)
+            }
 
             // Return updated cache
             const cache = await this.cacheManager.getCache()

@@ -20,12 +20,12 @@
  */
 import { findBestMatchingCode } from "@/lib/matching/code-matcher"
 import { StorageFactory } from "@/lib/storage/storage-factory"
-import { EmailPollingService, type CandidateRecord, type EmailLike } from "@/lib/services/email-polling-service"
+import { EmailPollingService, type CandidateRecord, type EmailLike, type ProviderId } from "@/lib/services/email-polling-service"
 import { createAdaptersFromMailboxes } from "@/lib/services/provider-adapter"
 import { SeenMessageStore } from "@/lib/services/seen-message-store"
 import { SessionPoller } from "./session-poller"
-import { extractETLD, domainAffinity } from "@/lib/matching/domain-affinity"
-import { shouldSuppressMatch } from "@/lib/matching/eligibility"
+import { extractETLD } from "@/lib/matching/domain-affinity"
+import { isNewArrivalCandidateEligibleForAutofill, shouldSuppressMatch } from "@/lib/matching/eligibility"
 import { POSITIVE_SIGNAL_GATE_ENABLED } from "@/lib/constants"
 import { getMessagesTabManager } from "@/lib/providers/google-messages/tab-manager"
 import { WATCH_SESSION_SCORING } from "@/lib/matching/scoring-config"
@@ -63,6 +63,14 @@ const SMS_SNAPSHOT_TTL_MS = 10 * 60_000
  * genuinely-fresh arrivals at the edge.
  */
 const SMS_CANDIDATE_PRESESSION_GRACE_MS = 2 * 60_000
+
+/**
+ * Fresh SMS settle window. Google Messages can show a just-arrived
+ * message as "now" (localized) before a second request's newer OTP has
+ * appeared in the conversation list. Hold SMS autofill briefly so the
+ * next early poll can replace the candidate with the latest code.
+ */
+const SMS_AUTOFILL_SETTLE_MS = 5_000
 
 type SessionStatus = "active" | "filled" | "timedout" | "canceled"
 type SessionChannel = 'email' | 'sms'
@@ -204,6 +212,7 @@ interface SessionMatcherCode {
   timestamp: number
   source: string
   used: boolean
+  provider?: ProviderId
   siteMatch?: string
   mailboxId?: string
   senderETLD?: string
@@ -948,13 +957,22 @@ export class SessionController {
           // poll's own batch, so snippet-diff / provenanceKey-includes
           // are structurally meaningless. Require a confirmed parsed
           // receipt timestamp inside the pre-session grace window
-          // instead. Missing timestamp fails closed (an SMS the parser
-          // couldn't date can't be proven fresh).
-          if (candidate.receivedEpochMs === undefined) continue
-          if (
+          // instead. Undated candidates fail CLOSED for autofill: an
+          // unread + top-rank conversation on a first browser-run is
+          // ordering evidence, not arrival-time evidence, and may
+          // surface an old (e.g. yesterday's) message.
+          if (candidate.receivedEpochMs === undefined) {
+            console.log(
+              `[SessionController] Dropping current-baseline candidate without parseable timestamp | provider=${candidate.provider} mailbox=${candidate.mailboxId} unread=${candidate.meta?.isUnread ?? '(unknown)'} rank=${candidate.meta?.previewRank ?? '(unknown)'}`
+            )
+            continue
+          } else if (
             candidate.receivedEpochMs <
             session.sessionStart - SMS_CANDIDATE_PRESESSION_GRACE_MS
           ) {
+            console.log(
+              `[SessionController] Dropping current-baseline candidate older than freshness grace | provider=${candidate.provider} mailbox=${candidate.mailboxId} ageMs=${Date.now() - candidate.receivedEpochMs}`
+            )
             continue
           }
         } else {
@@ -975,11 +993,19 @@ export class SessionController {
           // The blast radius is narrow — most GM rows parse to an
           // absolute timestamp; only ambiguous strings fall here.
           if (candidate.provider === 'google-messages') {
-            if (candidate.receivedEpochMs === undefined) continue
+            if (candidate.receivedEpochMs === undefined) {
+              console.log(
+                `[SessionController] Dropping SMS new-arrival candidate without parseable timestamp on snapshot baseline | mailbox=${candidate.mailboxId} unread=${candidate.meta?.isUnread ?? '(unknown)'} rank=${candidate.meta?.previewRank ?? '(unknown)'}`
+              )
+              continue
+            }
             if (
               candidate.receivedEpochMs <
               session.sessionStart - SMS_CANDIDATE_PRESESSION_GRACE_MS
             ) {
+              console.log(
+                `[SessionController] Dropping SMS new-arrival candidate older than freshness grace | mailbox=${candidate.mailboxId} ageMs=${Date.now() - candidate.receivedEpochMs}`
+              )
               continue
             }
           }
@@ -1007,6 +1033,7 @@ export class SessionController {
           timestamp: receivedAt,
           source,
           used: false,
+          provider: candidate.provider,
           siteMatch: candidate.link?.domain,
           mailboxId: candidate.mailboxId,
           senderETLD,
@@ -1024,18 +1051,21 @@ export class SessionController {
 
       // ─── Provenance gate: only new-arrival candidates can autofill ──────
       // Drop entries from disconnected GM adapter outright (stale and
-      // cannot be revalidated). Then enforce zero-affinity guard at >=0.6
-      // to keep unrelated fresh SMS (e.g. a personal text from a friend
-      // that landed during the session) out of the autofill set.
+      // cannot be revalidated). Email candidates still need domain
+      // affinity; SMS-provider candidates use the SMS channel provenance
+      // above because branded SMS sender labels are not domains.
       const siteETLD = extractETLD(new URL(session.url).hostname)
-      const eligibleCodes = (session.newArrivalCodes ?? []).filter(c => {
-        if (gmSessionExpired && c.code && this.isGoogleMessagesCode(c)) {
-          return false
-        }
-        const senderETLDForAffinity = c.senderETLD || extractETLD(c.siteMatch || '')
-        const affinity = domainAffinity(siteETLD, senderETLDForAffinity, c.source)
-        return affinity >= 0.6
-      })
+      const eligibleCodes = (session.newArrivalCodes ?? []).filter(c =>
+        isNewArrivalCandidateEligibleForAutofill({
+          siteETLD,
+          detectedChannels: session.detectedChannels,
+          provider: c.provider,
+          source: c.source,
+          siteMatch: c.siteMatch,
+          senderETLD: c.senderETLD,
+          googleMessagesSessionExpired: gmSessionExpired,
+        })
+      )
 
       // Observability: when new-arrival candidates exist but all of them
       // get filtered out, log the senderETLDs so silent eligibility-gate
@@ -1059,9 +1089,20 @@ export class SessionController {
         Date.now(),
         session.sessionStart,
         session.expectedShape
-      )
+      ) as SessionMatcherCode | null
 
       if (!best) {
+        return null
+      }
+
+      const nowForSettle = Date.now()
+      if (shouldDeferFreshSmsAutofill(best, nowForSettle)) {
+        const receivedAt = best.receivedAt ?? best.timestamp
+        const ageMs = nowForSettle - receivedAt
+        const waitMs = Math.max(0, SMS_AUTOFILL_SETTLE_MS - ageMs)
+        console.log(
+          `[SessionController] Deferring fresh SMS autofill for settle window | sessionId=${session.id} mailbox=${best.mailboxId ?? '(unknown)'} waitMs=${Math.ceil(waitMs)}`
+        )
         return null
       }
 
@@ -1137,19 +1178,6 @@ export class SessionController {
     return (result[SESSION_STORAGE_KEY] as PersistedSessions) || {}
   }
 
-  /**
-   * Heuristic: does this matcher code originate from Google Messages?
-   * Used to drop SMS codes when the GM adapter is disconnected. The
-   * matcher-level entries do not carry a providerId, so we infer from
-   * the source string (set in processPollResult to "from - subject"
-   * with from = senderName for SMS).
-   */
-  private isGoogleMessagesCode(code: SessionMatcherCode): boolean {
-    // SMS sources have no email "@"; magic links carry siteMatch.
-    // This is a conservative heuristic — better to err toward INCLUDING
-    // a non-SMS code than to silently exclude one when GM expires.
-    return !code.siteMatch && !!code.source && !code.source.includes('@')
-  }
 }
 
 /**
@@ -1195,6 +1223,19 @@ function isNewArrivalCandidate(
   const mailboxKeys = session.emailBaselineKeys?.[candidate.mailboxId]
   if (!mailboxKeys) return false
   return !mailboxKeys.includes(candidate.provenanceKey)
+}
+
+function shouldDeferFreshSmsAutofill(
+  code: SessionMatcherCode,
+  now: number
+): boolean {
+  if (code.provider !== 'google-messages') return false
+  if (code.code.startsWith('magic-link:')) return false
+
+  const receivedAt = code.receivedAt ?? code.timestamp
+  if (!Number.isFinite(receivedAt)) return false
+
+  return now - receivedAt < SMS_AUTOFILL_SETTLE_MS
 }
 
 /**

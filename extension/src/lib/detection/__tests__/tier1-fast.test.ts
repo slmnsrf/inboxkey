@@ -13,6 +13,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { detectTier1 } from '../tier1-fast'
 import { createCooldownRegistry } from '../cooldown-registry'
+import { _resetSmsCacheForTest } from '../sms-feature-cache'
 import type { CooldownRegistry } from '../cooldown-registry'
 
 /**
@@ -69,6 +70,7 @@ describe('Tier 1 Fast Detection', () => {
 
   beforeEach(() => {
     cooldown = createCooldownRegistry()
+    _resetSmsCacheForTest()
     cleanup()
   })
 
@@ -200,6 +202,23 @@ describe('Tier 1 Fast Detection', () => {
       expect(result.detected).toBe(false)
       expect(result.reason).toContain('Password-related custom attribute')
       expect(result.reason).toContain('comefrom')
+      expect(result.metadata?.layer).toBe('attribute')
+      expect(result.confidence).toBe(0)
+    })
+
+    it('should reject CAPTCHA fields by technical attributes before numeric shape detection', () => {
+      const input = createInput({
+        name: 'captchaPic',
+        class: 'captcha-text e2e-captcha-input',
+        inputmode: 'decimal',
+        maxLength: 6,
+        placeholder: 'Resimdeki karakterleri giriniz (*)',
+      })
+
+      const result = detectTier1(input, cooldown)
+
+      expect(result.detected).toBe(false)
+      expect(result.reason).toContain('CAPTCHA field attribute')
       expect(result.metadata?.layer).toBe('attribute')
       expect(result.confidence).toBe(0)
     })
@@ -354,6 +373,80 @@ describe('Tier 1 Fast Detection', () => {
       expect(result.confidence).toBe(1.0)
       expect(result.reason).toBe('autocomplete="one-time-code"')
     })
+
+    it('uses bounded modal context for OTP autocomplete SMS classification', () => {
+      document.body.innerHTML = `
+        <div role="dialog">
+          <h2>SMS Doğrulama</h2>
+          <p>**** *****15 telefon numarasına gönderilen doğrulama kodunu giriniz.</p>
+          <div class="ModalOtp_otp__inputs__mLi8o">
+            <div><div><label><span><input autocomplete="one-time-code" type="text" inputmode="numeric" pattern="\\d{1}" /></span></label></div></div>
+          </div>
+        </div>
+      `
+      const input = document.querySelector<HTMLInputElement>('input')!
+
+      const result = detectTier1(input, cooldown)
+
+      expect(result.detected).toBe(false)
+      expect(result.reason).toBe('SMS-only field detected (no email option)')
+      expect(result.metadata?.channel).toBe('sms')
+      expect(result.metadata?.matchedKeywords?.join(' ')).toMatch(/SMS|telefon|numara/i)
+    })
+
+    it('uses bounded form context for OTP autocomplete SMS classification', () => {
+      document.body.innerHTML = `
+        <form>
+          <section class="step-summary">
+            <h2>İrtibat Numarası Doğrulama</h2>
+            <p>(538) 936 21 15 numaralı telefona gönderilen doğrulama kodunu girerek devam edebilirsiniz.</p>
+          </section>
+          <div class="form-group">
+            <div class="row">
+              <div class="col-lg-12">
+                <span class="mod">
+                  <span class="mod-i">
+                    <input type="text" pattern="[0-9]*" inputmode="numeric" name="otp" id="otpId" maxlength="6" autocomplete="one-time-code" required />
+                    <label class="e2e-floating-label" id="otpPlaceHolder" for="gsmNo">Doğrulama Kodu</label>
+                  </span>
+                </span>
+              </div>
+            </div>
+          </div>
+        </form>
+      `
+      const input = document.querySelector<HTMLInputElement>('#otpId')!
+
+      const result = detectTier1(input, cooldown)
+
+      expect(result.detected).toBe(false)
+      expect(result.reason).toBe('SMS-only field detected (no email option)')
+      expect(result.metadata?.channel).toBe('sms')
+      expect(result.metadata?.matchedKeywords?.join(' ')).toMatch(/telefon|gönder/i)
+    })
+
+    it('uses accessible group labels for split-cell OTP SMS classification', () => {
+      document.body.innerHTML = `
+        <div role="dialog" aria-label="Modal">
+          <div role="group" aria-label="Telefon doğrulama kodu">
+            <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="1" aria-label="OTP 1. hane" autocomplete="one-time-code" />
+            <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="1" aria-label="OTP 2. hane" autocomplete="one-time-code" />
+            <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="1" aria-label="OTP 3. hane" autocomplete="one-time-code" />
+            <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="1" aria-label="OTP 4. hane" autocomplete="one-time-code" />
+            <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="1" aria-label="OTP 5. hane" autocomplete="one-time-code" />
+            <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="1" aria-label="OTP 6. hane" autocomplete="one-time-code" />
+          </div>
+        </div>
+      `
+      const input = document.querySelector<HTMLInputElement>('input')!
+
+      const result = detectTier1(input, cooldown)
+
+      expect(result.detected).toBe(false)
+      expect(result.reason).toBe('SMS-only field detected (no email option)')
+      expect(result.metadata?.channel).toBe('sms')
+      expect(result.metadata?.matchedKeywords?.join(' ')).toMatch(/telefon|doğrulama/i)
+    })
   })
 
   describe('Layer 4: Name/ID Exact Match', () => {
@@ -447,6 +540,21 @@ describe('Tier 1 Fast Detection', () => {
       const result = detectTier1(input, cooldown)
 
       expect(result.detected).toBe(false)
+    })
+
+    it('should reject CAPTCHA image-character prompts even when numeric shape is OTP-like', () => {
+      const input = createInput({
+        inputmode: 'decimal',
+        maxLength: 6,
+        placeholder: 'Resimdeki karakterleri giriniz (*)',
+      })
+
+      const result = detectTier1(input, cooldown)
+
+      expect(result.detected).toBe(false)
+      expect(result.reason).toContain('captcha-context-detected')
+      expect(result.metadata?.layer).toBe('context')
+      expect(result.confidence).toBe(0)
     })
   })
 

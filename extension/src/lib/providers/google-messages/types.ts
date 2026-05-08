@@ -18,6 +18,12 @@ export interface MessagePreview {
   previewText: string
   isUnread: boolean
   timestamp?: string
+  /**
+   * Zero-based position in the conversation list at scrape time.
+   * Used as a conservative provenance signal when Google Messages does
+   * not expose a parseable timestamp.
+   */
+  previewRank?: number
 }
 
 export interface ScrapeResult {

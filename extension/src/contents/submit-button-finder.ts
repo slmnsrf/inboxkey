@@ -4,9 +4,10 @@
  * Safety-first button detection for auto-submit in full-automation mode.
  * Supports form-less SPAs and multi-language button text.
  *
- * BETA: Two-tier detection system
+ * Three-tier detection system
  * - Tier 1: Semantic buttons (<button>, <input type="submit">) - ALWAYS tried first
- * - Tier 2: Pseudo-buttons (<a>, [role="button"]) - ONLY if tier 1 fails AND feature enabled
+ * - Tier 2: Same-form pseudo-buttons (<a>, [role="button"]) - safe default fallback
+ * - Tier 3: Wider pseudo-buttons - ONLY if tier 2 fails AND feature enabled
  */
 
 export const config = {
@@ -20,10 +21,12 @@ const MIN_SAFE_SCORE = 50
 const MAX_SEARCH_DISTANCE_PX = 500
 const SEARCH_TIMEOUT_MS = 500
 
-// Semantic buttons (Tier 1 - high confidence)
-const SEMANTIC_BUTTON_SELECTORS = 'button:not([type="button"]), input[type="submit"]'
+// Native form action controls (Tier 1 - high confidence). input[type=button]
+// is included because many legacy jQuery/ASP.NET flows enable a safe-labeled
+// "Continue/Verify" button after input events instead of using submit inputs.
+const SEMANTIC_BUTTON_SELECTORS = 'button:not([type="button"]), input[type="submit"], input[type="button"]'
 
-// Pseudo-buttons (Tier 2 - extended detection, opt-in)
+// Pseudo-buttons (Tier 2/3 - custom controls used by many SPA/auth pages)
 const PSEUDO_BUTTON_SELECTORS = [
   'a:not([href])',           // Anchor without href
   'a[href="#"]',             // Anchor with empty href
@@ -49,7 +52,7 @@ export interface FinderOptions {
   field: HTMLInputElement
   timeout?: number
   debugMode?: boolean
-  extendedDetection?: boolean  // NEW: Enable pseudo-button detection
+  extendedDetection?: boolean  // Enable wider pseudo-button detection
 }
 
 export interface ButtonFindResult {
@@ -67,8 +70,14 @@ export interface ButtonFindResult {
  * 2. Container-based: Buttons within field.closest('div, section, main')
  * 3. Document-wide: Buttons within 500px of field
  *
- * TIER 2 (Pseudo-buttons - ONLY if Tier 1 fails AND extendedDetection=true):
- * 1. Container-only search (safety requirement)
+ * TIER 2 (Same-form pseudo-buttons - safe default):
+ * 1. Same form / role=form scope only
+ * 2. Exclusion zones enforced
+ * 3. Must be after field in DOM
+ * 4. MANDATORY safe pattern match
+ *
+ * TIER 3 (Wider pseudo-buttons - ONLY if Tier 2 fails AND extendedDetection=true):
+ * 1. Container-only search
  * 2. Exclusion zones enforced
  * 3. Must be after field in DOM
  * 4. MANDATORY safe pattern match
@@ -115,7 +124,20 @@ async function performButtonSearch(
     return semanticResult.element
   }
 
-  // PHASE 2: Pseudo-buttons (ONLY if enabled AND semantic failed)
+  // PHASE 2: Same-form pseudo-buttons. Many ASP.NET / jQuery flows use
+  // anchors such as <a href="javascript:;" class="btn">Verify</a> as the
+  // primary submit control. Treat those as safe only in the same
+  // form/form-like scope and only with a multilingual safe label.
+  const sameFormPseudoResult = findBestPseudoButton(field, debugMode, 'same-form')
+
+  if (sameFormPseudoResult) {
+    if (debugMode) {
+      console.log('[ButtonFinder] Found same-form pseudo-button, score:', sameFormPseudoResult.score)
+    }
+    return sameFormPseudoResult.element
+  }
+
+  // PHASE 3: Wider pseudo-buttons (ONLY if enabled AND safer tiers failed)
   if (!extendedDetection) {
     if (debugMode) {
       console.log('[ButtonFinder] Extended detection disabled, stopping search')
@@ -124,10 +146,10 @@ async function performButtonSearch(
   }
 
   if (debugMode) {
-    console.log('[ButtonFinder] [BETA] Trying extended button detection...')
+    console.log('[ButtonFinder] Trying extended button detection...')
   }
 
-  const pseudoResult = findBestPseudoButton(field, debugMode)
+  const pseudoResult = findBestPseudoButton(field, debugMode, 'extended')
 
   return pseudoResult?.element || null
 }
@@ -178,18 +200,22 @@ function findBestSemanticButton(
 }
 
 /**
- * Find best pseudo-button (Tier 2 - BETA)
+ * Find best pseudo-button (Tier 2/3)
  */
 function findBestPseudoButton(
   field: HTMLInputElement,
-  debugMode: boolean
+  debugMode: boolean,
+  mode: 'same-form' | 'extended'
 ): ButtonCandidate | null {
 
-  // SAFEGUARD 1: Require container (safety)
-  const container = field.closest('form, [role="form"], main, section, article')
+  // SAFEGUARD 1: Require a bounded container. The default pseudo-button
+  // path is same-form only; extended mode may look in larger auth panels.
+  const container = mode === 'same-form'
+    ? field.closest('form, [role="form"]')
+    : field.closest('form, [role="form"], main, section, article')
   if (!container) {
     if (debugMode) {
-      console.log('[ButtonFinder] No container found, skipping pseudo-buttons (safety)')
+      console.log(`[ButtonFinder] No ${mode} container found, skipping pseudo-buttons`)
     }
     return null
   }
@@ -232,14 +258,16 @@ function findBestPseudoButton(
 
   if (best && best.score >= MIN_SAFE_SCORE) {
     if (debugMode) {
-      console.log('[ButtonFinder] [BETA] Found pseudo-button:', best)
+      console.log(`[ButtonFinder] Found ${mode} pseudo-button:`, best)
     }
 
-    // Log telemetry
-    logBetaFeatureUsage('pseudo_button_detected', {
-      selector: best.element.tagName,
-      score: best.score
-    }).catch(err => console.log('[ButtonFinder] Failed to log telemetry:', err))
+    if (mode === 'extended') {
+      // Log telemetry only for the wider-search path.
+      logBetaFeatureUsage('pseudo_button_detected', {
+        selector: best.element.tagName,
+        score: best.score
+      }).catch(err => console.log('[ButtonFinder] Failed to log telemetry:', err))
+    }
 
     return best
   }

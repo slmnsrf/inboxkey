@@ -22,6 +22,7 @@ import {
   COMMON_OTP_PATTERNS,
   // Keyword dictionary (array of strings or regex sources) in multiple locales
   CODE_KEYWORDS,
+  CODE_WEAK_KEYWORDS,
 } from './extraction-types.js'
 
 import { shapeScore, type ExpectedShape } from '../matching/shape-matcher.js'
@@ -87,13 +88,27 @@ export function extractOTPs(input: string, opts: OTPExtractOptions = {}): OTPCan
   const allowAlphaOnly = shouldAllowAlphaOnly(opts)
   const maxResults = Math.max(1, Math.min(10, opts.maxResults ?? 3))
 
-  // Normalize to plain text; remove HTML noise early to reduce spurious matches
-  const { text } = toPlainText(input)
+  // Normalize to plain text; remove HTML noise early to reduce spurious matches.
+  // NFC-normalize so `keywordText` (which decomposes Latin diacritics and
+  // strips combining marks) preserves byte offsets relative to `text` —
+  // any Latin character precomposed in NFC stays single-code-unit through
+  // `normalizeKeywordText`, keeping window/candidate offsets aligned.
+  const { text: rawText } = toPlainText(input)
+  const text = rawText.normalize('NFC')
+  const keywordText = normalizeKeywordText(text)
 
-  // If there are no keywords at all in the whole message, short-circuit (fast fail)
-  const kwRegex = buildKeywordRegex(CODE_KEYWORDS)
-  const hasKeywords = kwRegex.test(text)
-  if (!hasKeywords) {
+  // If there are no strong keywords at all in the whole message,
+  // optionally admit weak password/code tokens behind stricter gates.
+  const strongKwRegex = CODE_KEYWORDS_MATCHER
+  strongKwRegex.lastIndex = 0
+  const hasStrongKeywords = strongKwRegex.test(keywordText)
+
+  const weakKwRegex = CODE_WEAK_KEYWORDS_MATCHER
+  weakKwRegex.lastIndex = 0
+  const hasWeakKeywords = !hasStrongKeywords && weakKwRegex.test(keywordText)
+  const usesWeakKeywords = !hasStrongKeywords && hasWeakKeywords
+
+  if (!hasStrongKeywords && !hasWeakKeywords) {
     // Edge allowance: brands routinely send keyword-free SMS in the form
     // "Brand: 123456 ..." (Amazon, Telegram, Discord). Admit only when the
     // caller signaled an expected shape AND the body opens with that
@@ -103,14 +118,24 @@ export function extractOTPs(input: string, opts: OTPExtractOptions = {}): OTPCan
     // "ZIP 100234"). The shape requirement is structural, not lingual:
     // it gates on `Word:Code` form and works equally across the 21
     // supported languages.
+    //
+    // Defense-in-depth: CJK reset/management copy ("重置密码: 123456",
+    // "비밀번호 재설정: 123456") can pass `hasBrandPrefixCodeShape` because
+    // its leading non-Latin verb-noun cluster reads as a "brand" token.
+    // Reject the entire body when password-reset/management context is
+    // present so the brand-prefix path can't sneak past.
+    if (isPasswordResetManagementContext(text.toLowerCase())) return []
     if (!opts.expectedLength && !opts.expectedShape) return []
     if (!hasBrandPrefixCodeShape(text)) return []
   }
-  // Reset lastIndex after test
+  if (usesWeakKeywords && !hasExpectedShapeForWeakOtp(opts)) return []
+
+  const kwRegex = usesWeakKeywords ? weakKwRegex : strongKwRegex
+  // Reset lastIndex after tests
   kwRegex.lastIndex = 0
 
   // Build search windows around keywords to avoid scanning footers/long IDs
-  const windows = collectWindows(text, kwRegex, windowRadius)
+  const windows = collectWindows(keywordText, kwRegex, windowRadius)
 
   // If we had no keyword windows but do have expectedLength, scan the whole text but with strict scoring
   if (windows.length === 0 && !opts.expectedLength && !opts.expectedShape) {
@@ -126,18 +151,21 @@ export function extractOTPs(input: string, opts: OTPExtractOptions = {}): OTPCan
     allowedNumericLengths: opts.allowedNumericLengths,
   })
 
-  const viableCandidates = rawCandidates.filter(c => isPlausibleOtpCandidate(text, c))
+  const viableCandidates = rawCandidates
+    .filter(c => isPlausibleOtpCandidate(text, c))
+    .filter(c => !usesWeakKeywords || hasWeakOtpCandidateSupport(text, c, opts))
   if (viableCandidates.length === 0) return []
 
   // Score each candidate with context signals
   const subject = (opts.subject || '').toLowerCase()
   const scored: OTPCandidate[] = viableCandidates.map(c => {
     const base = baseScore(c, opts)
-    const near = nearestKeywordSignal(text, c, kwRegex)
+    const near = nearestKeywordSignal(keywordText, c, kwRegex)
     const footer = footerPenalty(text, c)
     const subjectBoost = subject.includes('code') || subject.includes('otp') || subject.includes('verification') ? 0.08 : 0
 
     let confidence = base + near.score + subjectBoost
+    if (usesWeakKeywords) confidence -= 0.14
     if (footer.applies) confidence -= 0.2
 
     // Clamp and attach context
@@ -264,20 +292,187 @@ function decodeEntities(s: string): string {
   return s
 }
 
+/**
+ * Normalize Latin diacritics only for keyword matching. Positions are
+ * intentionally preserved for normal composed Unicode text, so keyword
+ * windows still map back to the original plaintext used for candidate
+ * extraction. This catches carrier/SMS transliterations like Turkish
+ * "tek kullanimlik sifreniz" for "tek kullanımlık şifre" and also
+ * helps Spanish/Portuguese/Czech/Polish/Nordic unaccented SMS copy.
+ */
+function normalizeKeywordText(s: string): string {
+  const specialLatinMap: Record<string, string> = {
+    'ı': 'i',
+    'İ': 'I',
+    'ł': 'l',
+    'Ł': 'L',
+    'đ': 'd',
+    'Đ': 'D',
+    'ø': 'o',
+    'Ø': 'O',
+    'ß': 's',
+    'æ': 'a',
+    'Æ': 'A',
+    'œ': 'o',
+    'Œ': 'O',
+  }
+
+  return s
+    .replace(/[ıİłŁđĐøØßæÆœŒ]/g, ch => specialLatinMap[ch] ?? ch)
+    .replace(/\p{Script=Latin}\p{M}*/gu, segment =>
+      segment.normalize('NFD').replace(/\p{M}/gu, '')
+    )
+}
+
+function keywordVariants(keyword: string): string[] {
+  const germanicTransliteration = keyword.replace(/[äÄöÖüÜßæÆøØåÅ]/g, ch => {
+    const map: Record<string, string> = {
+      'ä': 'ae',
+      'Ä': 'Ae',
+      'ö': 'oe',
+      'Ö': 'Oe',
+      'ü': 'ue',
+      'Ü': 'Ue',
+      'ß': 'ss',
+      'æ': 'ae',
+      'Æ': 'Ae',
+      'ø': 'oe',
+      'Ø': 'Oe',
+      'å': 'aa',
+      'Å': 'Aa',
+    }
+    return map[ch] ?? ch
+  })
+
+  return Array.from(new Set([
+    keyword,
+    normalizeKeywordText(keyword),
+    germanicTransliteration,
+    normalizeKeywordText(germanicTransliteration),
+  ]))
+}
+
+/**
+ * Latin-script base-form keywords that admit suffix attachment in their
+ * source language and therefore need loose trailing. These are the
+ * agglutinative (Turkish, Finnish) and inflected (Polish, Czech, other
+ * Slavic-Latin, Scandinavian) bare nouns where carrier/SMS copy
+ * routinely glues a possessive/accusative ending onto the stem
+ * ("kod" -> "kodu", "şifre" -> "şifreniz", "koodi" -> "koodin").
+ *
+ * Stored in lowercase, after diacritic-folding (`normalizeKeywordText`),
+ * so both the original and the diacritic-stripped variants resolve to
+ * the same key.
+ *
+ * Phrases like "doğrulama kodu" and "vahvistuskoodi" are NOT in this
+ * set: they end on a fixed inflected form already and don't need to
+ * tolerate further suffix attachment in real copy. Keeping them strict
+ * preserves precision.
+ */
+const LOOSE_TRAILING_BASE_FORMS = new Set<string>([
+  // Turkish (agglutinative; -u/-um/-un/-niz/-mla suffixes)
+  'kod', 'sifre', 'parola',
+  // Finnish (agglutinative; -n/-ssa/-lla)
+  'koodi', 'salasana',
+  // Polish (inflected; -u/-em/-ami)
+  'haslo',
+  // Czech / Slovak (inflected; -u/-em)
+  'heslo',
+  // Norwegian, Danish (inflected)
+  'kode', 'passord', 'adgangskode',
+  // Swedish (inflected)
+  'losenord',
+])
+
+/** True if all letters in `keyword` belong to Latin script. */
+function isLatinScriptKeyword(keyword: string): boolean {
+  const letters = keyword.match(/\p{L}/gu)
+  if (!letters || letters.length === 0) return false
+  return letters.every(l => /\p{Script=Latin}/u.test(l))
+}
+
+/**
+ * Choose loose vs. strict trailing for a keyword.
+ *
+ * Loose (no trailing constraint) catches morphological inflection in
+ * agglutinative/inflected source languages. Strict (`(?![\p{L}\p{N}])`)
+ * keeps generic English-like tokens (`code`, `passcode`, `password`)
+ * from prefix-matching unrelated words ("Codex", "Codebase", "Codec",
+ * "passwordless").
+ *
+ *   - explicit base-form opt-ins (LOOSE_TRAILING_BASE_FORMS) -> loose
+ *   - non-Latin scripts (Cyrillic, Arabic, Devanagari, CJK)   -> loose
+ *   - everything else (Latin phrases + generic English bases)  -> strict
+ */
+function shouldUseLooseTrailing(keyword: string): boolean {
+  const lower = keyword.toLowerCase()
+  if (LOOSE_TRAILING_BASE_FORMS.has(lower)) return true
+  const normalizedLower = normalizeKeywordText(lower)
+  if (LOOSE_TRAILING_BASE_FORMS.has(normalizedLower)) return true
+
+  // Phrases that END with a known agglutinative/inflected base form
+  // (e.g. "tek seferlik şifre" -> "şifreniz", "tek kullanımlık kod" ->
+  // "kodu") inherit loose trailing so the suffix is allowed.
+  const lastTok = lastToken(lower)
+  if (lastTok && LOOSE_TRAILING_BASE_FORMS.has(lastTok)) return true
+  const normalizedLastTok = lastToken(normalizedLower)
+  if (normalizedLastTok && LOOSE_TRAILING_BASE_FORMS.has(normalizedLastTok)) return true
+
+  if (!isLatinScriptKeyword(keyword)) return true
+  return false
+}
+
+function lastToken(s: string): string | undefined {
+  const tokens = s.split(/[-\s ‑–]+/u).filter(Boolean)
+  return tokens[tokens.length - 1]
+}
+
 /** Build a case-insensitive word-boundary regex for an array of keywords/regex sources */
 function buildKeywordRegex(words: readonly (string | RegExp)[]): RegExp {
-  // Treat incoming RegExp.source as literal where possible; keywords already curated in extraction-types
-  const parts = words.map(w => {
-    if (w instanceof RegExp) return w.source
-    // Escape keyword and allow hyphen/space variants (e.g., one-time / one time / one‑time)
-    const esc = w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-    return esc.replace(/[-\s]/g, '[-\\s\\u00A0\\u2011\\u2013]?')
-  })
-  // Trailing boundary removed to support agglutinative (Turkish, Finnish, Japanese, Korean)
-  // and inflected (Russian, Polish, Hindi) languages where keywords appear with suffixes/particles.
-  // Leading boundary prevents false positives (e.g., "discount" won't match "count").
-  return new RegExp(`(?:^|[^\\p{L}\\p{N}])(?:${parts.join('|')})`, 'gimu')
+  const strictParts: string[] = []
+  const looseParts: string[] = []
+
+  for (const w of words) {
+    if (w instanceof RegExp) {
+      // Conservatively bucket raw regex sources as loose so callers get
+      // the same trailing semantics they had before this split.
+      looseParts.push(w.source)
+      continue
+    }
+
+    const variants = keywordVariants(w)
+    const isLoose = shouldUseLooseTrailing(w)
+    for (const variant of variants) {
+      const esc = variant
+        .replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+        .replace(/[-\s]/g, '[-\\s\\u00A0\\u2011\\u2013]?')
+      if (isLoose) {
+        looseParts.push(esc)
+      } else {
+        strictParts.push(esc)
+      }
+    }
+  }
+
+  const branches: string[] = []
+  // Strict-trailing alternatives reject prefix matches into longer
+  // unrelated words ("code" must not match "Codex").
+  if (strictParts.length > 0) {
+    branches.push(`(?:${strictParts.join('|')})(?![\\p{L}\\p{N}])`)
+  }
+  // Loose alternatives allow morphological suffixes in agglutinative
+  // and inflected source languages, plus all non-Latin scripts.
+  if (looseParts.length > 0) {
+    branches.push(`(?:${looseParts.join('|')})`)
+  }
+
+  // Leading boundary prevents false positives (e.g. "discount" won't
+  // match the trailing "count" subset).
+  return new RegExp(`(?:^|[^\\p{L}\\p{N}])(?:${branches.join('|')})`, 'gimu')
 }
+
+const CODE_KEYWORDS_MATCHER = buildKeywordRegex(CODE_KEYWORDS)
+const CODE_WEAK_KEYWORDS_MATCHER = buildKeywordRegex(CODE_WEAK_KEYWORDS)
 
 /** Collect windows around keywords for targeted scanning */
 function collectWindows(text: string, kw: RegExp, radius: number): { start: number; end: number; reason: string }[] {
@@ -438,6 +633,7 @@ function isNonOtpKeywordMatch(text: string, match: RegExpExecArray): boolean {
 
   const genericCodeTerms = new Set([
     'code',
+    'codigo',
     'kod',
     'kode',
     'kód',
@@ -499,21 +695,176 @@ function hasBrandPrefixCodeShape(text: string): boolean {
   return BRAND_PREFIX_OTP_SHAPE.test(text)
 }
 
+function hasExpectedShapeForWeakOtp(opts: OTPExtractOptions): boolean {
+  return (
+    opts.expectedLength !== undefined ||
+    opts.expectedCharset !== undefined ||
+    opts.expectedShape?.len !== undefined ||
+    opts.expectedShape?.charset !== undefined
+  )
+}
+
+function candidateMatchesExpectedShape(
+  c: InternalCandidate,
+  opts: OTPExtractOptions
+): boolean {
+  const expectedLength = opts.expectedShape?.len ?? opts.expectedLength
+  const expectedCharset = opts.expectedShape?.charset ?? opts.expectedCharset
+
+  if (expectedLength !== undefined && c.length !== expectedLength) {
+    return false
+  }
+
+  if (expectedCharset === 'digits' && c.charset !== 'digits') {
+    return false
+  }
+
+  return true
+}
+
+function hasWeakOtpCandidateSupport(
+  text: string,
+  c: InternalCandidate,
+  opts: OTPExtractOptions
+): boolean {
+  if (!candidateMatchesExpectedShape(c, opts)) return false
+
+  const around = candidateWindow(text, c, 112).toLowerCase()
+  if (isPasswordResetManagementContext(around)) return false
+
+  return (
+    hasSmsAppHashShape(text) ||
+    hasCompactSmsLikeBody(text) ||
+    hasSecurityShareContext(around)
+  )
+}
+
+function hasCompactSmsLikeBody(text: string): boolean {
+  const lineCount = text.split(/\n+/).filter(Boolean).length
+  return text.length <= 260 && lineCount <= 4
+}
+
+function hasSmsAppHashShape(text: string): boolean {
+  return /(?:^|\s)@[A-Za-z0-9.-]{3,80}\s+#?[A-Za-z0-9]{4,10}\s+B\d{3}\b/i.test(text)
+}
+
+function hasSecurityShareContext(around: string): boolean {
+  return (
+    /\b(?:do\s+not|don't|never)\s+share\b/i.test(around) ||
+    /\b(?:share|send|give)\s+(?:it|this|code|password)\s+to\s+(?:no\s+one|nobody|anyone)\b/i.test(around) ||
+    /\b(?:kimseyle|kimse\s+ile)\s+payla[sş]/i.test(around) ||
+    /\b(?:guvenlig|g[üu]venli[gğ])\b/i.test(around) ||
+    /\b(?:ne\s+partagez|no\s+comparta|não\s+compartilhe|non\s+condividere|nicht\s+teilen|niet\s+delen)\b/i.test(around)
+  )
+}
+
+function isPasswordResetManagementContext(around: string): boolean {
+  // Use Unicode-aware lookarounds instead of `\b`. Native `\b` only counts
+  // ASCII word characters, so a "ş" or "é" left-edge silently bypasses the
+  // guard for localized phrases like "Réinitialiser votre mot de passe"
+  // or "Şifrenizi sıfırlayın".
+  return PASSWORD_RESET_PATTERNS.some(p => p.test(around))
+}
+
+const PASSWORD_RESET_PATTERNS: ReadonlyArray<RegExp> = [
+  // English — `passcode` / `pass code` are treated the same as
+  // `password` here because they are duplicated in both the strong and
+  // weak keyword tables; the strong-path candidate filter still needs
+  // to recognize their reset/management copy.
+  /(?<![\p{L}\p{M}\p{N}])(?:reset|forgot|recover|change|update)\s+(?:your\s+)?(?:password|passcode|pass\s+code)(?![\p{L}\p{M}\p{N}])/iu,
+  /(?<![\p{L}\p{M}\p{N}])(?:password|passcode|pass\s+code)\s+(?:reset|recovery|change|update)(?![\p{L}\p{M}\p{N}])/iu,
+  // Turkish — base words admit possessive/case suffixes ("Şifrenizi
+  // sıfırlayın"), so allow Latin-letter morphology between/after the
+  // root verbs.
+  /(?<![\p{L}\p{M}\p{N}])(?:sifre|şifre|parola)[\p{L}\p{M}]*\s+(?:sifirla|sıfırla|yenile|degistir|değiştir)[\p{L}\p{M}]*(?![\p{L}\p{M}\p{N}])/iu,
+  // French
+  /(?<![\p{L}\p{M}\p{N}])(?:réinitialiser|reinitialiser|récupérer|recuperer|changer|modifier|mettre\s+à\s+jour)\s+(?:votre\s+|ton\s+|le\s+)?mot\s+de\s+passe(?![\p{L}\p{M}\p{N}])/iu,
+  /(?<![\p{L}\p{M}\p{N}])mot\s+de\s+passe\s+(?:oublié|perdu|réinitialisé|réinitialisation|récupération)(?![\p{L}\p{M}\p{N}])/iu,
+  // Spanish — covers both infinitive ("restablecer") and imperative
+  // ("restablece tu contraseña"), the more common CTA form.
+  /(?<![\p{L}\p{M}\p{N}])(?:restablece|restablecer|recupera|recuperar|cambia|cambiar|actualiza|actualizar|olvidaste|olvidé)\s+(?:tu\s+|su\s+|la\s+|el\s+)?(?:contraseña|clave)(?![\p{L}\p{M}\p{N}])/iu,
+  /(?<![\p{L}\p{M}\p{N}])(?:contraseña|clave)\s+(?:olvidada|nueva|restablecida|recuperación)(?![\p{L}\p{M}\p{N}])/iu,
+  // German
+  /(?<![\p{L}\p{M}\p{N}])passwort\s+(?:zurücksetzen|zuruecksetzen|ändern|aendern|aktualisieren|erneuern|wiederherstellen|vergessen)(?![\p{L}\p{M}\p{N}])/iu,
+  /(?<![\p{L}\p{M}\p{N}])(?:neues|neu)\s+passwort(?![\p{L}\p{M}\p{N}])/iu,
+  // Italian — allow up to two chained articles ("Reimposta la tua
+  // password", "cambia la sua password").
+  /(?<![\p{L}\p{M}\p{N}])(?:reimposta|reimpostare|recupera|recuperare|cambia|cambiare|aggiorna|aggiornare|dimenticato|dimenticata)\s+(?:(?:la|il|tua|sua|mia|tuo|suo|mio)\s+){0,2}password(?![\p{L}\p{M}\p{N}])/iu,
+  /(?<![\p{L}\p{M}\p{N}])password\s+(?:dimenticata|smarrita|nuova)(?![\p{L}\p{M}\p{N}])/iu,
+  // Portuguese
+  /(?<![\p{L}\p{M}\p{N}])(?:redefinir|recuperar|alterar|atualizar|esqueci|esqueceu)\s+(?:sua\s+|a\s+|o\s+)?(?:senha|palavra-passe)(?![\p{L}\p{M}\p{N}])/iu,
+  /(?<![\p{L}\p{M}\p{N}])(?:senha|palavra-passe)\s+(?:esquecida|nova|redefinida)(?![\p{L}\p{M}\p{N}])/iu,
+  // Dutch
+  /(?<![\p{L}\p{M}\p{N}])(?:reset|herstel|wijzig|verander|update|vernieuw)\s+(?:uw\s+|je\s+|jouw\s+|het\s+)?wachtwoord(?![\p{L}\p{M}\p{N}])/iu,
+  /(?<![\p{L}\p{M}\p{N}])wachtwoord\s+(?:resetten|herstellen|wijzigen|veranderen|vernieuwen|vergeten|opnieuw\s+instellen|nieuw)(?![\p{L}\p{M}\p{N}])/iu,
+  // Swedish
+  /(?<![\p{L}\p{M}\p{N}])(?:återställ|aterstall|ändra|andra|byt|byta|uppdatera|glömt|glomt)\s+(?:ditt\s+|ert\s+)?(?:lösenord|losenord)[\p{L}\p{M}]*(?![\p{L}\p{M}\p{N}])/iu,
+  // Finnish
+  /(?<![\p{L}\p{M}\p{N}])(?:palauta|palauttaa|vaihda|muuta|päivitä|paivita|unohditko|unohtunut)\s+salasana[\p{L}\p{M}]*(?![\p{L}\p{M}\p{N}])/iu,
+  // Danish
+  /(?<![\p{L}\p{M}\p{N}])(?:nulstil|gendan|skift|ændr|aendr|opdater|glemt)\s+(?:din\s+|dit\s+)?adgangskode(?![\p{L}\p{M}\p{N}])/iu,
+  // Norwegian
+  /(?<![\p{L}\p{M}\p{N}])(?:tilbakestill|gjenopprett|endre|bytt|oppdater|glemt)\s+passord[\p{L}\p{M}]*(?:\s+ditt)?(?![\p{L}\p{M}\p{N}])/iu,
+  // Polish
+  /(?<![\p{L}\p{M}\p{N}])(?:resetuj|zresetuj|odzyskaj|zmień|zmien|aktualizuj|przypomnij)\s+(?:swoje\s+)?has(?:ł|l)o(?![\p{L}\p{M}\p{N}])/iu,
+  // Czech
+  /(?<![\p{L}\p{M}\p{N}])(?:obnovit|resetovat|změnit|zmenit|aktualizovat|zapomenuté|zapomenute)\s+(?:svoje\s+)?heslo(?![\p{L}\p{M}\p{N}])/iu,
+  // Russian
+  /(?<![\p{L}\p{M}\p{N}])(?:сбросить|восстановить|изменить|обновить|забыли|забыл|новый)\s+(?:ваш\s+)?пароль(?![\p{L}\p{M}\p{N}])/iu,
+  // Ukrainian
+  /(?<![\p{L}\p{M}\p{N}])(?:скинути|відновити|змінити|оновити|забули|новий)\s+(?:ваш\s+)?пароль(?![\p{L}\p{M}\p{N}])/iu,
+  // Hindi
+  /(?<![\p{L}\p{M}\p{N}])(?:अपना\s+)?पासवर्ड\s+(?:रीसेट|बदलें|बदले|अपडेट|पुनर्प्राप्त|नया)(?:\s+करें)?(?![\p{L}\p{M}\p{N}])/iu,
+  /(?<![\p{L}\p{M}\p{N}])(?:रीसेट|बदलें|बदले|अपडेट|पुनर्प्राप्त)\s+(?:अपना\s+)?पासवर्ड(?![\p{L}\p{M}\p{N}])/iu,
+  // Arabic
+  /(?<![\p{L}\p{M}\p{N}])(?:إعادة\s+تعيين|اعادة\s+تعيين|استعادة|تغيير|تحديث)\s+(?:كلمة\s+المرور|كلمة\s+سر)(?![\p{L}\p{M}\p{N}])/iu,
+  /(?<![\p{L}\p{M}\p{N}])(?:كلمة\s+المرور|كلمة\s+سر)\s+(?:الجديدة|جديدة|نسيت|إعادة\s+تعيين|اعادة\s+تعيين|استعادة)(?![\p{L}\p{M}\p{N}])/iu,
+  // Japanese
+  /(?<![\p{L}\p{M}\p{N}])パスワード(?:を)?(?:リセット|再設定|変更|更新|復元)(?:して(?:ください|下さい)?|する|します)?(?![\p{L}\p{M}\p{N}])/iu,
+  /(?<![\p{L}\p{M}\p{N}])(?:新しい|新規)パスワード(?![\p{L}\p{M}\p{N}])/iu,
+  // Korean
+  /(?<![\p{L}\p{M}\p{N}])비밀번호(?:를)?\s*(?:재설정|초기화|변경|복구|업데이트)(?:하세요|합니다)?(?![\p{L}\p{M}\p{N}])/iu,
+  /(?<![\p{L}\p{M}\p{N}])새\s*비밀번호(?![\p{L}\p{M}\p{N}])/iu,
+  // Chinese
+  /(?<![\p{L}\p{M}\p{N}])(?:重置|找回|修改|更改|更新|恢复)密码(?![\p{L}\p{M}\p{N}])/iu,
+  /(?<![\p{L}\p{M}\p{N}])密码(?:重置|找回|修改|更改|更新|恢复)(?![\p{L}\p{M}\p{N}])/iu,
+  /(?<![\p{L}\p{M}\p{N}])新密码(?![\p{L}\p{M}\p{N}])/iu,
+  // Wi-Fi / network passwords (any language)
+  /(?<![\p{L}\p{M}\p{N}])(?:wi[-\s]?fi|wireless|network|router)\s+(?:password|passcode|passwort|senha|wachtwoord|şifre|sifre|contraseña|clave|mot\s+de\s+passe)(?![\p{L}\p{M}\p{N}])/iu,
+]
+
 function isPlausibleOtpCandidate(text: string, c: InternalCandidate): boolean {
   const around = candidateWindow(text, c, 96).toLowerCase()
+  // Prefix-only window: text directly preceding the candidate. Reset
+  // flows announce the verb first ("Reset your password: 123456");
+  // legitimate OTP messages mention reset only as a trailing disclaimer
+  // ("Your code is 123456. If you did not request this, reset your
+  // password..."). Filtering on the prefix only catches the reset
+  // flows without false-rejecting OTP-with-disclaimer messages.
+  const beforeCandidate = text.slice(Math.max(0, c.start - 96), c.start).toLowerCase()
 
   if (isEmbeddedInUrl(text, c)) return false
   if (isCssToken(text, c)) return false
+  if (isSmsAppHashToken(text, c)) return false
   if (isDateOrdinal(c.code)) return false
   if (isCommercialCodeContext(around)) return false
   if (isSoftwareCodeContext(around)) return false
   if (isStandaloneYear(c.code) && !hasStrongOtpContext(around)) return false
+  // Universal password-reset/management guard. Catches keyword-strong
+  // matches that the weak-only `hasWeakOtpCandidateSupport` cannot see
+  // (e.g. English `passcode` / `pass code` are duplicated in both
+  // tables, and the strong path runs first).
+  if (isPasswordResetManagementContext(beforeCandidate)) return false
 
   return true
 }
 
 function candidateWindow(text: string, c: InternalCandidate, radius: number): string {
   return text.slice(Math.max(0, c.start - radius), Math.min(text.length, c.end + radius))
+}
+
+function isSmsAppHashToken(text: string, c: InternalCandidate): boolean {
+  return /^B\d{3}$/i.test(c.code) && hasSmsAppHashShape(text)
 }
 
 function isEmbeddedInUrl(text: string, c: InternalCandidate): boolean {
