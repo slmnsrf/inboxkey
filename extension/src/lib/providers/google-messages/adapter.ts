@@ -19,7 +19,7 @@
  *   sorting. Values that cannot be parsed return undefined; downstream
  *   treats undefined as "unknown" and may use separate provenance
  *   signals. We never substitute `Date.now()` for a value we don't
- *   actually know — that would falsify timestamp evidence.
+ *   actually know, since that would falsify timestamp evidence.
  */
 
 import type { ProviderAdapter, EmailLike, ProviderId } from '@/lib/services/email-polling-service'

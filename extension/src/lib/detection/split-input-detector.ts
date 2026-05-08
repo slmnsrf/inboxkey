@@ -97,9 +97,13 @@ function hasOneCharacterPattern(input: HTMLInputElement): boolean {
 }
 
 function hasNumericCellCue(input: HTMLInputElement): boolean {
+  // getAttribute returns `null` when absent; the optional chain then
+  // yields `undefined` (not `null`). Both must pass the "no inputmode"
+  // branch so AntD-style cells with `pattern="\d{1}"` and no explicit
+  // inputmode attribute aren't dropped from Shape B.
   const inputMode = input.getAttribute('inputmode')?.toLowerCase()
   return hasOneCharacterPattern(input) && (
-    inputMode === null ||
+    inputMode == null ||
     inputMode === 'numeric' ||
     inputMode === 'decimal' ||
     inputMode === 'tel'

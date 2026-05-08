@@ -957,23 +957,21 @@ export class SessionController {
           // poll's own batch, so snippet-diff / provenanceKey-includes
           // are structurally meaningless. Require a confirmed parsed
           // receipt timestamp inside the pre-session grace window
-          // instead. If Google Messages exposes no parseable timestamp,
-          // allow only the top unread SMS row: that is the narrowest
-          // "observed fresh during active SMS session" fallback for first
-          // browser-run sessions where no prior snapshot exists.
+          // instead. Undated candidates fail CLOSED for autofill: an
+          // unread + top-rank conversation on a first browser-run is
+          // ordering evidence, not arrival-time evidence, and may
+          // surface an old (e.g. yesterday's) message.
           if (candidate.receivedEpochMs === undefined) {
-            if (!isTopUnreadTimestamplessSms(candidate)) {
-              console.log(
-                `[SessionController] Dropping current-baseline candidate without parseable timestamp — provider=${candidate.provider} mailbox=${candidate.mailboxId} unread=${candidate.meta?.isUnread ?? '(unknown)'} rank=${candidate.meta?.previewRank ?? '(unknown)'}`
-              )
-              continue
-            }
+            console.log(
+              `[SessionController] Dropping current-baseline candidate without parseable timestamp | provider=${candidate.provider} mailbox=${candidate.mailboxId} unread=${candidate.meta?.isUnread ?? '(unknown)'} rank=${candidate.meta?.previewRank ?? '(unknown)'}`
+            )
+            continue
           } else if (
             candidate.receivedEpochMs <
             session.sessionStart - SMS_CANDIDATE_PRESESSION_GRACE_MS
           ) {
             console.log(
-              `[SessionController] Dropping current-baseline candidate older than freshness grace — provider=${candidate.provider} mailbox=${candidate.mailboxId} ageMs=${Date.now() - candidate.receivedEpochMs}`
+              `[SessionController] Dropping current-baseline candidate older than freshness grace | provider=${candidate.provider} mailbox=${candidate.mailboxId} ageMs=${Date.now() - candidate.receivedEpochMs}`
             )
             continue
           }
@@ -997,7 +995,7 @@ export class SessionController {
           if (candidate.provider === 'google-messages') {
             if (candidate.receivedEpochMs === undefined) {
               console.log(
-                `[SessionController] Dropping SMS new-arrival candidate without parseable timestamp on snapshot baseline — mailbox=${candidate.mailboxId} unread=${candidate.meta?.isUnread ?? '(unknown)'} rank=${candidate.meta?.previewRank ?? '(unknown)'}`
+                `[SessionController] Dropping SMS new-arrival candidate without parseable timestamp on snapshot baseline | mailbox=${candidate.mailboxId} unread=${candidate.meta?.isUnread ?? '(unknown)'} rank=${candidate.meta?.previewRank ?? '(unknown)'}`
               )
               continue
             }
@@ -1006,7 +1004,7 @@ export class SessionController {
               session.sessionStart - SMS_CANDIDATE_PRESESSION_GRACE_MS
             ) {
               console.log(
-                `[SessionController] Dropping SMS new-arrival candidate older than freshness grace — mailbox=${candidate.mailboxId} ageMs=${Date.now() - candidate.receivedEpochMs}`
+                `[SessionController] Dropping SMS new-arrival candidate older than freshness grace | mailbox=${candidate.mailboxId} ageMs=${Date.now() - candidate.receivedEpochMs}`
               )
               continue
             }
@@ -1103,7 +1101,7 @@ export class SessionController {
         const ageMs = nowForSettle - receivedAt
         const waitMs = Math.max(0, SMS_AUTOFILL_SETTLE_MS - ageMs)
         console.log(
-          `[SessionController] Deferring fresh SMS autofill for settle window — sessionId=${session.id} mailbox=${best.mailboxId ?? '(unknown)'} waitMs=${Math.ceil(waitMs)}`
+          `[SessionController] Deferring fresh SMS autofill for settle window | sessionId=${session.id} mailbox=${best.mailboxId ?? '(unknown)'} waitMs=${Math.ceil(waitMs)}`
         )
         return null
       }
@@ -1225,15 +1223,6 @@ function isNewArrivalCandidate(
   const mailboxKeys = session.emailBaselineKeys?.[candidate.mailboxId]
   if (!mailboxKeys) return false
   return !mailboxKeys.includes(candidate.provenanceKey)
-}
-
-function isTopUnreadTimestamplessSms(candidate: CandidateRecord): boolean {
-  return (
-    candidate.provider === 'google-messages' &&
-    candidate.receivedEpochMs === undefined &&
-    candidate.meta?.isUnread === true &&
-    candidate.meta?.previewRank === 0
-  )
 }
 
 function shouldDeferFreshSmsAutofill(

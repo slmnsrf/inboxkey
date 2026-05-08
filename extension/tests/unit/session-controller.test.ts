@@ -1416,7 +1416,12 @@ describe("SessionController", () => {
         )
       })
 
-      it("(case 3) defers first-poll top unread SMS candidate with undefined receivedEpochMs", async () => {
+      it("(case 3) rejects first-poll top unread SMS candidate with undefined receivedEpochMs (fails closed)", async () => {
+        // Unread + previewRank 0 is ordering evidence, not arrival-time
+        // evidence. An old conversation that happens to be top-unread on
+        // first browser run could otherwise surface yesterday's code, so
+        // we fail closed for autofill: undated candidates do not advance
+        // through the freshness gate.
         setupOneSmsMailbox()
         const onCompleted = vi.fn()
         const controller = createController({ onSessionCompleted: onCompleted })
@@ -1424,7 +1429,7 @@ describe("SessionController", () => {
 
         const previewHash = "hash-undated-top"
 
-        mockPollOnce.mockImplementationOnce((_ctx, cfg) => {
+        mockPollOnce.mockImplementation((_ctx, cfg) => {
           cfg?.onAdapterBatch?.("gm-1", [
             {
               id: "gm-undated-top",
@@ -1467,22 +1472,17 @@ describe("SessionController", () => {
           tabId: 1,
           url: "https://brand.com",
           expected: {},
-          timeoutSeconds: 10,
+          timeoutSeconds: 0.2,
           detectedChannels: ["sms"],
           channelEvidence: "positive",
         })
 
-        await vi.advanceTimersByTimeAsync(1)
-        expect(onCompleted).not.toHaveBeenCalled()
-
-        await vi.advanceTimersByTimeAsync(4999)
+        await vi.advanceTimersByTimeAsync(0)
+        await vi.advanceTimersByTimeAsync(200)
 
         expect(onCompleted).toHaveBeenCalledWith(
           expect.anything(),
-          expect.objectContaining({
-            status: "filled",
-            code: expect.objectContaining({ code: "333333" }),
-          })
+          expect.objectContaining({ status: "timedout" })
         )
       })
 

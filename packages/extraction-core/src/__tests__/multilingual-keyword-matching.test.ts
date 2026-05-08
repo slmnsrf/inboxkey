@@ -234,6 +234,31 @@ describe('Multilingual OTP Keyword Matching', () => {
       expect(result).toHaveLength(0)
     })
 
+    it.each([
+      ['Codex', 'Welcome to Codex 123456 release notes.'],
+      ['Codebase', 'Push to the Codebase 123456 mirror.'],
+      ['Codec', 'Install Codec: 123456 for playback.'],
+    ])('should NOT prefix-match English "code" inside "%s"', (_label, text) => {
+      const result = extractOTPs(text)
+      expect(result).toHaveLength(0)
+    })
+
+    it.each([
+      ['French', 'Réinitialiser votre mot de passe : 123456'],
+      ['Spanish', 'Restablece tu contraseña: 123456'],
+      ['German', 'Passwort zurücksetzen: 123456'],
+      ['Italian', 'Reimposta la tua password: 123456'],
+      ['Portuguese', 'Redefinir sua senha: 123456'],
+      ['Turkish', 'Şifrenizi sıfırlayın: 123456'],
+      ['English', 'Reset your password: 123456'],
+    ])('does not weak-extract OTPs inside %s password-reset/management copy', (_lang, text) => {
+      // Weak-keyword path requires expectedShape; even with that signal, the
+      // Unicode-aware password-context guard must reject these flows so the
+      // code does not autofill.
+      const result = extractOTPs(text, { expectedLength: 6, expectedCharset: 'digits' })
+      expect(result).toHaveLength(0)
+    })
+
     it('German compounds: should match "code" in "Sicherheitscode"', () => {
       const text = 'Ihr Sicherheitscode: 246813'
       // Translation: "Your security code: 246813"

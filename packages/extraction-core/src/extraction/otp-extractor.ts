@@ -88,8 +88,13 @@ export function extractOTPs(input: string, opts: OTPExtractOptions = {}): OTPCan
   const allowAlphaOnly = shouldAllowAlphaOnly(opts)
   const maxResults = Math.max(1, Math.min(10, opts.maxResults ?? 3))
 
-  // Normalize to plain text; remove HTML noise early to reduce spurious matches
-  const { text } = toPlainText(input)
+  // Normalize to plain text; remove HTML noise early to reduce spurious matches.
+  // NFC-normalize so `keywordText` (which decomposes Latin diacritics and
+  // strips combining marks) preserves byte offsets relative to `text` —
+  // any Latin character precomposed in NFC stays single-code-unit through
+  // `normalizeKeywordText`, keeping window/candidate offsets aligned.
+  const { text: rawText } = toPlainText(input)
+  const text = rawText.normalize('NFC')
   const keywordText = normalizeKeywordText(text)
 
   // If there are no strong keywords at all in the whole message,
@@ -340,22 +345,123 @@ function keywordVariants(keyword: string): string[] {
   ]))
 }
 
+/**
+ * Latin-script base-form keywords that admit suffix attachment in their
+ * source language and therefore need loose trailing. These are the
+ * agglutinative (Turkish, Finnish) and inflected (Polish, Czech, other
+ * Slavic-Latin, Scandinavian) bare nouns where carrier/SMS copy
+ * routinely glues a possessive/accusative ending onto the stem
+ * ("kod" -> "kodu", "şifre" -> "şifreniz", "koodi" -> "koodin").
+ *
+ * Stored in lowercase, after diacritic-folding (`normalizeKeywordText`),
+ * so both the original and the diacritic-stripped variants resolve to
+ * the same key.
+ *
+ * Phrases like "doğrulama kodu" and "vahvistuskoodi" are NOT in this
+ * set: they end on a fixed inflected form already and don't need to
+ * tolerate further suffix attachment in real copy. Keeping them strict
+ * preserves precision.
+ */
+const LOOSE_TRAILING_BASE_FORMS = new Set<string>([
+  // Turkish (agglutinative; -u/-um/-un/-niz/-mla suffixes)
+  'kod', 'sifre', 'parola',
+  // Finnish (agglutinative; -n/-ssa/-lla)
+  'koodi', 'salasana',
+  // Polish (inflected; -u/-em/-ami)
+  'haslo',
+  // Czech / Slovak (inflected; -u/-em)
+  'heslo',
+  // Norwegian, Danish (inflected)
+  'kode', 'passord', 'adgangskode',
+  // Swedish (inflected)
+  'losenord',
+])
+
+/** True if all letters in `keyword` belong to Latin script. */
+function isLatinScriptKeyword(keyword: string): boolean {
+  const letters = keyword.match(/\p{L}/gu)
+  if (!letters || letters.length === 0) return false
+  return letters.every(l => /\p{Script=Latin}/u.test(l))
+}
+
+/**
+ * Choose loose vs. strict trailing for a keyword.
+ *
+ * Loose (no trailing constraint) catches morphological inflection in
+ * agglutinative/inflected source languages. Strict (`(?![\p{L}\p{N}])`)
+ * keeps generic English-like tokens (`code`, `passcode`, `password`)
+ * from prefix-matching unrelated words ("Codex", "Codebase", "Codec",
+ * "passwordless").
+ *
+ *   - explicit base-form opt-ins (LOOSE_TRAILING_BASE_FORMS) -> loose
+ *   - non-Latin scripts (Cyrillic, Arabic, Devanagari, CJK)   -> loose
+ *   - everything else (Latin phrases + generic English bases)  -> strict
+ */
+function shouldUseLooseTrailing(keyword: string): boolean {
+  const lower = keyword.toLowerCase()
+  if (LOOSE_TRAILING_BASE_FORMS.has(lower)) return true
+  const normalizedLower = normalizeKeywordText(lower)
+  if (LOOSE_TRAILING_BASE_FORMS.has(normalizedLower)) return true
+
+  // Phrases that END with a known agglutinative/inflected base form
+  // (e.g. "tek seferlik şifre" -> "şifreniz", "tek kullanımlık kod" ->
+  // "kodu") inherit loose trailing so the suffix is allowed.
+  const lastTok = lastToken(lower)
+  if (lastTok && LOOSE_TRAILING_BASE_FORMS.has(lastTok)) return true
+  const normalizedLastTok = lastToken(normalizedLower)
+  if (normalizedLastTok && LOOSE_TRAILING_BASE_FORMS.has(normalizedLastTok)) return true
+
+  if (!isLatinScriptKeyword(keyword)) return true
+  return false
+}
+
+function lastToken(s: string): string | undefined {
+  const tokens = s.split(/[-\s ‑–]+/u).filter(Boolean)
+  return tokens[tokens.length - 1]
+}
+
 /** Build a case-insensitive word-boundary regex for an array of keywords/regex sources */
 function buildKeywordRegex(words: readonly (string | RegExp)[]): RegExp {
-  // Treat incoming RegExp.source as literal where possible; keywords already curated in extraction-types
-  const parts = words.flatMap(w => {
-    if (w instanceof RegExp) return w.source
+  const strictParts: string[] = []
+  const looseParts: string[] = []
+
+  for (const w of words) {
+    if (w instanceof RegExp) {
+      // Conservatively bucket raw regex sources as loose so callers get
+      // the same trailing semantics they had before this split.
+      looseParts.push(w.source)
+      continue
+    }
+
     const variants = keywordVariants(w)
-    // Escape keyword and allow hyphen/space variants (e.g., one-time / one time / one‑time)
-    return variants.map(variant => {
-      const esc = variant.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-      return esc.replace(/[-\s]/g, '[-\\s\\u00A0\\u2011\\u2013]?')
-    })
-  })
-  // Trailing boundary removed to support agglutinative (Turkish, Finnish, Japanese, Korean)
-  // and inflected (Russian, Polish, Hindi) languages where keywords appear with suffixes/particles.
-  // Leading boundary prevents false positives (e.g., "discount" won't match "count").
-  return new RegExp(`(?:^|[^\\p{L}\\p{N}])(?:${parts.join('|')})`, 'gimu')
+    const isLoose = shouldUseLooseTrailing(w)
+    for (const variant of variants) {
+      const esc = variant
+        .replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+        .replace(/[-\s]/g, '[-\\s\\u00A0\\u2011\\u2013]?')
+      if (isLoose) {
+        looseParts.push(esc)
+      } else {
+        strictParts.push(esc)
+      }
+    }
+  }
+
+  const branches: string[] = []
+  // Strict-trailing alternatives reject prefix matches into longer
+  // unrelated words ("code" must not match "Codex").
+  if (strictParts.length > 0) {
+    branches.push(`(?:${strictParts.join('|')})(?![\\p{L}\\p{N}])`)
+  }
+  // Loose alternatives allow morphological suffixes in agglutinative
+  // and inflected source languages, plus all non-Latin scripts.
+  if (looseParts.length > 0) {
+    branches.push(`(?:${looseParts.join('|')})`)
+  }
+
+  // Leading boundary prevents false positives (e.g. "discount" won't
+  // match the trailing "count" subset).
+  return new RegExp(`(?:^|[^\\p{L}\\p{N}])(?:${branches.join('|')})`, 'gimu')
 }
 
 const CODE_KEYWORDS_MATCHER = buildKeywordRegex(CODE_KEYWORDS)
@@ -646,13 +752,41 @@ function hasSecurityShareContext(around: string): boolean {
 }
 
 function isPasswordResetManagementContext(around: string): boolean {
-  return (
-    /\b(?:reset|forgot|recover|change|update)\s+(?:your\s+)?password\b/i.test(around) ||
-    /\bpassword\s+(?:reset|recovery|change|update)\b/i.test(around) ||
-    /\b(?:sifre|şifre|parola)\s+(?:sifirla|sıfırla|yenile|degistir|değiştir)\b/i.test(around) ||
-    /\b(?:wi[-\s]?fi|wireless|network|router)\s+(?:password|passcode|passwort|senha|wachtwoord|şifre|sifre)\b/i.test(around)
-  )
+  // Use Unicode-aware lookarounds instead of `\b`. Native `\b` only counts
+  // ASCII word characters, so a "ş" or "é" left-edge silently bypasses the
+  // guard for localized phrases like "Réinitialiser votre mot de passe"
+  // or "Şifrenizi sıfırlayın".
+  return PASSWORD_RESET_PATTERNS.some(p => p.test(around))
 }
+
+const PASSWORD_RESET_PATTERNS: ReadonlyArray<RegExp> = [
+  // English
+  /(?<![\p{L}\p{M}\p{N}])(?:reset|forgot|recover|change|update)\s+(?:your\s+)?password(?![\p{L}\p{M}\p{N}])/iu,
+  /(?<![\p{L}\p{M}\p{N}])password\s+(?:reset|recovery|change|update)(?![\p{L}\p{M}\p{N}])/iu,
+  // Turkish — base words admit possessive/case suffixes ("Şifrenizi
+  // sıfırlayın"), so allow Latin-letter morphology between/after the
+  // root verbs.
+  /(?<![\p{L}\p{M}\p{N}])(?:sifre|şifre|parola)[\p{L}\p{M}]*\s+(?:sifirla|sıfırla|yenile|degistir|değiştir)[\p{L}\p{M}]*(?![\p{L}\p{M}\p{N}])/iu,
+  // French
+  /(?<![\p{L}\p{M}\p{N}])(?:réinitialiser|reinitialiser|récupérer|recuperer|changer|modifier|mettre\s+à\s+jour)\s+(?:votre\s+|ton\s+|le\s+)?mot\s+de\s+passe(?![\p{L}\p{M}\p{N}])/iu,
+  /(?<![\p{L}\p{M}\p{N}])mot\s+de\s+passe\s+(?:oublié|perdu|réinitialisé|réinitialisation|récupération)(?![\p{L}\p{M}\p{N}])/iu,
+  // Spanish — covers both infinitive ("restablecer") and imperative
+  // ("restablece tu contraseña"), the more common CTA form.
+  /(?<![\p{L}\p{M}\p{N}])(?:restablece|restablecer|recupera|recuperar|cambia|cambiar|actualiza|actualizar|olvidaste|olvidé)\s+(?:tu\s+|su\s+|la\s+|el\s+)?(?:contraseña|clave)(?![\p{L}\p{M}\p{N}])/iu,
+  /(?<![\p{L}\p{M}\p{N}])(?:contraseña|clave)\s+(?:olvidada|nueva|restablecida|recuperación)(?![\p{L}\p{M}\p{N}])/iu,
+  // German
+  /(?<![\p{L}\p{M}\p{N}])passwort\s+(?:zurücksetzen|zuruecksetzen|ändern|aendern|aktualisieren|erneuern|wiederherstellen|vergessen)(?![\p{L}\p{M}\p{N}])/iu,
+  /(?<![\p{L}\p{M}\p{N}])(?:neues|neu)\s+passwort(?![\p{L}\p{M}\p{N}])/iu,
+  // Italian — allow up to two chained articles ("Reimposta la tua
+  // password", "cambia la sua password").
+  /(?<![\p{L}\p{M}\p{N}])(?:reimposta|reimpostare|recupera|recuperare|cambia|cambiare|aggiorna|aggiornare|dimenticato|dimenticata)\s+(?:(?:la|il|tua|sua|mia|tuo|suo|mio)\s+){0,2}password(?![\p{L}\p{M}\p{N}])/iu,
+  /(?<![\p{L}\p{M}\p{N}])password\s+(?:dimenticata|smarrita|nuova)(?![\p{L}\p{M}\p{N}])/iu,
+  // Portuguese
+  /(?<![\p{L}\p{M}\p{N}])(?:redefinir|recuperar|alterar|atualizar|esqueci|esqueceu)\s+(?:sua\s+|a\s+|o\s+)?(?:senha|palavra-passe)(?![\p{L}\p{M}\p{N}])/iu,
+  /(?<![\p{L}\p{M}\p{N}])(?:senha|palavra-passe)\s+(?:esquecida|nova|redefinida)(?![\p{L}\p{M}\p{N}])/iu,
+  // Wi-Fi / network passwords (any language)
+  /(?<![\p{L}\p{M}\p{N}])(?:wi[-\s]?fi|wireless|network|router)\s+(?:password|passcode|passwort|senha|wachtwoord|şifre|sifre|contraseña|clave|mot\s+de\s+passe)(?![\p{L}\p{M}\p{N}])/iu,
+]
 
 function isPlausibleOtpCandidate(text: string, c: InternalCandidate): boolean {
   const around = candidateWindow(text, c, 96).toLowerCase()
