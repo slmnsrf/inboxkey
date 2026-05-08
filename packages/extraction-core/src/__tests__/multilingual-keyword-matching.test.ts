@@ -259,6 +259,36 @@ describe('Multilingual OTP Keyword Matching', () => {
       expect(result).toHaveLength(0)
     })
 
+    it.each([
+      ['Change your passcode', 'Change your passcode: 123456'],
+      ['Reset your pass code', 'Reset your pass code: 123456'],
+      ['Update your passcode', 'Update your passcode: 123456'],
+    ])('rejects English %s reset/management copy (strong-keyword path)', (_label, text) => {
+      // `passcode` / `pass code` are present in both strong and weak
+      // keyword tables, so the strong path activates first and the
+      // weak-only guard never fires. The universal prefix guard in
+      // `isPlausibleOtpCandidate` catches these.
+      expect(extractOTPs(text)).toHaveLength(0)
+    })
+
+    it('extracts legitimate passcode OTP without reset verb in prefix', () => {
+      // Same `passcode` keyword, but no reset/management verb before
+      // the code, so extraction should succeed.
+      const result = extractOTPs('Your passcode is 123456')
+      expect(result).toHaveLength(1)
+      expect(result[0].code).toBe('123456')
+    })
+
+    it('still extracts when reset wording appears AFTER the code as a disclaimer', () => {
+      // The prefix-only filter must not over-reject OTP messages that
+      // include a trailing "if you did not request this..." disclaimer.
+      const result = extractOTPs(
+        'Your verification code is 123456. If you did not request this, you can safely ignore this email or reset your password to be safe.'
+      )
+      expect(result).toHaveLength(1)
+      expect(result[0].code).toBe('123456')
+    })
+
     describe('weak password-token management contexts for expanded locales', () => {
       const opts = { expectedLength: 6, expectedCharset: 'digits' as const }
 

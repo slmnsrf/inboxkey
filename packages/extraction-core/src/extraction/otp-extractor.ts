@@ -767,9 +767,12 @@ function isPasswordResetManagementContext(around: string): boolean {
 }
 
 const PASSWORD_RESET_PATTERNS: ReadonlyArray<RegExp> = [
-  // English
-  /(?<![\p{L}\p{M}\p{N}])(?:reset|forgot|recover|change|update)\s+(?:your\s+)?password(?![\p{L}\p{M}\p{N}])/iu,
-  /(?<![\p{L}\p{M}\p{N}])password\s+(?:reset|recovery|change|update)(?![\p{L}\p{M}\p{N}])/iu,
+  // English — `passcode` / `pass code` are treated the same as
+  // `password` here because they are duplicated in both the strong and
+  // weak keyword tables; the strong-path candidate filter still needs
+  // to recognize their reset/management copy.
+  /(?<![\p{L}\p{M}\p{N}])(?:reset|forgot|recover|change|update)\s+(?:your\s+)?(?:password|passcode|pass\s+code)(?![\p{L}\p{M}\p{N}])/iu,
+  /(?<![\p{L}\p{M}\p{N}])(?:password|passcode|pass\s+code)\s+(?:reset|recovery|change|update)(?![\p{L}\p{M}\p{N}])/iu,
   // Turkish — base words admit possessive/case suffixes ("Şifrenizi
   // sıfırlayın"), so allow Latin-letter morphology between/after the
   // root verbs.
@@ -832,6 +835,13 @@ const PASSWORD_RESET_PATTERNS: ReadonlyArray<RegExp> = [
 
 function isPlausibleOtpCandidate(text: string, c: InternalCandidate): boolean {
   const around = candidateWindow(text, c, 96).toLowerCase()
+  // Prefix-only window: text directly preceding the candidate. Reset
+  // flows announce the verb first ("Reset your password: 123456");
+  // legitimate OTP messages mention reset only as a trailing disclaimer
+  // ("Your code is 123456. If you did not request this, reset your
+  // password..."). Filtering on the prefix only catches the reset
+  // flows without false-rejecting OTP-with-disclaimer messages.
+  const beforeCandidate = text.slice(Math.max(0, c.start - 96), c.start).toLowerCase()
 
   if (isEmbeddedInUrl(text, c)) return false
   if (isCssToken(text, c)) return false
@@ -840,6 +850,11 @@ function isPlausibleOtpCandidate(text: string, c: InternalCandidate): boolean {
   if (isCommercialCodeContext(around)) return false
   if (isSoftwareCodeContext(around)) return false
   if (isStandaloneYear(c.code) && !hasStrongOtpContext(around)) return false
+  // Universal password-reset/management guard. Catches keyword-strong
+  // matches that the weak-only `hasWeakOtpCandidateSupport` cannot see
+  // (e.g. English `passcode` / `pass code` are duplicated in both
+  // tables, and the strong path runs first).
+  if (isPasswordResetManagementContext(beforeCandidate)) return false
 
   return true
 }
