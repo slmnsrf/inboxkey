@@ -948,13 +948,11 @@ describe("WatchSession", () => {
     const session = new WatchSession(field, detection, { onCodeFound })
     await session.start()
 
-    const consoleSpy = vi.spyOn(console, "warn").mockImplementation(() => {})
-
     await emitPortMessage({ type: "UNKNOWN_TYPE" })
-    expect(consoleSpy).toHaveBeenCalled()
+    // Unknown message types are ignored (debugLog'd quietly when verbose
+    // mode is on); session keeps running.
     expect(session.isActive()).toBe(true)
-
-    consoleSpy.mockRestore()
+    expect(onCodeFound).not.toHaveBeenCalled()
   })
 
   it("should ignore malformed messages", async () => {
@@ -982,18 +980,20 @@ describe("WatchSession", () => {
     const detection = createDetectionResult(field)
     const onCodeFound = vi.fn()
 
-    const consoleSpy = vi.spyOn(console, "warn").mockImplementation(() => {})
+    const connectMock = chrome.runtime.connect as unknown as ReturnType<
+      typeof vi.fn
+    >
+    connectMock.mockClear()
 
     const session = new WatchSession(field, detection, { onCodeFound })
     await session.start()
     // Second start() returns early synchronously because this.port is already set
     await session.start()
 
-    expect(consoleSpy).toHaveBeenCalledWith(
-      "[WatchSession] Session already started"
-    )
-
-    consoleSpy.mockRestore()
+    // Only the first start() should have opened a port; the second call
+    // is a no-op (logs via debugLog when verbose mode is on, otherwise silent).
+    expect(connectMock).toHaveBeenCalledTimes(1)
+    expect(session.isActive()).toBe(true)
   })
 
   it("should derive expected shape from input field", async () => {

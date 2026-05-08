@@ -11,6 +11,7 @@ import { extractDomain, isDomainEnabled } from '@/lib/utils/domain'
 import { findSubmitButton } from './submit-button-finder'
 import { logAutoSubmitFailure } from '@/lib/storage/telemetry'
 import { detectSplitInputGroup, type SplitInputGroup } from '@/lib/detection/split-input-detector'
+import { debugLog } from '@/lib/utils/debug-log'
 export interface AutofillOptions {
   code: string
   field: HTMLInputElement
@@ -342,14 +343,14 @@ export async function findAndClickSubmitButton(
       console.log('[Autofill] Submit button clicked successfully')
       return true
     } catch (clickError) {
-      console.warn('[Autofill] Failed to click button:', clickError)
+      debugLog('[Autofill] Failed to click button:', clickError)
       await logAutoSubmitFailure(url, 'click_failed', {
         buttonText: button.textContent || undefined
       })
       return false
     }
   } catch (error) {
-    console.warn('[Autofill] findAndClickSubmitButton error:', error)
+    debugLog('[Autofill] findAndClickSubmitButton error:', error)
     await logAutoSubmitFailure(url, 'no_buttons')
     return false
   }

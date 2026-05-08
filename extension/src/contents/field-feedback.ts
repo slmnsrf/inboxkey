@@ -19,6 +19,7 @@ import { generateShadowCSS, generateEnhancedKeyframes } from '@/contents/field-f
 import { detectSplitInputGroup } from '@/lib/detection/split-input-detector'
 import { resolveVisualTarget } from '@/lib/detection/visual-target-resolver'
 import { isHTMLDocument } from '@/lib/utils/is-html-document'
+import { debugLog } from '@/lib/utils/debug-log'
 
 // ─── Public types ────────────────────────────────────────────────────────────
 
@@ -702,7 +703,7 @@ function buildSingleHandle(
   } catch (err) {
     // Resolver throws should never affect overlay rendering; degrade
     // to anchoring on the input itself.
-    console.warn('[field-feedback] visual-target-resolver threw:', err)
+    debugLog('[field-feedback] visual-target-resolver threw:', err)
   }
 
   const overlay = new FieldOverlay(field, {

@@ -104,7 +104,15 @@ export function initPasswordlessWatcher(): PasswordlessWatcher {
     }
   }
 
-  chrome.storage.onChanged.addListener(onStorageChanged)
+  // Guarded so a stale content script (extension reloaded; chrome.storage
+  // now undefined) doesn't throw "Cannot read properties of undefined"
+  // into the user's errors page.
+  try {
+    chrome?.storage?.onChanged?.addListener?.(onStorageChanged)
+  } catch {
+    // Extension context invalidated; automationLevel stays at its
+    // hydrated value and the watcher keeps running.
+  }
 
   // -- Detection & fire ----------------------------------------------------
 
@@ -174,8 +182,13 @@ export function initPasswordlessWatcher(): PasswordlessWatcher {
         debounceTimer = null
       }
 
-      // Unsubscribe storage listener
-      chrome.storage.onChanged.removeListener(onStorageChanged)
+      // Unsubscribe storage listener. Guarded for the same reason the
+      // addListener is — chrome.storage may already be gone here.
+      try {
+        chrome?.storage?.onChanged?.removeListener?.(onStorageChanged)
+      } catch {
+        // Extension context invalidated; nothing to clean up.
+      }
 
       // Clear seen-URL set
       seenUrls.clear()

@@ -44,10 +44,17 @@ export async function hydrateSmsCache(): Promise<void> {
   }
 }
 
-// Keep in sync after initial hydration.
-// Listens for changes to the plaintext mailboxes storage key.
-chrome.storage.onChanged.addListener((changes) => {
-  if (changes.mailboxes_plain) {
-    hydrateSmsCache()
-  }
-})
+// Keep in sync after initial hydration. Guarded so a stale content
+// script (extension reloaded, chrome.storage now undefined) doesn't
+// throw "Cannot read properties of undefined (reading 'onChanged')"
+// into the user's errors page on every page load.
+try {
+  chrome?.storage?.onChanged?.addListener?.((changes) => {
+    if (changes.mailboxes_plain) {
+      hydrateSmsCache()
+    }
+  })
+} catch {
+  // Extension context invalidated; the cache stays at its last value
+  // and the page can keep running until refreshed.
+}

@@ -473,28 +473,16 @@ export function AddImapAccountModal({
             </div>
 
             <div className="imap-modal__body">
-              {/* Provider-specific guide banner */}
+              {/* Provider-specific guide banner. The "create app password"
+                  link is rendered next to the password field instead of
+                  inside the banner — its action belongs where the user
+                  needs it. */}
               {preset.guide && (
                 <div className="imap-guide-banner">
                   <span className="imap-guide-banner__icon">
                     <Info size={16} />
                   </span>
-                  <div className="imap-guide-banner__content">
-                    {preset.guide}
-                    {preset.guideLink && (
-                      <>
-                        <br /><br />
-                        <a
-                          href={preset.guideLink}
-                          className="imap-guide-banner__link"
-                          target="_blank"
-                          rel="noopener noreferrer"
-                        >
-                          {preset.guideLinkText} &rarr;
-                        </a>
-                      </>
-                    )}
-                  </div>
+                  <div className="imap-guide-banner__content">{preset.guide}</div>
                 </div>
               )}
 
@@ -541,6 +529,16 @@ export function AddImapAccountModal({
                 ) : preset.hint ? (
                   <p className="imap-form-hint" id="imap-password-hint">{preset.hint}</p>
                 ) : null}
+                {preset.guideLink && (
+                  <a
+                    href={preset.guideLink}
+                    className="imap-form-action-link"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    {preset.guideLinkText} &rarr;
+                  </a>
+                )}
               </div>
 
               {/* Label (optional) */}

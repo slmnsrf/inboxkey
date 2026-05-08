@@ -9,6 +9,7 @@ export const config = {
 
 import type { StoredCode } from '@/lib/storage/schema'
 import { findBestMatchingCode } from '@/lib/matching/code-matcher'
+import { debugLog } from '@/lib/utils/debug-log'
 
 /**
  * Fetch codes from background worker
@@ -38,7 +39,7 @@ export async function fetchCodesFromBackground(
     console.log(`[CodeFetcher] Latency: ${latency}ms`)
 
     if (response.error) {
-      console.warn(`[CodeFetcher] Error from background:`, response.error)
+      debugLog(`[CodeFetcher] Error from background:`, response.error)
       return []
     }
 
@@ -50,7 +51,7 @@ export async function fetchCodesFromBackground(
     console.log(`[CodeFetcher] Retrieved ${response.codes.length} codes`)
     return response.codes
   } catch (error) {
-    console.warn(`[CodeFetcher] Failed to fetch codes:`, error)
+    debugLog(`[CodeFetcher] Failed to fetch codes:`, error)
     throw error
   }
 }
