@@ -216,6 +216,8 @@ Minimum threshold: 100 points
 
 **Split-Input Distribution:** Detects split-input groups across three shapes — (a) all-equal `maxlength` 1-3 cells (Steam, GitHub), (b) per-cell wrappers with `maxlength=-1` (Microsoft codeEntry), (c) asymmetric leader where the first input acts as a paste-receiver (`maxlength` = group size, 4-8) and the rest are single-digit cells (e.g., IKEA Turkey). Distributes codes character-by-character across cells. For asymmetric-leader groups where only the leader has a submittable `name` and cells are presentation-only, falls back to filling the leader with the full code. Tier 2 split-bonus is suppressed for cells-only sub-groups when a viable leader precedes them in the common ancestor (defense-in-depth against double sessions).
 
+**Full-Automation Demotion** (`lib/automation/automation-safety.ts`): On payment-provider domains, banking domains, or fields whose accessible label/context indicates payment or banking intent, full-auto submission is downgraded to autofill-only. Detection and autofill still run; the extension never clicks confirm on financial flows.
+
 ### Layer 5 (Tier 1): Delivery Channel Signal Classifier
 
 Integrated within Tier 1 (<0.05ms), distinguishes email-based codes (InboxKey can help) from authenticator/SMS codes:
