@@ -1628,6 +1628,25 @@ a.done-next__link:hover {
   line-height: var(--line-height-normal);
 }
 
+.imap-form-action-link {
+  display: inline-block;
+  margin-top: var(--space-2);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-link);
+  text-decoration: none;
+}
+
+.imap-form-action-link:hover {
+  text-decoration: underline;
+}
+
+.imap-form-action-link:focus-visible {
+  outline: 2px solid var(--color-text-link);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
 .imap-form-input--error {
   border-color: var(--color-error);
 }
