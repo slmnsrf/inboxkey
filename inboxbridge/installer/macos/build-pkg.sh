@@ -27,6 +27,7 @@ chmod +x "$PAYLOAD_DIR/usr/local/bin/inboxbridge"
 
 # Build package
 OUTPUT="InboxBridge-v${VERSION}-macos-universal.pkg"
+chmod +x "$SCRIPT_DIR/scripts/postinstall"
 pkgbuild \
   --root "$PAYLOAD_DIR" \
   --scripts "$SCRIPT_DIR/scripts" \

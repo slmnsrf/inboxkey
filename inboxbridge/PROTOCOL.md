@@ -127,7 +127,7 @@ Healthcheck and connection validation.
   "id": "uuid-1",
   "result": {
     "ok": true,
-    "version": "1.1.4",
+    "version": "1.1.5",
     "protocolVersion": 1,
     "minProtocolVersion": 1,
     "features": {
@@ -184,7 +184,7 @@ Check if InboxBridge is installed and operational.
   "id": "uuid-2",
   "result": {
     "installed": true,
-    "version": "1.1.4",
+    "version": "1.1.5",
     "keychain": "macos"
   }
 }
@@ -710,7 +710,7 @@ The extension background worker maintains a **single Native Messaging port** for
 
 ```
 Extension → Native: {"v":1,"id":"ping-1","method":"bridge.ping"}
-Native → Extension:  {"v":1,"id":"ping-1","result":{"ok":true,"version":"1.1.4","protocolVersion":1,"minProtocolVersion":1}}
+Native → Extension:  {"v":1,"id":"ping-1","result":{"ok":true,"version":"1.1.5","protocolVersion":1,"minProtocolVersion":1}}
 ```
 
 ### 6.3 Ping Timeout Handling

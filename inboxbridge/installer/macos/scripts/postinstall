@@ -2,28 +2,46 @@
 # postinstall -- runs as root during PKG installation
 # Writes Chrome Native Messaging manifest to the real user's home directory
 
-set -e
+set -euo pipefail
 
 EXTENSION_ID="mioicbneapdjamkppcidooggnmegpocn"
 BINARY_PATH="/usr/local/bin/inboxbridge"
+MANIFEST_NAME="com.inboxkey.bridge.json"
+
+warn_manual_setup() {
+  echo "WARNING: $1"
+  echo "Reinstall using the .tar.gz portable from https://github.com/slmnsrf/inboxkey/releases"
+}
 
 # Detect logged-in user (not root)
 CONSOLE_USER=$(stat -f "%Su" /dev/console)
 
 if [ -z "$CONSOLE_USER" ] || [ "$CONSOLE_USER" = "root" ]; then
-  echo "WARNING: No console user detected. Manifest must be created manually."
-  echo "Run: /usr/local/bin/inboxbridge --setup"
+  warn_manual_setup "No console user detected. Manifest must be created manually."
   exit 0
 fi
 
-USER_HOME=$(dscl . -read /Users/"$CONSOLE_USER" NFSHomeDirectory | awk '{print $2}')
+if ! USER_HOME=$(dscl . -read "/Users/$CONSOLE_USER" NFSHomeDirectory 2>/dev/null | awk '{print $2}'); then
+  warn_manual_setup "Could not resolve home directory for $CONSOLE_USER. Manifest must be created manually."
+  exit 0
+fi
+
+if [ -z "$USER_HOME" ] || [ ! -d "$USER_HOME" ]; then
+  warn_manual_setup "Resolved home directory is invalid for $CONSOLE_USER. Manifest must be created manually."
+  exit 0
+fi
 
 # Chrome NativeMessagingHosts directory
 NM_DIR="$USER_HOME/Library/Application Support/Google/Chrome/NativeMessagingHosts"
-mkdir -p "$NM_DIR"
+MANIFEST_PATH="$NM_DIR/$MANIFEST_NAME"
+if ! mkdir -p "$NM_DIR"; then
+  warn_manual_setup "Could not create Chrome NativeMessagingHosts directory. Manifest must be created manually."
+  exit 0
+fi
 
 # Write manifest
-cat > "$NM_DIR/com.inboxkey.bridge.json" <<EOF
+if ! {
+  cat > "$MANIFEST_PATH" <<EOF
 {
   "name": "com.inboxkey.bridge",
   "description": "InboxBridge Native Messaging Host for IMAP Support",
@@ -34,8 +52,15 @@ cat > "$NM_DIR/com.inboxkey.bridge.json" <<EOF
   ]
 }
 EOF
+}; then
+  warn_manual_setup "Could not write Chrome Native Messaging manifest. Manifest must be created manually."
+  exit 0
+fi
 
 # Fix ownership (created as root, should be owned by user)
-chown "$CONSOLE_USER" "$NM_DIR/com.inboxkey.bridge.json"
+if ! chown "$CONSOLE_USER" "$NM_DIR" "$MANIFEST_PATH"; then
+  warn_manual_setup "Could not set manifest ownership for $CONSOLE_USER. Manifest must be checked manually."
+  exit 0
+fi
 
 exit 0
